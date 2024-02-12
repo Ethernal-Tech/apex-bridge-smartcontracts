@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import "./interfaces/IBridgeContract.sol";
+import "hardhat/console.sol";
 
 contract BridgeContract is IBridgeContract {
     mapping(address => bool) private validators; // mapping in case they could be added/removed
@@ -10,7 +11,7 @@ contract BridgeContract is IBridgeContract {
     mapping(string => address[]) private voters;
     mapping(string => uint8) private numberOfVotes;
 
-    mapping(string => BridgingRequestClaim) private queuedBridgingRequestsClaims;
+    mapping(string => BridgingRequestClaim) public queuedBridgingRequestsClaims;
     mapping(string => BridgingRequestClaim) private queuedBatchExecutedClaim;
     mapping(string => BridgingRequestClaim) private queuedBatchExecutionFailedClaim;
     mapping(string => BridgingRequestClaim) private queuedRefundRequestClaim;
@@ -37,10 +38,9 @@ contract BridgeContract is IBridgeContract {
         ValidatorClaims calldata _claims
     ) external override onlyValidator {
         for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
-            //TODO implement check already confirmed but still in the queue
-            require(!isQueued(_claims.bridgingRequestClaims[i]), "Already queued");
+            require(!_isQueued(_claims.bridgingRequestClaims[i]), "Already queued");
             require(
-                !hasVoted(
+                !_hasVoted(
                     _claims.bridgingRequestClaims[i].observedTransactionHash
                 ),
                 "Already proposed"
@@ -62,7 +62,7 @@ contract BridgeContract is IBridgeContract {
         string calldata _addressFeePayer
     ) external override onlyValidator {
         require(!registeredChains[_chainId], "Chain already registered");
-        require(!hasVoted(_chainId), "Already proposed");
+        require(!_hasVoted(_chainId), "Already proposed");
         _registerChain(
             _chainId,
             _initialUTXOs,
@@ -79,7 +79,7 @@ contract BridgeContract is IBridgeContract {
     ) internal {
         voters[_chainId].push(msg.sender);
         numberOfVotes[_chainId]++;
-        if (hasConsensus(_chainId)) {
+        if (_hasConsensus(_chainId)) {
             registeredChains[_chainId] = true;
             chains.push();
             chains[chains.length - 1].id = _chainId;
@@ -95,25 +95,33 @@ contract BridgeContract is IBridgeContract {
         ValidatorClaims calldata _claims,
         uint256 index
     ) internal {
+        console.log("USAO U _submitClaims");
         voters[_claims.bridgingRequestClaims[index].observedTransactionHash]
             .push(msg.sender);
         numberOfVotes[
             _claims.bridgingRequestClaims[index].observedTransactionHash
         ]++;
+        console.log("Broj glasova: ", numberOfVotes[_claims.bridgingRequestClaims[index].observedTransactionHash]);
         if (
-            hasConsensus(
+            _hasConsensus(
                 _claims.bridgingRequestClaims[index].observedTransactionHash
             )
         ) {
+            console.log("STIGAO DO CONSENSUSA");
             queuedBridgingRequestsClaims[
                 _claims.bridgingRequestClaims[index].observedTransactionHash
             ] = _claims.bridgingRequestClaims[index];
+
+            console.log("STA SAM SACUVAO 1: ", queuedBridgingRequestsClaims[_claims.bridgingRequestClaims[index].observedTransactionHash].observedTransactionHash);
 
             queuedClaims[ClaimTypes.BRIDGING_REQUEST][
                 _claims.bridgingRequestClaims[index].sourceChainID
             ].push(
                     _claims.bridgingRequestClaims[index].observedTransactionHash
                 );
+
+            console.log("STA SAM SACUVAO 2: ", queuedClaims[ClaimTypes.BRIDGING_REQUEST][
+                _claims.bridgingRequestClaims[index].sourceChainID][0]);
         }
     }
 
@@ -181,7 +189,7 @@ contract BridgeContract is IBridgeContract {
         return numberOfVotes[_id];
     }
 
-    function hasVoted(string calldata _id) internal view returns (bool) {
+    function _hasVoted(string calldata _id) internal view returns (bool) {
         for (uint i = 0; i < voters[_id].length; i++) {
             if (voters[_id][i] == msg.sender) {
                 return true;
@@ -190,11 +198,18 @@ contract BridgeContract is IBridgeContract {
         return false;
     }
 
-    function isQueued(BridgingRequestClaim calldata _claim) internal view returns (bool) {
+    function isQueued(BridgingRequestClaim calldata _claim) external view returns (bool) {
+         return _isQueued(_claim);
+    }
+
+    function _isQueued(BridgingRequestClaim calldata _claim) internal view returns (bool) {
+        console.log("PRVI", _claim.observedTransactionHash);
+        console.log("DRUGI", queuedBatchExecutedClaim[_claim.observedTransactionHash].observedTransactionHash);
          return keccak256(abi.encode(_claim)) == keccak256(abi.encode(queuedBatchExecutedClaim[_claim.observedTransactionHash]));
     }
 
-    function hasConsensus(string calldata _id) internal view returns (bool) {
+    function _hasConsensus(string calldata _id) internal view returns (bool) {
+        console.log("USAO u _hasConsensus");
         if (
             numberOfVotes[_id] >=
             ((validatorsCount * 2) /

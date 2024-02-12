@@ -27,7 +27,53 @@ describe("Bridge Contract", function () {
       feePayerOwnedUTXOs: [],
     };
 
-    return { bridgeContract, owner, UTXOs, validators };
+    const bc = {
+          observedTransactionHash: "0xabc...",
+          receivers: [
+              {
+                  destinationAddress: "0x123...",
+                  amount: 100
+              }
+          ],
+          outputUTXO: {
+              txHash: "0xdef...",
+              txIndex: 0,
+              addressUTXO: "0x456...",
+              amount: 200
+          },
+          sourceChainID: "sourceChainID1",
+          destinationChainID: "destinationChainID1"
+      }
+
+    const validatorClaims = {
+      bridgingRequestClaims: [
+      {
+          observedTransactionHash: "0xabc...",
+          receivers: [
+              {
+                  destinationAddress: "0x123...",
+                  amount: 100
+              }
+          ],
+          outputUTXO: {
+              txHash: "0xdef...",
+              txIndex: 0,
+              addressUTXO: "0x456...",
+              amount: 200
+          },
+          sourceChainID: "sourceChainID1",
+          destinationChainID: "destinationChainID1"
+      }
+  ],
+  batchExecutedClaim: [],
+  batchExecutionFailedClaim: [],
+  refundRequestClaim: [],
+  refundExecutedClaim: [],
+  blockHash: "0x123...",
+  blockFullyObserved: true
+};
+
+    return { bridgeContract, owner, UTXOs, validators, validatorClaims, bc };
   }
 
   describe("Deployment", function () {
@@ -188,95 +234,77 @@ describe("Bridge Contract", function () {
       expect(chains[1].id).to.equal("testChain 2");
     });
   });
+  describe("Submit claim", function () {
+    it("Should reject claim if not sent by validator", async function () {
+      const { bridgeContract, owner, validatorClaims } = await loadFixture(
+        deployBridgeContractFixture
+      );
+
+      await expect(
+        bridgeContract
+          .connect(owner)
+          .submitClaims(validatorClaims)
+      ).to.be.revertedWith("Not validator");
+    });
+
+    it("Should revert if same validator submits the same claim twice", async function () {
+      const { bridgeContract, validators, validatorClaims } = await loadFixture(
+        deployBridgeContractFixture
+      );
+      await bridgeContract
+        .connect(validators[0])
+        .submitClaims(validatorClaims);
+
+      await expect(
+        bridgeContract
+          .connect(validators[0])
+          .submitClaims(validatorClaims)
+      ).to.be.revertedWith("Already proposed");
+    });
+
+    it("Should have correct number of votes for new chain", async function () {
+      const { bridgeContract, validators, validatorClaims } = await loadFixture(
+        deployBridgeContractFixture
+      );
+
+      await bridgeContract
+        .connect(validators[0])
+        .submitClaims(validatorClaims);
+
+      expect(await bridgeContract.getNumberOfVotes("0xabc...")).to.equal(1);
+
+      await bridgeContract
+        .connect(validators[1])
+        .submitClaims(validatorClaims);
+
+      expect(await bridgeContract.getNumberOfVotes("0xabc...")).to.equal(2);
+    });
+
+    it("Should add new chain if there are enough votes", async function () {
+      const { bridgeContract, validators, validatorClaims, bc } = await loadFixture(
+        deployBridgeContractFixture
+      );
+
+      await bridgeContract
+        .connect(validators[0])
+        .submitClaims(validatorClaims);
+      await bridgeContract
+        .connect(validators[1])
+        .submitClaims(validatorClaims);
+      await bridgeContract
+        .connect(validators[2])
+        .submitClaims(validatorClaims);
+
+      //console.log(await bridgeContract.queuedBridgingRequestsClaims["0xabc..."]);
+      console.log(await bridgeContract.isQueued(validatorClaims.bridgingRequestClaims[0]));
+      expect(await bridgeContract.isQueued(validatorClaims.bridgingRequestClaims[0])).to.be.false;
+
+      await bridgeContract
+        .connect(validators[3])
+        .submitClaims(validatorClaims);
+
+      console.log(await bridgeContract.isQueued(validatorClaims.bridgingRequestClaims[0]));
+      expect(await bridgeContract.isQueued(validatorClaims.bridgingRequestClaims[0])).to.be.true;
+    });
+  });
 });
-
-//   it("Should set the right owner", async function () {
-//     const { lock, owner } = await loadFixture(deployOneYearLockFixture);
-
-//     expect(await lock.owner()).to.equal(owner.address);
-//   });
-
-//   it("Should receive and store the funds to lock", async function () {
-//     const { lock, lockedAmount } = await loadFixture(
-//       deployOneYearLockFixture
-//     );
-
-//     expect(await ethers.provider.getBalance(lock.target)).to.equal(
-//       lockedAmount
-//     );
-
-//   it("Should fail if the unlockTime is not in the future", async function () {
-//     // We don't use the fixture here because we want a different deployment
-//     const latestTime = await time.latest();
-//     const Lock = await ethers.getContractFactory("Lock");
-//     await expect(Lock.deploy(latestTime, { value: 1 })).to.be.revertedWith(
-//       "Unlock time should be in the future"
-//     );
-//   });
-// });
-
-// describe("Withdrawals", function () {
-//   describe("Validations", function () {
-//     it("Should revert with the right error if called too soon", async function () {
-//       const { lock } = await loadFixture(deployOneYearLockFixture);
-
-//       await expect(lock.withdraw()).to.be.revertedWith(
-//         "You can't withdraw yet"
-//       );
-//     });
-
-//     it("Should revert with the right error if called from another account", async function () {
-//       const { lock, unlockTime, otherAccount } = await loadFixture(
-//         deployOneYearLockFixture
-//       );
-
-//       // We can increase the time in Hardhat Network
-//       await time.increaseTo(unlockTime);
-
-//       // We use lock.connect() to send a transaction from another account
-//       await expect(lock.connect(otherAccount).withdraw()).to.be.revertedWith(
-//         "You aren't the owner"
-//       );
-//     });
-
-//     it("Shouldn't fail if the unlockTime has arrived and the owner calls it", async function () {
-//       const { lock, unlockTime } = await loadFixture(
-//         deployOneYearLockFixture
-//       );
-
-//       // Transactions are sent using the first signer by default
-//       await time.increaseTo(unlockTime);
-
-//       await expect(lock.withdraw()).not.to.be.reverted;
-//     });
-//   });
-
-//   describe("Events", function () {
-//     it("Should emit an event on withdrawals", async function () {
-//       const { lock, unlockTime, lockedAmount } = await loadFixture(
-//         deployOneYearLockFixture
-//       );
-
-//       await time.increaseTo(unlockTime);
-
-//       await expect(lock.withdraw())
-//         .to.emit(lock, "Withdrawal")
-//         .withArgs(lockedAmount, anyValue); // We accept any value as `when` arg
-//     });
-//   });
-
-//   describe("Transfers", function () {
-//     it("Should transfer the funds to the owner", async function () {
-//       const { lock, unlockTime, lockedAmount, owner } = await loadFixture(
-//         deployOneYearLockFixture
-//       );
-
-//       await time.increaseTo(unlockTime);
-
-//       await expect(lock.withdraw()).to.changeEtherBalances(
-//         [owner, lock],
-//         [lockedAmount, -lockedAmount]
-//       );
-//     });
-//   });
-// });
