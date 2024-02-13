@@ -27,24 +27,6 @@ describe("Bridge Contract", function () {
       feePayerOwnedUTXOs: [],
     };
 
-    const bc = {
-          observedTransactionHash: "0xabc...",
-          receivers: [
-              {
-                  destinationAddress: "0x123...",
-                  amount: 100
-              }
-          ],
-          outputUTXO: {
-              txHash: "0xdef...",
-              txIndex: 0,
-              addressUTXO: "0x456...",
-              amount: 200
-          },
-          sourceChainID: "sourceChainID1",
-          destinationChainID: "destinationChainID1"
-      }
-
     const validatorClaims = {
       bridgingRequestClaims: [
       {
@@ -65,15 +47,15 @@ describe("Bridge Contract", function () {
           destinationChainID: "destinationChainID1"
       }
   ],
-  batchExecutedClaim: [],
-  batchExecutionFailedClaim: [],
-  refundRequestClaim: [],
-  refundExecutedClaim: [],
+  batchExecutedClaims: [],
+  batchExecutionFailedClaims: [],
+  refundRequestClaims: [],
+  refundExecutedClaims: [],
   blockHash: "0x123...",
   blockFullyObserved: true
 };
 
-    return { bridgeContract, owner, UTXOs, validators, validatorClaims, bc };
+    return { bridgeContract, owner, UTXOs, validators, validatorClaims };
   }
 
   describe("Deployment", function () {
@@ -281,7 +263,7 @@ describe("Bridge Contract", function () {
     });
 
     it("Should add new chain if there are enough votes", async function () {
-      const { bridgeContract, validators, validatorClaims, bc } = await loadFixture(
+      const { bridgeContract, validators, validatorClaims } = await loadFixture(
         deployBridgeContractFixture
       );
 
@@ -295,15 +277,12 @@ describe("Bridge Contract", function () {
         .connect(validators[2])
         .submitClaims(validatorClaims);
 
-      //console.log(await bridgeContract.queuedBridgingRequestsClaims["0xabc..."]);
-      console.log(await bridgeContract.isQueued(validatorClaims.bridgingRequestClaims[0]));
       expect(await bridgeContract.isQueued(validatorClaims.bridgingRequestClaims[0])).to.be.false;
 
       await bridgeContract
         .connect(validators[3])
         .submitClaims(validatorClaims);
 
-      console.log(await bridgeContract.isQueued(validatorClaims.bridgingRequestClaims[0]));
       expect(await bridgeContract.isQueued(validatorClaims.bridgingRequestClaims[0])).to.be.true;
     });
   });

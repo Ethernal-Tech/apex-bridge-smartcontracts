@@ -90,10 +90,10 @@ abstract contract IBridgeContract {
 
     struct ValidatorClaims {
         BridgingRequestClaim[] bridgingRequestClaims;
-        BatchExecutedClaim[] batchExecutedClaim;
-        BatchExecutionFailedClaim[] batchExecutionFailedClaim;
-        RefundRequestClaim[] refundRequestClaim;
-        RefundExecutedClaim[] refundExecutedClaim;
+        BatchExecutedClaim[] batchExecutedClaims;
+        BatchExecutionFailedClaim[] batchExecutionFailedClaims;
+        RefundRequestClaim[] refundRequestClaims;
+        RefundExecutedClaim[] refundExecutedClaims;
         
         string blockHash;
         bool blockFullyObserved;
@@ -107,18 +107,6 @@ abstract contract IBridgeContract {
         UTXO outputUTXO;
         string sourceChainID;
         string destinationChainID;
-    }
-
-    struct Receiver {
-        string destinationAddress;
-        uint256 amount;
-    }
-
-    struct Chain {
-        string id;
-        UTXOs utxos;
-        string addressMultisig;
-        string addressFeePayer;
     }
 
     struct BatchExecutedClaim {
@@ -168,6 +156,18 @@ abstract contract IBridgeContract {
         UTXO utxo;
     }
 
+    struct Receiver {
+        string destinationAddress;
+        uint256 amount;
+    }
+
+    struct Chain {
+        string id;
+        UTXOs utxos;
+        string addressMultisig;
+        string addressFeePayer;
+    }
+    
     event newChainProposal(string indexed chainId, address indexed sender);
     event newChainRegistered(string indexed chainId);
 }
