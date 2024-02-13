@@ -11,10 +11,10 @@ contract BridgeContract is IBridgeContract {
     mapping(string => uint8) private numberOfVotes;
 
     mapping(string => BridgingRequestClaim) private queuedBridgingRequestsClaims;
-    mapping(string => BridgingRequestClaim) private queuedBatchExecutedClaims;
-    mapping(string => BridgingRequestClaim) private queuedBatchExecutionFailedClaims;
-    mapping(string => BridgingRequestClaim) private queuedRefundRequestClaims;
-    mapping(string => BridgingRequestClaim) private queuedRefundExecutedClaims;
+    mapping(string => BatchExecutedClaim) private queuedBatchExecutedClaims;
+    mapping(string => BatchExecutionFailedClaim) private queuedBatchExecutionFailedClaims;
+    mapping(string => RefundRequestClaim) private queuedRefundRequestClaims;
+    mapping(string => RefundExecutedClaim) private queuedRefundExecutedClaims;
 
     // claim_type, chain, hash -> claim_object is missing because we do not have claim struct
     // by implementing "universal" claim struct we could have "universal" mapping
@@ -37,11 +37,31 @@ contract BridgeContract is IBridgeContract {
         for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
             require(!_isQueued(_claims.bridgingRequestClaims[i]), "Already queued");
             require(!_hasVoted(_claims.bridgingRequestClaims[i].observedTransactionHash), "Already proposed");
-            _submitClaims(_claims, i);
+            _submitClaimsBRC(_claims, i);
+        }
+        for (uint i = 0; i < _claims.batchExecutedClaims.length; i++) {
+            require(!_isQueued(_claims.batchExecutedClaims[i]), "Already queued");
+            require(!_hasVoted(_claims.batchExecutedClaims[i].observedTransactionHash), "Already proposed");
+            _submitClaimsBEC(_claims, i);
+        }
+        for (uint i = 0; i < _claims.batchExecutionFailedClaims.length; i++) {
+            require(!_isQueued(_claims.batchExecutionFailedClaims[i]), "Already queued");
+            require(!_hasVoted(_claims.batchExecutionFailedClaims[i].observedTransactionHash), "Already proposed");
+            _submitClaimsBEFC(_claims, i);
+        }
+        for (uint i = 0; i < _claims.refundRequestClaims.length; i++) {
+            require(!_isQueued(_claims.refundRequestClaims[i]), "Already queued");
+            require(!_hasVoted(_claims.refundRequestClaims[i].observedTransactionHash), "Already proposed");
+            _submitClaimsRRC(_claims, i);
+        }
+        for (uint i = 0; i < _claims.refundExecutedClaims.length; i++) {
+            require(!_isQueued(_claims.refundExecutedClaims[i]), "Already queued");
+            require(!_hasVoted(_claims.refundExecutedClaims[i].observedTransactionHash), "Already proposed");
+            //_submitClaimsREC(_claims, i);
         }
     }
 
-    function _submitClaims(ValidatorClaims calldata _claims, uint256 index) internal {
+    function _submitClaimsBRC(ValidatorClaims calldata _claims, uint256 index) internal {
         voters[_claims.bridgingRequestClaims[index].observedTransactionHash].push(msg.sender);
         numberOfVotes[_claims.bridgingRequestClaims[index].observedTransactionHash]++;
 
@@ -51,6 +71,62 @@ contract BridgeContract is IBridgeContract {
 
             queuedClaims[ClaimTypes.BRIDGING_REQUEST][_claims.bridgingRequestClaims[index].sourceChainID].push(
                 _claims.bridgingRequestClaims[index].observedTransactionHash
+            );
+        }
+    }
+
+    function _submitClaimsBEC(ValidatorClaims calldata _claims, uint256 index) internal {
+        voters[_claims.batchExecutedClaims[index].observedTransactionHash].push(msg.sender);
+        numberOfVotes[_claims.batchExecutedClaims[index].observedTransactionHash]++;
+
+        if (_hasConsensus(_claims.batchExecutedClaims[index].observedTransactionHash)) {
+            queuedBatchExecutedClaims[_claims.batchExecutedClaims[index].observedTransactionHash] = _claims
+                .batchExecutedClaims[index];
+
+            queuedClaims[ClaimTypes.BATCH_EXECUTED][_claims.batchExecutedClaims[index].chainID].push(
+                _claims.batchExecutedClaims[index].observedTransactionHash
+            );
+        }
+    }
+
+    function _submitClaimsBEFC(ValidatorClaims calldata _claims, uint256 index) internal {
+        voters[_claims.batchExecutionFailedClaims[index].observedTransactionHash].push(msg.sender);
+        numberOfVotes[_claims.batchExecutionFailedClaims[index].observedTransactionHash]++;
+
+        if (_hasConsensus(_claims.batchExecutionFailedClaims[index].observedTransactionHash)) {
+            queuedBatchExecutionFailedClaims[_claims.batchExecutionFailedClaims[index].observedTransactionHash] = _claims
+                .batchExecutionFailedClaims[index];
+
+            queuedClaims[ClaimTypes.BATCH_EXECUTION_FAILED][_claims.batchExecutionFailedClaims[index].chainID].push(
+                _claims.batchExecutionFailedClaims[index].observedTransactionHash
+            );
+        }
+    }
+
+    function _submitClaimsRRC(ValidatorClaims calldata _claims, uint256 index) internal {
+        voters[_claims.refundRequestClaims[index].observedTransactionHash].push(msg.sender);
+        numberOfVotes[_claims.refundRequestClaims[index].observedTransactionHash]++;
+
+        if (_hasConsensus(_claims.refundRequestClaims[index].observedTransactionHash)) {
+            queuedRefundRequestClaims[_claims.refundRequestClaims[index].observedTransactionHash] = _claims
+                .refundRequestClaims[index];
+
+            queuedClaims[ClaimTypes.REFUND_REQUEST][_claims.refundRequestClaims[index].chainID].push(
+                _claims.refundRequestClaims[index].observedTransactionHash
+            );
+        }
+    }
+
+    function _submitClaimsREC(ValidatorClaims calldata _claims, uint256 index) internal {
+        voters[_claims.refundExecutedClaims[index].observedTransactionHash].push(msg.sender);
+        numberOfVotes[_claims.refundExecutedClaims[index].observedTransactionHash]++;
+
+        if (_hasConsensus(_claims.refundExecutedClaims[index].observedTransactionHash)) {
+            queuedRefundExecutedClaims[_claims.refundExecutedClaims[index].observedTransactionHash] = _claims
+                .refundExecutedClaims[index];
+
+            queuedClaims[ClaimTypes.REFUND_EXECUTED][_claims.refundExecutedClaims[index].chainID].push(
+                _claims.refundExecutedClaims[index].observedTransactionHash
             );
         }
     }
