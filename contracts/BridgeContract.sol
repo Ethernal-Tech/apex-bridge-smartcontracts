@@ -7,7 +7,8 @@ contract BridgeContract is IBridgeContract {
     mapping(address => bool) private validators; // mapping in case they could be added/removed
     mapping(string => bool) private registeredChains;
 
-    mapping(string => address[]) private voters;
+    //mapping(string => address[]) private voters;
+    mapping(string => mapping(address => bool)) private voters;
     mapping(string => uint8) private numberOfVotes;
 
     mapping(string => BridgingRequestClaim) private queuedBridgingRequestsClaims;
@@ -62,7 +63,8 @@ contract BridgeContract is IBridgeContract {
     }
 
     function _submitClaimsBRC(ValidatorClaims calldata _claims, uint256 index) internal {
-        voters[_claims.bridgingRequestClaims[index].observedTransactionHash].push(msg.sender);
+        //voters[_claims.bridgingRequestClaims[index].observedTransactionHash].push(msg.sender);
+        voters[_claims.bridgingRequestClaims[index].observedTransactionHash][msg.sender] = true;
         numberOfVotes[_claims.bridgingRequestClaims[index].observedTransactionHash]++;
 
         if (_hasConsensus(_claims.bridgingRequestClaims[index].observedTransactionHash)) {
@@ -76,7 +78,8 @@ contract BridgeContract is IBridgeContract {
     }
 
     function _submitClaimsBEC(ValidatorClaims calldata _claims, uint256 index) internal {
-        voters[_claims.batchExecutedClaims[index].observedTransactionHash].push(msg.sender);
+        //voters[_claims.batchExecutedClaims[index].observedTransactionHash].push(msg.sender);
+        voters[_claims.batchExecutedClaims[index].observedTransactionHash][msg.sender] = true;
         numberOfVotes[_claims.batchExecutedClaims[index].observedTransactionHash]++;
 
         if (_hasConsensus(_claims.batchExecutedClaims[index].observedTransactionHash)) {
@@ -90,7 +93,8 @@ contract BridgeContract is IBridgeContract {
     }
 
     function _submitClaimsBEFC(ValidatorClaims calldata _claims, uint256 index) internal {
-        voters[_claims.batchExecutionFailedClaims[index].observedTransactionHash].push(msg.sender);
+        //voters[_claims.batchExecutionFailedClaims[index].observedTransactionHash].push(msg.sender);
+        voters[_claims.batchExecutionFailedClaims[index].observedTransactionHash][msg.sender] = true;
         numberOfVotes[_claims.batchExecutionFailedClaims[index].observedTransactionHash]++;
 
         if (_hasConsensus(_claims.batchExecutionFailedClaims[index].observedTransactionHash)) {
@@ -104,7 +108,8 @@ contract BridgeContract is IBridgeContract {
     }
 
     function _submitClaimsRRC(ValidatorClaims calldata _claims, uint256 index) internal {
-        voters[_claims.refundRequestClaims[index].observedTransactionHash].push(msg.sender);
+        //voters[_claims.refundRequestClaims[index].observedTransactionHash].push(msg.sender);
+        voters[_claims.refundRequestClaims[index].observedTransactionHash][msg.sender] = true;
         numberOfVotes[_claims.refundRequestClaims[index].observedTransactionHash]++;
 
         if (_hasConsensus(_claims.refundRequestClaims[index].observedTransactionHash)) {
@@ -118,7 +123,8 @@ contract BridgeContract is IBridgeContract {
     }
 
     function _submitClaimsREC(ValidatorClaims calldata _claims, uint256 index) internal {
-        voters[_claims.refundExecutedClaims[index].observedTransactionHash].push(msg.sender);
+        //voters[_claims.refundExecutedClaims[index].observedTransactionHash].push(msg.sender);
+        voters[_claims.refundExecutedClaims[index].observedTransactionHash][msg.sender] = true;
         numberOfVotes[_claims.refundExecutedClaims[index].observedTransactionHash]++;
 
         if (_hasConsensus(_claims.refundExecutedClaims[index].observedTransactionHash)) {
@@ -152,7 +158,7 @@ contract BridgeContract is IBridgeContract {
         string calldata _addressMultisig,
         string calldata _addressFeePayer
     ) internal {
-        voters[_chainId].push(msg.sender);
+        voters[_chainId][msg.sender] = true;
         numberOfVotes[_chainId]++;
         if (_hasConsensus(_chainId)) {
             registeredChains[_chainId] = true;
@@ -215,12 +221,13 @@ contract BridgeContract is IBridgeContract {
     }
 
     function _hasVoted(string calldata _id) internal view returns (bool) {
-        for (uint i = 0; i < voters[_id].length; i++) {
-            if (voters[_id][i] == msg.sender) {
-                return true;
-            }
-        }
-        return false;
+        // for (uint i = 0; i < voters[_id].length; i++) {
+        //     if (voters[_id][i] == msg.sender) {
+        //         return true;
+        //     }
+        // }
+        // return false;
+        return voters[_id][msg.sender];
     }
 
     function isQueuedBRC(BridgingRequestClaim calldata _claim) external view returns (bool) {
