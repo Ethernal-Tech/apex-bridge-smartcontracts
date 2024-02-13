@@ -277,13 +277,13 @@ describe("Bridge Contract", function () {
         .connect(validators[2])
         .submitClaims(validatorClaims);
 
-      expect(await bridgeContract.isQueued(validatorClaims.bridgingRequestClaims[0])).to.be.false;
+      expect(await bridgeContract.isQueuedBRC(validatorClaims.bridgingRequestClaims[0])).to.be.false;
 
       await bridgeContract
         .connect(validators[3])
         .submitClaims(validatorClaims);
 
-      expect(await bridgeContract.isQueued(validatorClaims.bridgingRequestClaims[0])).to.be.true;
+      expect(await bridgeContract.isQueuedBRC(validatorClaims.bridgingRequestClaims[0])).to.be.true;
     });
   });
 });

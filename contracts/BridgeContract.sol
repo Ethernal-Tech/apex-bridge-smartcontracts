@@ -35,29 +35,29 @@ contract BridgeContract is IBridgeContract {
     // Claims
     function submitClaims(ValidatorClaims calldata _claims) external override onlyValidator {
         for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
-            require(!_isQueued(_claims.bridgingRequestClaims[i]), "Already queued");
+            require(!_isQueuedBRC(_claims.bridgingRequestClaims[i]), "Already queued");
             require(!_hasVoted(_claims.bridgingRequestClaims[i].observedTransactionHash), "Already proposed");
             _submitClaimsBRC(_claims, i);
         }
         for (uint i = 0; i < _claims.batchExecutedClaims.length; i++) {
-            require(!_isQueued(_claims.batchExecutedClaims[i]), "Already queued");
+            require(!_isQueuedBEC(_claims.batchExecutedClaims[i]), "Already queued");
             require(!_hasVoted(_claims.batchExecutedClaims[i].observedTransactionHash), "Already proposed");
             _submitClaimsBEC(_claims, i);
         }
         for (uint i = 0; i < _claims.batchExecutionFailedClaims.length; i++) {
-            require(!_isQueued(_claims.batchExecutionFailedClaims[i]), "Already queued");
+            require(!_isQueuedBEFC(_claims.batchExecutionFailedClaims[i]), "Already queued");
             require(!_hasVoted(_claims.batchExecutionFailedClaims[i].observedTransactionHash), "Already proposed");
             _submitClaimsBEFC(_claims, i);
         }
         for (uint i = 0; i < _claims.refundRequestClaims.length; i++) {
-            require(!_isQueued(_claims.refundRequestClaims[i]), "Already queued");
+            require(!_isQueuedRRC(_claims.refundRequestClaims[i]), "Already queued");
             require(!_hasVoted(_claims.refundRequestClaims[i].observedTransactionHash), "Already proposed");
             _submitClaimsRRC(_claims, i);
         }
         for (uint i = 0; i < _claims.refundExecutedClaims.length; i++) {
-            require(!_isQueued(_claims.refundExecutedClaims[i]), "Already queued");
+            require(!_isQueuedREC(_claims.refundExecutedClaims[i]), "Already queued");
             require(!_hasVoted(_claims.refundExecutedClaims[i].observedTransactionHash), "Already proposed");
-            //_submitClaimsREC(_claims, i);
+            _submitClaimsREC(_claims, i);
         }
     }
 
@@ -223,14 +223,46 @@ contract BridgeContract is IBridgeContract {
         return false;
     }
 
-    function isQueued(BridgingRequestClaim calldata _claim) external view returns (bool) {
-        return _isQueued(_claim);
+    function isQueuedBRC(BridgingRequestClaim calldata _claim) external view returns (bool) {
+        return _isQueuedBRC(_claim);
     }
 
-    function _isQueued(BridgingRequestClaim calldata _claim) internal view returns (bool) {
+    function _isQueuedBRC(BridgingRequestClaim calldata _claim) internal view returns (bool) {
         return
             keccak256(abi.encode(_claim)) ==
             keccak256(abi.encode(queuedBridgingRequestsClaims[_claim.observedTransactionHash]));
+    }
+
+    function isQueuedBEC(BatchExecutedClaim calldata _claim) external view returns (bool) {
+        return _isQueuedBEC(_claim);
+    }
+
+    function _isQueuedBEC(BatchExecutedClaim calldata _claim) internal view returns (bool) {
+        return keccak256(abi.encode(_claim)) == keccak256(abi.encode(queuedBatchExecutedClaims[_claim.observedTransactionHash]));
+    }
+
+    function isQueuedBEFC(BatchExecutionFailedClaim calldata _claim) external view returns (bool) {
+        return _isQueuedBEFC(_claim);
+    }
+
+    function _isQueuedBEFC(BatchExecutionFailedClaim calldata _claim) internal view returns (bool) {
+        return keccak256(abi.encode(_claim)) == keccak256(abi.encode(queuedBatchExecutionFailedClaims[_claim.observedTransactionHash]));
+    }
+
+    function isQueuedRRC(RefundRequestClaim calldata _claim) external view returns (bool) {
+        return _isQueuedRRC(_claim);
+    }
+
+    function _isQueuedRRC(RefundRequestClaim calldata _claim) internal view returns (bool) {
+        return keccak256(abi.encode(_claim)) == keccak256(abi.encode(queuedRefundRequestClaims[_claim.observedTransactionHash]));
+    }
+
+    function isQueuedREC(RefundExecutedClaim calldata _claim) external view returns (bool) {
+        return _isQueuedREC(_claim);
+    }
+
+    function _isQueuedREC(RefundExecutedClaim calldata _claim) internal view returns (bool) {
+        return keccak256(abi.encode(_claim)) == keccak256(abi.encode(queuedRefundExecutedClaims[_claim.observedTransactionHash]));     
     }
 
     function _hasConsensus(string calldata _id) internal view returns (bool) {
