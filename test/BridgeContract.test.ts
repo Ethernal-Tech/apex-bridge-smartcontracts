@@ -67,7 +67,7 @@ describe("Bridge Contract", function () {
     });
   });
 
-  describe("Registering new chain", function () {
+  describe("Registering new chain with Governance", function () {
     it("Should reject proposal if not sent by validator", async function () {
       const { bridgeContract, owner, UTXOs } = await loadFixture(
         deployBridgeContractFixture
@@ -76,7 +76,7 @@ describe("Bridge Contract", function () {
       await expect(
         bridgeContract
           .connect(owner)
-          .registerChain("testChain", UTXOs, "0x", "0x")
+          .registerChainGovernance("testChain", UTXOs, "0x", "0x")
       ).to.be.revertedWith("Not validator");
     });
 
@@ -86,12 +86,12 @@ describe("Bridge Contract", function () {
       );
       await bridgeContract
         .connect(validators[0])
-        .registerChain("testChain", UTXOs, "0x", "0x");
+        .registerChainGovernance("testChain", UTXOs, "0x", "0x");
 
       await expect(
         bridgeContract
           .connect(validators[0])
-          .registerChain("testChain", UTXOs, "0x", "0x")
+          .registerChainGovernance("testChain", UTXOs, "0x", "0x")
       ).to.be.revertedWith("Already proposed");
     });
 
@@ -102,13 +102,13 @@ describe("Bridge Contract", function () {
 
       await bridgeContract
         .connect(validators[0])
-        .registerChain("testChain", UTXOs, "0x", "0x");
+        .registerChainGovernance("testChain", UTXOs, "0x", "0x");
 
       expect(await bridgeContract.getNumberOfVotes("testChain")).to.equal(1);
 
       await bridgeContract
         .connect(validators[1])
-        .registerChain("testChain", UTXOs, "0x", "0x");
+        .registerChainGovernance("testChain", UTXOs, "0x", "0x");
 
       expect(await bridgeContract.getNumberOfVotes("testChain")).to.equal(2);
     });
@@ -121,7 +121,7 @@ describe("Bridge Contract", function () {
       await expect(
         bridgeContract
           .connect(validators[0])
-          .registerChain("testChain", UTXOs, "0x", "0x")
+          .registerChainGovernance("testChain", UTXOs, "0x", "0x")
       )
         .to.emit(bridgeContract, "newChainProposal")
         .withArgs("testChain", validators[0].address);
@@ -134,19 +134,19 @@ describe("Bridge Contract", function () {
 
       await bridgeContract
         .connect(validators[0])
-        .registerChain("testChain", UTXOs, "0x", "0x");
+        .registerChainGovernance("testChain", UTXOs, "0x", "0x");
       await bridgeContract
         .connect(validators[1])
-        .registerChain("testChain", UTXOs, "0x", "0x");
+        .registerChainGovernance("testChain", UTXOs, "0x", "0x");
       await bridgeContract
         .connect(validators[2])
-        .registerChain("testChain", UTXOs, "0x", "0x");
+        .registerChainGovernance("testChain", UTXOs, "0x", "0x");
 
       expect(await bridgeContract.isChainRegistered("testChain")).to.be.false;
 
       await bridgeContract
         .connect(validators[3])
-        .registerChain("testChain", UTXOs, "0x", "0x");
+        .registerChainGovernance("testChain", UTXOs, "0x", "0x");
 
       expect(await bridgeContract.isChainRegistered("testChain")).to.be.true;
     });
@@ -159,20 +159,20 @@ describe("Bridge Contract", function () {
 
     await bridgeContract
       .connect(validators[0])
-      .registerChain("testChain", UTXOs, "0x", "0x");
+      .registerChainGovernance("testChain", UTXOs, "0x", "0x");
 
     await bridgeContract
       .connect(validators[1])
-      .registerChain("testChain", UTXOs, "0x", "0x");
+      .registerChainGovernance("testChain", UTXOs, "0x", "0x");
 
     await bridgeContract
       .connect(validators[2])
-      .registerChain("testChain", UTXOs, "0x", "0x");
+      .registerChainGovernance("testChain", UTXOs, "0x", "0x");
 
     await expect(
       bridgeContract
         .connect(validators[3])
-        .registerChain("testChain", UTXOs, "0x", "0x")
+        .registerChainGovernance("testChain", UTXOs, "0x", "0x")
     )
       .to.emit(bridgeContract, "newChainRegistered")
       .withArgs("testChain");
@@ -186,29 +186,29 @@ describe("Bridge Contract", function () {
 
       await bridgeContract
         .connect(validators[0])
-        .registerChain("testChain 1", UTXOs, "0x", "0x");
+        .registerChainGovernance("testChain 1", UTXOs, "0x", "0x");
       await bridgeContract
         .connect(validators[1])
-        .registerChain("testChain 1", UTXOs, "0x", "0x");
+        .registerChainGovernance("testChain 1", UTXOs, "0x", "0x");
       await bridgeContract
         .connect(validators[2])
-        .registerChain("testChain 1", UTXOs, "0x", "0x");
+        .registerChainGovernance("testChain 1", UTXOs, "0x", "0x");
       await bridgeContract
         .connect(validators[3])
-        .registerChain("testChain 1", UTXOs, "0x", "0x");
+        .registerChainGovernance("testChain 1", UTXOs, "0x", "0x");
 
       await bridgeContract
         .connect(validators[0])
-        .registerChain("testChain 2", UTXOs, "0x", "0x");
+        .registerChainGovernance("testChain 2", UTXOs, "0x", "0x");
       await bridgeContract
         .connect(validators[1])
-        .registerChain("testChain 2", UTXOs, "0x", "0x");
+        .registerChainGovernance("testChain 2", UTXOs, "0x", "0x");
       await bridgeContract
         .connect(validators[2])
-        .registerChain("testChain 2", UTXOs, "0x", "0x");
+        .registerChainGovernance("testChain 2", UTXOs, "0x", "0x");
       await bridgeContract
         .connect(validators[3])
-        .registerChain("testChain 2", UTXOs, "0x", "0x");
+        .registerChainGovernance("testChain 2", UTXOs, "0x", "0x");
 
       const chains = await bridgeContract.getAllRegisteredChains();
       expect(chains.length).to.equal(2);

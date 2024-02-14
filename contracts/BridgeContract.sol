@@ -23,6 +23,7 @@ contract BridgeContract is IBridgeContract {
     mapping(ClaimTypes => mapping(string => string[])) private queuedClaims;
 
     Chain[] private chains;
+    address private owner;
     uint8 private validatorsCount;
 
     constructor(address[] memory _validators) {
@@ -30,6 +31,7 @@ contract BridgeContract is IBridgeContract {
             validators[_validators[i]] = true;
         }
         validatorsCount = uint8(_validators.length);
+        owner = msg.sender;
     }
 
     // Claims
@@ -140,13 +142,28 @@ contract BridgeContract is IBridgeContract {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer
-    ) external override onlyValidator {
-        require(!registeredChains[_chainId], "Chain already registered");
-        require(!_hasVoted(_chainId), "Already proposed");
-        _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer);
+    ) external override onlyOwner {
+        registeredChains[_chainId] = true;
+        chains.push();
+        chains[chains.length - 1].id = _chainId;
+        chains[chains.length - 1].utxos = _initialUTXOs;
+        chains[chains.length - 1].addressMultisig = _addressMultisig;
+        chains[chains.length - 1].addressFeePayer = _addressFeePayer;
+        emit newChainRegistered(_chainId);
     }
 
-    function _registerChain(
+    function registerChainGovernance(
+        string calldata _chainId,
+        UTXOs calldata _initialUTXOs,
+        string calldata _addressMultisig,
+        string calldata _addressFeePayer
+    ) external onlyValidator {
+        require(!registeredChains[_chainId], "Chain already registered");
+        require(!_hasVoted(_chainId), "Already proposed");
+        _registerChainGovernance(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer);
+    }
+
+    function _registerChainGovernance(
         string calldata _chainId,
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
@@ -162,8 +179,9 @@ contract BridgeContract is IBridgeContract {
             chains[chains.length - 1].addressMultisig = _addressMultisig;
             chains[chains.length - 1].addressFeePayer = _addressFeePayer;
             emit newChainRegistered(_chainId);
+        } else {
+            emit newChainProposal(_chainId, msg.sender);
         }
-        emit newChainProposal(_chainId, msg.sender);
     }
 
     // Queries
@@ -266,9 +284,15 @@ contract BridgeContract is IBridgeContract {
         return false;
     }
 
-    // only allowed for validators
     modifier onlyValidator() {
         require(validators[msg.sender], "Not validator");
         _;
     }
+
+    modifier onlyOwner() {
+        require(owner == msg.sender, "Not owner");
+        _;
+    }
+
+
 }
