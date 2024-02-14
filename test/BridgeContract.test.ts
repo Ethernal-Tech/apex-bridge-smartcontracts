@@ -67,6 +67,45 @@ describe("Bridge Contract", function () {
     });
   });
 
+  describe("Registering new chain with Owner", function () {
+    it("Should reject new chain if not set by owner", async function () {
+      const { bridgeContract, validators, UTXOs } = await loadFixture(
+        deployBridgeContractFixture
+      );
+
+      await expect(
+        bridgeContract
+          .connect(validators[0])
+          .registerChain("testChain", UTXOs, "0x", "0x")
+      ).to.be.revertedWith("Not owner");
+    });
+    it("Should add new chain if requested by owner", async function () {
+      const { bridgeContract, owner, UTXOs } = await loadFixture(
+        deployBridgeContractFixture
+      );
+
+      await bridgeContract
+        .connect(owner)
+        .registerChain("testChain", UTXOs, "0x", "0x");
+
+      expect(await bridgeContract.isChainRegistered("testChain")).to.be.true;
+    });
+
+    it("Should emit new chain registered when registered by owner", async function () {
+      const { bridgeContract, owner, UTXOs } = await loadFixture(
+        deployBridgeContractFixture
+      );
+   
+      await expect(
+        bridgeContract
+          .connect(owner)
+          .registerChain("testChain", UTXOs, "0x", "0x")
+      )
+        .to.emit(bridgeContract, "newChainRegistered")
+        .withArgs("testChain");
+    });
+  });
+
   describe("Registering new chain with Governance", function () {
     it("Should reject proposal if not sent by validator", async function () {
       const { bridgeContract, owner, UTXOs } = await loadFixture(
@@ -150,32 +189,32 @@ describe("Bridge Contract", function () {
 
       expect(await bridgeContract.isChainRegistered("testChain")).to.be.true;
     });
-  });
 
-  it("Should emit new chain registered", async function () {
-    const { bridgeContract, validators, UTXOs } = await loadFixture(
-      deployBridgeContractFixture
-    );
-
-    await bridgeContract
-      .connect(validators[0])
-      .registerChainGovernance("testChain", UTXOs, "0x", "0x");
-
-    await bridgeContract
-      .connect(validators[1])
-      .registerChainGovernance("testChain", UTXOs, "0x", "0x");
-
-    await bridgeContract
-      .connect(validators[2])
-      .registerChainGovernance("testChain", UTXOs, "0x", "0x");
-
-    await expect(
-      bridgeContract
-        .connect(validators[3])
-        .registerChainGovernance("testChain", UTXOs, "0x", "0x")
-    )
-      .to.emit(bridgeContract, "newChainRegistered")
-      .withArgs("testChain");
+    it("Should emit new chain registered when registered by Governance", async function () {
+      const { bridgeContract, validators, UTXOs } = await loadFixture(
+        deployBridgeContractFixture
+      );
+  
+      await bridgeContract
+        .connect(validators[0])
+        .registerChainGovernance("testChain", UTXOs, "0x", "0x");
+  
+      await bridgeContract
+        .connect(validators[1])
+        .registerChainGovernance("testChain", UTXOs, "0x", "0x");
+  
+      await bridgeContract
+        .connect(validators[2])
+        .registerChainGovernance("testChain", UTXOs, "0x", "0x");
+  
+      await expect(
+        bridgeContract
+          .connect(validators[3])
+          .registerChainGovernance("testChain", UTXOs, "0x", "0x")
+      )
+        .to.emit(bridgeContract, "newChainRegistered")
+        .withArgs("testChain");
+    });
   });
 
   describe("Getting chains", function () {
