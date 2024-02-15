@@ -167,6 +167,9 @@ abstract contract IBridgeContract {
         string addressMultisig;
         string addressFeePayer;
     }
+
+    error AlreadyQueued(string _claimhash);
+    error AlreadyProposed(string _claimhash);
     
     event newChainProposal(string indexed chainId, address indexed sender);
     event newChainRegistered(string indexed chainId);

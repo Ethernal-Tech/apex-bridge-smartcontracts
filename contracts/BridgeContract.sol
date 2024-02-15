@@ -37,28 +37,48 @@ contract BridgeContract is IBridgeContract {
     // Claims
     function submitClaims(ValidatorClaims calldata _claims) external override onlyValidator {
         for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
-            require(!_isQueuedBRC(_claims.bridgingRequestClaims[i]), "Already queued");
-            require(!_hasVoted(_claims.bridgingRequestClaims[i].observedTransactionHash), "Already proposed");
+            if (_isQueuedBRC(_claims.bridgingRequestClaims[i])) {
+                revert AlreadyQueued(_claims.bridgingRequestClaims[i].observedTransactionHash);
+            }
+            if (_hasVoted(_claims.bridgingRequestClaims[i].observedTransactionHash)) {
+                revert AlreadyProposed(_claims.bridgingRequestClaims[i].observedTransactionHash);
+            }
             _submitClaimsBRC(_claims, i);
         }
         for (uint i = 0; i < _claims.batchExecutedClaims.length; i++) {
-            require(!_isQueuedBEC(_claims.batchExecutedClaims[i]), "Already queued");
-            require(!_hasVoted(_claims.batchExecutedClaims[i].observedTransactionHash), "Already proposed");
+            if (_isQueuedBEC(_claims.batchExecutedClaims[i])) {
+                revert AlreadyQueued(_claims.batchExecutedClaims[i].observedTransactionHash);
+            }
+            if (_hasVoted(_claims.batchExecutedClaims[i].observedTransactionHash)) {
+                revert AlreadyProposed(_claims.batchExecutedClaims[i].observedTransactionHash);
+            }
             _submitClaimsBEC(_claims, i);
         }
         for (uint i = 0; i < _claims.batchExecutionFailedClaims.length; i++) {
-            require(!_isQueuedBEFC(_claims.batchExecutionFailedClaims[i]), "Already queued");
-            require(!_hasVoted(_claims.batchExecutionFailedClaims[i].observedTransactionHash), "Already proposed");
+            if (_isQueuedBEFC(_claims.batchExecutionFailedClaims[i])) {
+                revert AlreadyQueued(_claims.batchExecutionFailedClaims[i].observedTransactionHash);
+            }
+            if (_hasVoted(_claims.batchExecutionFailedClaims[i].observedTransactionHash)) {
+                revert AlreadyProposed(_claims.batchExecutionFailedClaims[i].observedTransactionHash);
+            }
             _submitClaimsBEFC(_claims, i);
         }
         for (uint i = 0; i < _claims.refundRequestClaims.length; i++) {
-            require(!_isQueuedRRC(_claims.refundRequestClaims[i]), "Already queued");
-            require(!_hasVoted(_claims.refundRequestClaims[i].observedTransactionHash), "Already proposed");
+            if (_isQueuedRRC(_claims.refundRequestClaims[i])) {
+                revert AlreadyQueued(_claims.refundRequestClaims[i].observedTransactionHash);
+            }
+            if (_hasVoted(_claims.refundRequestClaims[i].observedTransactionHash)) {
+                revert AlreadyProposed(_claims.refundRequestClaims[i].observedTransactionHash);
+            }
             _submitClaimsRRC(_claims, i);
         }
         for (uint i = 0; i < _claims.refundExecutedClaims.length; i++) {
-            require(!_isQueuedREC(_claims.refundExecutedClaims[i]), "Already queued");
-            require(!_hasVoted(_claims.refundExecutedClaims[i].observedTransactionHash), "Already proposed");
+            if (_isQueuedREC(_claims.refundExecutedClaims[i])) {
+                revert AlreadyQueued(_claims.refundExecutedClaims[i].observedTransactionHash);
+            }
+            if (_hasVoted(_claims.refundExecutedClaims[i].observedTransactionHash)) {
+                revert AlreadyProposed(_claims.refundExecutedClaims[i].observedTransactionHash);
+            }
             _submitClaimsREC(_claims, i);
         }
     }
@@ -159,7 +179,9 @@ contract BridgeContract is IBridgeContract {
         string calldata _addressFeePayer
     ) external onlyValidator {
         require(!registeredChains[_chainId], "Chain already registered");
-        require(!_hasVoted(_chainId), "Already proposed");
+        if (_hasVoted(_chainId)) {
+                revert AlreadyProposed(_chainId);
+            }
         _registerChainGovernance(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer);
     }
 
