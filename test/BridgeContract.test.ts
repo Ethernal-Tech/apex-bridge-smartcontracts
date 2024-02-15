@@ -20,7 +20,7 @@ describe("Bridge Contract", function () {
       feePayerOwnedUTXOs: [],
     };
 
-    const validatorClaims = {
+    const validatorClaimsBRC = {
       bridgingRequestClaims: [
         {
           observedTransactionHash: "0xabc...",
@@ -48,45 +48,92 @@ describe("Bridge Contract", function () {
       blockFullyObserved: true,
     };
 
-    // const validatorClaims = {
-    //   bridgingRequestClaims: [
-    //     {
-    //       observedTransactionHash: "0xabc...",
-    //       receivers: [
-    //         {
-    //           destinationAddress: "0x123...",
-    //           amount: 100,
-    //         },
-    //       ],
-    //       outputUTXO: {
-    //         txHash: "0xdef...",
-    //         txIndex: 0,
-    //         addressUTXO: "0x456...",
-    //         amount: 200,
-    //       },
-    //       sourceChainID: "sourceChainID1",
-    //       destinationChainID: "destinationChainID1",
-    //     },
-    //   ],
-    //   batchExecutedClaims: [
-    //     // {
-    //     //   observedTransactionHash: "0xabc...",
-    //     //   chainID: "chainID1",
-    //     //   batchNonceID: 1,
-    //     //   outputUTXOs: {
-    //     //       multisigOwnedUTXOs: [],
-    //     //       feePayerOwnedUTXOs: [],
-    //     //   },
-    //     // },
-    //   ],
-    //   batchExecutionFailedClaims: [],
-    //   refundRequestClaims: [],
-    //   refundExecutedClaims: [],
-    //   blockHash: "0x123...",
-    //   blockFullyObserved: true,
-    // };
+    const validatorClaimsBEC = {
+      bridgingRequestClaims: [],
+      batchExecutedClaims: [
+        {
+          observedTransactionHash: "0xabc...",
+          chainID: "chainID1",
+          batchNonceID: 1,
+          outputUTXOs: {
+              multisigOwnedUTXOs: [],
+              feePayerOwnedUTXOs: [],
+          },
+        },
+      ],
+      batchExecutionFailedClaims: [],
+      refundRequestClaims: [],
+      refundExecutedClaims: [],
+      blockHash: "0x123...",
+      blockFullyObserved: true,
+    };
 
-    return { bridgeContract, owner, UTXOs, validators, validatorClaims };
+    const validatorClaimsBEFC = {
+      bridgingRequestClaims: [],
+      batchExecutedClaims: [],
+      batchExecutionFailedClaims: [
+        {
+          observedTransactionHash: "0xabc...",
+          chainID: "chainID1",
+          batchNonceID: 1,
+        },
+      ],
+      refundRequestClaims: [],
+      refundExecutedClaims: [],
+      blockHash: "0x123...",
+      blockFullyObserved: true,
+    };
+
+    const validatorClaimsRRC = {
+      bridgingRequestClaims: [],
+      batchExecutedClaims: [],
+      batchExecutionFailedClaims: [],
+      refundRequestClaims: [
+        {
+        observedTransactionHash: "0xabc...",
+        previousRefundTxHash: "previousRefundTxHash1",
+        chainID: "chainID1",
+        receiver: "receiver1",
+        utxo: {
+          txHash: "0xdef...",
+          txIndex: 0,
+          addressUTXO: "0x456...",
+          amount: 200,
+        },
+        rawTransaction: "rawTransaction1",
+        multisigSignature: "multisigSignature1",
+        retryCounter: 1,
+        },
+      ],
+      refundExecutedClaims: [],
+      blockHash: "0x123...",
+      blockFullyObserved: true,
+    };
+
+    const validatorClaimsREC = {
+      bridgingRequestClaims: [],
+      batchExecutedClaims: [],
+      batchExecutionFailedClaims: [],
+      refundRequestClaims: [],
+      refundExecutedClaims: [
+        {
+          observedTransactionHash: "0xabc...",
+          chainID: "chainID1",
+          refundTxHash: "refundTxHash1",
+          utxo: {
+            txHash: "0xdef...",
+            txIndex: 0,
+            addressUTXO: "0x456...",
+            amount: 200,
+          },
+        },
+      ],
+      blockHash: "0x123...",
+      blockFullyObserved: true,
+    };
+
+    return { bridgeContract, owner, UTXOs, validators, validatorClaimsBRC, 
+      validatorClaimsBEC, validatorClaimsBEFC, validatorClaimsRRC, validatorClaimsREC };
   }
 
   describe("Deployment", function () {
@@ -191,7 +238,6 @@ describe("Bridge Contract", function () {
     });
   });
 
-  describe("Getting chains", function () {
     it("Should list all registered chains", async function () {
       const { bridgeContract, UTXOs, validators } = await loadFixture(deployBridgeContractFixture);
 
@@ -210,109 +256,246 @@ describe("Bridge Contract", function () {
       expect(chains[0].id).to.equal("testChain 1");
       expect(chains[1].id).to.equal("testChain 2");
     });
-  });
+
   describe("Submit new Bridging Request Claim", function () {
     it("Should reject any claim if not sent by validator", async function () {
-      const { bridgeContract, owner, validatorClaims } = await loadFixture(deployBridgeContractFixture);
+      const { bridgeContract, owner, validatorClaimsBRC } = await loadFixture(deployBridgeContractFixture);
 
-      await expect(bridgeContract.connect(owner).submitClaims(validatorClaims)).to.be.revertedWith("Not validator");
+      await expect(bridgeContract.connect(owner).submitClaims(validatorClaimsBRC)).to.be.revertedWith("Not validator");
     });
 
     it("Should revert if Bridging Request Claim is already in the queue", async function () {
-      const { bridgeContract, validators, validatorClaims } = await loadFixture(deployBridgeContractFixture);
-      await bridgeContract.connect(validators[0]).submitClaims(validatorClaims);
+      const { bridgeContract, validators, validatorClaimsBRC } = await loadFixture(deployBridgeContractFixture);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
 
-      await bridgeContract.connect(validators[1]).submitClaims(validatorClaims);
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
 
-      await bridgeContract.connect(validators[2]).submitClaims(validatorClaims);
+      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
 
-      await bridgeContract.connect(validators[3]).submitClaims(validatorClaims);
+      await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-      // await expect(bridgeContract.connect(validators[3]).submitClaims(validatorClaims)).to.be.revertedWith(
-      //   "Already queued"
-      // );
-
-      await expect(bridgeContract.connect(validators[3]).submitClaims(validatorClaims)).to.be.revertedWithCustomError(bridgeContract, "AlreadyQueued");
+      await expect(bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(bridgeContract, "AlreadyQueued");
     });
 
-    it("Should revert if same validator submits the same claim twice", async function () {
-      const { bridgeContract, validators, validatorClaims } = await loadFixture(deployBridgeContractFixture);
-      await bridgeContract.connect(validators[0]).submitClaims(validatorClaims);
+    it("Should revert if same validator submits the same Bridging Request Claim twice", async function () {
+      const { bridgeContract, validators, validatorClaimsBRC } = await loadFixture(deployBridgeContractFixture);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
 
-      await expect(bridgeContract.connect(validators[0]).submitClaims(validatorClaims)).to.be.revertedWithCustomError(bridgeContract, "AlreadyProposed");
+      await expect(bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(bridgeContract, "AlreadyProposed");
     });
 
-    it("Should have correct number of votes for new chain", async function () {
-      const { bridgeContract, validators, validatorClaims } = await loadFixture(deployBridgeContractFixture);
+    it("Should have correct number of votes for new Bridging Request Claim", async function () {
+      const { bridgeContract, validators, validatorClaimsBRC } = await loadFixture(deployBridgeContractFixture);
 
-      await bridgeContract.connect(validators[0]).submitClaims(validatorClaims);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
 
       expect(await bridgeContract.getNumberOfVotes("0xabc...")).to.equal(1);
 
-      await bridgeContract.connect(validators[1]).submitClaims(validatorClaims);
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
 
       expect(await bridgeContract.getNumberOfVotes("0xabc...")).to.equal(2);
     });
 
-    it("Should add new claim if there are enough votes", async function () {
-      const { bridgeContract, validators, validatorClaims } = await loadFixture(deployBridgeContractFixture);
+    it("Should add new Bridging Request Claim if there are enough votes", async function () {
+      const { bridgeContract, validators, validatorClaimsBRC } = await loadFixture(deployBridgeContractFixture);
 
-      await bridgeContract.connect(validators[0]).submitClaims(validatorClaims);
-      await bridgeContract.connect(validators[1]).submitClaims(validatorClaims);
-      await bridgeContract.connect(validators[2]).submitClaims(validatorClaims);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
 
-      expect(await bridgeContract.isQueuedBRC(validatorClaims.bridgingRequestClaims[0])).to.be.false;
+      expect(await bridgeContract.isQueuedBRC(validatorClaimsBRC.bridgingRequestClaims[0])).to.be.false;
 
-      await bridgeContract.connect(validators[3]).submitClaims(validatorClaims);
+      await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-      expect(await bridgeContract.isQueuedBRC(validatorClaims.bridgingRequestClaims[0])).to.be.true;
+      expect(await bridgeContract.isQueuedBRC(validatorClaimsBRC.bridgingRequestClaims[0])).to.be.true;
     });
   });
   describe("Submit new Batch Executed Claim", function () {
-    it("Should revert if Bridging Request Claim is already in the queue", async function () {
-      const { bridgeContract, validators, validatorClaims } = await loadFixture(deployBridgeContractFixture);
-      await bridgeContract.connect(validators[0]).submitClaims(validatorClaims);
+    it("Should revert if Batch Executed Claim is already in the queue", async function () {
+      const { bridgeContract, validators, validatorClaimsBEC } = await loadFixture(deployBridgeContractFixture);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEC);
 
-      await bridgeContract.connect(validators[1]).submitClaims(validatorClaims);
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEC);
 
-      await bridgeContract.connect(validators[2]).submitClaims(validatorClaims);
+      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEC);
 
-      await bridgeContract.connect(validators[3]).submitClaims(validatorClaims);
+      await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
-      await expect(bridgeContract.connect(validators[3]).submitClaims(validatorClaims)).to.be.revertedWithCustomError(bridgeContract, "AlreadyQueued");
+      await expect(bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEC)).to.be.revertedWithCustomError(bridgeContract, "AlreadyQueued");
     });
 
-    it("Should revert if same validator submits the same claim twice", async function () {
-      const { bridgeContract, validators, validatorClaims } = await loadFixture(deployBridgeContractFixture);
-      await bridgeContract.connect(validators[0]).submitClaims(validatorClaims);
+    it("Should revert if same validator submits the same Batch Executed Claim twice", async function () {
+      const { bridgeContract, validators, validatorClaimsBEC } = await loadFixture(deployBridgeContractFixture);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEC);
 
-      await expect(bridgeContract.connect(validators[0]).submitClaims(validatorClaims)).to.be.revertedWithCustomError(bridgeContract, "AlreadyProposed");
+      await expect(bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEC)).to.be.revertedWithCustomError(bridgeContract, "AlreadyProposed");
     });
 
-    it("Should have correct number of votes for new chain", async function () {
-      const { bridgeContract, validators, validatorClaims } = await loadFixture(deployBridgeContractFixture);
+    it("Should have correct number of votes for new Batch Executed Claim", async function () {
+      const { bridgeContract, validators, validatorClaimsBEC } = await loadFixture(deployBridgeContractFixture);
 
-      await bridgeContract.connect(validators[0]).submitClaims(validatorClaims);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEC);
 
       expect(await bridgeContract.getNumberOfVotes("0xabc...")).to.equal(1);
 
-      await bridgeContract.connect(validators[1]).submitClaims(validatorClaims);
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEC);
 
       expect(await bridgeContract.getNumberOfVotes("0xabc...")).to.equal(2);
     });
 
-    it("Should add new claim if there are enough votes", async function () {
-      const { bridgeContract, validators, validatorClaims } = await loadFixture(deployBridgeContractFixture);
+    it("Should add new Batch Executed Claim if there are enough votes", async function () {
+      const { bridgeContract, validators, validatorClaimsBEC } = await loadFixture(deployBridgeContractFixture);
 
-      await bridgeContract.connect(validators[0]).submitClaims(validatorClaims);
-      await bridgeContract.connect(validators[1]).submitClaims(validatorClaims);
-      await bridgeContract.connect(validators[2]).submitClaims(validatorClaims);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEC);
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEC);
+      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEC);
 
-      expect(await bridgeContract.isQueuedBRC(validatorClaims.bridgingRequestClaims[0])).to.be.false;
+      expect(await bridgeContract.isQueuedBEC(validatorClaimsBEC.batchExecutedClaims[0])).to.be.false;
 
-      await bridgeContract.connect(validators[3]).submitClaims(validatorClaims);
+      await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
-      expect(await bridgeContract.isQueuedBRC(validatorClaims.bridgingRequestClaims[0])).to.be.true;
+      expect(await bridgeContract.isQueuedBEC(validatorClaimsBEC.batchExecutedClaims[0])).to.be.true;
+    });
+  });
+  describe("Submit new Batch Execution Failed Claims", function () {
+    it("Should revert if Batch Execution Failed Claims is already in the queue", async function () {
+      const { bridgeContract, validators, validatorClaimsBEFC } = await loadFixture(deployBridgeContractFixture);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+
+      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEFC);
+
+      await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEFC);
+
+      await expect(bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEFC)).to.be.revertedWithCustomError(bridgeContract, "AlreadyQueued");
+    });
+
+    it("Should revert if same validator submits the same Batch Execution Failed Claims twice", async function () {
+      const { bridgeContract, validators, validatorClaimsBEFC } = await loadFixture(deployBridgeContractFixture);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+
+      await expect(bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEFC)).to.be.revertedWithCustomError(bridgeContract, "AlreadyProposed");
+    });
+
+    it("Should have correct number of votes for new Batch Execution Failed Claims", async function () {
+      const { bridgeContract, validators, validatorClaimsBEFC } = await loadFixture(deployBridgeContractFixture);
+
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+
+      expect(await bridgeContract.getNumberOfVotes("0xabc...")).to.equal(1);
+
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+
+      expect(await bridgeContract.getNumberOfVotes("0xabc...")).to.equal(2);
+    });
+
+    it("Should add new Batch Execution Failed Claims if there are enough votes", async function () {
+      const { bridgeContract, validators, validatorClaimsBEFC } = await loadFixture(deployBridgeContractFixture);
+
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEFC);
+
+      expect(await bridgeContract.isQueuedBEFC(validatorClaimsBEFC.batchExecutionFailedClaims[0])).to.be.false;
+
+      await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEFC);
+
+      expect(await bridgeContract.isQueuedBEFC(validatorClaimsBEFC.batchExecutionFailedClaims[0])).to.be.true;
+    });
+  });
+  describe("Submit new Refund Request Claims", function () {
+    it("Should revert if Refund Request Claims is already in the queue", async function () {
+      const { bridgeContract, validators, validatorClaimsRRC } = await loadFixture(deployBridgeContractFixture);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC);
+
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsRRC);
+
+      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsRRC);
+
+      await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsRRC);
+
+      await expect(bridgeContract.connect(validators[3]).submitClaims(validatorClaimsRRC)).to.be.revertedWithCustomError(bridgeContract, "AlreadyQueued");
+    });
+
+    it("Should revert if same validator submits the same Refund Request Claims twice", async function () {
+      const { bridgeContract, validators, validatorClaimsRRC } = await loadFixture(deployBridgeContractFixture);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC);
+
+      await expect(bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC)).to.be.revertedWithCustomError(bridgeContract, "AlreadyProposed");
+    });
+
+    it("Should have correct number of votes for new Refund Request Claims", async function () {
+      const { bridgeContract, validators, validatorClaimsRRC } = await loadFixture(deployBridgeContractFixture);
+
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC);
+
+      expect(await bridgeContract.getNumberOfVotes("0xabc...")).to.equal(1);
+
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsRRC);
+
+      expect(await bridgeContract.getNumberOfVotes("0xabc...")).to.equal(2);
+    });
+
+    it("Should add new Refund Request Claims if there are enough votes", async function () {
+      const { bridgeContract, validators, validatorClaimsRRC } = await loadFixture(deployBridgeContractFixture);
+
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC);
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsRRC);
+      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsRRC);
+
+      expect(await bridgeContract.isQueuedRRC(validatorClaimsRRC.refundRequestClaims[0])).to.be.false;
+
+      await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsRRC);
+
+      expect(await bridgeContract.isQueuedRRC(validatorClaimsRRC.refundRequestClaims[0])).to.be.true;
+    });
+  });
+  describe("Submit new Refund Executed Claim", function () {
+    it("Should revert if Refund Executed Claim is already in the queue", async function () {
+      const { bridgeContract, validators, validatorClaimsREC } = await loadFixture(deployBridgeContractFixture);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsREC);
+
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsREC);
+
+      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsREC);
+
+      await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsREC);
+
+      await expect(bridgeContract.connect(validators[3]).submitClaims(validatorClaimsREC)).to.be.revertedWithCustomError(bridgeContract, "AlreadyQueued");
+    });
+
+    it("Should revert if same validator submits the same Refund Executed Claim twice", async function () {
+      const { bridgeContract, validators, validatorClaimsREC } = await loadFixture(deployBridgeContractFixture);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsREC);
+
+      await expect(bridgeContract.connect(validators[0]).submitClaims(validatorClaimsREC)).to.be.revertedWithCustomError(bridgeContract, "AlreadyProposed");
+    });
+
+    it("Should have correct number of votes for new Refund Executed Claim", async function () {
+      const { bridgeContract, validators, validatorClaimsREC } = await loadFixture(deployBridgeContractFixture);
+
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsREC);
+
+      expect(await bridgeContract.getNumberOfVotes("0xabc...")).to.equal(1);
+
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsREC);
+
+      expect(await bridgeContract.getNumberOfVotes("0xabc...")).to.equal(2);
+    });
+
+    it("Should add new Refund Executed Claim if there are enough votes", async function () {
+      const { bridgeContract, validators, validatorClaimsREC } = await loadFixture(deployBridgeContractFixture);
+
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsREC);
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsREC);
+      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsREC);
+
+      expect(await bridgeContract.isQueuedREC(validatorClaimsREC.refundExecutedClaims[0])).to.be.false;
+
+      await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsREC);
+
+      expect(await bridgeContract.isQueuedREC(validatorClaimsREC.refundExecutedClaims[0])).to.be.true;
     });
   });
 });
