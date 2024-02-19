@@ -16,13 +16,11 @@ contract BridgeContract is IBridgeContract {
     mapping(string => RefundRequestClaim) private queuedRefundRequestClaims;
     mapping(string => RefundExecutedClaim) private queuedRefundExecutedClaims;
 
-    // claim_type, chain, hash -> claim_object is missing because we do not have claim struct
-    // by implementing "universal" claim struct we could have "universal" mapping
-    // and would not need to have separate mapping for each claim type
-    // map[claim_type]map[chain]map[hash]claim_object
-    mapping(ClaimTypes => mapping(string => string[])) private queuedClaims;
+    //mapping(ClaimTypes => mapping(string => string[])) private queuedClaims;
+    mapping(uint256 => mapping(ClaimTypes => mapping(string => string[]))) private queuedClaims;
 
     Chain[] private chains;
+    uint256 private claimsCounter;
     address private owner;
     uint8 private validatorsCount;
 
@@ -91,9 +89,11 @@ contract BridgeContract is IBridgeContract {
             queuedBridgingRequestsClaims[_claims.bridgingRequestClaims[index].observedTransactionHash] = _claims
                 .bridgingRequestClaims[index];
 
-            queuedClaims[ClaimTypes.BRIDGING_REQUEST][_claims.bridgingRequestClaims[index].sourceChainID].push(
+            queuedClaims[claimsCounter][ClaimTypes.BRIDGING_REQUEST][_claims.bridgingRequestClaims[index].sourceChainID].push(
                 _claims.bridgingRequestClaims[index].observedTransactionHash
             );
+
+            claimsCounter++;
         }
     }
 
@@ -105,9 +105,11 @@ contract BridgeContract is IBridgeContract {
             queuedBatchExecutedClaims[_claims.batchExecutedClaims[index].observedTransactionHash] = _claims
                 .batchExecutedClaims[index];
 
-            queuedClaims[ClaimTypes.BATCH_EXECUTED][_claims.batchExecutedClaims[index].chainID].push(
+            queuedClaims[claimsCounter][ClaimTypes.BATCH_EXECUTED][_claims.batchExecutedClaims[index].chainID].push(
                 _claims.batchExecutedClaims[index].observedTransactionHash
             );
+
+            claimsCounter++;
         }
     }
 
@@ -119,9 +121,11 @@ contract BridgeContract is IBridgeContract {
             queuedBatchExecutionFailedClaims[_claims.batchExecutionFailedClaims[index].observedTransactionHash] = _claims
                 .batchExecutionFailedClaims[index];
 
-            queuedClaims[ClaimTypes.BATCH_EXECUTION_FAILED][_claims.batchExecutionFailedClaims[index].chainID].push(
+            queuedClaims[claimsCounter][ClaimTypes.BATCH_EXECUTION_FAILED][_claims.batchExecutionFailedClaims[index].chainID].push(
                 _claims.batchExecutionFailedClaims[index].observedTransactionHash
             );
+
+            claimsCounter++;
         }
     }
 
@@ -133,9 +137,11 @@ contract BridgeContract is IBridgeContract {
             queuedRefundRequestClaims[_claims.refundRequestClaims[index].observedTransactionHash] = _claims
                 .refundRequestClaims[index];
 
-            queuedClaims[ClaimTypes.REFUND_REQUEST][_claims.refundRequestClaims[index].chainID].push(
+            queuedClaims[claimsCounter][ClaimTypes.REFUND_REQUEST][_claims.refundRequestClaims[index].chainID].push(
                 _claims.refundRequestClaims[index].observedTransactionHash
             );
+
+            claimsCounter++;
         }
     }
 
@@ -147,9 +153,11 @@ contract BridgeContract is IBridgeContract {
             queuedRefundExecutedClaims[_claims.refundExecutedClaims[index].observedTransactionHash] = _claims
                 .refundExecutedClaims[index];
 
-            queuedClaims[ClaimTypes.REFUND_EXECUTED][_claims.refundExecutedClaims[index].chainID].push(
+            queuedClaims[claimsCounter][ClaimTypes.REFUND_EXECUTED][_claims.refundExecutedClaims[index].chainID].push(
                 _claims.refundExecutedClaims[index].observedTransactionHash
             );
+
+            claimsCounter++;
         }
     }
 
@@ -251,6 +259,10 @@ contract BridgeContract is IBridgeContract {
 
     function getNumberOfVotes(string calldata _id) external view override returns (uint8) {
         return numberOfVotes[_id];
+    }
+
+    function getClaimsCounter() external view returns (uint256) {
+        return claimsCounter;
     }
 
     function _hasVoted(string calldata _id) internal view returns (bool) {
