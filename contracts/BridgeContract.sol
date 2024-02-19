@@ -5,7 +5,7 @@ import "./interfaces/IBridgeContract.sol";
 
 contract BridgeContract is IBridgeContract {
     // mapping in case they could be added/removed
-    mapping(address => bool) private validators; // mapping in case they could be added/removed
+    mapping(address => bool) private validators;
     mapping(string => bool) private registeredChains;
 
     mapping(string => mapping(address => bool)) private voters;
@@ -29,8 +29,6 @@ contract BridgeContract is IBridgeContract {
 
     //Blochchain ID -> blockNumber
     mapping(string => uint64) private lastBatchBlock;
-
-    //mapping(uint256 => mapping(ClaimTypes => mapping(string => string[]))) private queuedClaims;
 
     Chain[] private chains;
     address private owner;
@@ -102,10 +100,6 @@ contract BridgeContract is IBridgeContract {
             queuedBridgingRequestsClaims[_claims.bridgingRequestClaims[index].observedTransactionHash] = _claims
                 .bridgingRequestClaims[index];
 
-            // queuedClaims[claimsCounter][ClaimTypes.BRIDGING_REQUEST][_claims.bridgingRequestClaims[index].sourceChainID].push(
-            //     _claims.bridgingRequestClaims[index].observedTransactionHash
-            // );
-
             queuedClaims[_claims.bridgingRequestClaims[index].sourceChainID][claimsCounter[_claims.bridgingRequestClaims[index].sourceChainID]] = 
                 _claims.bridgingRequestClaims[index].observedTransactionHash;
 
@@ -121,10 +115,6 @@ contract BridgeContract is IBridgeContract {
             queuedBatchExecutedClaims[_claims.batchExecutedClaims[index].observedTransactionHash] = _claims
                 .batchExecutedClaims[index];
 
-            // queuedClaims[claimsCounter][ClaimTypes.BATCH_EXECUTED][_claims.batchExecutedClaims[index].chainID].push(
-            //     _claims.batchExecutedClaims[index].observedTransactionHash
-            // );
-
             queuedClaims[_claims.batchExecutedClaims[index].chainID][claimsCounter[_claims.batchExecutedClaims[index].chainID]] = _claims.batchExecutedClaims[index].observedTransactionHash;
 
             claimsCounter[_claims.batchExecutedClaims[index].chainID]++;
@@ -138,10 +128,6 @@ contract BridgeContract is IBridgeContract {
         if (_hasConsensus(_claims.batchExecutionFailedClaims[index].observedTransactionHash)) {
             queuedBatchExecutionFailedClaims[_claims.batchExecutionFailedClaims[index].observedTransactionHash] = _claims
                 .batchExecutionFailedClaims[index];
-
-            // queuedClaims[claimsCounter][ClaimTypes.BATCH_EXECUTION_FAILED][_claims.batchExecutionFailedClaims[index].chainID].push(
-            //     _claims.batchExecutionFailedClaims[index].observedTransactionHash
-            // );
 
             queuedClaims[_claims.batchExecutionFailedClaims[index].chainID][claimsCounter[_claims.batchExecutionFailedClaims[index].chainID]] = _claims.batchExecutionFailedClaims[index].observedTransactionHash;
 
@@ -157,10 +143,6 @@ contract BridgeContract is IBridgeContract {
             queuedRefundRequestClaims[_claims.refundRequestClaims[index].observedTransactionHash] = _claims
                 .refundRequestClaims[index];
 
-            // queuedClaims[claimsCounter][ClaimTypes.REFUND_REQUEST][_claims.refundRequestClaims[index].chainID].push(
-            //     _claims.refundRequestClaims[index].observedTransactionHash
-            // );
-
             queuedClaims[_claims.refundRequestClaims[index].chainID][claimsCounter[_claims.refundRequestClaims[index].chainID]] = _claims.refundRequestClaims[index].observedTransactionHash;
 
             claimsCounter[_claims.refundRequestClaims[index].chainID]++;
@@ -174,10 +156,6 @@ contract BridgeContract is IBridgeContract {
         if (_hasConsensus(_claims.refundExecutedClaims[index].observedTransactionHash)) {
             queuedRefundExecutedClaims[_claims.refundExecutedClaims[index].observedTransactionHash] = _claims
                 .refundExecutedClaims[index];
-
-            // queuedClaims[claimsCounter][ClaimTypes.REFUND_EXECUTED][_claims.refundExecutedClaims[index].chainID].push(
-            //     _claims.refundExecutedClaims[index].observedTransactionHash
-            // );
 
              queuedClaims[_claims.refundExecutedClaims[index].chainID][claimsCounter[_claims.refundExecutedClaims[index].chainID]] = _claims.refundExecutedClaims[index].observedTransactionHash;
 
@@ -243,7 +221,7 @@ contract BridgeContract is IBridgeContract {
     // Will determine if enough transactions are confirmed, or the timeout between two batches is exceeded.
     // It will also check if the given validator already submitted a signed batch and return the response accordingly.
     function shouldCreateBatch(string calldata _destinationChain) external view override returns (bool batch) {
-        //TO DO implement second sentence of comment, once we have batches, we can check if the validator already submitted 
+        //TO DO: implement second sentence of comment, once we have batches, we can check if the validator already submitted 
         //this batch or should he do it now
         if ((claimsCounter[_destinationChain] - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
             return true;
