@@ -10,20 +10,32 @@ contract BridgeContract is IBridgeContract {
     mapping(string => mapping(address => bool)) private voters;
     mapping(string => uint8) private numberOfVotes;
 
-    mapping(string => BridgingRequestClaim) private queuedBridgingRequestsClaims;
+    // mapping(string => BridgingRequestClaim) private queuedBridgingRequestsClaims;
+    // mapping(string => BatchExecutedClaim) private queuedBatchExecutedClaims;
+    // mapping(string => BatchExecutionFailedClaim) private queuedBatchExecutionFailedClaims;
+    // mapping(string => RefundRequestClaim) private queuedRefundRequestClaims;
+    // mapping(string => RefundExecutedClaim) private queuedRefundExecutedClaims;
+
+    //claimHash -> claimß
+    mapping(string => BridgingRequestClaim) private queuedBridgingRequestsClaims;    
     mapping(string => BatchExecutedClaim) private queuedBatchExecutedClaims;
     mapping(string => BatchExecutionFailedClaim) private queuedBatchExecutionFailedClaims;
     mapping(string => RefundRequestClaim) private queuedRefundRequestClaims;
     mapping(string => RefundExecutedClaim) private queuedRefundExecutedClaims;
 
-    //mapping(ClaimTypes => mapping(string => string[])) private queuedClaims;
-    mapping(uint256 => mapping(ClaimTypes => mapping(string => string[]))) private queuedClaims;
+    //Blockchain -> claimCounter -> claimHash
+    mapping(string => mapping(uint64 => string)) private queuedClaims;
+        
+    //Blockchain -> claimsCounter
+    mapping(string => uint64) private claimsCounter;
+
+    //mapping(uint256 => mapping(ClaimTypes => mapping(string => string[]))) private queuedClaims;
 
     Chain[] private chains;
-    uint256 private claimsCounter;
     address private owner;
+    uint16 private constant MAX_NUMBER_OF_TRANSACTIONS = 200;
+    uint8 private constant MAX_NUMBER_OF_BLOCKS = 5;
     uint8 private validatorsCount;
-
     constructor(address[] memory _validators) {
         for (uint i = 0; i < _validators.length; i++) {
             validators[_validators[i]] = true;
@@ -89,11 +101,14 @@ contract BridgeContract is IBridgeContract {
             queuedBridgingRequestsClaims[_claims.bridgingRequestClaims[index].observedTransactionHash] = _claims
                 .bridgingRequestClaims[index];
 
-            queuedClaims[claimsCounter][ClaimTypes.BRIDGING_REQUEST][_claims.bridgingRequestClaims[index].sourceChainID].push(
-                _claims.bridgingRequestClaims[index].observedTransactionHash
-            );
+            // queuedClaims[claimsCounter][ClaimTypes.BRIDGING_REQUEST][_claims.bridgingRequestClaims[index].sourceChainID].push(
+            //     _claims.bridgingRequestClaims[index].observedTransactionHash
+            // );
 
-            claimsCounter++;
+            queuedClaims[_claims.bridgingRequestClaims[index].sourceChainID][claimsCounter[_claims.bridgingRequestClaims[index].sourceChainID]] = 
+                _claims.bridgingRequestClaims[index].observedTransactionHash;
+
+            claimsCounter[_claims.bridgingRequestClaims[index].sourceChainID]++;
         }
     }
 
@@ -105,11 +120,13 @@ contract BridgeContract is IBridgeContract {
             queuedBatchExecutedClaims[_claims.batchExecutedClaims[index].observedTransactionHash] = _claims
                 .batchExecutedClaims[index];
 
-            queuedClaims[claimsCounter][ClaimTypes.BATCH_EXECUTED][_claims.batchExecutedClaims[index].chainID].push(
-                _claims.batchExecutedClaims[index].observedTransactionHash
-            );
+            // queuedClaims[claimsCounter][ClaimTypes.BATCH_EXECUTED][_claims.batchExecutedClaims[index].chainID].push(
+            //     _claims.batchExecutedClaims[index].observedTransactionHash
+            // );
 
-            claimsCounter++;
+            queuedClaims[_claims.batchExecutedClaims[index].chainID][claimsCounter[_claims.batchExecutedClaims[index].chainID]] = _claims.batchExecutedClaims[index].observedTransactionHash;
+
+            claimsCounter[_claims.batchExecutedClaims[index].chainID]++;
         }
     }
 
@@ -121,11 +138,13 @@ contract BridgeContract is IBridgeContract {
             queuedBatchExecutionFailedClaims[_claims.batchExecutionFailedClaims[index].observedTransactionHash] = _claims
                 .batchExecutionFailedClaims[index];
 
-            queuedClaims[claimsCounter][ClaimTypes.BATCH_EXECUTION_FAILED][_claims.batchExecutionFailedClaims[index].chainID].push(
-                _claims.batchExecutionFailedClaims[index].observedTransactionHash
-            );
+            // queuedClaims[claimsCounter][ClaimTypes.BATCH_EXECUTION_FAILED][_claims.batchExecutionFailedClaims[index].chainID].push(
+            //     _claims.batchExecutionFailedClaims[index].observedTransactionHash
+            // );
 
-            claimsCounter++;
+            queuedClaims[_claims.batchExecutionFailedClaims[index].chainID][claimsCounter[_claims.batchExecutionFailedClaims[index].chainID]] = _claims.batchExecutionFailedClaims[index].observedTransactionHash;
+
+            claimsCounter[_claims.batchExecutionFailedClaims[index].chainID]++;
         }
     }
 
@@ -137,11 +156,13 @@ contract BridgeContract is IBridgeContract {
             queuedRefundRequestClaims[_claims.refundRequestClaims[index].observedTransactionHash] = _claims
                 .refundRequestClaims[index];
 
-            queuedClaims[claimsCounter][ClaimTypes.REFUND_REQUEST][_claims.refundRequestClaims[index].chainID].push(
-                _claims.refundRequestClaims[index].observedTransactionHash
-            );
+            // queuedClaims[claimsCounter][ClaimTypes.REFUND_REQUEST][_claims.refundRequestClaims[index].chainID].push(
+            //     _claims.refundRequestClaims[index].observedTransactionHash
+            // );
 
-            claimsCounter++;
+            queuedClaims[_claims.refundRequestClaims[index].chainID][claimsCounter[_claims.refundRequestClaims[index].chainID]] = _claims.refundRequestClaims[index].observedTransactionHash;
+
+            claimsCounter[_claims.refundRequestClaims[index].chainID]++;
         }
     }
 
@@ -153,11 +174,13 @@ contract BridgeContract is IBridgeContract {
             queuedRefundExecutedClaims[_claims.refundExecutedClaims[index].observedTransactionHash] = _claims
                 .refundExecutedClaims[index];
 
-            queuedClaims[claimsCounter][ClaimTypes.REFUND_EXECUTED][_claims.refundExecutedClaims[index].chainID].push(
-                _claims.refundExecutedClaims[index].observedTransactionHash
-            );
+            // queuedClaims[claimsCounter][ClaimTypes.REFUND_EXECUTED][_claims.refundExecutedClaims[index].chainID].push(
+            //     _claims.refundExecutedClaims[index].observedTransactionHash
+            // );
 
-            claimsCounter++;
+             queuedClaims[_claims.refundExecutedClaims[index].chainID][claimsCounter[_claims.refundExecutedClaims[index].chainID]] = _claims.refundExecutedClaims[index].observedTransactionHash;
+
+            claimsCounter[_claims.refundExecutedClaims[index].chainID]++;
         }
     }
 
@@ -218,7 +241,9 @@ contract BridgeContract is IBridgeContract {
 
     // Will determine if enough transactions are confirmed, or the timeout between two batches is exceeded.
     // It will also check if the given validator already submitted a signed batch and return the response accordingly.
-    function shouldCreateBatch(string calldata _destinationChain) external view override returns (bool batch) {}
+    function shouldCreateBatch(string calldata _destinationChain) external view override returns (bool batch) {
+
+    }
 
     // Will return confirmed transactions until NEXT_BATCH_TIMEOUT_BLOCK or maximum number of transactions that
     // can be included in the batch, if the maximum number of transactions in a batch has been exceeded
@@ -261,8 +286,8 @@ contract BridgeContract is IBridgeContract {
         return numberOfVotes[_id];
     }
 
-    function getClaimsCounter() external view returns (uint256) {
-        return claimsCounter;
+    function getClaimsCounter(string calldata _chainId) external view returns (uint256) {
+        return claimsCounter[_chainId];
     }
 
     function _hasVoted(string calldata _id) internal view returns (bool) {

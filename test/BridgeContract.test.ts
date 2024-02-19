@@ -317,11 +317,11 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
 
-      const claimsCounter = await bridgeContract.getClaimsCounter();
+      const claimsCounter = await bridgeContract.getClaimsCounter(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID);
 
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-      expect(await bridgeContract.getClaimsCounter()).to.equal(claimsCounter + BigInt(1));
+      expect(await bridgeContract.getClaimsCounter(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID)).to.equal(claimsCounter + BigInt(1));
     });
   });
   describe("Submit new Batch Executed Claim", function () {
@@ -377,11 +377,11 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEC);
       await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEC);
 
-      const claimsCounter = await bridgeContract.getClaimsCounter();
+      const claimsCounter = await bridgeContract.getClaimsCounter(validatorClaimsBEC.batchExecutedClaims[0].chainID);
 
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
-      expect(await bridgeContract.getClaimsCounter()).to.equal(claimsCounter + BigInt(1));
+      expect(await bridgeContract.getClaimsCounter(validatorClaimsBEC.batchExecutedClaims[0].chainID)).to.equal(claimsCounter + BigInt(1));
     });
   });
   describe("Submit new Batch Execution Failed Claims", function () {
@@ -437,11 +437,11 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEFC);
       await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEFC);
 
-      const claimsCounter = await bridgeContract.getClaimsCounter();
+      const claimsCounter = await bridgeContract.getClaimsCounter(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID);
 
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEFC);
 
-      expect(await bridgeContract.getClaimsCounter()).to.equal(claimsCounter + BigInt(1));
+      expect(await bridgeContract.getClaimsCounter(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID)).to.equal(claimsCounter + BigInt(1));
     });
   });
   describe("Submit new Refund Request Claims", function () {
@@ -498,11 +498,11 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsRRC);
       await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsRRC);
 
-      const claimsCounter = await bridgeContract.getClaimsCounter();
+      const claimsCounter = await bridgeContract.getClaimsCounter(validatorClaimsRRC.refundRequestClaims[0].chainID);
 
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsRRC);
 
-      expect(await bridgeContract.getClaimsCounter()).to.equal(claimsCounter + BigInt(1));
+      expect(await bridgeContract.getClaimsCounter(validatorClaimsRRC.refundRequestClaims[0].chainID)).to.equal(claimsCounter + BigInt(1));
     });
   });
   describe("Submit new Refund Executed Claim", function () {
@@ -559,11 +559,11 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsREC);
       await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsREC);
 
-      const claimsCounter = await bridgeContract.getClaimsCounter();
+      const claimsCounter = await bridgeContract.getClaimsCounter(validatorClaimsREC.refundExecutedClaims[0].chainID);
 
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsREC);
 
-      expect(await bridgeContract.getClaimsCounter()).to.equal(claimsCounter + BigInt(1));
+      expect(await bridgeContract.getClaimsCounter(validatorClaimsREC.refundExecutedClaims[0].chainID)).to.equal(claimsCounter + BigInt(1));
     });
   });
 });
