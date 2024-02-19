@@ -4,19 +4,14 @@ pragma solidity ^0.8.23;
 import "./interfaces/IBridgeContract.sol";
 
 contract BridgeContract is IBridgeContract {
+    // mapping in case they could be added/removed
     mapping(address => bool) private validators; // mapping in case they could be added/removed
     mapping(string => bool) private registeredChains;
 
     mapping(string => mapping(address => bool)) private voters;
     mapping(string => uint8) private numberOfVotes;
 
-    // mapping(string => BridgingRequestClaim) private queuedBridgingRequestsClaims;
-    // mapping(string => BatchExecutedClaim) private queuedBatchExecutedClaims;
-    // mapping(string => BatchExecutionFailedClaim) private queuedBatchExecutionFailedClaims;
-    // mapping(string => RefundRequestClaim) private queuedRefundRequestClaims;
-    // mapping(string => RefundExecutedClaim) private queuedRefundExecutedClaims;
-
-    //claimHash -> claimß
+    //claimHash -> claim
     mapping(string => BridgingRequestClaim) private queuedBridgingRequestsClaims;    
     mapping(string => BatchExecutedClaim) private queuedBatchExecutedClaims;
     mapping(string => BatchExecutionFailedClaim) private queuedBatchExecutionFailedClaims;
@@ -26,14 +21,20 @@ contract BridgeContract is IBridgeContract {
     //Blockchain -> claimCounter -> claimHash
     mapping(string => mapping(uint64 => string)) private queuedClaims;
         
-    //Blockchain -> claimsCounter
+    //Blockchain ID -> claimsCounter
     mapping(string => uint64) private claimsCounter;
+
+    //Blochchain ID -> claimsCounter
+    mapping(string => uint64) private lastBatchedClaim;
+
+    //Blochchain ID -> blockNumber
+    mapping(string => uint64) private lastBatchBlock;
 
     //mapping(uint256 => mapping(ClaimTypes => mapping(string => string[]))) private queuedClaims;
 
     Chain[] private chains;
     address private owner;
-    uint16 private constant MAX_NUMBER_OF_TRANSACTIONS = 200;
+    uint16 private constant MAX_NUMBER_OF_TRANSACTIONS = 1; //intentially set low for testing
     uint8 private constant MAX_NUMBER_OF_BLOCKS = 5;
     uint8 private validatorsCount;
     constructor(address[] memory _validators) {
@@ -242,7 +243,15 @@ contract BridgeContract is IBridgeContract {
     // Will determine if enough transactions are confirmed, or the timeout between two batches is exceeded.
     // It will also check if the given validator already submitted a signed batch and return the response accordingly.
     function shouldCreateBatch(string calldata _destinationChain) external view override returns (bool batch) {
-
+        //TO DO implement second sentence of comment, once we have batches, we can check if the validator already submitted 
+        //this batch or should he do it now
+        if ((claimsCounter[_destinationChain] - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
+            return true;
+        }
+        if ((block.number - lastBatchBlock[_destinationChain]) >= MAX_NUMBER_OF_BLOCKS) {
+            return true;
+        }
+        return false;
     }
 
     // Will return confirmed transactions until NEXT_BATCH_TIMEOUT_BLOCK or maximum number of transactions that
