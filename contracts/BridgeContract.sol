@@ -30,6 +30,9 @@ contract BridgeContract is IBridgeContract {
     //Blochchain ID -> blockNumber
     mapping(string => uint64) private lastBatchBlock;
 
+    //Blochchain ID -> blockHash
+    mapping(string => string) private lastObserverdBlock;
+
     Chain[] private chains;
     address private owner;
     uint16 private constant MAX_NUMBER_OF_TRANSACTIONS = 1; //intentially set low for testing
@@ -118,6 +121,8 @@ contract BridgeContract is IBridgeContract {
             queuedClaims[_claims.batchExecutedClaims[index].chainID][claimsCounter[_claims.batchExecutedClaims[index].chainID]] = _claims.batchExecutedClaims[index].observedTransactionHash;
 
             claimsCounter[_claims.batchExecutedClaims[index].chainID]++;
+
+            _updateLastObservedBlockIfNeeded(_claims);
         }
     }
 
@@ -132,6 +137,8 @@ contract BridgeContract is IBridgeContract {
             queuedClaims[_claims.batchExecutionFailedClaims[index].chainID][claimsCounter[_claims.batchExecutionFailedClaims[index].chainID]] = _claims.batchExecutionFailedClaims[index].observedTransactionHash;
 
             claimsCounter[_claims.batchExecutionFailedClaims[index].chainID]++;
+
+            _updateLastObservedBlockIfNeeded(_claims);
         }
     }
 
@@ -146,6 +153,8 @@ contract BridgeContract is IBridgeContract {
             queuedClaims[_claims.refundRequestClaims[index].chainID][claimsCounter[_claims.refundRequestClaims[index].chainID]] = _claims.refundRequestClaims[index].observedTransactionHash;
 
             claimsCounter[_claims.refundRequestClaims[index].chainID]++;
+
+            _updateLastObservedBlockIfNeeded(_claims);
         }
     }
 
@@ -160,6 +169,27 @@ contract BridgeContract is IBridgeContract {
              queuedClaims[_claims.refundExecutedClaims[index].chainID][claimsCounter[_claims.refundExecutedClaims[index].chainID]] = _claims.refundExecutedClaims[index].observedTransactionHash;
 
             claimsCounter[_claims.refundExecutedClaims[index].chainID]++;
+
+            _updateLastObservedBlockIfNeeded(_claims);
+        }
+    }
+
+    function _updateLastObservedBlockIfNeeded(ValidatorClaims calldata _claims) internal {
+        if (_claims.blockFullyObserved) {
+            string memory chainId;
+            if(_claims.bridgingRequestClaims.length > 0) {
+                chainId = _claims.bridgingRequestClaims[0].sourceChainID;
+            } else if(_claims.batchExecutedClaims.length > 0) {
+                chainId = _claims.batchExecutedClaims[0].chainID;
+            } else if(_claims.batchExecutionFailedClaims.length > 0) {
+                chainId = _claims.batchExecutionFailedClaims[0].chainID;
+            } else if(_claims.refundRequestClaims.length > 0) {
+                chainId = _claims.refundRequestClaims[0].chainID;
+            } else if(_claims.refundExecutedClaims.length > 0) {
+                chainId = _claims.refundExecutedClaims[0].chainID;
+            }
+
+            lastObserverdBlock[chainId] = _claims.blockHash;
         }
     }
 
@@ -255,7 +285,9 @@ contract BridgeContract is IBridgeContract {
 
     function getLastObservedBlock(
         string calldata _sourceChain
-    ) external view override returns (string memory blockHash) {}
+    ) external view override returns (string memory blockHash) {
+        return lastObserverdBlock[_sourceChain];
+    }
 
     function getAllRegisteredChains() external view override returns (Chain[] memory _chains) {
         return chains;

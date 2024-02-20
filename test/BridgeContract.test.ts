@@ -132,8 +132,30 @@ describe("Bridge Contract", function () {
       blockFullyObserved: true,
     };
 
+    const validatorClaimsRECObserverdFalse = {
+      bridgingRequestClaims: [],
+      batchExecutedClaims: [],
+      batchExecutionFailedClaims: [],
+      refundRequestClaims: [],
+      refundExecutedClaims: [
+        {
+          observedTransactionHash: "0xabc...",
+          chainID: "chainID1",
+          refundTxHash: "refundTxHash1",
+          utxo: {
+            txHash: "0xdef...",
+            txIndex: 0,
+            addressUTXO: "0x456...",
+            amount: 200,
+          },
+        },
+      ],
+      blockHash: "0x123...",
+      blockFullyObserved: false,
+    };
+
     return { bridgeContract, owner, UTXOs, validators, validatorClaimsBRC, 
-      validatorClaimsBEC, validatorClaimsBEFC, validatorClaimsRRC, validatorClaimsREC };
+      validatorClaimsBEC, validatorClaimsBEFC, validatorClaimsRRC, validatorClaimsREC, validatorClaimsRECObserverdFalse };
   }
 
   describe("Deployment", function () {
@@ -602,6 +624,24 @@ describe("Bridge Contract", function () {
       await ethers.provider.send('evm_mine');
 
       expect(await bridgeContract.shouldCreateBatch(validatorClaimsRRC.refundRequestClaims[0].chainID)).to.be.true;
+    });
+    it("Should set proper last block hash in lastObservedBlock if block is fully observerd", async function () {
+      const { bridgeContract, validators, validatorClaimsRRC } = await loadFixture(deployBridgeContractFixture);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC);
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsRRC);
+      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsRRC);
+      await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsRRC);
+
+      expect(await bridgeContract.getLastObservedBlock(validatorClaimsRRC.refundRequestClaims[0].chainID)).to.equal(validatorClaimsRRC.blockHash);
+    });
+    it("Should not change block hash in lastObservedBlock if block is not fully observerd", async function () {
+      const { bridgeContract, validators, validatorClaimsRECObserverdFalse } = await loadFixture(deployBridgeContractFixture);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRECObserverdFalse);
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsRECObserverdFalse);
+      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsRECObserverdFalse);
+      await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsRECObserverdFalse);
+
+      expect(await bridgeContract.getLastObservedBlock(validatorClaimsRECObserverdFalse.refundExecutedClaims[0].chainID)).to.equal('');
     });
   });
 });
