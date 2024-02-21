@@ -187,8 +187,9 @@ describe("Bridge Contract", function () {
 
       await expect(
         bridgeContract.connect(validators[0]).registerChain("testChain", UTXOs, "0x", "0x")
-      ).to.be.revertedWith("Not owner");
+      ).to.be.revertedWithCustomError(bridgeContract, "NotOwner");
     });
+
     it("Should add new chain if requested by owner", async function () {
       const { bridgeContract, owner, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
@@ -196,6 +197,7 @@ describe("Bridge Contract", function () {
 
       expect(await bridgeContract.isChainRegistered("testChain")).to.be.true;
     });
+
 
     it("Should emit new chain registered when registered by owner", async function () {
       const { bridgeContract, owner, UTXOs } = await loadFixture(deployBridgeContractFixture);
@@ -212,7 +214,7 @@ describe("Bridge Contract", function () {
 
       await expect(
         bridgeContract.connect(owner).registerChainGovernance("testChain", UTXOs, "0x", "0x")
-      ).to.be.revertedWith("Not validator");
+      ).to.be.revertedWithCustomError(bridgeContract, "NotValidator");
     });
 
     it("Should revert if same validator votes twice for the same chain", async function () {
@@ -297,7 +299,7 @@ describe("Bridge Contract", function () {
     it("Should reject any claim if not sent by validator", async function () {
       const { bridgeContract, owner, validatorClaimsBRC } = await loadFixture(deployBridgeContractFixture);
 
-      await expect(bridgeContract.connect(owner).submitClaims(validatorClaimsBRC)).to.be.revertedWith("Not validator");
+      await expect(bridgeContract.connect(owner).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(bridgeContract, "NotValidator");
     });
 
     it("Should revert if Bridging Request Claim is already in the queue", async function () {

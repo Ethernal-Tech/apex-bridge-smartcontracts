@@ -1,14 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-abstract contract IBridgeContractStructs {
-    enum ClaimTypes {
-        BRIDGING_REQUEST,
-        BATCH_EXECUTED,
-        BATCH_EXECUTION_FAILED,
-        REFUND_REQUEST,
-        REFUND_EXECUTED
-    }
+interface IBridgeContractStructs {
 
     struct SignedBatch {
         string id;
@@ -128,6 +121,8 @@ abstract contract IBridgeContractStructs {
 
     error AlreadyQueued(string _claimhash);
     error AlreadyProposed(string _claimhash);
+    error NotOwner();
+    error NotValidator();
     
     event newChainProposal(string indexed chainId, address indexed sender);
     event newChainRegistered(string indexed chainId);

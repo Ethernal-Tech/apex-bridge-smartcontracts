@@ -2,10 +2,11 @@
 pragma solidity ^0.8.23;
 
 import "./interfaces/IBridgeContract.sol";
-import "./Helpers.sol";
-import "./BridgeContractClaims.sol";
+import "./BridgeContractClaimsManager.sol";
 
-contract BridgeContract is IBridgeContract, Helpers, BridgeContractClaims {
+contract BridgeContract is IBridgeContract{
+
+    BridgeContractClaimsManager private bccm;
     // mapping in case they could be added/removed
     mapping(address => bool) private validators;
     mapping(string => bool) private registeredChains;
@@ -31,67 +32,68 @@ contract BridgeContract is IBridgeContract, Helpers, BridgeContractClaims {
         for (uint i = 0; i < _validators.length; i++) {
             validators[_validators[i]] = true;
         }
-        validatorsCount = uint8(_validators.length);
+        bccm = new BridgeContractClaimsManager();
+        bccm.setValidatorsCount(uint8(_validators.length));
         owner = msg.sender;
     }
 
     // Claims
     function submitClaims(ValidatorClaims calldata _claims) external override onlyValidator {
         for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
-            if (_isQueuedBRC(_claims.bridgingRequestClaims[i])) {
+            if (bccm.isQueuedBRC(_claims.bridgingRequestClaims[i])) {
                 revert AlreadyQueued(_claims.bridgingRequestClaims[i].observedTransactionHash);
             }
-            if (_hasVoted(_claims.bridgingRequestClaims[i].observedTransactionHash)) {
+            if (bccm.hasVoted(_claims.bridgingRequestClaims[i].observedTransactionHash)) {
                 revert AlreadyProposed(_claims.bridgingRequestClaims[i].observedTransactionHash);
             }
-            _submitClaimsBRC(_claims, i);
+            bccm.submitClaimsBRC(_claims, i);
         }
         for (uint i = 0; i < _claims.batchExecutedClaims.length; i++) {
-            if (_isQueuedBEC(_claims.batchExecutedClaims[i])) {
+            if (bccm.isQueuedBEC(_claims.batchExecutedClaims[i])) {
                 revert AlreadyQueued(_claims.batchExecutedClaims[i].observedTransactionHash);
             }
-            if (_hasVoted(_claims.batchExecutedClaims[i].observedTransactionHash)) {
+            if (bccm.hasVoted(_claims.batchExecutedClaims[i].observedTransactionHash)) {
                 revert AlreadyProposed(_claims.batchExecutedClaims[i].observedTransactionHash);
             }
-            _submitClaimsBEC(_claims, i);
+            bccm.submitClaimsBEC(_claims, i);
         }
         for (uint i = 0; i < _claims.batchExecutionFailedClaims.length; i++) {
-            if (_isQueuedBEFC(_claims.batchExecutionFailedClaims[i])) {
+            if (bccm.isQueuedBEFC(_claims.batchExecutionFailedClaims[i])) {
                 revert AlreadyQueued(_claims.batchExecutionFailedClaims[i].observedTransactionHash);
             }
-            if (_hasVoted(_claims.batchExecutionFailedClaims[i].observedTransactionHash)) {
+            if (bccm.hasVoted(_claims.batchExecutionFailedClaims[i].observedTransactionHash)) {
                 revert AlreadyProposed(_claims.batchExecutionFailedClaims[i].observedTransactionHash);
             }
-            _submitClaimsBEFC(_claims, i);
+            bccm.submitClaimsBEFC(_claims, i);
         }
         for (uint i = 0; i < _claims.refundRequestClaims.length; i++) {
-            if (_isQueuedRRC(_claims.refundRequestClaims[i])) {
+            if (bccm.isQueuedRRC(_claims.refundRequestClaims[i])) {
                 revert AlreadyQueued(_claims.refundRequestClaims[i].observedTransactionHash);
             }
-            if (_hasVoted(_claims.refundRequestClaims[i].observedTransactionHash)) {
+            if (bccm.hasVoted(_claims.refundRequestClaims[i].observedTransactionHash)) {
                 revert AlreadyProposed(_claims.refundRequestClaims[i].observedTransactionHash);
             }
-            _submitClaimsRRC(_claims, i);
+            bccm.submitClaimsRRC(_claims, i);
         }
         for (uint i = 0; i < _claims.refundExecutedClaims.length; i++) {
-            if (_isQueuedREC(_claims.refundExecutedClaims[i])) {
+            if (bccm.isQueuedREC(_claims.refundExecutedClaims[i])) {
                 revert AlreadyQueued(_claims.refundExecutedClaims[i].observedTransactionHash);
             }
-            if (_hasVoted(_claims.refundExecutedClaims[i].observedTransactionHash)) {
+            if (bccm.hasVoted(_claims.refundExecutedClaims[i].observedTransactionHash)) {
                 revert AlreadyProposed(_claims.refundExecutedClaims[i].observedTransactionHash);
             }
-            _submitClaimsREC(_claims, i);
+            bccm.submitClaimsREC(_claims, i);
         }
     }
 
     // Batches
     function submitSignedBatch(SignedBatch calldata _signedBatch) external override onlyValidator {
 
-        voters[_signedBatch.id][msg.sender] = true;
-        numberOfVotes[_signedBatch.id]++;
+        bccm.setVoted(_signedBatch.id, msg.sender, true);
+        bccm.setNumberOfVotes(_signedBatch.id);
         signedBatches[_signedBatch.id].push(_signedBatch);
 
-        if (_hasConsensus(_signedBatch.id)) {
+        if (bccm.hasConsensus(_signedBatch.id)) {
             string[] memory multisigSignatures;
             string[] memory feePayerMultisigSignatures;
 
@@ -134,7 +136,7 @@ contract BridgeContract is IBridgeContract, Helpers, BridgeContractClaims {
         string calldata _addressFeePayer
     ) external onlyValidator {
         require(!registeredChains[_chainId], "Chain already registered");
-        if (_hasVoted(_chainId)) {
+        if (bccm.hasVoted(_chainId)) {
                 revert AlreadyProposed(_chainId);
             }
         _registerChainGovernance(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer);
@@ -146,9 +148,9 @@ contract BridgeContract is IBridgeContract, Helpers, BridgeContractClaims {
         string calldata _addressMultisig,
         string calldata _addressFeePayer
     ) internal {
-        voters[_chainId][msg.sender] = true;
-        numberOfVotes[_chainId]++;
-        if (_hasConsensus(_chainId)) {
+        bccm.setVoted(_chainId, msg.sender, true);
+        bccm.setNumberOfVotes(_chainId);
+        if (bccm.hasConsensus(_chainId)) {
             registeredChains[_chainId] = true;
             chains.push();
             chains[chains.length - 1].id = _chainId;
@@ -168,7 +170,7 @@ contract BridgeContract is IBridgeContract, Helpers, BridgeContractClaims {
     function shouldCreateBatch(string calldata _destinationChain) external view override returns (bool batch) {
         //TO DO: implement second sentence of comment, once we have batches, we can check if the validator already submitted 
         //this batch or should he do it now
-        if ((claimsCounter[_destinationChain] - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
+        if ((bccm.getClaimsCounter(_destinationChain) - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
             return true;
         }
         if ((block.number - lastBatchBlock[_destinationChain]) >= MAX_NUMBER_OF_BLOCKS) {
@@ -203,7 +205,7 @@ contract BridgeContract is IBridgeContract, Helpers, BridgeContractClaims {
     function getLastObservedBlock(
         string calldata _sourceChain
     ) external view override returns (string memory blockHash) {
-        return lastObserverdBlock[_sourceChain];
+        return bccm.getLastObserveredBlock(_sourceChain);
     }
 
     function getAllRegisteredChains() external view override returns (Chain[] memory _chains) {
@@ -215,11 +217,11 @@ contract BridgeContract is IBridgeContract, Helpers, BridgeContractClaims {
     }
 
     function getValidatorsCount() external view override returns (uint8) {
-        return validatorsCount;
+        return bccm.getValidatorsCount();
     }
 
     function getNumberOfVotes(string calldata _id) external view override returns (uint8) {
-        return numberOfVotes[_id];
+        return bccm.getNumberOfVotes(_id);
     }
 
     function getSignedBatches(string calldata _id) external view onlyValidator returns (SignedBatch[] memory) {
@@ -227,13 +229,12 @@ contract BridgeContract is IBridgeContract, Helpers, BridgeContractClaims {
     }
 
     modifier onlyValidator() {
-        require(validators[msg.sender], "Not validator");
+        if (!validators[msg.sender]) revert NotValidator();
         _;
     }
 
     modifier onlyOwner() {
-        require(owner == msg.sender, "Not owner");
+       if (msg.sender != owner) revert NotOwner();
         _;
     }
-
 }

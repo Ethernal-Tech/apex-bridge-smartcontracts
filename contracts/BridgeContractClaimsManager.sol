@@ -2,9 +2,15 @@
 pragma solidity ^0.8.23;
 
 import "./interfaces/IBridgeContract.sol";
-import "./Helpers.sol";
 
-contract BridgeContractClaims is IBridgeContractStructs, Helpers {
+contract BridgeContractClaimsManager is IBridgeContractStructs {
+
+    // Blockchain ID -> claimsCounter
+    mapping(string => uint64) private claimsCounter;
+    mapping(string => mapping(address => bool)) private voted;
+    mapping(string => uint8) private numberOfVotes;
+    uint8 private validatorsCount;
+
     //  claimHash -> claim
     mapping(string => BridgingRequestClaim) internal queuedBridgingRequestsClaims;    
     mapping(string => BatchExecutedClaim) internal queuedBatchExecutedClaims;
@@ -17,8 +23,8 @@ contract BridgeContractClaims is IBridgeContractStructs, Helpers {
     //  Blochchain ID -> blockHash
     mapping(string => string) internal lastObserverdBlock;
 
-    function _submitClaimsBRC(ValidatorClaims calldata _claims, uint256 index) internal {
-        voters[_claims.bridgingRequestClaims[index].observedTransactionHash][msg.sender] = true;
+    function submitClaimsBRC(ValidatorClaims calldata _claims, uint256 index) external {
+        voted[_claims.bridgingRequestClaims[index].observedTransactionHash][msg.sender] = true;
         numberOfVotes[_claims.bridgingRequestClaims[index].observedTransactionHash]++;
 
         if (_hasConsensus(_claims.bridgingRequestClaims[index].observedTransactionHash)) {
@@ -32,8 +38,8 @@ contract BridgeContractClaims is IBridgeContractStructs, Helpers {
         }
     }
 
-    function _submitClaimsBEC(ValidatorClaims calldata _claims, uint256 index) internal {
-        voters[_claims.batchExecutedClaims[index].observedTransactionHash][msg.sender] = true;
+    function submitClaimsBEC(ValidatorClaims calldata _claims, uint256 index) external {
+        voted[_claims.batchExecutedClaims[index].observedTransactionHash][msg.sender] = true;
         numberOfVotes[_claims.batchExecutedClaims[index].observedTransactionHash]++;
 
         if (_hasConsensus(_claims.batchExecutedClaims[index].observedTransactionHash)) {
@@ -48,8 +54,8 @@ contract BridgeContractClaims is IBridgeContractStructs, Helpers {
         }
     }
 
-    function _submitClaimsBEFC(ValidatorClaims calldata _claims, uint256 index) internal {
-        voters[_claims.batchExecutionFailedClaims[index].observedTransactionHash][msg.sender] = true;
+    function submitClaimsBEFC(ValidatorClaims calldata _claims, uint256 index) external {
+        voted[_claims.batchExecutionFailedClaims[index].observedTransactionHash][msg.sender] = true;
         numberOfVotes[_claims.batchExecutionFailedClaims[index].observedTransactionHash]++;
 
         if (_hasConsensus(_claims.batchExecutionFailedClaims[index].observedTransactionHash)) {
@@ -64,8 +70,8 @@ contract BridgeContractClaims is IBridgeContractStructs, Helpers {
         }
     }
 
-    function _submitClaimsRRC(ValidatorClaims calldata _claims, uint256 index) internal {
-        voters[_claims.refundRequestClaims[index].observedTransactionHash][msg.sender] = true;
+    function submitClaimsRRC(ValidatorClaims calldata _claims, uint256 index) external {
+        voted[_claims.refundRequestClaims[index].observedTransactionHash][msg.sender] = true;
         numberOfVotes[_claims.refundRequestClaims[index].observedTransactionHash]++;
 
         if (_hasConsensus(_claims.refundRequestClaims[index].observedTransactionHash)) {
@@ -80,8 +86,8 @@ contract BridgeContractClaims is IBridgeContractStructs, Helpers {
         }
     }
 
-    function _submitClaimsREC(ValidatorClaims calldata _claims, uint256 index) internal {
-        voters[_claims.refundExecutedClaims[index].observedTransactionHash][msg.sender] = true;
+    function submitClaimsREC(ValidatorClaims calldata _claims, uint256 index) external {
+        voted[_claims.refundExecutedClaims[index].observedTransactionHash][msg.sender] = true;
         numberOfVotes[_claims.refundExecutedClaims[index].observedTransactionHash]++;
 
         if (_hasConsensus(_claims.refundExecutedClaims[index].observedTransactionHash)) {
@@ -116,44 +122,71 @@ contract BridgeContractClaims is IBridgeContractStructs, Helpers {
     }
     
     function isQueuedBRC(BridgingRequestClaim calldata _claim) external view returns (bool) {
-        return _isQueuedBRC(_claim);
-    }
-
-    function _isQueuedBRC(BridgingRequestClaim calldata _claim) internal view returns (bool) {
         return
             keccak256(abi.encode(_claim)) ==
             keccak256(abi.encode(queuedBridgingRequestsClaims[_claim.observedTransactionHash]));
     }
 
     function isQueuedBEC(BatchExecutedClaim calldata _claim) external view returns (bool) {
-        return _isQueuedBEC(_claim);
-    }
-
-    function _isQueuedBEC(BatchExecutedClaim calldata _claim) internal view returns (bool) {
         return keccak256(abi.encode(_claim)) == keccak256(abi.encode(queuedBatchExecutedClaims[_claim.observedTransactionHash]));
     }
 
     function isQueuedBEFC(BatchExecutionFailedClaim calldata _claim) external view returns (bool) {
-        return _isQueuedBEFC(_claim);
-    }
-
-    function _isQueuedBEFC(BatchExecutionFailedClaim calldata _claim) internal view returns (bool) {
         return keccak256(abi.encode(_claim)) == keccak256(abi.encode(queuedBatchExecutionFailedClaims[_claim.observedTransactionHash]));
     }
 
     function isQueuedRRC(RefundRequestClaim calldata _claim) external view returns (bool) {
-        return _isQueuedRRC(_claim);
-    }
-
-    function _isQueuedRRC(RefundRequestClaim calldata _claim) internal view returns (bool) {
         return keccak256(abi.encode(_claim)) == keccak256(abi.encode(queuedRefundRequestClaims[_claim.observedTransactionHash]));
     }
 
     function isQueuedREC(RefundExecutedClaim calldata _claim) external view returns (bool) {
-        return _isQueuedREC(_claim);
+        return keccak256(abi.encode(_claim)) == keccak256(abi.encode(queuedRefundExecutedClaims[_claim.observedTransactionHash]));     
     }
 
-    function _isQueuedREC(RefundExecutedClaim calldata _claim) internal view returns (bool) {
-        return keccak256(abi.encode(_claim)) == keccak256(abi.encode(queuedRefundExecutedClaims[_claim.observedTransactionHash]));     
+    function hasVoted(string calldata _id) external view returns (bool) {
+        return voted[_id][msg.sender];
+    }
+
+    function hasConsensus(string calldata _id) external view returns (bool) {
+        return _hasConsensus(_id);
+    }
+
+    function _hasConsensus(string calldata _id) internal view returns (bool) {
+        if (numberOfVotes[_id] >= ((validatorsCount * 2) / 3 + ((validatorsCount * 2) % 3 == 0 ? 0 : 1))) {
+            return true;
+        }
+        return false;
+    }
+
+    function getClaimsCounter(string calldata _chainId) external view returns (uint256) {
+        return claimsCounter[_chainId];
+    }
+    
+    function getVote(string calldata _id, address _voter) external view returns (bool) {
+        return voted[_id][_voter];
+    }
+
+    function getNumberOfVotes(string calldata _id) external view returns (uint8) {
+        return numberOfVotes[_id];
+    }
+
+    function getValidatorsCount() external view returns (uint8) {
+        return validatorsCount;
+    }
+
+    function getLastObserveredBlock(string calldata _sourceChain) external view returns (string memory blockHash) {
+        return lastObserverdBlock[_sourceChain];
+    }
+
+    function setValidatorsCount(uint8 _validatorsCount) external {
+        validatorsCount = _validatorsCount;
+    }
+
+    function setVoted(string calldata _id, address _voter, bool _value) external {
+        voted[_id][_voter] = _value;
+    }
+
+    function setNumberOfVotes(string calldata _id) external {
+        numberOfVotes[_id]++;
     }
 }
