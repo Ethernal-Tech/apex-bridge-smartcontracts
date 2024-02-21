@@ -23,8 +23,8 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
     //  Blochchain ID -> blockHash
     mapping(string => string) internal lastObserverdBlock;
 
-    function submitClaimsBRC(ValidatorClaims calldata _claims, uint256 index) external {
-        voted[_claims.bridgingRequestClaims[index].observedTransactionHash][msg.sender] = true;
+    function submitClaimsBRC(ValidatorClaims calldata _claims, uint256 index, address _caller) external {
+        voted[_claims.bridgingRequestClaims[index].observedTransactionHash][_caller] = true;
         numberOfVotes[_claims.bridgingRequestClaims[index].observedTransactionHash]++;
 
         if (_hasConsensus(_claims.bridgingRequestClaims[index].observedTransactionHash)) {
@@ -38,8 +38,8 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
         }
     }
 
-    function submitClaimsBEC(ValidatorClaims calldata _claims, uint256 index) external {
-        voted[_claims.batchExecutedClaims[index].observedTransactionHash][msg.sender] = true;
+    function submitClaimsBEC(ValidatorClaims calldata _claims, uint256 index, address _caller) external {
+        voted[_claims.batchExecutedClaims[index].observedTransactionHash][_caller] = true;
         numberOfVotes[_claims.batchExecutedClaims[index].observedTransactionHash]++;
 
         if (_hasConsensus(_claims.batchExecutedClaims[index].observedTransactionHash)) {
@@ -54,8 +54,8 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
         }
     }
 
-    function submitClaimsBEFC(ValidatorClaims calldata _claims, uint256 index) external {
-        voted[_claims.batchExecutionFailedClaims[index].observedTransactionHash][msg.sender] = true;
+    function submitClaimsBEFC(ValidatorClaims calldata _claims, uint256 index, address _caller) external {
+        voted[_claims.batchExecutionFailedClaims[index].observedTransactionHash][_caller] = true;
         numberOfVotes[_claims.batchExecutionFailedClaims[index].observedTransactionHash]++;
 
         if (_hasConsensus(_claims.batchExecutionFailedClaims[index].observedTransactionHash)) {
@@ -70,8 +70,8 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
         }
     }
 
-    function submitClaimsRRC(ValidatorClaims calldata _claims, uint256 index) external {
-        voted[_claims.refundRequestClaims[index].observedTransactionHash][msg.sender] = true;
+    function submitClaimsRRC(ValidatorClaims calldata _claims, uint256 index, address _caller) external {
+        voted[_claims.refundRequestClaims[index].observedTransactionHash][_caller] = true;
         numberOfVotes[_claims.refundRequestClaims[index].observedTransactionHash]++;
 
         if (_hasConsensus(_claims.refundRequestClaims[index].observedTransactionHash)) {
@@ -86,8 +86,8 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
         }
     }
 
-    function submitClaimsREC(ValidatorClaims calldata _claims, uint256 index) external {
-        voted[_claims.refundExecutedClaims[index].observedTransactionHash][msg.sender] = true;
+    function submitClaimsREC(ValidatorClaims calldata _claims, uint256 index, address _caller) external {
+        voted[_claims.refundExecutedClaims[index].observedTransactionHash][_caller] = true;
         numberOfVotes[_claims.refundExecutedClaims[index].observedTransactionHash]++;
 
         if (_hasConsensus(_claims.refundExecutedClaims[index].observedTransactionHash)) {
@@ -143,8 +143,8 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
         return keccak256(abi.encode(_claim)) == keccak256(abi.encode(queuedRefundExecutedClaims[_claim.observedTransactionHash]));     
     }
 
-    function hasVoted(string calldata _id) external view returns (bool) {
-        return voted[_id][msg.sender];
+    function hasVoted(string calldata _id, address _caller) external view returns (bool) {
+        return voted[_id][_caller];
     }
 
     function hasConsensus(string calldata _id) external view returns (bool) {

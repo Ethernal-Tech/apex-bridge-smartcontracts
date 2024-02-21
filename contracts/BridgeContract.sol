@@ -43,46 +43,46 @@ contract BridgeContract is IBridgeContract{
             if (bccm.isQueuedBRC(_claims.bridgingRequestClaims[i])) {
                 revert AlreadyQueued(_claims.bridgingRequestClaims[i].observedTransactionHash);
             }
-            if (bccm.hasVoted(_claims.bridgingRequestClaims[i].observedTransactionHash)) {
+            if (bccm.hasVoted(_claims.bridgingRequestClaims[i].observedTransactionHash, msg.sender)) {
                 revert AlreadyProposed(_claims.bridgingRequestClaims[i].observedTransactionHash);
             }
-            bccm.submitClaimsBRC(_claims, i);
+            bccm.submitClaimsBRC(_claims, i, msg.sender);
         }
         for (uint i = 0; i < _claims.batchExecutedClaims.length; i++) {
             if (bccm.isQueuedBEC(_claims.batchExecutedClaims[i])) {
                 revert AlreadyQueued(_claims.batchExecutedClaims[i].observedTransactionHash);
             }
-            if (bccm.hasVoted(_claims.batchExecutedClaims[i].observedTransactionHash)) {
+            if (bccm.hasVoted(_claims.batchExecutedClaims[i].observedTransactionHash, msg.sender)) {
                 revert AlreadyProposed(_claims.batchExecutedClaims[i].observedTransactionHash);
             }
-            bccm.submitClaimsBEC(_claims, i);
+            bccm.submitClaimsBEC(_claims, i, msg.sender);
         }
         for (uint i = 0; i < _claims.batchExecutionFailedClaims.length; i++) {
             if (bccm.isQueuedBEFC(_claims.batchExecutionFailedClaims[i])) {
                 revert AlreadyQueued(_claims.batchExecutionFailedClaims[i].observedTransactionHash);
             }
-            if (bccm.hasVoted(_claims.batchExecutionFailedClaims[i].observedTransactionHash)) {
+            if (bccm.hasVoted(_claims.batchExecutionFailedClaims[i].observedTransactionHash, msg.sender)) {
                 revert AlreadyProposed(_claims.batchExecutionFailedClaims[i].observedTransactionHash);
             }
-            bccm.submitClaimsBEFC(_claims, i);
+            bccm.submitClaimsBEFC(_claims, i, msg.sender);
         }
         for (uint i = 0; i < _claims.refundRequestClaims.length; i++) {
             if (bccm.isQueuedRRC(_claims.refundRequestClaims[i])) {
                 revert AlreadyQueued(_claims.refundRequestClaims[i].observedTransactionHash);
             }
-            if (bccm.hasVoted(_claims.refundRequestClaims[i].observedTransactionHash)) {
+            if (bccm.hasVoted(_claims.refundRequestClaims[i].observedTransactionHash, msg.sender)) {
                 revert AlreadyProposed(_claims.refundRequestClaims[i].observedTransactionHash);
             }
-            bccm.submitClaimsRRC(_claims, i);
+            bccm.submitClaimsRRC(_claims, i, msg.sender);
         }
         for (uint i = 0; i < _claims.refundExecutedClaims.length; i++) {
             if (bccm.isQueuedREC(_claims.refundExecutedClaims[i])) {
                 revert AlreadyQueued(_claims.refundExecutedClaims[i].observedTransactionHash);
             }
-            if (bccm.hasVoted(_claims.refundExecutedClaims[i].observedTransactionHash)) {
+            if (bccm.hasVoted(_claims.refundExecutedClaims[i].observedTransactionHash, msg.sender)) {
                 revert AlreadyProposed(_claims.refundExecutedClaims[i].observedTransactionHash);
             }
-            bccm.submitClaimsREC(_claims, i);
+            bccm.submitClaimsREC(_claims, i, msg.sender);
         }
     }
 
@@ -136,7 +136,7 @@ contract BridgeContract is IBridgeContract{
         string calldata _addressFeePayer
     ) external onlyValidator {
         require(!registeredChains[_chainId], "Chain already registered");
-        if (bccm.hasVoted(_chainId)) {
+        if (bccm.hasVoted(_chainId, msg.sender)) {
                 revert AlreadyProposed(_chainId);
             }
         _registerChainGovernance(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer);
@@ -226,6 +226,10 @@ contract BridgeContract is IBridgeContract{
 
     function getSignedBatches(string calldata _id) external view onlyValidator returns (SignedBatch[] memory) {
         return signedBatches[_id];
+    }
+
+    function getBridgeContractClaimsManager() external view onlyOwner returns (address) {
+        return address(bccm);
     }
 
     modifier onlyValidator() {
