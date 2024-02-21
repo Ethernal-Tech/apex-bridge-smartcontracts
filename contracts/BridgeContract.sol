@@ -11,27 +11,33 @@ contract BridgeContract is IBridgeContract {
     mapping(string => mapping(address => bool)) private voters;
     mapping(string => uint8) private numberOfVotes;
 
-    //claimHash -> claim
+    //  claimHash -> claim
     mapping(string => BridgingRequestClaim) private queuedBridgingRequestsClaims;    
     mapping(string => BatchExecutedClaim) private queuedBatchExecutedClaims;
     mapping(string => BatchExecutionFailedClaim) private queuedBatchExecutionFailedClaims;
     mapping(string => RefundRequestClaim) private queuedRefundRequestClaims;
     mapping(string => RefundExecutedClaim) private queuedRefundExecutedClaims;
 
-    //Blockchain -> claimCounter -> claimHash
+    // Blockchain -> claimCounter -> claimHash
     mapping(string => mapping(uint64 => string)) private queuedClaims;
         
-    //Blockchain ID -> claimsCounter
+    // Blockchain ID -> claimsCounter
     mapping(string => uint64) private claimsCounter;
 
-    //Blochchain ID -> claimsCounter
+    // Blochchain ID -> claimsCounter
     mapping(string => uint64) private lastBatchedClaim;
 
-    //Blochchain ID -> blockNumber
+    // Blochchain ID -> blockNumber
     mapping(string => uint64) private lastBatchBlock;
 
-    //Blochchain ID -> blockHash
+    //  Blochchain ID -> blockHash
     mapping(string => string) private lastObserverdBlock;
+
+    // BatchId -> SignedBatch[]
+    mapping(string => SignedBatch[]) private signedBatches;
+
+    // BatchId -> ConfirmedBatch
+    mapping(string => ConfirmedBatch) private confirmedBatches;
 
     Chain[] private chains;
     address private owner;
@@ -194,7 +200,31 @@ contract BridgeContract is IBridgeContract {
     }
 
     // Batches
-    function submitSignedBatch(SignedBatch calldata _signedBatch) external override onlyValidator {}
+    function submitSignedBatch(SignedBatch calldata _signedBatch) external override onlyValidator {
+
+        voters[_signedBatch.id][msg.sender] = true;
+        numberOfVotes[_signedBatch.id]++;
+        signedBatches[_signedBatch.id].push(_signedBatch);
+
+        if (_hasConsensus(_signedBatch.id)) {
+            string[] memory multisigSignatures;
+            string[] memory feePayerMultisigSignatures;
+
+            for (uint i = 0; i < signedBatches[_signedBatch.id].length; i++) {
+                multisigSignatures[i] = signedBatches[_signedBatch.id][i].multisigSignature;
+                feePayerMultisigSignatures[i] = signedBatches[_signedBatch.id][i].feePayerMultisigSignature;
+            }
+
+            ConfirmedBatch memory confirmedBatch = ConfirmedBatch(
+                _signedBatch.id,
+                _signedBatch.rawTransaction,
+                multisigSignatures,
+                feePayerMultisigSignatures
+            );
+            
+            confirmedBatches[_signedBatch.id] = confirmedBatch;
+        }
+    }
 
     // Chain registration through some kind of governance
     function registerChain(
@@ -281,7 +311,9 @@ contract BridgeContract is IBridgeContract {
 
     function getConfirmedBatch(
         string calldata _destinationChain
-    ) external view override returns (ConfirmedBatch memory batch) {}
+    ) external view override returns (ConfirmedBatch memory batch) {
+        // return confirmedBatches[_destinationChain];
+    }
 
     function getLastObservedBlock(
         string calldata _sourceChain
@@ -360,6 +392,10 @@ contract BridgeContract is IBridgeContract {
             return true;
         }
         return false;
+    }
+
+    function getSignedBatches(string calldata _id) external view onlyValidator returns (SignedBatch[] memory) {
+        return signedBatches[_id];
     }
 
     modifier onlyValidator() {

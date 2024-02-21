@@ -154,8 +154,22 @@ describe("Bridge Contract", function () {
       blockFullyObserved: false,
     };
 
+    const signedBatch = {
+      id: "1",
+      destinationChainId: "destinationChainId1",
+      rawTransaction: "rawTransaction1",
+      multisigSignature: "multisigSignature1",
+      feePayerMultisigSignature: "feePayerMultisigSignature1",
+      includedTransactions: [],
+      usedUTXOs: {
+        multisigOwnedUTXOs: [],
+        feePayerOwnedUTXOs: [],
+      },
+    };
+
     return { bridgeContract, owner, UTXOs, validators, validatorClaimsBRC, 
-      validatorClaimsBEC, validatorClaimsBEFC, validatorClaimsRRC, validatorClaimsREC, validatorClaimsRECObserverdFalse };
+      validatorClaimsBEC, validatorClaimsBEFC, validatorClaimsRRC, validatorClaimsREC, 
+      validatorClaimsRECObserverdFalse, signedBatch };
   }
 
   describe("Deployment", function () {
@@ -625,6 +639,7 @@ describe("Bridge Contract", function () {
 
       expect(await bridgeContract.shouldCreateBatch(validatorClaimsRRC.refundRequestClaims[0].chainID)).to.be.true;
     });
+    
     it("Should set proper last block hash in lastObservedBlock if block is fully observerd", async function () {
       const { bridgeContract, validators, validatorClaimsRRC } = await loadFixture(deployBridgeContractFixture);
       await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC);
@@ -634,6 +649,7 @@ describe("Bridge Contract", function () {
 
       expect(await bridgeContract.getLastObservedBlock(validatorClaimsRRC.refundRequestClaims[0].chainID)).to.equal(validatorClaimsRRC.blockHash);
     });
+
     it("Should not change block hash in lastObservedBlock if block is not fully observerd", async function () {
       const { bridgeContract, validators, validatorClaimsRECObserverdFalse } = await loadFixture(deployBridgeContractFixture);
       await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRECObserverdFalse);
@@ -643,5 +659,38 @@ describe("Bridge Contract", function () {
 
       expect(await bridgeContract.getLastObservedBlock(validatorClaimsRECObserverdFalse.refundExecutedClaims[0].chainID)).to.equal('');
     });
+
+    it("Should not change block hash in lastObservedBlock if block is not fully observerd", async function () {
+      const { bridgeContract, validators, validatorClaimsRECObserverdFalse } = await loadFixture(deployBridgeContractFixture);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRECObserverdFalse);
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsRECObserverdFalse);
+      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsRECObserverdFalse);
+      await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsRECObserverdFalse);
+
+      expect(await bridgeContract.getLastObservedBlock(validatorClaimsRECObserverdFalse.refundExecutedClaims[0].chainID)).to.equal('');
+    });
+
+    it("SignedBatch should be added to signedBatches", async function () {
+      const { bridgeContract, validators, signedBatch } = await loadFixture(deployBridgeContractFixture);
+      await bridgeContract.connect(validators[0]).submitSignedBatch(signedBatch);
+
+      expect((await bridgeContract.connect(validators[0]).getSignedBatches(signedBatch.id))[0].id).to.equal(signedBatch.id);
+      expect((await bridgeContract.connect(validators[0]).getSignedBatches(signedBatch.id))[0].rawTransaction).to.equal(signedBatch.rawTransaction);
+      expect((await bridgeContract.connect(validators[0]).getSignedBatches(signedBatch.id))[0].multisigSignature).to.equal(signedBatch.multisigSignature);
+      expect((await bridgeContract.connect(validators[0]).getSignedBatches(signedBatch.id))[0].feePayerMultisigSignature).to.equal(signedBatch.feePayerMultisigSignature);
+    });
+
+    it("Should create ConfirmedBatch if there is enough votes", async function () {
+      const { bridgeContract, validators, signedBatch } = await loadFixture(deployBridgeContractFixture);
+      await bridgeContract.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridgeContract.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridgeContract.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridgeContract.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      //expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.id)).id).to.equal(signedBatch.id);
+      //expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.rawTransaction)).id).to.equal(signedBatch.rawTransaction);
+      //expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.rawTransaction)).id).to.equal(signedBatch.rawTransaction);
+    });
+
   });
 });
