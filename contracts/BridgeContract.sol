@@ -13,10 +13,10 @@ contract BridgeContract is IBridgeContract{
     mapping(string => bool) private registeredChains;
 
     // Blochchain ID -> claimsCounter
-    mapping(string => uint64) private lastBatchedClaim;
+    mapping(string => uint256) private lastBatchedClaim;
 
     // Blochchain ID -> blockNumber
-    mapping(string => uint64) private lastBatchBlock;
+    mapping(string => uint256) private currentBatchBlock;
 
     // BatchId -> SignedBatch[]
     mapping(string => SignedBatch[]) private signedBatches;
@@ -28,6 +28,7 @@ contract BridgeContract is IBridgeContract{
     address private owner;
     uint16 private constant MAX_NUMBER_OF_TRANSACTIONS = 1; //intentially set low for testing
     uint8 private constant MAX_NUMBER_OF_BLOCKS = 5;
+    
 
     constructor(address[] memory _validators) {
         for (uint i = 0; i < _validators.length; i++) {
@@ -111,6 +112,8 @@ contract BridgeContract is IBridgeContract{
                 feePayerMultisigSignatures
             );
             confirmedBatches[_signedBatch.id] = confirmedBatch;
+
+            currentBatchBlock[_signedBatch.destinationChainId] = block.number;
         }
     }
 
@@ -168,7 +171,7 @@ contract BridgeContract is IBridgeContract{
         if ((bccm.getClaimsCounter(_destinationChain) - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
             return true;
         }
-        if ((block.number - lastBatchBlock[_destinationChain]) >= MAX_NUMBER_OF_BLOCKS) {
+        if ((block.number - currentBatchBlock[_destinationChain]) >= MAX_NUMBER_OF_BLOCKS) {
             return true;
         }
         return false;
