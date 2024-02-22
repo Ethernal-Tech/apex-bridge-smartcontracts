@@ -121,6 +121,7 @@ interface IBridgeContractStructs {
 
     error AlreadyQueued(string _claimhash);
     error AlreadyProposed(string _claimhash);
+    error ChainAlreadyRegistered();
     error NotOwner();
     error NotValidator();
     

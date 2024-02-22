@@ -214,6 +214,23 @@ describe("Bridge Contract", function () {
   });
 
   describe("Registering new chain with Governance", function () {
+    it("Should reject proposal if chain is already registered", async function () {
+      const { bridgeContract, validators, UTXOs } = await loadFixture(deployBridgeContractFixture);
+
+      await bridgeContract.connect(validators[0]).registerChainGovernance("testChain", UTXOs, "0x", "0x");
+      await bridgeContract.connect(validators[1]).registerChainGovernance("testChain", UTXOs, "0x", "0x");
+      await bridgeContract.connect(validators[2]).registerChainGovernance("testChain", UTXOs, "0x", "0x");
+
+      expect(await bridgeContract.isChainRegistered("testChain")).to.be.false;
+
+      await bridgeContract.connect(validators[3]).registerChainGovernance("testChain", UTXOs, "0x", "0x");
+
+      expect(await bridgeContract.isChainRegistered("testChain")).to.be.true;
+      
+      await expect(bridgeContract.connect(validators[4]).registerChainGovernance("testChain", UTXOs, "0x", "0x"))
+      .to.be.revertedWithCustomError(bridgeContract, "ChainAlreadyRegistered");
+    });
+
     it("Should reject proposal if not sent by validator", async function () {
       const { bridgeContract, owner, UTXOs } = await loadFixture(deployBridgeContractFixture);
 

@@ -135,19 +135,13 @@ contract BridgeContract is IBridgeContract{
         string calldata _addressMultisig,
         string calldata _addressFeePayer
     ) external onlyValidator {
-        require(!registeredChains[_chainId], "Chain already registered");
+        if (registeredChains[_chainId]) {
+            revert ChainAlreadyRegistered();
+        }
+        //require(!registeredChains[_chainId], "Chain already registered");
         if (bccm.hasVoted(_chainId, msg.sender)) {
-                revert AlreadyProposed(_chainId);
-            }
-        _registerChainGovernance(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer);
-    }
-
-    function _registerChainGovernance(
-        string calldata _chainId,
-        UTXOs calldata _initialUTXOs,
-        string calldata _addressMultisig,
-        string calldata _addressFeePayer
-    ) internal {
+            revert AlreadyProposed(_chainId);
+        }
         bccm.setVoted(_chainId, msg.sender, true);
         bccm.setNumberOfVotes(_chainId);
         if (bccm.hasConsensus(_chainId)) {
