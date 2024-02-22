@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import "./interfaces/IBridgeContract.sol";
 import "./BridgeContractClaimsManager.sol";
+import "hardhat/console.sol";
 
 contract BridgeContract is IBridgeContract{
 
@@ -94,10 +95,11 @@ contract BridgeContract is IBridgeContract{
         signedBatches[_signedBatch.id].push(_signedBatch);
 
         if (bccm.hasConsensus(_signedBatch.id)) {
-            string[] memory multisigSignatures;
-            string[] memory feePayerMultisigSignatures;
+            uint256 numberOfSignedBatches = signedBatches[_signedBatch.id].length;
+            string[] memory multisigSignatures = new string[](numberOfSignedBatches);
+            string[] memory feePayerMultisigSignatures = new string[](numberOfSignedBatches);
 
-            for (uint i = 0; i < signedBatches[_signedBatch.id].length; i++) {
+            for (uint i = 0; i < numberOfSignedBatches; i++) {
                 multisigSignatures[i] = signedBatches[_signedBatch.id][i].multisigSignature;
                 feePayerMultisigSignatures[i] = signedBatches[_signedBatch.id][i].feePayerMultisigSignature;
             }
@@ -108,7 +110,6 @@ contract BridgeContract is IBridgeContract{
                 multisigSignatures,
                 feePayerMultisigSignatures
             );
-            
             confirmedBatches[_signedBatch.id] = confirmedBatch;
         }
     }
@@ -193,7 +194,7 @@ contract BridgeContract is IBridgeContract{
     function getConfirmedBatch(
         string calldata _destinationChain
     ) external view override returns (ConfirmedBatch memory batch) {
-        // return confirmedBatches[_destinationChain];
+        return confirmedBatches[_destinationChain];
     }
 
     function getLastObservedBlock(
