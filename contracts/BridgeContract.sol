@@ -8,6 +8,7 @@ import "hardhat/console.sol";
 contract BridgeContract is IBridgeContract{
 
     BridgeContractClaimsManager private bccm;
+
     // mapping in case they could be added/removed
     mapping(address => bool) private validators;
     mapping(string => bool) private registeredChains;
@@ -23,6 +24,8 @@ contract BridgeContract is IBridgeContract{
 
     // BatchId -> ConfirmedBatch
     mapping(string => ConfirmedBatch) private confirmedBatches;
+    // BlockchaID -> batchId
+    mapping(string => string) private lastConfirmedBatch;
 
     Chain[] private chains;
     address private owner;
@@ -113,6 +116,7 @@ contract BridgeContract is IBridgeContract{
             );
             confirmedBatches[_signedBatch.id] = confirmedBatch;
 
+
             currentBatchBlock[_signedBatch.destinationChainId] = block.number;
         }
     }
@@ -166,14 +170,20 @@ contract BridgeContract is IBridgeContract{
     // Will determine if enough transactions are confirmed, or the timeout between two batches is exceeded.
     // It will also check if the given validator already submitted a signed batch and return the response accordingly.
     function shouldCreateBatch(string calldata _destinationChain) external view override returns (bool batch) {
-        //TO DO: implement second sentence of comment, once we have batches, we can check if the validator already submitted 
-        //this batch or should he do it now
-        if ((bccm.getClaimsCounter(_destinationChain) - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
-            return true;
+
+        // TO DO: Check the logic, this will check if there is "pending" signedBatch from this validator, 
+        // I do not see how to check if the batch is related to pending claims, so my guess is that no new 
+        // batch should be created if there's "pending" batch
+        if(!bccm.hasVoted(lastConfirmedBatch[_destinationChain], msg.sender)) {
+
+            if ((bccm.getClaimsCounter(_destinationChain) - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
+                return true;
+            }
+            if ((block.number - currentBatchBlock[_destinationChain]) >= MAX_NUMBER_OF_BLOCKS) {
+                return true;
+            }
         }
-        if ((block.number - currentBatchBlock[_destinationChain]) >= MAX_NUMBER_OF_BLOCKS) {
-            return true;
-        }
+
         return false;
     }
 
