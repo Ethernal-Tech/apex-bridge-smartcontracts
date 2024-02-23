@@ -184,6 +184,24 @@ describe("Bridge Contract", function () {
 
       expect(numberOfValidators).to.equal(5);
     });
+
+    it("Should reject private key setting if not called by validator", async function () {
+      const { bridgeContract, owner } = await loadFixture(deployBridgeContractFixture);
+
+      await expect(
+        bridgeContract.connect(owner).setPrivateKeyHash(ethers.ZeroHash)
+      ).to.be.revertedWithCustomError(bridgeContract, "NotValidator");
+    });
+
+    it("Should register private key setting if called by validator", async function () {
+      const { bridgeContract, validators } = await loadFixture(deployBridgeContractFixture);
+
+      await bridgeContract.connect(validators[0]).setPrivateKeyHash(ethers.ZeroHash);
+
+      expect((await bridgeContract.getAllPrivateKeyHashes()).length).to.equal(1);
+      expect((await bridgeContract.getAllPrivateKeyHashes())[0]).to.equal(ethers.ZeroHash);
+    });
+
   });
 
   describe("Registering new chain with Owner", function () {

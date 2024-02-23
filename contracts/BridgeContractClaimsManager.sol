@@ -7,7 +7,9 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
 
     // Blockchain ID -> claimsCounter
     mapping(string => uint64) private claimsCounter;
+    // TansactionHash -> Voter -> Voted
     mapping(string => mapping(address => bool)) private voted;
+    // TansactionHash -> numberOfVotes
     mapping(string => uint8) private numberOfVotes;
     uint8 private validatorsCount;
 

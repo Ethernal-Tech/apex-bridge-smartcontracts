@@ -3,7 +3,6 @@ pragma solidity ^0.8.23;
 
 import "./interfaces/IBridgeContract.sol";
 import "./BridgeContractClaimsManager.sol";
-import "hardhat/console.sol";
 
 contract BridgeContract is IBridgeContract{
 
@@ -11,6 +10,8 @@ contract BridgeContract is IBridgeContract{
 
     // mapping in case they could be added/removed
     mapping(address => bool) private validators;
+    mapping(address => bytes32) private validatorsPrivateKeyHashes;  
+
     mapping(string => bool) private registeredChains;
 
     // Blochchain ID -> claimsCounter
@@ -28,11 +29,11 @@ contract BridgeContract is IBridgeContract{
     mapping(string => string) private lastConfirmedBatch;
 
     Chain[] private chains;
+    address[] private validatorsAddresses;
     address private owner;
     uint16 private constant MAX_NUMBER_OF_TRANSACTIONS = 1; //intentially set low for testing
     uint8 private constant MAX_NUMBER_OF_BLOCKS = 5;
     
-
     constructor(address[] memory _validators) {
         for (uint i = 0; i < _validators.length; i++) {
             validators[_validators[i]] = true;
@@ -114,8 +115,8 @@ contract BridgeContract is IBridgeContract{
                 multisigSignatures,
                 feePayerMultisigSignatures
             );
+            
             confirmedBatches[_signedBatch.id] = confirmedBatch;
-
 
             currentBatchBlock[_signedBatch.destinationChainId] = block.number;
         }
@@ -238,6 +239,19 @@ contract BridgeContract is IBridgeContract{
 
     function getBridgeContractClaimsManager() external view onlyOwner returns (address) {
         return address(bccm);
+    }
+
+    function getAllPrivateKeyHashes() external view onlyOwner returns (bytes32[] memory) {
+        bytes32[] memory _hashes = new bytes32[](validatorsAddresses.length);
+        for (uint i = 0; i < validatorsAddresses.length; i++) {
+            _hashes[i] = validatorsPrivateKeyHashes[validatorsAddresses[i]];
+        }
+        return _hashes;
+    }
+
+    function setPrivateKeyHash(bytes32 _hash) external onlyValidator {
+        validatorsPrivateKeyHashes[msg.sender] = _hash;
+        validatorsAddresses.push(msg.sender);
     }
 
     modifier onlyValidator() {
