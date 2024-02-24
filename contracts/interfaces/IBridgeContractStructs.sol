@@ -3,6 +3,14 @@ pragma solidity ^0.8.23;
 
 interface IBridgeContractStructs {
 
+    enum ClaimTypes {
+        BRIDGING_REQUEST,
+        BATCH_EXECUTED,
+        BATCH_EXECUTION_FAILED,
+        REFUND_REQUEST,
+        REFUND_EXECUTED
+    }
+
     struct SignedBatch {
         string id;
         string destinationChainId;

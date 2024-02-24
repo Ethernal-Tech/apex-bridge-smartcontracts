@@ -18,7 +18,7 @@ abstract contract IBridgeContract is IBridgeContractStructs{
 
     // Will determine if enough transactions are confirmed, or the timeout between two batches is exceeded.
     // It will also check if the given validator already submitted a signed batch and return the response accordingly.
-    function shouldCreateBatch(string calldata _destinationChain) external virtual view returns (bool batch);
+    function shouldCreateBatch(string calldata _destinationChain) external virtual view returns (bool);
 
     // Will return confirmed transactions until NEXT_BATCH_TIMEOUT_BLOCK or maximum number of transactions that 
     // can be included in the batch, if the maximum number of transactions in a batch has been exceeded

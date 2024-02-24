@@ -172,6 +172,10 @@ contract BridgeContract is IBridgeContract{
     // It will also check if the given validator already submitted a signed batch and return the response accordingly.
     function shouldCreateBatch(string calldata _destinationChain) external view override returns (bool batch) {
 
+        return _shouldCreateBatch(_destinationChain);
+    }
+
+    function _shouldCreateBatch(string calldata _destinationChain) internal view returns (bool) {
         // TO DO: Check the logic, this will check if there is "pending" signedBatch from this validator, 
         // I do not see how to check if the batch is related to pending claims, so my guess is that no new 
         // batch should be created if there's "pending" batch
@@ -192,7 +196,28 @@ contract BridgeContract is IBridgeContract{
     // can be included in the batch, if the maximum number of transactions in a batch has been exceeded
     function getConfirmedTransactions(
         string calldata _destinationChain
-    ) external view override returns (ConfirmedTransaction[] memory confirmedTransactions) {}
+    ) external view override returns (ConfirmedTransaction[] memory confirmedTransactions) {
+        if(_shouldCreateBatch(_destinationChain) ) {
+            // TODO
+            // za blokcejn za koji se trazi treba mi poslednji claim iz proslog batcha
+            // i poslednji claim koji je trenutno u sistemu
+            // moze se desiti da ima vise, pa nekako da se proveri
+            // i to spakovati u array
+            ConfirmedTransaction[] memory confirmedTransactions;
+            uint256 lastBatchedClaim = lastBatchedClaim[_destinationChain];
+            uint256 lastConfirmedClaim = bccm.getClaimsCounter(_destinationChain);
+            if ((lastConfirmedClaim - lastBatchedClaim) >= MAX_NUMBER_OF_TRANSACTIONS) {
+                for (uint i = lastBatchedClaim; i < (lastConfirmedClaim + MAX_NUMBER_OF_TRANSACTIONS); i++) {
+                    //confirmedTransactions[i] = bccm.getClaimsCounter(_destinationChain);
+                }
+                return confirmedTransactions;
+            }
+            for (uint i = lastBatchedClaim; i < lastConfirmedClaim); i++) {
+                    //confirmedTransactions[i] = bccm.getClaimsCounter(_destinationChain);
+            }
+            return confirmedTransactions;
+        }
+    }
 
     // Will return available UTXOs that can cover the cost of bridging transactions included in some batch.
     // Each Batcher will first call the GetConfirmedTransactions() and then calculate (off-chain) how many tokens

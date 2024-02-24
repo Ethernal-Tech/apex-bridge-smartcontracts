@@ -22,6 +22,9 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
 
     // Blockchain -> claimCounter -> claimHash
     mapping(string => mapping(uint64 => string)) internal queuedClaims;
+    // Blockchain -> claimCounter -> claimType
+    mapping (string => mapping(uint64 => ClaimTypes)) internal queuedClaimsTypes;
+
     //  Blochchain ID -> blockHash
     mapping(string => string) internal lastObserverdBlock;
 
@@ -35,6 +38,7 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
 
             queuedClaims[_claims.bridgingRequestClaims[index].sourceChainID][claimsCounter[_claims.bridgingRequestClaims[index].sourceChainID]] = 
                 _claims.bridgingRequestClaims[index].observedTransactionHash;
+            queuedClaimsTypes[_claims.bridgingRequestClaims[index].sourceChainID][claimsCounter[_claims.bridgingRequestClaims[index].sourceChainID]] = ClaimTypes.BRIDGING_REQUEST;
 
             claimsCounter[_claims.bridgingRequestClaims[index].sourceChainID]++;
         }
@@ -49,6 +53,8 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
                 .batchExecutedClaims[index];
 
             queuedClaims[_claims.batchExecutedClaims[index].chainID][claimsCounter[_claims.batchExecutedClaims[index].chainID]] = _claims.batchExecutedClaims[index].observedTransactionHash;
+
+            queuedClaimsTypes[_claims.batchExecutedClaims[index].chainID][claimsCounter[_claims.batchExecutedClaims[index].chainID]] = ClaimTypes.BATCH_EXECUTED;
 
             claimsCounter[_claims.batchExecutedClaims[index].chainID]++;
 
@@ -66,6 +72,8 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
 
             queuedClaims[_claims.batchExecutionFailedClaims[index].chainID][claimsCounter[_claims.batchExecutionFailedClaims[index].chainID]] = _claims.batchExecutionFailedClaims[index].observedTransactionHash;
 
+            queuedClaimsTypes[_claims.batchExecutionFailedClaims[index].chainID][claimsCounter[_claims.batchExecutionFailedClaims[index].chainID]] = ClaimTypes.BATCH_EXECUTION_FAILED;
+
             claimsCounter[_claims.batchExecutionFailedClaims[index].chainID]++;
 
             _updateLastObservedBlockIfNeeded(_claims);
@@ -82,6 +90,8 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
 
             queuedClaims[_claims.refundRequestClaims[index].chainID][claimsCounter[_claims.refundRequestClaims[index].chainID]] = _claims.refundRequestClaims[index].observedTransactionHash;
 
+            queuedClaimsTypes[_claims.refundRequestClaims[index].chainID][claimsCounter[_claims.refundRequestClaims[index].chainID]] = ClaimTypes.REFUND_REQUEST;
+
             claimsCounter[_claims.refundRequestClaims[index].chainID]++;
 
             _updateLastObservedBlockIfNeeded(_claims);
@@ -96,7 +106,9 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
             queuedRefundExecutedClaims[_claims.refundExecutedClaims[index].observedTransactionHash] = _claims
                 .refundExecutedClaims[index];
 
-             queuedClaims[_claims.refundExecutedClaims[index].chainID][claimsCounter[_claims.refundExecutedClaims[index].chainID]] = _claims.refundExecutedClaims[index].observedTransactionHash;
+            queuedClaims[_claims.refundExecutedClaims[index].chainID][claimsCounter[_claims.refundExecutedClaims[index].chainID]] = _claims.refundExecutedClaims[index].observedTransactionHash;
+
+            queuedClaimsTypes[_claims.refundExecutedClaims[index].chainID][claimsCounter[_claims.refundExecutedClaims[index].chainID]] = ClaimTypes.REFUND_EXECUTED;
 
             claimsCounter[_claims.refundExecutedClaims[index].chainID]++;
 
