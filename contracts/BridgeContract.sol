@@ -147,7 +147,6 @@ contract BridgeContract is IBridgeContract{
         if (registeredChains[_chainId]) {
             revert ChainAlreadyRegistered();
         }
-        //require(!registeredChains[_chainId], "Chain already registered");
         if (bccm.hasVoted(_chainId, msg.sender)) {
             revert AlreadyProposed(_chainId);
         }
@@ -181,7 +180,7 @@ contract BridgeContract is IBridgeContract{
         // batch should be created if there's "pending" batch
         if(!bccm.hasVoted(lastConfirmedBatch[_destinationChain], msg.sender)) {
 
-            if ((bccm.getClaimsCounter(_destinationChain) - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
+            if ((bccm.claimsCounter(_destinationChain) - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
                 return true;
             }
             if ((block.number - currentBatchBlock[_destinationChain]) >= MAX_NUMBER_OF_BLOCKS) {
@@ -196,26 +195,29 @@ contract BridgeContract is IBridgeContract{
     // can be included in the batch, if the maximum number of transactions in a batch has been exceeded
     function getConfirmedTransactions(
         string calldata _destinationChain
-    ) external view override returns (ConfirmedTransaction[] memory confirmedTransactions) {
+    ) external view override returns (ConfirmedTransaction[] memory _confirmedTransactions) {
         if(_shouldCreateBatch(_destinationChain) ) {
             // TODO
             // za blokcejn za koji se trazi treba mi poslednji claim iz proslog batcha
             // i poslednji claim koji je trenutno u sistemu
             // moze se desiti da ima vise, pa nekako da se proveri
             // i to spakovati u array
-            ConfirmedTransaction[] memory confirmedTransactions;
-            uint256 lastBatchedClaim = lastBatchedClaim[_destinationChain];
-            uint256 lastConfirmedClaim = bccm.getClaimsCounter(_destinationChain);
-            if ((lastConfirmedClaim - lastBatchedClaim) >= MAX_NUMBER_OF_TRANSACTIONS) {
-                for (uint i = lastBatchedClaim; i < (lastConfirmedClaim + MAX_NUMBER_OF_TRANSACTIONS); i++) {
-                    //confirmedTransactions[i] = bccm.getClaimsCounter(_destinationChain);
+            uint256 lastBatchedClaimNumber = lastBatchedClaim[_destinationChain];
+            uint256 lastConfirmedClaim = bccm.claimsCounter(_destinationChain);
+            if ((lastConfirmedClaim - lastBatchedClaimNumber) >= MAX_NUMBER_OF_TRANSACTIONS) {
+                for (uint i = lastBatchedClaimNumber; i < (lastConfirmedClaim + MAX_NUMBER_OF_TRANSACTIONS); i++) {
+                    ClaimTypes claimType = bccm.getQueuedClaimsTypes(_destinationChain, i);
+
+                    if(claimType == ClaimTypes.BRIDGING_REQUEST) {
+                        //Receiver[] memory receivers = bccm.getClaimBRC(_destinationChain, i).receivers;
+                    }
                 }
-                return confirmedTransactions;
+                return _confirmedTransactions;
             }
-            for (uint i = lastBatchedClaim; i < lastConfirmedClaim); i++) {
+            for (uint i = lastBatchedClaimNumber; i < lastConfirmedClaim; i++) {
                     //confirmedTransactions[i] = bccm.getClaimsCounter(_destinationChain);
             }
-            return confirmedTransactions;
+            return _confirmedTransactions;
         }
     }
 
@@ -251,11 +253,11 @@ contract BridgeContract is IBridgeContract{
     }
 
     function getValidatorsCount() external view override returns (uint8) {
-        return bccm.getValidatorsCount();
+        return bccm.validatorsCount();
     }
 
     function getNumberOfVotes(string calldata _id) external view override returns (uint8) {
-        return bccm.getNumberOfVotes(_id);
+        return bccm.numberOfVotes(_id);
     }
 
     function getSignedBatches(string calldata _id) external view onlyValidator returns (SignedBatch[] memory) {

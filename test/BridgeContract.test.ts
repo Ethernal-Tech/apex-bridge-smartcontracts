@@ -396,11 +396,11 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
 
-      const claimsCounter = await bridgeContractClaimsManager.getClaimsCounter(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID);
+      const claimsCounter = await bridgeContractClaimsManager.claimsCounter(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID);
 
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-      expect(await bridgeContractClaimsManager.getClaimsCounter(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID)).to.equal(claimsCounter + BigInt(1));
+      expect(await bridgeContractClaimsManager.claimsCounter(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID)).to.equal(claimsCounter + BigInt(1));
     });
   });
   describe("Submit new Batch Executed Claim", function () {
@@ -456,11 +456,11 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEC);
       await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEC);
 
-      const claimsCounter = await bridgeContractClaimsManager.getClaimsCounter(validatorClaimsBEC.batchExecutedClaims[0].chainID);
+      const claimsCounter = await bridgeContractClaimsManager.claimsCounter(validatorClaimsBEC.batchExecutedClaims[0].chainID);
 
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
-      expect(await bridgeContractClaimsManager.getClaimsCounter(validatorClaimsBEC.batchExecutedClaims[0].chainID)).to.equal(claimsCounter + BigInt(1));
+      expect(await bridgeContractClaimsManager.claimsCounter(validatorClaimsBEC.batchExecutedClaims[0].chainID)).to.equal(claimsCounter + BigInt(1));
     });
   });
   describe("Submit new Batch Execution Failed Claims", function () {
@@ -516,11 +516,11 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEFC);
       await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEFC);
 
-      const claimsCounter = await bridgeContractClaimsManager.getClaimsCounter(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID);
+      const claimsCounter = await bridgeContractClaimsManager.claimsCounter(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID);
 
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEFC);
 
-      expect(await bridgeContractClaimsManager.getClaimsCounter(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID)).to.equal(claimsCounter + BigInt(1));
+      expect(await bridgeContractClaimsManager.claimsCounter(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID)).to.equal(claimsCounter + BigInt(1));
     });
   });
   describe("Submit new Refund Request Claims", function () {
@@ -577,11 +577,11 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsRRC);
       await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsRRC);
 
-      const claimsCounter = await bridgeContractClaimsManager.getClaimsCounter(validatorClaimsRRC.refundRequestClaims[0].chainID);
+      const claimsCounter = await bridgeContractClaimsManager.claimsCounter(validatorClaimsRRC.refundRequestClaims[0].chainID);
 
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsRRC);
 
-      expect(await bridgeContractClaimsManager.getClaimsCounter(validatorClaimsRRC.refundRequestClaims[0].chainID)).to.equal(claimsCounter + BigInt(1));
+      expect(await bridgeContractClaimsManager.claimsCounter(validatorClaimsRRC.refundRequestClaims[0].chainID)).to.equal(claimsCounter + BigInt(1));
     });
   });
   describe("Submit new Refund Executed Claim", function () {
@@ -638,11 +638,11 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsREC);
       await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsREC);
 
-      const claimsCounter = await bridgeContractClaimsManager.getClaimsCounter(validatorClaimsREC.refundExecutedClaims[0].chainID);
+      const claimsCounter = await bridgeContractClaimsManager.claimsCounter(validatorClaimsREC.refundExecutedClaims[0].chainID);
 
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsREC);
 
-      expect(await bridgeContractClaimsManager.getClaimsCounter(validatorClaimsREC.refundExecutedClaims[0].chainID)).to.equal(claimsCounter + BigInt(1));
+      expect(await bridgeContractClaimsManager.claimsCounter(validatorClaimsREC.refundExecutedClaims[0].chainID)).to.equal(claimsCounter + BigInt(1));
     });
   });
   describe("Batch creation", function () {

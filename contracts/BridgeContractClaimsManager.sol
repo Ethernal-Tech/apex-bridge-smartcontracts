@@ -6,12 +6,12 @@ import "./interfaces/IBridgeContract.sol";
 contract BridgeContractClaimsManager is IBridgeContractStructs {
 
     // Blockchain ID -> claimsCounter
-    mapping(string => uint64) private claimsCounter;
+    mapping(string => uint64) public claimsCounter;
     // TansactionHash -> Voter -> Voted
     mapping(string => mapping(address => bool)) private voted;
     // TansactionHash -> numberOfVotes
-    mapping(string => uint8) private numberOfVotes;
-    uint8 private validatorsCount;
+    mapping(string => uint8) public numberOfVotes;
+    uint8 public validatorsCount;
 
     //  claimHash -> claim
     mapping(string => BridgingRequestClaim) internal queuedBridgingRequestsClaims;    
@@ -21,9 +21,9 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
     mapping(string => RefundExecutedClaim) internal queuedRefundExecutedClaims;
 
     // Blockchain -> claimCounter -> claimHash
-    mapping(string => mapping(uint64 => string)) internal queuedClaims;
+    mapping(string => mapping(uint256 => string)) internal queuedClaims;
     // Blockchain -> claimCounter -> claimType
-    mapping (string => mapping(uint64 => ClaimTypes)) internal queuedClaimsTypes;
+    mapping (string => mapping(uint256 => ClaimTypes)) internal queuedClaimsTypes;
 
     //  Blochchain ID -> blockHash
     mapping(string => string) internal lastObserverdBlock;
@@ -171,25 +171,17 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
         }
         return false;
     }
-
-    function getClaimsCounter(string calldata _chainId) external view returns (uint256) {
-        return claimsCounter[_chainId];
-    }
     
     function getVote(string calldata _id, address _voter) external view returns (bool) {
         return voted[_id][_voter];
     }
 
-    function getNumberOfVotes(string calldata _id) external view returns (uint8) {
-        return numberOfVotes[_id];
-    }
-
-    function getValidatorsCount() external view returns (uint8) {
-        return validatorsCount;
-    }
-
     function getLastObserveredBlock(string calldata _sourceChain) external view returns (string memory blockHash) {
         return lastObserverdBlock[_sourceChain];
+    }
+
+    function getQueuedClaimsTypes(string calldata _chainId, uint256 _index) external view returns (ClaimTypes) {
+        return queuedClaimsTypes[_chainId][_index];
     }
 
     function setValidatorsCount(uint8 _validatorsCount) external {
