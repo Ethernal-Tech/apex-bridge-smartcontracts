@@ -14,19 +14,19 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
     uint8 public validatorsCount;
 
     //  claimHash -> claim
-    mapping(string => BridgingRequestClaim) internal queuedBridgingRequestsClaims;    
-    mapping(string => BatchExecutedClaim) internal queuedBatchExecutedClaims;
-    mapping(string => BatchExecutionFailedClaim) internal queuedBatchExecutionFailedClaims;
-    mapping(string => RefundRequestClaim) internal queuedRefundRequestClaims;
-    mapping(string => RefundExecutedClaim) internal queuedRefundExecutedClaims;
+    mapping(string => BridgingRequestClaim) public queuedBridgingRequestsClaims;    
+    mapping(string => BatchExecutedClaim) public queuedBatchExecutedClaims;
+    mapping(string => BatchExecutionFailedClaim) public queuedBatchExecutionFailedClaims;
+    mapping(string => RefundRequestClaim) public queuedRefundRequestClaims;
+    mapping(string => RefundExecutedClaim) public queuedRefundExecutedClaims;
 
     // Blockchain -> claimCounter -> claimHash
-    mapping(string => mapping(uint256 => string)) internal queuedClaims;
+    mapping(string => mapping(uint256 => string)) public queuedClaims;
     // Blockchain -> claimCounter -> claimType
-    mapping (string => mapping(uint256 => ClaimTypes)) internal queuedClaimsTypes;
+    mapping (string => mapping(uint256 => ClaimTypes)) public queuedClaimsTypes;
 
     //  Blochchain ID -> blockHash
-    mapping(string => string) internal lastObserverdBlock;
+    mapping(string => string) public lastObserveredBlock;
 
     function submitClaimsBRC(ValidatorClaims calldata _claims, uint256 index, address _caller) external {
         voted[_claims.bridgingRequestClaims[index].observedTransactionHash][_caller] = true;
@@ -131,7 +131,7 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
                 chainId = _claims.refundExecutedClaims[0].chainID;
             }
 
-            lastObserverdBlock[chainId] = _claims.blockHash;
+            lastObserveredBlock[chainId] = _claims.blockHash;
         }
     }
     
@@ -155,7 +155,7 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
 
     function isQueuedREC(RefundExecutedClaim calldata _claim) external view returns (bool) {
         return keccak256(abi.encode(_claim)) == keccak256(abi.encode(queuedRefundExecutedClaims[_claim.observedTransactionHash]));     
-    }r
+    }
 
     function hasConsensus(string calldata _id) external view returns (bool) {
         return _hasConsensus(_id);
@@ -167,22 +167,11 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
         }
         return false;
     }
-    
-    function getLastObserveredBlock(string calldata _sourceChain) external view returns (string memory blockHash) {
-        return lastObserverdBlock[_sourceChain];
-    }
-
-    function getQueuedClaimsTypes(string calldata _chainId, uint256 _index) external view returns (ClaimTypes) {
-        return queuedClaimsTypes[_chainId][_index];
-    }
-
-    function getQueuedClaims(string calldata _chainId, uint256 _index) external view returns (string memory claim) {
-        return queuedClaims[_chainId][_index];
-    }
 
     function getClaimBRC(string calldata _id) external view returns (BridgingRequestClaim memory claim) {
         return queuedBridgingRequestsClaims[_id];
     }
+    
     function setValidatorsCount(uint8 _validatorsCount) external {
         validatorsCount = _validatorsCount;
     }

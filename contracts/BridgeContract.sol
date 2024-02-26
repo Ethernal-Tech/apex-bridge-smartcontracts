@@ -21,7 +21,7 @@ contract BridgeContract is IBridgeContract{
     mapping(string => uint256) private currentBatchBlock;
 
     // BatchId -> SignedBatch[]
-    mapping(string => SignedBatch[]) private signedBatches;
+    mapping(string => SignedBatch[]) public signedBatches;
 
     // BatchId -> ConfirmedBatch
     mapping(string => ConfirmedBatch) private confirmedBatches;
@@ -208,7 +208,7 @@ contract BridgeContract is IBridgeContract{
 
             //TODO: is there a better way?, need to know how big will the array be
             for (uint i = lastBatchedClaimNumber; i < lastClaimToInclude; i++) {
-                ClaimTypes claimType = bccm.getQueuedClaimsTypes(_destinationChain, i);
+                ClaimTypes claimType = bccm.queuedClaimsTypes(_destinationChain, i);
                 if(claimType == ClaimTypes.BRIDGING_REQUEST) {
                     arraySize++;
                 }
@@ -217,10 +217,10 @@ contract BridgeContract is IBridgeContract{
             ConfirmedTransaction[] memory confirmedTransactions = new ConfirmedTransaction[](arraySize);
 
             for (uint i = lastBatchedClaimNumber; i < lastClaimToInclude; i++) {
-                ClaimTypes claimType = bccm.getQueuedClaimsTypes(_destinationChain, i);
+                ClaimTypes claimType = bccm.queuedClaimsTypes(_destinationChain, i);
 
                 if(claimType == ClaimTypes.BRIDGING_REQUEST) {
-                    Receiver[] memory tempReceivers = bccm.getClaimBRC(bccm.getQueuedClaims(_destinationChain, i)).receivers;
+                    Receiver[] memory tempReceivers = bccm.getClaimBRC(bccm.queuedClaims(_destinationChain, i)).receivers;
                     ConfirmedTransaction memory confirmedtransaction = ConfirmedTransaction(
                         i,
                         tempReceivers
@@ -253,7 +253,7 @@ contract BridgeContract is IBridgeContract{
     function getLastObservedBlock(
         string calldata _sourceChain
     ) external view override returns (string memory blockHash) {
-        return bccm.getLastObserveredBlock(_sourceChain);
+        return bccm.lastObserveredBlock(_sourceChain);
     }
 
     function getAllRegisteredChains() external view override returns (Chain[] memory _chains) {
