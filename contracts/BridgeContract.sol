@@ -49,7 +49,8 @@ contract BridgeContract is IBridgeContract{
             if (bccm.isQueuedBRC(_claims.bridgingRequestClaims[i])) {
                 revert AlreadyQueued(_claims.bridgingRequestClaims[i].observedTransactionHash);
             }
-            if (bccm.hasVoted(_claims.bridgingRequestClaims[i].observedTransactionHash, msg.sender)) {
+            // if (bccm.hasVoted(_claims.bridgingRequestClaims[i].observedTransactionHash, msg.sender)) {
+            if (bccm.voted(_claims.bridgingRequestClaims[i].observedTransactionHash, msg.sender)) {
                 revert AlreadyProposed(_claims.bridgingRequestClaims[i].observedTransactionHash);
             }
             bccm.submitClaimsBRC(_claims, i, msg.sender);
@@ -58,7 +59,7 @@ contract BridgeContract is IBridgeContract{
             if (bccm.isQueuedBEC(_claims.batchExecutedClaims[i])) {
                 revert AlreadyQueued(_claims.batchExecutedClaims[i].observedTransactionHash);
             }
-            if (bccm.hasVoted(_claims.batchExecutedClaims[i].observedTransactionHash, msg.sender)) {
+            if (bccm.voted(_claims.batchExecutedClaims[i].observedTransactionHash, msg.sender)) {
                 revert AlreadyProposed(_claims.batchExecutedClaims[i].observedTransactionHash);
             }
             bccm.submitClaimsBEC(_claims, i, msg.sender);
@@ -67,7 +68,7 @@ contract BridgeContract is IBridgeContract{
             if (bccm.isQueuedBEFC(_claims.batchExecutionFailedClaims[i])) {
                 revert AlreadyQueued(_claims.batchExecutionFailedClaims[i].observedTransactionHash);
             }
-            if (bccm.hasVoted(_claims.batchExecutionFailedClaims[i].observedTransactionHash, msg.sender)) {
+            if (bccm.voted(_claims.batchExecutionFailedClaims[i].observedTransactionHash, msg.sender)) {
                 revert AlreadyProposed(_claims.batchExecutionFailedClaims[i].observedTransactionHash);
             }
             bccm.submitClaimsBEFC(_claims, i, msg.sender);
@@ -76,7 +77,7 @@ contract BridgeContract is IBridgeContract{
             if (bccm.isQueuedRRC(_claims.refundRequestClaims[i])) {
                 revert AlreadyQueued(_claims.refundRequestClaims[i].observedTransactionHash);
             }
-            if (bccm.hasVoted(_claims.refundRequestClaims[i].observedTransactionHash, msg.sender)) {
+            if (bccm.voted(_claims.refundRequestClaims[i].observedTransactionHash, msg.sender)) {
                 revert AlreadyProposed(_claims.refundRequestClaims[i].observedTransactionHash);
             }
             bccm.submitClaimsRRC(_claims, i, msg.sender);
@@ -85,7 +86,7 @@ contract BridgeContract is IBridgeContract{
             if (bccm.isQueuedREC(_claims.refundExecutedClaims[i])) {
                 revert AlreadyQueued(_claims.refundExecutedClaims[i].observedTransactionHash);
             }
-            if (bccm.hasVoted(_claims.refundExecutedClaims[i].observedTransactionHash, msg.sender)) {
+            if (bccm.voted(_claims.refundExecutedClaims[i].observedTransactionHash, msg.sender)) {
                 revert AlreadyProposed(_claims.refundExecutedClaims[i].observedTransactionHash);
             }
             bccm.submitClaimsREC(_claims, i, msg.sender);
@@ -147,7 +148,7 @@ contract BridgeContract is IBridgeContract{
         if (registeredChains[_chainId]) {
             revert ChainAlreadyRegistered();
         }
-        if (bccm.hasVoted(_chainId, msg.sender)) {
+        if (bccm.voted(_chainId, msg.sender)) {
             revert AlreadyProposed(_chainId);
         }
         bccm.setVoted(_chainId, msg.sender, true);
@@ -178,7 +179,7 @@ contract BridgeContract is IBridgeContract{
         // TO DO: Check the logic, this will check if there is "pending" signedBatch from this validator, 
         // I do not see how to check if the batch is related to pending claims, so my guess is that no new 
         // batch should be created if there's "pending" batch
-        if(!bccm.hasVoted(lastConfirmedBatch[_destinationChain], msg.sender)) {
+        if(!bccm.voted(lastConfirmedBatch[_destinationChain], msg.sender)) {
 
             if ((bccm.claimsCounter(_destinationChain) - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
                 return true;

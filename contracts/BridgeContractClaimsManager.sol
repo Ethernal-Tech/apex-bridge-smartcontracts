@@ -8,7 +8,7 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
     // Blockchain ID -> claimsCounter
     mapping(string => uint64) public claimsCounter;
     // TansactionHash -> Voter -> Voted
-    mapping(string => mapping(address => bool)) private voted;
+    mapping(string => mapping(address => bool)) public voted;
     // TansactionHash -> numberOfVotes
     mapping(string => uint8) public numberOfVotes;
     uint8 public validatorsCount;
@@ -155,11 +155,7 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
 
     function isQueuedREC(RefundExecutedClaim calldata _claim) external view returns (bool) {
         return keccak256(abi.encode(_claim)) == keccak256(abi.encode(queuedRefundExecutedClaims[_claim.observedTransactionHash]));     
-    }
-
-    function hasVoted(string calldata _id, address _caller) external view returns (bool) {
-        return voted[_id][_caller];
-    }
+    }r
 
     function hasConsensus(string calldata _id) external view returns (bool) {
         return _hasConsensus(_id);
@@ -172,10 +168,6 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
         return false;
     }
     
-    function getVote(string calldata _id, address _voter) external view returns (bool) {
-        return voted[_id][_voter];
-    }
-
     function getLastObserveredBlock(string calldata _sourceChain) external view returns (string memory blockHash) {
         return lastObserverdBlock[_sourceChain];
     }
