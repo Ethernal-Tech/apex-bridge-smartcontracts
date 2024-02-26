@@ -36,11 +36,11 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
             queuedBridgingRequestsClaims[_claims.bridgingRequestClaims[index].observedTransactionHash] = _claims
                 .bridgingRequestClaims[index];
 
-            queuedClaims[_claims.bridgingRequestClaims[index].sourceChainID][claimsCounter[_claims.bridgingRequestClaims[index].sourceChainID]] = 
+            queuedClaims[_claims.bridgingRequestClaims[index].destinationChainID][claimsCounter[_claims.bridgingRequestClaims[index].destinationChainID]] = 
                 _claims.bridgingRequestClaims[index].observedTransactionHash;
-            queuedClaimsTypes[_claims.bridgingRequestClaims[index].sourceChainID][claimsCounter[_claims.bridgingRequestClaims[index].sourceChainID]] = ClaimTypes.BRIDGING_REQUEST;
+            queuedClaimsTypes[_claims.bridgingRequestClaims[index].destinationChainID][claimsCounter[_claims.bridgingRequestClaims[index].destinationChainID]] = ClaimTypes.BRIDGING_REQUEST;
 
-            claimsCounter[_claims.bridgingRequestClaims[index].sourceChainID]++;
+            claimsCounter[_claims.bridgingRequestClaims[index].destinationChainID]++;
         }
     }
 
@@ -184,6 +184,13 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
         return queuedClaimsTypes[_chainId][_index];
     }
 
+    function getQueuedClaims(string calldata _chainId, uint256 _index) external view returns (string memory claim) {
+        return queuedClaims[_chainId][_index];
+    }
+
+    function getClaimBRC(string calldata _id) external view returns (BridgingRequestClaim memory claim) {
+        return queuedBridgingRequestsClaims[_id];
+    }
     function setValidatorsCount(uint8 _validatorsCount) external {
         validatorsCount = _validatorsCount;
     }

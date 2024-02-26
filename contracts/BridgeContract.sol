@@ -196,28 +196,39 @@ contract BridgeContract is IBridgeContract{
     function getConfirmedTransactions(
         string calldata _destinationChain
     ) external view override returns (ConfirmedTransaction[] memory _confirmedTransactions) {
-        if(_shouldCreateBatch(_destinationChain) ) {
-            // TODO
-            // za blokcejn za koji se trazi treba mi poslednji claim iz proslog batcha
-            // i poslednji claim koji je trenutno u sistemu
-            // moze se desiti da ima vise, pa nekako da se proveri
-            // i to spakovati u array
+        if(_shouldCreateBatch(_destinationChain)) {
             uint256 lastBatchedClaimNumber = lastBatchedClaim[_destinationChain];
             uint256 lastConfirmedClaim = bccm.claimsCounter(_destinationChain);
-            if ((lastConfirmedClaim - lastBatchedClaimNumber) >= MAX_NUMBER_OF_TRANSACTIONS) {
-                for (uint i = lastBatchedClaimNumber; i < (lastConfirmedClaim + MAX_NUMBER_OF_TRANSACTIONS); i++) {
-                    ClaimTypes claimType = bccm.getQueuedClaimsTypes(_destinationChain, i);
+            uint256 lastClaimToInclude = ((lastConfirmedClaim - lastBatchedClaimNumber) >= MAX_NUMBER_OF_TRANSACTIONS) 
+                ? lastBatchedClaimNumber + MAX_NUMBER_OF_TRANSACTIONS : lastConfirmedClaim;
+            
+            uint256 counterConfirmedTransactions;
+            uint256 arraySize;
 
-                    if(claimType == ClaimTypes.BRIDGING_REQUEST) {
-                        //Receiver[] memory receivers = bccm.getClaimBRC(_destinationChain, i).receivers;
-                    }
+            //TODO: is there a better way?, need to know how big will the array be
+            for (uint i = lastBatchedClaimNumber; i < lastClaimToInclude; i++) {
+                ClaimTypes claimType = bccm.getQueuedClaimsTypes(_destinationChain, i);
+                if(claimType == ClaimTypes.BRIDGING_REQUEST) {
+                    arraySize++;
                 }
-                return _confirmedTransactions;
             }
-            for (uint i = lastBatchedClaimNumber; i < lastConfirmedClaim; i++) {
-                    //confirmedTransactions[i] = bccm.getClaimsCounter(_destinationChain);
+
+            ConfirmedTransaction[] memory confirmedTransactions = new ConfirmedTransaction[](arraySize);
+
+            for (uint i = lastBatchedClaimNumber; i < lastClaimToInclude; i++) {
+                ClaimTypes claimType = bccm.getQueuedClaimsTypes(_destinationChain, i);
+
+                if(claimType == ClaimTypes.BRIDGING_REQUEST) {
+                    Receiver[] memory tempReceivers = bccm.getClaimBRC(bccm.getQueuedClaims(_destinationChain, i)).receivers;
+                    ConfirmedTransaction memory confirmedtransaction = ConfirmedTransaction(
+                        i,
+                        tempReceivers
+                    );
+                    confirmedTransactions[counterConfirmedTransactions] = confirmedtransaction;
+                    counterConfirmedTransactions++;
+                }
             }
-            return _confirmedTransactions;
+            return confirmedTransactions;
         }
     }
 

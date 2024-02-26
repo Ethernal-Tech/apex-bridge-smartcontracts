@@ -1,5 +1,3 @@
-import { BridgeContractClaimsManager } from './../typechain-types/BridgeContractClaimsManager';
-//import { BridgeContract } from "./../typechain-types/BridgeContract";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
@@ -266,8 +264,6 @@ describe("Bridge Contract", function () {
         bridgeContract.connect(validators[0]).registerChainGovernance("testChain", UTXOs, "0x", "0x")
       ).to.be.revertedWithCustomError(bridgeContractClaimsManager, "AlreadyProposed");
 
-    });
-
     it("Should have correct number of votes for new chain", async function () {
       const { bridgeContract, validators, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
@@ -336,6 +332,8 @@ describe("Bridge Contract", function () {
       expect(chains[1].id).to.equal("testChain 2");
     });
 
+  });
+
   describe("Submit new Bridging Request Claim", function () {
     it("Should reject any claim if not sent by validator", async function () {
       const { bridgeContract, owner, validatorClaimsBRC } = await loadFixture(deployBridgeContractFixture);
@@ -396,11 +394,11 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
 
-      const claimsCounter = await bridgeContractClaimsManager.claimsCounter(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID);
+      const claimsCounter = await bridgeContractClaimsManager.claimsCounter(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID);
 
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-      expect(await bridgeContractClaimsManager.claimsCounter(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID)).to.equal(claimsCounter + BigInt(1));
+      expect(await bridgeContractClaimsManager.claimsCounter(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID)).to.equal(claimsCounter + BigInt(1));
     });
   });
   describe("Submit new Batch Executed Claim", function () {
@@ -751,6 +749,16 @@ describe("Bridge Contract", function () {
       expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.id)).multisigSignatures[2]).to.equal("multisigSignature1");
       expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.id)).multisigSignatures[3]).to.equal("multisigSignature1");
     });
+    it("Should return confirmedTransactions from confirmed BridgeRequestClaim", async function () {
+      const { bridgeContract, validators, validatorClaimsBRC } = await loadFixture(deployBridgeContractFixture);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridgeContract.connect(validators[4]).submitClaims(validatorClaimsBRC);
 
+      expect((await bridgeContract.connect(validators[0]).getConfirmedTransactions(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID)).length).to.equal(1);
+      expect((await bridgeContract.connect(validators[0]).getConfirmedTransactions(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID))[0].receivers[0].destinationAddress).to.equal("0x123...");
+      expect((await bridgeContract.connect(validators[0]).getConfirmedTransactions(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID))[0].receivers[0].amount).to.equal(100);
+    });
   });
 });
