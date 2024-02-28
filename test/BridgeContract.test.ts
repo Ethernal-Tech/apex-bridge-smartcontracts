@@ -233,6 +233,15 @@ describe("Bridge Contract", function () {
       expect(await bridgeContract.isChainRegistered("testChain")).to.be.true;
     });
 
+    it("Should store UTXOs when new chain is registered by owner", async function () {
+      const { bridgeContract, owner, UTXOs } = await loadFixture(deployBridgeContractFixture);
+
+      await bridgeContract.connect(owner).registerChain("testChain", UTXOs, "0x", "0x");
+
+      expect((await bridgeContract.getchainUTXOs("testChain")).multisigOwnedUTXOs[0].txHash).to.equal(UTXOs.multisigOwnedUTXOs[0].txHash);
+      expect((await bridgeContract.getchainUTXOs("testChain")).feePayerOwnedUTXOs[0].txHash).to.equal(UTXOs.feePayerOwnedUTXOs[0].txHash);
+    });
+
     it("Should emit new chain registered when registered by owner", async function () {
       const { bridgeContract, owner, UTXOs } = await loadFixture(deployBridgeContractFixture);
 

@@ -93,6 +93,14 @@ contract BridgeContract is IBridgeContract{
         chains[chains.length - 1].utxos = _initialUTXOs;
         chains[chains.length - 1].addressMultisig = _addressMultisig;
         chains[chains.length - 1].addressFeePayer = _addressFeePayer;
+
+        for (uint i = 0; i < _initialUTXOs.multisigOwnedUTXOs.length; i++) {
+            chainUTXOs[_chainId].multisigOwnedUTXOs.push(_initialUTXOs.multisigOwnedUTXOs[i]);
+        }
+        for (uint i = 0; i < _initialUTXOs.feePayerOwnedUTXOs.length; i++) {
+            chainUTXOs[_chainId].feePayerOwnedUTXOs.push(_initialUTXOs.feePayerOwnedUTXOs[i]);
+        }
+
         emit newChainRegistered(_chainId);
     }
 
