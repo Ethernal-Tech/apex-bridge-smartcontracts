@@ -19,8 +19,22 @@ describe("Bridge Contract", function () {
     const bridgeContractClaimsManager = await ethers.getContractAt("BridgeContractClaimsManager", address);
 
     const UTXOs = {
-      multisigOwnedUTXOs: [],
-      feePayerOwnedUTXOs: [],
+      multisigOwnedUTXOs: [
+        {
+          txHash: "0xdef...",
+          txIndex: 0,
+          addressUTXO: "0x456...",
+          amount: 200,
+        },
+      ],
+      feePayerOwnedUTXOs: [
+        {
+          txHash: "0xdef...",
+          txIndex: 0,
+          addressUTXO: "0x456...",
+          amount: 300,
+        }
+      ],
     };
 
     const validatorClaimsBRC = {
@@ -293,6 +307,17 @@ describe("Bridge Contract", function () {
 
       expect(await bridgeContract.isChainRegistered("testChain")).to.be.false;
 
+      await bridgeContract.connect(validators[3]).registerChainGovernance("testChain", UTXOs, "0x", "0x");
+
+      expect(await bridgeContract.isChainRegistered("testChain")).to.be.true;
+    });
+
+    it("Should store UTXOs when new chain is registered", async function () {
+      const { bridgeContract, validators, UTXOs } = await loadFixture(deployBridgeContractFixture);
+
+      await bridgeContract.connect(validators[0]).registerChainGovernance("testChain", UTXOs, "0x", "0x");
+      await bridgeContract.connect(validators[1]).registerChainGovernance("testChain", UTXOs, "0x", "0x");
+      await bridgeContract.connect(validators[2]).registerChainGovernance("testChain", UTXOs, "0x", "0x");
       await bridgeContract.connect(validators[3]).registerChainGovernance("testChain", UTXOs, "0x", "0x");
 
       expect(await bridgeContract.isChainRegistered("testChain")).to.be.true;

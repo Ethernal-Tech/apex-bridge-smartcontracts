@@ -13,6 +13,8 @@ contract BridgeContract is IBridgeContract{
     mapping(address => bytes32) private validatorsPrivateKeyHashes;  
 
     mapping(string => bool) private registeredChains;
+    // BLockchain ID -> UTXOs
+    mapping(string => UTXOs) private chainUTXOs;
 
     // Blochchain ID -> claimsCounter
     mapping(string => uint256) private lastBatchedClaim;
@@ -45,52 +47,7 @@ contract BridgeContract is IBridgeContract{
 
     // Claims
     function submitClaims(ValidatorClaims calldata _claims) external override onlyValidator {
-        for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
-            if (bccm.isQueuedBRC(_claims.bridgingRequestClaims[i])) {
-                revert AlreadyQueued(_claims.bridgingRequestClaims[i].observedTransactionHash);
-            }
-            // if (bccm.hasVoted(_claims.bridgingRequestClaims[i].observedTransactionHash, msg.sender)) {
-            if (bccm.voted(_claims.bridgingRequestClaims[i].observedTransactionHash, msg.sender)) {
-                revert AlreadyProposed(_claims.bridgingRequestClaims[i].observedTransactionHash);
-            }
-            bccm.submitClaimsBRC(_claims, i, msg.sender);
-        }
-        for (uint i = 0; i < _claims.batchExecutedClaims.length; i++) {
-            if (bccm.isQueuedBEC(_claims.batchExecutedClaims[i])) {
-                revert AlreadyQueued(_claims.batchExecutedClaims[i].observedTransactionHash);
-            }
-            if (bccm.voted(_claims.batchExecutedClaims[i].observedTransactionHash, msg.sender)) {
-                revert AlreadyProposed(_claims.batchExecutedClaims[i].observedTransactionHash);
-            }
-            bccm.submitClaimsBEC(_claims, i, msg.sender);
-        }
-        for (uint i = 0; i < _claims.batchExecutionFailedClaims.length; i++) {
-            if (bccm.isQueuedBEFC(_claims.batchExecutionFailedClaims[i])) {
-                revert AlreadyQueued(_claims.batchExecutionFailedClaims[i].observedTransactionHash);
-            }
-            if (bccm.voted(_claims.batchExecutionFailedClaims[i].observedTransactionHash, msg.sender)) {
-                revert AlreadyProposed(_claims.batchExecutionFailedClaims[i].observedTransactionHash);
-            }
-            bccm.submitClaimsBEFC(_claims, i, msg.sender);
-        }
-        for (uint i = 0; i < _claims.refundRequestClaims.length; i++) {
-            if (bccm.isQueuedRRC(_claims.refundRequestClaims[i])) {
-                revert AlreadyQueued(_claims.refundRequestClaims[i].observedTransactionHash);
-            }
-            if (bccm.voted(_claims.refundRequestClaims[i].observedTransactionHash, msg.sender)) {
-                revert AlreadyProposed(_claims.refundRequestClaims[i].observedTransactionHash);
-            }
-            bccm.submitClaimsRRC(_claims, i, msg.sender);
-        }
-        for (uint i = 0; i < _claims.refundExecutedClaims.length; i++) {
-            if (bccm.isQueuedREC(_claims.refundExecutedClaims[i])) {
-                revert AlreadyQueued(_claims.refundExecutedClaims[i].observedTransactionHash);
-            }
-            if (bccm.voted(_claims.refundExecutedClaims[i].observedTransactionHash, msg.sender)) {
-                revert AlreadyProposed(_claims.refundExecutedClaims[i].observedTransactionHash);
-            }
-            bccm.submitClaimsREC(_claims, i, msg.sender);
-        }
+        bccm.submitClaims(_claims, msg.sender);
     }
 
     // Batches
@@ -160,6 +117,14 @@ contract BridgeContract is IBridgeContract{
             chains[chains.length - 1].utxos = _initialUTXOs;
             chains[chains.length - 1].addressMultisig = _addressMultisig;
             chains[chains.length - 1].addressFeePayer = _addressFeePayer;
+
+            for (uint i = 0; i < _initialUTXOs.multisigOwnedUTXOs.length; i++) {
+                chainUTXOs[_chainId].multisigOwnedUTXOs.push(_initialUTXOs.multisigOwnedUTXOs[i]);
+            }
+            for (uint i = 0; i < _initialUTXOs.feePayerOwnedUTXOs.length; i++) {
+                chainUTXOs[_chainId].feePayerOwnedUTXOs.push(_initialUTXOs.feePayerOwnedUTXOs[i]);
+            }
+            
             emit newChainRegistered(_chainId);
         } else {
             emit newChainProposal(_chainId, msg.sender);
@@ -286,6 +251,10 @@ contract BridgeContract is IBridgeContract{
             _hashes[i] = validatorsPrivateKeyHashes[validatorsAddresses[i]];
         }
         return _hashes;
+    }
+
+    function getchainUTXOs(string calldata _chainId) external view onlyOwner returns (UTXOs memory) {
+        return chainUTXOs[_chainId];
     }
 
     function setPrivateKeyHash(bytes32 _hash) external onlyValidator {
