@@ -233,7 +233,6 @@ describe("Bridge Contract", function () {
       expect(await bridgeContract.isChainRegistered("testChain")).to.be.true;
     });
 
-
     it("Should emit new chain registered when registered by owner", async function () {
       const { bridgeContract, owner, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
@@ -277,6 +276,7 @@ describe("Bridge Contract", function () {
       await expect(
         bridgeContract.connect(validators[0]).registerChainGovernance("testChain", UTXOs, "0x", "0x")
       ).to.be.revertedWithCustomError(bridgeContractClaimsManager, "AlreadyProposed");
+    });
 
     it("Should have correct number of votes for new chain", async function () {
       const { bridgeContract, validators, UTXOs } = await loadFixture(deployBridgeContractFixture);
@@ -320,7 +320,8 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[2]).registerChainGovernance("testChain", UTXOs, "0x", "0x");
       await bridgeContract.connect(validators[3]).registerChainGovernance("testChain", UTXOs, "0x", "0x");
 
-      expect(await bridgeContract.isChainRegistered("testChain")).to.be.true;
+      expect((await bridgeContract.getchainUTXOs("testChain")).multisigOwnedUTXOs[0].txHash).to.equal(UTXOs.multisigOwnedUTXOs[0].txHash);
+      expect((await bridgeContract.getchainUTXOs("testChain")).feePayerOwnedUTXOs[0].txHash).to.equal(UTXOs.feePayerOwnedUTXOs[0].txHash);
     });
 
     it("Should emit new chain registered when registered by Governance", async function () {
@@ -336,7 +337,6 @@ describe("Bridge Contract", function () {
         .to.emit(bridgeContract, "newChainRegistered")
         .withArgs("testChain");
     });
-  });
 
     it("Should list all registered chains", async function () {
       const { bridgeContract, UTXOs, validators } = await loadFixture(deployBridgeContractFixture);
@@ -356,7 +356,6 @@ describe("Bridge Contract", function () {
       expect(chains[0].id).to.equal("testChain 1");
       expect(chains[1].id).to.equal("testChain 2");
     });
-
   });
 
   describe("Submit new Bridging Request Claim", function () {
@@ -472,6 +471,7 @@ describe("Bridge Contract", function () {
 
       expect(await bridgeContractClaimsManager.isQueuedBEC(validatorClaimsBEC.batchExecutedClaims[0])).to.be.true;
     });
+
     it("Should increase claimsCounter after adding new Batch Executed Claim", async function () {
       const { bridgeContract, bridgeContractClaimsManager, validators, validatorClaimsBEC } = await loadFixture(deployBridgeContractFixture);
 
@@ -532,6 +532,7 @@ describe("Bridge Contract", function () {
 
       expect(await bridgeContractClaimsManager.isQueuedBEFC(validatorClaimsBEFC.batchExecutionFailedClaims[0])).to.be.true;
     });
+
     it("Should increase claimsCounter after adding new Batch Executed Claim", async function () {
       const { bridgeContract, bridgeContractClaimsManager, validators, validatorClaimsBEFC } = await loadFixture(deployBridgeContractFixture);
 
@@ -676,6 +677,7 @@ describe("Bridge Contract", function () {
       expect(await bridgeContract.shouldCreateBatch(validatorClaimsRRC.refundRequestClaims[0].chainID)).to.be.false;
 
     });
+
     it("ShouldCreateBatch should return true if there is enough validated claims and no pending signedClaims from validator", async function () {
       const { bridgeContract, validators, validatorClaimsRRC } = await loadFixture(deployBridgeContractFixture);
       await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC);
@@ -737,16 +739,6 @@ describe("Bridge Contract", function () {
       expect(await bridgeContract.getLastObservedBlock(validatorClaimsRECObserverdFalse.refundExecutedClaims[0].chainID)).to.equal('');
     });
 
-    it("Should not change block hash in lastObservedBlock if block is not fully observerd", async function () {
-      const { bridgeContract, validators, validatorClaimsRECObserverdFalse } = await loadFixture(deployBridgeContractFixture);
-      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRECObserverdFalse);
-      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsRECObserverdFalse);
-      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsRECObserverdFalse);
-      await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsRECObserverdFalse);
-
-      expect(await bridgeContract.getLastObservedBlock(validatorClaimsRECObserverdFalse.refundExecutedClaims[0].chainID)).to.equal('');
-    });
-
     it("SignedBatch should be added to signedBatches", async function () {
       const { bridgeContract, validators, signedBatch } = await loadFixture(deployBridgeContractFixture);
       await bridgeContract.connect(validators[0]).submitSignedBatch(signedBatch);
@@ -774,6 +766,7 @@ describe("Bridge Contract", function () {
       expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.id)).multisigSignatures[2]).to.equal("multisigSignature1");
       expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.id)).multisigSignatures[3]).to.equal("multisigSignature1");
     });
+
     it("Should return confirmedTransactions from confirmed BridgeRequestClaim", async function () {
       const { bridgeContract, validators, validatorClaimsBRC } = await loadFixture(deployBridgeContractFixture);
       await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);

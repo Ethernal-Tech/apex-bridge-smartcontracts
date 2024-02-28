@@ -132,6 +132,7 @@ interface IBridgeContractStructs {
     error ChainAlreadyRegistered();
     error NotOwner();
     error NotValidator();
+    error NotBridgeContract();
     
     event newChainProposal(string indexed chainId, address indexed sender);
     event newChainRegistered(string indexed chainId);

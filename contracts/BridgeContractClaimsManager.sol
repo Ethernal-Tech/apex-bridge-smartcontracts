@@ -4,7 +4,6 @@ pragma solidity ^0.8.23;
 import "./interfaces/IBridgeContract.sol";
 
 contract BridgeContractClaimsManager is IBridgeContractStructs {
-    //TO DO: implement only callable by BridgeContract
 
     // Blockchain ID -> claimsCounter
     mapping(string => uint64) public claimsCounter;
@@ -29,7 +28,13 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
     //  Blochchain ID -> blockHash
     mapping(string => string) public lastObserveredBlock;
 
-    function submitClaims(ValidatorClaims calldata _claims, address _caller) external {
+    address private bridgeContract;
+
+    constructor(){
+        bridgeContract = msg.sender;
+    }
+
+    function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {
         for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
             if (isQueuedBRC(_claims.bridgingRequestClaims[i])) {
                 revert AlreadyQueued(_claims.bridgingRequestClaims[i].observedTransactionHash);
@@ -217,15 +222,20 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
         return queuedBridgingRequestsClaims[_id];
     }
     
-    function setValidatorsCount(uint8 _validatorsCount) external {
+    function setValidatorsCount(uint8 _validatorsCount) external onlyBridgeContract {
         validatorsCount = _validatorsCount;
     }
 
-    function setVoted(string calldata _id, address _voter, bool _value) external {
+    function setVoted(string calldata _id, address _voter, bool _value) external onlyBridgeContract {
         voted[_id][_voter] = _value;
     }
 
-    function setNumberOfVotes(string calldata _id) external {
+    function setNumberOfVotes(string calldata _id) external onlyBridgeContract {
         numberOfVotes[_id]++;
+    }
+
+    modifier onlyBridgeContract() {
+       if (msg.sender != bridgeContract) revert NotBridgeContract();
+        _;
     }
 }
