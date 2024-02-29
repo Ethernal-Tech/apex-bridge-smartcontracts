@@ -215,7 +215,33 @@ contract BridgeContract is IBridgeContract{
     function getAvailableUTXOs(
         string calldata _destinationChain,
         uint256 txCost
-    ) external view override returns (UTXOs memory availableUTXOs) {}
+    ) external override view returns (UTXOs memory availableUTXOs) {
+        UTXOs memory utxos = chainUTXOs[_destinationChain];
+        uint256 sum = 0;
+        uint256 counterForArraySize;
+
+        //counter - other option would required using storage variable
+        for (uint i = 0; i < utxos.multisigOwnedUTXOs.length; i++) {
+            if ((sum + utxos.multisigOwnedUTXOs[i].amount) >= txCost) {
+                counterForArraySize++;
+                break;
+            } else {
+                sum = utxos.multisigOwnedUTXOs[i].amount;
+                counterForArraySize++;
+            }
+        }
+
+        availableUTXOs.multisigOwnedUTXOs = new UTXO[](counterForArraySize);
+        availableUTXOs.feePayerOwnedUTXOs = new UTXO[](1);
+
+        for (uint i = 0; i < counterForArraySize; i++) {
+                availableUTXOs.multisigOwnedUTXOs[i] = utxos.multisigOwnedUTXOs[i];
+        }
+
+        availableUTXOs.feePayerOwnedUTXOs[0] = utxos.feePayerOwnedUTXOs[0];
+
+        return availableUTXOs;
+    }
 
     function getConfirmedBatch(
         string calldata _destinationChain

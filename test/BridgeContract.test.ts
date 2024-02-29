@@ -26,13 +26,37 @@ describe("Bridge Contract", function () {
           addressUTXO: "0x456...",
           amount: 200,
         },
+        {
+          txHash: "0xdef...",
+          txIndex: 1,
+          addressUTXO: "0x456...",
+          amount: 100,
+        },
+        {
+          txHash: "0xdef...",
+          txIndex: 2,
+          addressUTXO: "0x456...",
+          amount: 50,
+        }
       ],
       feePayerOwnedUTXOs: [
         {
           txHash: "0xdef...",
           txIndex: 0,
           addressUTXO: "0x456...",
-          amount: 300,
+          amount: 100,
+        },
+        {
+          txHash: "0xdef...",
+          txIndex: 1,
+          addressUTXO: "0x456...",
+          amount: 50,
+        },
+        {
+          txHash: "0xdef...",
+          txIndex: 2,
+          addressUTXO: "0x456...",
+          amount: 25,
         }
       ],
     };
@@ -787,5 +811,32 @@ describe("Bridge Contract", function () {
       expect((await bridgeContract.connect(validators[0]).getConfirmedTransactions(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID))[0].receivers[0].destinationAddress).to.equal("0x123...");
       expect((await bridgeContract.connect(validators[0]).getConfirmedTransactions(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID))[0].receivers[0].amount).to.equal(100);
     });
+  });
+  describe("UTXO management", function () {
+    it("Should return required amount of UTXOs", async function () {
+      const { bridgeContract, owner, validators, UTXOs } = await loadFixture(deployBridgeContractFixture);
+
+      await bridgeContract.connect(owner).registerChain("testChain", UTXOs, "0x", "0x");
+
+      const utxos = await bridgeContract.getAvailableUTXOs("testChain", 100);
+
+      expect (utxos.multisigOwnedUTXOs[0].txIndex).to.equal(UTXOs.multisigOwnedUTXOs[0].txIndex);
+      expect (utxos.feePayerOwnedUTXOs[0].txIndex).to.equal(UTXOs.feePayerOwnedUTXOs[0].txIndex);
+
+    });
+
+    it("Should return required amount of UTXOs in multiple UTXOs if needed", async function () {
+      const { bridgeContract, owner, validators, UTXOs } = await loadFixture(deployBridgeContractFixture);
+
+      await bridgeContract.connect(owner).registerChain("testChain", UTXOs, "0x", "0x");
+
+      const utxos = await bridgeContract.getAvailableUTXOs("testChain", 250);
+
+      expect (utxos.multisigOwnedUTXOs.length).to.equal(2);
+      expect (utxos.multisigOwnedUTXOs[0].txIndex).to.equal(UTXOs.multisigOwnedUTXOs[0].txIndex);
+      expect (utxos.multisigOwnedUTXOs[1].txIndex).to.equal(UTXOs.multisigOwnedUTXOs[1].txIndex);
+      expect (utxos.feePayerOwnedUTXOs[0].txIndex).to.equal(UTXOs.feePayerOwnedUTXOs[0].txIndex);
+    });
+
   });
 });
