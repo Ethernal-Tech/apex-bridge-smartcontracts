@@ -139,6 +139,8 @@ contract BridgeContract is IBridgeContract{
             for (uint i = 0; i < _initialUTXOs.feePayerOwnedUTXOs.length; i++) {
                 chainUTXOs[_chainId].feePayerOwnedUTXOs.push(_initialUTXOs.feePayerOwnedUTXOs[i]);
             }
+
+            nextTimeoutBlock[_chainId] = block.number + MAX_NUMBER_OF_BLOCKS;
             
             emit newChainRegistered(_chainId);
         } else {
