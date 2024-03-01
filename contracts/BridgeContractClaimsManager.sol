@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import "./interfaces/IBridgeContract.sol";
+import "./interfaces/IBridgeContractStructs.sol";
+import "./BridgeContract.sol";
 
 contract BridgeContractClaimsManager is IBridgeContractStructs {
 
@@ -28,10 +29,10 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
     //  Blochchain ID -> blockHash
     mapping(string => string) public lastObserveredBlock;
 
-    address private bridgeContract;
+    BridgeContract private bridgeContract;
 
     constructor(){
-        bridgeContract = msg.sender;
+        bridgeContract = BridgeContract(msg.sender);
     }
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {
@@ -113,6 +114,9 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
             claimsCounter[_claims.batchExecutedClaims[index].chainID]++;
 
             _updateLastObservedBlockIfNeeded(_claims);
+
+            bridgeContract.setCurrentBatchBlock(_claims.batchExecutedClaims[index].chainID, -1);
+            
         }
     }
 
@@ -235,7 +239,7 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
     }
 
     modifier onlyBridgeContract() {
-       if (msg.sender != bridgeContract) revert NotBridgeContract();
+       if (msg.sender != address(bridgeContract)) revert NotBridgeContract();
         _;
     }
 }

@@ -14,9 +14,9 @@ describe("Bridge Contract", function () {
     const BridgeContract = await ethers.getContractFactory("BridgeContract");
     const bridgeContract = await BridgeContract.deploy(validators);
 
-    const address = await bridgeContract.getBridgeContractClaimsManager();
+    const bccmAddress = await bridgeContract.getBridgeContractClaimsManager();
 
-    const bridgeContractClaimsManager = await ethers.getContractAt("BridgeContractClaimsManager", address);
+    const bridgeContractClaimsManager = await ethers.getContractAt("BridgeContractClaimsManager", bccmAddress);
 
     const UTXOs = {
       multisigOwnedUTXOs: [
@@ -208,7 +208,7 @@ describe("Bridge Contract", function () {
       },
     };
 
-    return { bridgeContract, bridgeContractClaimsManager, owner, UTXOs, validators, validatorClaimsBRC, 
+    return { bridgeContract, bridgeContractClaimsManager, bccmAddress, owner, UTXOs, validators, validatorClaimsBRC, 
       validatorClaimsBEC, validatorClaimsBEFC, validatorClaimsRRC, validatorClaimsREC, 
       validatorClaimsRECObserverdFalse, signedBatch };
   }
@@ -703,11 +703,14 @@ describe("Bridge Contract", function () {
     });
   });
   describe("Batch creation", function () {
-    it("ShouldCreateBatch should return false if theres not enough validated claims and no pending signedClaims from validator", async function () {
-      const { bridgeContract, validators, validatorClaimsRRC } = await loadFixture(deployBridgeContractFixture);
-      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC);
+    it("ShouldCreateBatch should return false if there is not enough validated claims and no pending signedClaims from validator", async function () {
+      const { bridgeContract, owner, validators, UTXOs, validatorClaimsBRC } = await loadFixture(deployBridgeContractFixture);
 
-      expect(await bridgeContract.shouldCreateBatch(validatorClaimsRRC.refundRequestClaims[0].chainID)).to.be.false;
+      await bridgeContract.connect(owner).registerChain("destinationChainID1", UTXOs, "0x", "0x");
+
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
+
+      expect(await bridgeContract.shouldCreateBatch(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID)).to.be.false;
 
     });
 
@@ -722,12 +725,15 @@ describe("Bridge Contract", function () {
     });
 
     it("ShouldCreateBatch should return false if there is not enough validated claims and no timeout and no pending signedClaims from validator", async function () {
-      const { bridgeContract, validators, validatorClaimsRRC } = await loadFixture(deployBridgeContractFixture);
-      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC);
-      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsRRC);
-      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsRRC);
+      const { bridgeContract, validators, owner, UTXOs, validatorClaimsBRC } = await loadFixture(deployBridgeContractFixture);
 
-      expect(await bridgeContract.shouldCreateBatch(validatorClaimsRRC.refundRequestClaims[0].chainID)).to.be.false;
+      await bridgeContract.connect(owner).registerChain("destinationChainID1", UTXOs, "0x", "0x");
+
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
+
+      expect(await bridgeContract.shouldCreateBatch(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID)).to.be.false;
     });
 
     it("ShouldCreateBatch should return true if there is not enough validated claims but did timeout and no pending signedClaims from validator", async function () {
@@ -742,8 +748,8 @@ describe("Bridge Contract", function () {
       expect(await bridgeContract.shouldCreateBatch(validatorClaimsRRC.refundRequestClaims[0].chainID)).to.be.true;
     });
 
-    it("ShouldCreateBatch should return false if there is pending signedClaims from validator", async function () {
-      const { bridgeContract, validators, signedBatch } = await loadFixture(deployBridgeContractFixture);
+    it("ShouldCreateBatch should return false if there is pending signedBatch from validator", async function () {
+      const { bridgeContract, bridgeContractClaimsManager, validators, signedBatch } = await loadFixture(deployBridgeContractFixture);
       await bridgeContract.connect(validators[0]).submitSignedBatch(signedBatch);
       await bridgeContract.connect(validators[1]).submitSignedBatch(signedBatch);
       await bridgeContract.connect(validators[2]).submitSignedBatch(signedBatch);

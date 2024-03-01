@@ -20,7 +20,10 @@ contract BridgeContract is IBridgeContract{
     mapping(string => uint256) private lastBatchedClaim;
 
     // Blochchain ID -> blockNumber
-    mapping(string => uint256) private currentBatchBlock;
+    mapping(string => int256) public currentBatchBlock;
+
+    // Blochchain ID -> blockNumber
+    mapping(string => uint256) public nextTimeoutBlock;
 
     // BatchId -> SignedBatch[]
     mapping(string => SignedBatch[]) public signedBatches;
@@ -34,7 +37,7 @@ contract BridgeContract is IBridgeContract{
     address[] private validatorsAddresses;
     address private owner;
     uint16 private constant MAX_NUMBER_OF_TRANSACTIONS = 1; //intentially set low for testing
-    uint8 private constant MAX_NUMBER_OF_BLOCKS = 5;
+    uint8 public constant MAX_NUMBER_OF_BLOCKS = 5;
     
     constructor(address[] memory _validators) {
         for (uint i = 0; i < _validators.length; i++) {
@@ -76,7 +79,9 @@ contract BridgeContract is IBridgeContract{
             
             confirmedBatches[_signedBatch.id] = confirmedBatch;
 
-            currentBatchBlock[_signedBatch.destinationChainId] = block.number;
+            currentBatchBlock[_signedBatch.destinationChainId] = int(block.number);
+
+            lastConfirmedBatch[_signedBatch.destinationChainId] = _signedBatch.id;
         }
     }
 
@@ -100,6 +105,8 @@ contract BridgeContract is IBridgeContract{
         for (uint i = 0; i < _initialUTXOs.feePayerOwnedUTXOs.length; i++) {
             chainUTXOs[_chainId].feePayerOwnedUTXOs.push(_initialUTXOs.feePayerOwnedUTXOs[i]);
         }
+
+        nextTimeoutBlock[_chainId] = block.number + MAX_NUMBER_OF_BLOCKS;
 
         emit newChainRegistered(_chainId);
     }
@@ -157,7 +164,8 @@ contract BridgeContract is IBridgeContract{
             if ((bccm.claimsCounter(_destinationChain) - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
                 return true;
             }
-            if ((block.number - currentBatchBlock[_destinationChain]) >= MAX_NUMBER_OF_BLOCKS) {
+
+            if ((block.number >= nextTimeoutBlock[_destinationChain])) {
                 return true;
             }
         }
@@ -296,6 +304,14 @@ contract BridgeContract is IBridgeContract{
         validatorsAddresses.push(msg.sender);
     }
 
+    function setCurrentBatchBlock(string calldata _chainId, int256 _blockNumber) external onlyBridgeContractClaimsManager {
+        currentBatchBlock[_chainId] = int(_blockNumber);
+    }
+
+    function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external onlyBridgeContractClaimsManager {
+        nextTimeoutBlock[_chainId] = _blockNumber;
+    }
+
     modifier onlyValidator() {
         if (!validators[msg.sender]) revert NotValidator();
         _;
@@ -303,6 +319,11 @@ contract BridgeContract is IBridgeContract{
 
     modifier onlyOwner() {
        if (msg.sender != owner) revert NotOwner();
+        _;
+    }
+
+    modifier onlyBridgeContractClaimsManager() {
+        if (msg.sender != address(bccm)) revert NotBridgeContractClaimsManagers();
         _;
     }
 }
