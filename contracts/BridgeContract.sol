@@ -2,19 +2,21 @@
 pragma solidity ^0.8.23;
 
 import "./interfaces/IBridgeContract.sol";
-import "./BridgeContractClaimsManager.sol";
+import "./ClaimsManager.sol";
+import "./UTXOsManager.sol";
+import "hardhat/console.sol";
 
 contract BridgeContract is IBridgeContract{
 
-    BridgeContractClaimsManager private bccm;
+    ClaimsManager private claimsManager;
+
+    UTXOsManager private utxosManager;
 
     // mapping in case they could be added/removed
     mapping(address => bool) private validators;
     mapping(address => bytes32) private validatorsPrivateKeyHashes;  
 
     mapping(string => bool) private registeredChains;
-    // BLockchain ID -> UTXOs
-    mapping(string => UTXOs) private chainUTXOs;
 
     // Blochchain ID -> claimsCounter
     mapping(string => uint256) private lastBatchedClaim;
@@ -40,29 +42,29 @@ contract BridgeContract is IBridgeContract{
     address private owner;
     uint16 private constant MAX_NUMBER_OF_TRANSACTIONS = 1; //intentially set low for testing
     uint8 public constant MAX_NUMBER_OF_BLOCKS = 5;
+    uint8 private validatorsCount;
     
     constructor(address[] memory _validators) {
         for (uint i = 0; i < _validators.length; i++) {
             validators[_validators[i]] = true;
         }
-        bccm = new BridgeContractClaimsManager();
-        bccm.setValidatorsCount(uint8(_validators.length));
+        validatorsCount = uint8(_validators.length);
         owner = msg.sender;
     }
 
     // Claims
     function submitClaims(ValidatorClaims calldata _claims) external override onlyValidator {
-        bccm.submitClaims(_claims, msg.sender);
+        claimsManager.submitClaims(_claims, msg.sender);
     }
 
     // Batches
     function submitSignedBatch(SignedBatch calldata _signedBatch) external override onlyValidator {
 
-        bccm.setVoted(_signedBatch.id, msg.sender, true);
-        bccm.setNumberOfVotes(_signedBatch.id);
+        claimsManager.setVoted(_signedBatch.id, msg.sender, true);
+        claimsManager.setNumberOfVotes(_signedBatch.id);
         signedBatches[_signedBatch.id].push(_signedBatch);
 
-        if (bccm.hasConsensus(_signedBatch.id)) {
+        if (claimsManager.hasConsensus(_signedBatch.id)) {
             uint256 numberOfSignedBatches = signedBatches[_signedBatch.id].length;
             string[] memory multisigSignatures = new string[](numberOfSignedBatches);
             string[] memory feePayerMultisigSignatures = new string[](numberOfSignedBatches);
@@ -102,12 +104,7 @@ contract BridgeContract is IBridgeContract{
         chains[chains.length - 1].addressMultisig = _addressMultisig;
         chains[chains.length - 1].addressFeePayer = _addressFeePayer;
 
-        for (uint i = 0; i < _initialUTXOs.multisigOwnedUTXOs.length; i++) {
-            chainUTXOs[_chainId].multisigOwnedUTXOs.push(_initialUTXOs.multisigOwnedUTXOs[i]);
-        }
-        for (uint i = 0; i < _initialUTXOs.feePayerOwnedUTXOs.length; i++) {
-            chainUTXOs[_chainId].feePayerOwnedUTXOs.push(_initialUTXOs.feePayerOwnedUTXOs[i]);
-        }
+        utxosManager.pushUTXOs(_chainId, _initialUTXOs);
 
         nextTimeoutBlock[_chainId] = block.number + MAX_NUMBER_OF_BLOCKS;
 
@@ -123,12 +120,12 @@ contract BridgeContract is IBridgeContract{
         if (registeredChains[_chainId]) {
             revert ChainAlreadyRegistered();
         }
-        if (bccm.voted(_chainId, msg.sender)) {
+        if (claimsManager.voted(_chainId, msg.sender)) {
             revert AlreadyProposed(_chainId);
         }
-        bccm.setVoted(_chainId, msg.sender, true);
-        bccm.setNumberOfVotes(_chainId);
-        if (bccm.hasConsensus(_chainId)) {
+        claimsManager.setVoted(_chainId, msg.sender, true);
+        claimsManager.setNumberOfVotes(_chainId);
+        if (claimsManager.hasConsensus(_chainId)) {
             registeredChains[_chainId] = true;
             chains.push();
             chains[chains.length - 1].id = _chainId;
@@ -136,16 +133,12 @@ contract BridgeContract is IBridgeContract{
             chains[chains.length - 1].addressMultisig = _addressMultisig;
             chains[chains.length - 1].addressFeePayer = _addressFeePayer;
 
-            for (uint i = 0; i < _initialUTXOs.multisigOwnedUTXOs.length; i++) {
-                chainUTXOs[_chainId].multisigOwnedUTXOs.push(_initialUTXOs.multisigOwnedUTXOs[i]);
-            }
-            for (uint i = 0; i < _initialUTXOs.feePayerOwnedUTXOs.length; i++) {
-                chainUTXOs[_chainId].feePayerOwnedUTXOs.push(_initialUTXOs.feePayerOwnedUTXOs[i]);
-            }
+            utxosManager.pushUTXOs(_chainId, _initialUTXOs);
 
             nextTimeoutBlock[_chainId] = block.number + MAX_NUMBER_OF_BLOCKS;
             
             emit newChainRegistered(_chainId);
+            
         } else {
             emit newChainProposal(_chainId, msg.sender);
         }
@@ -164,9 +157,9 @@ contract BridgeContract is IBridgeContract{
         // TO DO: Check the logic, this will check if there is "pending" signedBatch from this validator, 
         // I do not see how to check if the batch is related to pending claims, so my guess is that no new 
         // batch should be created if there's "pending" batch
-        if(!bccm.voted(lastConfirmedSignedBatch[_destinationChain], msg.sender)) {
+        if(!claimsManager.voted(lastConfirmedSignedBatch[_destinationChain], msg.sender)) {
 
-            if ((bccm.claimsCounter(_destinationChain) - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
+            if ((claimsManager.claimsCounter(_destinationChain) - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
                 return true;
             }
 
@@ -185,7 +178,7 @@ contract BridgeContract is IBridgeContract{
     ) external view override returns (ConfirmedTransaction[] memory _confirmedTransactions) {
         if(_shouldCreateBatch(_destinationChain)) {
             uint256 lastBatchedClaimNumber = lastBatchedClaim[_destinationChain];
-            uint256 lastConfirmedClaim = bccm.claimsCounter(_destinationChain);
+            uint256 lastConfirmedClaim = claimsManager.claimsCounter(_destinationChain);
             uint256 lastClaimToInclude = ((lastConfirmedClaim - lastBatchedClaimNumber) >= MAX_NUMBER_OF_TRANSACTIONS) 
                 ? lastBatchedClaimNumber + MAX_NUMBER_OF_TRANSACTIONS : lastConfirmedClaim;
             
@@ -194,7 +187,7 @@ contract BridgeContract is IBridgeContract{
 
             //TODO: is there a better way?, need to know how big will the array be
             for (uint i = lastBatchedClaimNumber; i < lastClaimToInclude; i++) {
-                ClaimTypes claimType = bccm.queuedClaimsTypes(_destinationChain, i);
+                ClaimTypes claimType = claimsManager.queuedClaimsTypes(_destinationChain, i);
                 if(claimType == ClaimTypes.BRIDGING_REQUEST) {
                     arraySize++;
                 }
@@ -203,10 +196,10 @@ contract BridgeContract is IBridgeContract{
             ConfirmedTransaction[] memory confirmedTransactions = new ConfirmedTransaction[](arraySize);
 
             for (uint i = lastBatchedClaimNumber; i < lastClaimToInclude; i++) {
-                ClaimTypes claimType = bccm.queuedClaimsTypes(_destinationChain, i);
+                ClaimTypes claimType = claimsManager.queuedClaimsTypes(_destinationChain, i);
 
                 if(claimType == ClaimTypes.BRIDGING_REQUEST) {
-                    Receiver[] memory tempReceivers = bccm.getClaimBRC(bccm.queuedClaims(_destinationChain, i)).receivers;
+                    Receiver[] memory tempReceivers = claimsManager.getClaimBRC(claimsManager.queuedClaims(_destinationChain, i)).receivers;
                     ConfirmedTransaction memory confirmedtransaction = ConfirmedTransaction(
                         i,
                         tempReceivers
@@ -229,61 +222,11 @@ contract BridgeContract is IBridgeContract{
         string calldata _destinationChain,
         uint256 txCost
     ) external override view returns (UTXOs memory availableUTXOs) {
-        UTXOs memory utxos = chainUTXOs[_destinationChain];
-        uint256 sum = 0;
-        uint256 counterForArraySize;
-
-        //counter - other option would required using storage variable
-        for (uint i = 0; i < utxos.multisigOwnedUTXOs.length; i++) {
-            if ((sum + utxos.multisigOwnedUTXOs[i].amount) >= txCost) {
-                counterForArraySize++;
-                break;
-            } else {
-                sum = utxos.multisigOwnedUTXOs[i].amount;
-                counterForArraySize++;
-            }
-        }
-
-        availableUTXOs.multisigOwnedUTXOs = new UTXO[](counterForArraySize);
-        availableUTXOs.feePayerOwnedUTXOs = new UTXO[](1);
-
-        for (uint i = 0; i < counterForArraySize; i++) {
-                availableUTXOs.multisigOwnedUTXOs[i] = utxos.multisigOwnedUTXOs[i];
-        }
-
-        availableUTXOs.feePayerOwnedUTXOs[0] = utxos.feePayerOwnedUTXOs[0];
-
-        return availableUTXOs;
+        return utxosManager.getAvailableUTXOs(_destinationChain, txCost);
     }
 
-    function updateUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external onlyBridgeContractClaimsManager {
-        
-        string memory confirmedBatch = lastConfirmedSignedBatch[_chainID];
-        SignedBatch[] memory batch = signedBatches[confirmedBatch];
-        UTXOs memory usedUTXOs = batch[0].usedUTXOs;
-
-
-        // TODO: going through all UTXOs to compare them and remove the used one, this is something that
-        // we should think about. Maybe more efficient way might be to store the indeces of the used UTXOs
-        // when get is called, but then the function can not be view anymore
-
-        // removing used UTXOs
-        for (uint i = 0; i < usedUTXOs.multisigOwnedUTXOs.length; i++) {
-            for (uint j = 0; i < chainUTXOs[_chainID].multisigOwnedUTXOs.length; j++) {
-                if(keccak256(abi.encode(usedUTXOs.multisigOwnedUTXOs[i])) == keccak256(abi.encode(chainUTXOs[_chainID].multisigOwnedUTXOs[j]))) {
-                    delete chainUTXOs[_chainID].multisigOwnedUTXOs[j];
-                    chainUTXOs[_chainID].multisigOwnedUTXOs[j] = chainUTXOs[_chainID].multisigOwnedUTXOs[chainUTXOs[_chainID].multisigOwnedUTXOs.length - 1];
-                    chainUTXOs[_chainID].multisigOwnedUTXOs.pop();
-                }
-            }
-        }
-
-        // adding new UTXOs
-        for(uint i = 0; i < _outputUTXOs.multisigOwnedUTXOs.length; i++) {
-            chainUTXOs[_chainID].multisigOwnedUTXOs.push(_outputUTXOs.multisigOwnedUTXOs[i]);
-        }
-
-        // TODO: for feePayerOwnedUTXOs to be implemented with consolidation of UTXOs
+    function updateUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external view onlyBridgeContractClaimsManager {        
+        utxosManager.updateUTXOs(_chainID, _outputUTXOs);
         
     }
 
@@ -296,9 +239,13 @@ contract BridgeContract is IBridgeContract{
     function getLastObservedBlock(
         string calldata _sourceChain
     ) external view override returns (string memory blockHash) {
-        return bccm.lastObserveredBlock(_sourceChain);
+        return claimsManager.lastObserveredBlock(_sourceChain);
     }
 
+    function getLastConfirmedSignedBatch(string calldata _chainID) external view returns (string memory) {
+        return lastConfirmedSignedBatch[_chainID];
+
+    }
     function getAllRegisteredChains() external view override returns (Chain[] memory _chains) {
         return chains;
     }
@@ -308,11 +255,11 @@ contract BridgeContract is IBridgeContract{
     }
 
     function getValidatorsCount() external view override returns (uint8) {
-        return bccm.validatorsCount();
+        return claimsManager.validatorsCount();
     }
 
     function getNumberOfVotes(string calldata _id) external view override returns (uint8) {
-        return bccm.numberOfVotes(_id);
+        return claimsManager.numberOfVotes(_id);
     }
 
     function getSignedBatches(string calldata _id) external view onlyValidator returns (SignedBatch[] memory) {
@@ -320,7 +267,7 @@ contract BridgeContract is IBridgeContract{
     }
 
     function getBridgeContractClaimsManager() external view onlyOwner returns (address) {
-        return address(bccm);
+        return address(claimsManager);
     }
 
     function getAllPrivateKeyHashes() external view onlyOwner returns (bytes32[] memory) {
@@ -329,10 +276,6 @@ contract BridgeContract is IBridgeContract{
             _hashes[i] = validatorsPrivateKeyHashes[validatorsAddresses[i]];
         }
         return _hashes;
-    }
-
-    function getchainUTXOs(string calldata _chainId) external view onlyOwner returns (UTXOs memory) {
-        return chainUTXOs[_chainId];
     }
 
     function setPrivateKeyHash(bytes32 _hash) external onlyValidator {
@@ -348,6 +291,15 @@ contract BridgeContract is IBridgeContract{
         nextTimeoutBlock[_chainId] = _blockNumber;
     }
 
+    function setClaimsManager(address _claimsManager) external onlyOwner {
+        claimsManager = ClaimsManager(_claimsManager);
+        claimsManager.setValidatorsCount(validatorsCount);
+    }
+
+    function setUTXOsManager(address _UTXOsManager) external onlyOwner {
+        utxosManager = UTXOsManager(_UTXOsManager);
+    }
+
     modifier onlyValidator() {
         if (!validators[msg.sender]) revert NotValidator();
         _;
@@ -359,7 +311,7 @@ contract BridgeContract is IBridgeContract{
     }
 
     modifier onlyBridgeContractClaimsManager() {
-        if (msg.sender != address(bccm)) revert NotBridgeContractClaimsManagers();
+        if (msg.sender != address(claimsManager)) revert NotBridgeContractClaimsManagers();
         _;
     }
 }

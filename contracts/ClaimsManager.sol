@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import "./interfaces/IBridgeContractStructs.sol";
 import "./BridgeContract.sol";
 
-contract BridgeContractClaimsManager is IBridgeContractStructs {
+contract ClaimsManager is IBridgeContractStructs {
 
     // Blockchain ID -> claimsCounter
     mapping(string => uint64) public claimsCounter;
@@ -31,8 +31,8 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
 
     BridgeContract private bridgeContract;
 
-    constructor(){
-        bridgeContract = BridgeContract(msg.sender);
+    constructor(address _bridgeContractAddress) {
+        bridgeContract = BridgeContract(_bridgeContractAddress);
     }
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {

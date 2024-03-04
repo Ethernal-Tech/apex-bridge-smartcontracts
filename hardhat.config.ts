@@ -6,13 +6,12 @@ import "@nomicfoundation/hardhat-toolbox";
 // setGlobalDispatcher(proxyAgent)
 
 const config: HardhatUserConfig = {
-  //solidity: "0.8.23",
   solidity: {
     version: "0.8.23",
     settings: {
       optimizer: {
         enabled: true,
-        runs: 200
+        runs: 115
       }
     }
   }
