@@ -27,11 +27,13 @@ contract BridgeContract is IBridgeContract{
 
     // BatchId -> SignedBatch[]
     mapping(string => SignedBatch[]) public signedBatches;
+    // BlockchaID -> batchId
+    mapping(string => string) private lastSignedBatch;
 
     // BatchId -> ConfirmedBatch
     mapping(string => ConfirmedBatch) private confirmedBatches;
     // BlockchaID -> batchId
-    mapping(string => string) private lastConfirmedBatch;
+    mapping(string => string) private lastConfirmedSignedBatch;
 
     Chain[] private chains;
     address[] private validatorsAddresses;
@@ -81,7 +83,8 @@ contract BridgeContract is IBridgeContract{
 
             currentBatchBlock[_signedBatch.destinationChainId] = int(block.number);
 
-            lastConfirmedBatch[_signedBatch.destinationChainId] = _signedBatch.id;
+            lastConfirmedSignedBatch[_signedBatch.destinationChainId] = _signedBatch.id;
+
         }
     }
 
@@ -161,7 +164,7 @@ contract BridgeContract is IBridgeContract{
         // TO DO: Check the logic, this will check if there is "pending" signedBatch from this validator, 
         // I do not see how to check if the batch is related to pending claims, so my guess is that no new 
         // batch should be created if there's "pending" batch
-        if(!bccm.voted(lastConfirmedBatch[_destinationChain], msg.sender)) {
+        if(!bccm.voted(lastConfirmedSignedBatch[_destinationChain], msg.sender)) {
 
             if ((bccm.claimsCounter(_destinationChain) - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
                 return true;
@@ -251,6 +254,37 @@ contract BridgeContract is IBridgeContract{
         availableUTXOs.feePayerOwnedUTXOs[0] = utxos.feePayerOwnedUTXOs[0];
 
         return availableUTXOs;
+    }
+
+    function updateUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external onlyBridgeContractClaimsManager {
+        
+        string memory confirmedBatch = lastConfirmedSignedBatch[_chainID];
+        SignedBatch[] memory batch = signedBatches[confirmedBatch];
+        UTXOs memory usedUTXOs = batch[0].usedUTXOs;
+
+
+        // TODO: going through all UTXOs to compare them and remove the used one, this is something that
+        // we should think about. Maybe more efficient way might be to store the indeces of the used UTXOs
+        // when get is called, but then the function can not be view anymore
+
+        // removing used UTXOs
+        for (uint i = 0; i < usedUTXOs.multisigOwnedUTXOs.length; i++) {
+            for (uint j = 0; i < chainUTXOs[_chainID].multisigOwnedUTXOs.length; j++) {
+                if(keccak256(abi.encode(usedUTXOs.multisigOwnedUTXOs[i])) == keccak256(abi.encode(chainUTXOs[_chainID].multisigOwnedUTXOs[j]))) {
+                    delete chainUTXOs[_chainID].multisigOwnedUTXOs[j];
+                    chainUTXOs[_chainID].multisigOwnedUTXOs[j] = chainUTXOs[_chainID].multisigOwnedUTXOs[chainUTXOs[_chainID].multisigOwnedUTXOs.length - 1];
+                    chainUTXOs[_chainID].multisigOwnedUTXOs.pop();
+                }
+            }
+        }
+
+        // adding new UTXOs
+        for(uint i = 0; i < _outputUTXOs.multisigOwnedUTXOs.length; i++) {
+            chainUTXOs[_chainID].multisigOwnedUTXOs.push(_outputUTXOs.multisigOwnedUTXOs[i]);
+        }
+
+        // TODO: for feePayerOwnedUTXOs to be implemented with consolidation of UTXOs
+        
     }
 
     function getConfirmedBatch(

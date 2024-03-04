@@ -116,6 +116,8 @@ contract BridgeContractClaimsManager is IBridgeContractStructs {
             _updateLastObservedBlockIfNeeded(_claims);
 
             bridgeContract.setCurrentBatchBlock(_claims.batchExecutedClaims[index].chainID, -1);
+
+            bridgeContract.updateUTXOs(_claims.batchExecutedClaims[index].chainID, _claims.batchExecutedClaims[index].outputUTXOs);
             
         }
     }
