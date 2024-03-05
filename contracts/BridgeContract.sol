@@ -225,7 +225,7 @@ contract BridgeContract is IBridgeContract{
         return utxosManager.getAvailableUTXOs(_destinationChain, txCost);
     }
 
-    function updateUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external view onlyBridgeContractClaimsManager {        
+    function updateUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external onlyBridgeContractClaimsManager {        
         utxosManager.updateUTXOs(_chainID, _outputUTXOs);
         
     }
@@ -262,7 +262,7 @@ contract BridgeContract is IBridgeContract{
         return claimsManager.numberOfVotes(_id);
     }
 
-    function getSignedBatches(string calldata _id) external view onlyValidator returns (SignedBatch[] memory) {
+    function getSignedBatches(string calldata _id) external view returns (SignedBatch[] memory) {
         return signedBatches[_id];
     }
 

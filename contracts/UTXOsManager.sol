@@ -45,35 +45,36 @@ contract UTXOsManager is IBridgeContractStructs{
         return availableUTXOs;
     }
 
-    function updateUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external view onlyBridgeContract {
+    function updateUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external onlyBridgeContract {
+
+        _removeUsedUTXOs(_chainID);
+        _addNewUTXOs(_chainID, _outputUTXOs);
         
-        // string memory confirmedBatch = bridgeContract.getLastConfirmedSignedBatch(_chainID);
-        // SignedBatch[] memory batch = bridgeContract.getSignedBatches(confirmedBatch);
-        // UTXOs memory usedUTXOs = batch[0].usedUTXOs;
+    }
 
+    function _removeUsedUTXOs(string calldata _chainID) public {
+        string memory lastSignedBatch = bridgeContract.getLastConfirmedSignedBatch(_chainID);
+        UTXOs memory utxos;
+        (, , , , , utxos) = bridgeContract.signedBatches(lastSignedBatch, 0);
 
-        // // TODO: going through all UTXOs to compare them and remove the used one, this is something that
-        // // we should think about. Maybe more efficient way might be to store the indeces of the used UTXOs
-        // // when get is called, but then the function can not be view anymore
+        for(uint i = 0; i < utxos.multisigOwnedUTXOs.length; i++) {
+            for(uint j = 0; j < chainUTXOs[_chainID].multisigOwnedUTXOs.length; j++) {
+                if(keccak256(abi.encode(utxos.multisigOwnedUTXOs[i])) == keccak256(abi.encode(chainUTXOs[_chainID].multisigOwnedUTXOs[j]))) {
+                    delete chainUTXOs[_chainID].multisigOwnedUTXOs[j];
+                    chainUTXOs[_chainID].multisigOwnedUTXOs[j] = chainUTXOs[_chainID].multisigOwnedUTXOs[chainUTXOs[_chainID].multisigOwnedUTXOs.length - 1];
+                    chainUTXOs[_chainID].multisigOwnedUTXOs.pop();
+                }
+            }
+        }
 
-        // // removing used UTXOs
-        // for (uint i = 0; i < usedUTXOs.multisigOwnedUTXOs.length; i++) {
-        //     for (uint j = 0; i < chainUTXOs[_chainID].multisigOwnedUTXOs.length; j++) {
-        //         if(keccak256(abi.encode(usedUTXOs.multisigOwnedUTXOs[i])) == keccak256(abi.encode(chainUTXOs[_chainID].multisigOwnedUTXOs[j]))) {
-        //             delete chainUTXOs[_chainID].multisigOwnedUTXOs[j];
-        //             chainUTXOs[_chainID].multisigOwnedUTXOs[j] = chainUTXOs[_chainID].multisigOwnedUTXOs[chainUTXOs[_chainID].multisigOwnedUTXOs.length - 1];
-        //             chainUTXOs[_chainID].multisigOwnedUTXOs.pop();
-        //         }
-        //     }
-        // }
+    }
 
-        // // adding new UTXOs
-        // for(uint i = 0; i < _outputUTXOs.multisigOwnedUTXOs.length; i++) {
-        //     chainUTXOs[_chainID].multisigOwnedUTXOs.push(_outputUTXOs.multisigOwnedUTXOs[i]);
-        // }
+    function _addNewUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) internal  {
+        for(uint i = 0; i < _outputUTXOs.multisigOwnedUTXOs.length; i++) {
+            chainUTXOs[_chainID].multisigOwnedUTXOs.push(_outputUTXOs.multisigOwnedUTXOs[i]);
+        }
 
-        // // TODO: for feePayerOwnedUTXOs to be implemented with consolidation of UTXOs
-        
+        // TODO: for feePayerOwnedUTXOs to be implemented with consolidation of UTXOs
     }
 
     function pushUTXOs(string calldata _chainID, UTXOs calldata _UTXOs) external onlyBridgeContract {
