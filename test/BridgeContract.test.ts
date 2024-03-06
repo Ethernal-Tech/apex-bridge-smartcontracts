@@ -108,7 +108,7 @@ describe("Bridge Contract", function () {
                   txHash: "0xdef...",
                   txIndex: 0,
                   addressUTXO: "0x456...",
-                  amount: 200,
+                  amount: 201,
                 }
               ],
               feePayerOwnedUTXOs: [
@@ -116,7 +116,7 @@ describe("Bridge Contract", function () {
                   txHash: "0xdef...",
                   txIndex: 2,
                   addressUTXO: "0x456...",
-                  amount: 50,
+                  amount: 51,
                 }
               ],
           },
@@ -235,27 +235,9 @@ describe("Bridge Contract", function () {
             txIndex: 1,
             addressUTXO: "0x456...",
             amount: 100,
-          },
-          {
-            txHash: "0xdef...",
-            txIndex: 2,
-            addressUTXO: "0x456...",
-            amount: 50,
           }
         ],
         feePayerOwnedUTXOs: [
-          {
-            txHash: "0xdef...",
-            txIndex: 0,
-            addressUTXO: "0x456...",
-            amount: 200,
-          },
-          {
-            txHash: "0xdef...",
-            txIndex: 1,
-            addressUTXO: "0x456...",
-            amount: 100,
-          },
           {
             txHash: "0xdef...",
             txIndex: 2,
@@ -918,7 +900,7 @@ describe("Bridge Contract", function () {
   });
   describe("UTXO management", function () {
     it("Should return required amount of UTXOs", async function () {
-      const { bridgeContract, owner, validators, UTXOs } = await loadFixture(deployBridgeContractFixture);
+      const { bridgeContract, owner, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
       await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x");
 
@@ -930,7 +912,7 @@ describe("Bridge Contract", function () {
     });
 
     it("Should return required amount of UTXOs in multiple UTXOs if needed", async function () {
-      const { bridgeContract, owner, validators, UTXOs } = await loadFixture(deployBridgeContractFixture);
+      const { bridgeContract, owner, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
       await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x");
 
@@ -940,6 +922,35 @@ describe("Bridge Contract", function () {
       expect (utxos.multisigOwnedUTXOs[0].txIndex).to.equal(UTXOs.multisigOwnedUTXOs[0].txIndex);
       expect (utxos.multisigOwnedUTXOs[1].txIndex).to.equal(UTXOs.multisigOwnedUTXOs[1].txIndex);
       expect (utxos.feePayerOwnedUTXOs[0].txIndex).to.equal(UTXOs.feePayerOwnedUTXOs[0].txIndex);
+    });
+
+    it("Should remove used UTXOs when Bridge Execution Claim is confirmed", async function () {
+      const { bridgeContract, uTXOsManager, owner, validators, UTXOs, signedBatch, validatorClaimsBEC } = await loadFixture(deployBridgeContractFixture);
+
+      await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x");
+
+      expect((await uTXOsManager.getChainUTXOs("chainID1")).multisigOwnedUTXOs.length).to.equal(UTXOs.multisigOwnedUTXOs.length);
+      expect((await uTXOsManager.getChainUTXOs("chainID1")).feePayerOwnedUTXOs.length).to.equal(UTXOs.feePayerOwnedUTXOs.length);
+
+      await bridgeContract.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridgeContract.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridgeContract.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridgeContract.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEC);
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEC);
+      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEC);
+      await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEC);
+
+      expect((await uTXOsManager.getChainUTXOs("chainID1")).multisigOwnedUTXOs.length).to.equal(2);
+      // TODO: after consolidation is implemented this should always be 1
+      expect((await uTXOsManager.getChainUTXOs("chainID1")).feePayerOwnedUTXOs.length).to.equal(3);
+
+      // remaining not used UTXOs
+      expect(await (await uTXOsManager.getChainUTXOs("chainID1")).multisigOwnedUTXOs[0].amount).to.equal(50);
+      // newly added UTXOs
+      expect(await (await uTXOsManager.getChainUTXOs("chainID1")).multisigOwnedUTXOs[1].amount).to.equal(201);
+
     });
 
   });

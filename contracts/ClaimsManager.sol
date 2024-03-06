@@ -15,7 +15,7 @@ contract ClaimsManager is IBridgeContractStructs {
     mapping(string => uint8) public numberOfVotes;
     uint8 public validatorsCount;
 
-    //  flaimHash -> claim
+    //  claimHash -> claim
     mapping(string => BridgingRequestClaim) public queuedBridgingRequestsClaims;    
     mapping(string => BatchExecutedClaim) public queuedBatchExecutedClaims;
     mapping(string => BatchExecutionFailedClaim) public queuedBatchExecutionFailedClaims;
