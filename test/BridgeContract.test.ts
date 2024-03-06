@@ -659,6 +659,17 @@ describe("Bridge Contract", function () {
 
       expect(await claimsManager.claimsCounter(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID)).to.equal(claimsCounter + BigInt(1));
     });
+    it("Should reset current batch block and next timeout batch block when Batch Execution Failed Claims if confirmed", async function () {
+      const { bridgeContract, validators, validatorClaimsBEFC } = await loadFixture(deployBridgeContractFixture);
+
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEFC);
+      await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEFC);
+
+      expect(await bridgeContract.currentBatchBlock(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID)).to.equal(-1);
+      expect(await bridgeContract.nextTimeoutBlock(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID)).to.equal(14);
+    });
   });
   describe("Submit new Refund Request Claims", function () {
     it("Should revert if Refund Request Claims is already in the queue", async function () {

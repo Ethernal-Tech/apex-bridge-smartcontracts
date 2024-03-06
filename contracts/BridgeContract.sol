@@ -40,6 +40,7 @@ contract BridgeContract is IBridgeContract{
     Chain[] private chains;
     address[] private validatorsAddresses;
     address private owner;
+    //TODO: set during initialization
     uint16 private constant MAX_NUMBER_OF_TRANSACTIONS = 1; //intentially set low for testing
     uint8 public constant MAX_NUMBER_OF_BLOCKS = 5;
     uint8 private validatorsCount;
