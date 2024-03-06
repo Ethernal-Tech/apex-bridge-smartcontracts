@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import "./interfaces/IBridgeContractStructs.sol";
 import "./BridgeContract.sol";
+import "hardhat/console.sol";
 
 contract ClaimsManager is IBridgeContractStructs {
 
@@ -14,7 +15,7 @@ contract ClaimsManager is IBridgeContractStructs {
     mapping(string => uint8) public numberOfVotes;
     uint8 public validatorsCount;
 
-    //  claimHash -> claim
+    //  flaimHash -> claim
     mapping(string => BridgingRequestClaim) public queuedBridgingRequestsClaims;    
     mapping(string => BatchExecutedClaim) public queuedBatchExecutedClaims;
     mapping(string => BatchExecutionFailedClaim) public queuedBatchExecutionFailedClaims;

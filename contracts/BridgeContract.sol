@@ -30,12 +30,12 @@ contract BridgeContract is IBridgeContract{
     // BatchId -> SignedBatch[]
     mapping(string => SignedBatch[]) public signedBatches;
     // BlockchaID -> batchId
-    mapping(string => string) private lastSignedBatch;
+    mapping(string => string) public lastSignedBatch;
 
     // BatchId -> ConfirmedBatch
-    mapping(string => ConfirmedBatch) private confirmedBatches;
+    mapping(string => ConfirmedBatch) public confirmedBatches;
     // BlockchaID -> batchId
-    mapping(string => string) private lastConfirmedSignedBatch;
+    mapping(string => string) public lastConfirmedBatch;
 
     Chain[] private chains;
     address[] private validatorsAddresses;
@@ -85,7 +85,9 @@ contract BridgeContract is IBridgeContract{
 
             currentBatchBlock[_signedBatch.destinationChainId] = int(block.number);
 
-            lastConfirmedSignedBatch[_signedBatch.destinationChainId] = _signedBatch.id;
+            lastConfirmedBatch[_signedBatch.destinationChainId] = _signedBatch.id;
+
+            lastSignedBatch[_signedBatch.destinationChainId] = _signedBatch.id;
 
         }
     }
@@ -157,7 +159,7 @@ contract BridgeContract is IBridgeContract{
         // TO DO: Check the logic, this will check if there is "pending" signedBatch from this validator, 
         // I do not see how to check if the batch is related to pending claims, so my guess is that no new 
         // batch should be created if there's "pending" batch
-        if(!claimsManager.voted(lastConfirmedSignedBatch[_destinationChain], msg.sender)) {
+        if(!claimsManager.voted(lastConfirmedBatch[_destinationChain], msg.sender)) {
 
             if ((claimsManager.claimsCounter(_destinationChain) - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
                 return true;
@@ -225,9 +227,8 @@ contract BridgeContract is IBridgeContract{
         return utxosManager.getAvailableUTXOs(_destinationChain, txCost);
     }
 
-    function updateUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external onlyBridgeContractClaimsManager {        
+    function updateUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external onlyBridgeContractClaimsManager {   
         utxosManager.updateUTXOs(_chainID, _outputUTXOs);
-        
     }
 
     function getConfirmedBatch(
@@ -242,8 +243,8 @@ contract BridgeContract is IBridgeContract{
         return claimsManager.lastObserveredBlock(_sourceChain);
     }
 
-    function getLastConfirmedSignedBatch(string calldata _chainID) external view returns (string memory) {
-        return lastConfirmedSignedBatch[_chainID];
+    function getLastConfirmedBatch(string calldata _chainID) external view returns (string memory) {
+        return lastConfirmedBatch[_chainID];
 
     }
     function getAllRegisteredChains() external view override returns (Chain[] memory _chains) {
@@ -260,14 +261,6 @@ contract BridgeContract is IBridgeContract{
 
     function getNumberOfVotes(string calldata _id) external view override returns (uint8) {
         return claimsManager.numberOfVotes(_id);
-    }
-
-    function getSignedBatches(string calldata _id) external view returns (SignedBatch[] memory) {
-        return signedBatches[_id];
-    }
-
-    function getBridgeContractClaimsManager() external view onlyOwner returns (address) {
-        return address(claimsManager);
     }
 
     function getAllPrivateKeyHashes() external view onlyOwner returns (bytes32[] memory) {

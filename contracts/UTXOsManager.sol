@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import "./interfaces/IBridgeContractStructs.sol";
 import "./BridgeContract.sol";
+import "hardhat/console.sol";
 
 contract UTXOsManager is IBridgeContractStructs{
     BridgeContract private bridgeContract;
@@ -46,25 +47,40 @@ contract UTXOsManager is IBridgeContractStructs{
     }
 
     function updateUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external onlyBridgeContract {
-
         _removeUsedUTXOs(_chainID);
         _addNewUTXOs(_chainID, _outputUTXOs);
         
     }
 
-    function _removeUsedUTXOs(string calldata _chainID) public {
-        string memory lastSignedBatch = bridgeContract.getLastConfirmedSignedBatch(_chainID);
+    function _removeUsedUTXOs(string calldata _chainID) internal {
+        string memory lastSignedBatch = bridgeContract.lastConfirmedBatch(_chainID);
         UTXOs memory utxos;
         (, , , , , utxos) = bridgeContract.signedBatches(lastSignedBatch, 0);
+
+        uint[] memory indices = new uint[](utxos.multisigOwnedUTXOs.length);
 
         for(uint i = 0; i < utxos.multisigOwnedUTXOs.length; i++) {
             for(uint j = 0; j < chainUTXOs[_chainID].multisigOwnedUTXOs.length; j++) {
                 if(keccak256(abi.encode(utxos.multisigOwnedUTXOs[i])) == keccak256(abi.encode(chainUTXOs[_chainID].multisigOwnedUTXOs[j]))) {
-                    delete chainUTXOs[_chainID].multisigOwnedUTXOs[j];
-                    chainUTXOs[_chainID].multisigOwnedUTXOs[j] = chainUTXOs[_chainID].multisigOwnedUTXOs[chainUTXOs[_chainID].multisigOwnedUTXOs.length - 1];
-                    chainUTXOs[_chainID].multisigOwnedUTXOs.pop();
+                    indices[i] = j;
+                    break;
                 }
             }
+        }
+
+        // TODO: better way?
+        // delete used UTXOs
+        for(uint i = 0; i < indices.length; i++) {
+            delete chainUTXOs[_chainID].multisigOwnedUTXOs[indices[i]];
+        }
+
+        // //cleanup
+        for(uint i = 0; i < indices.length; i++) {
+            chainUTXOs[_chainID].multisigOwnedUTXOs[indices[i]] = chainUTXOs[_chainID].multisigOwnedUTXOs[chainUTXOs[_chainID].multisigOwnedUTXOs.length - indices[i] - 1];
+        }
+
+        for(uint i = 0; i < indices.length; i++) {
+            chainUTXOs[_chainID].multisigOwnedUTXOs.pop();
         }
 
     }
