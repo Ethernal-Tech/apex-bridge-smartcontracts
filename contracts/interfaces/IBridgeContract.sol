@@ -12,7 +12,7 @@ abstract contract IBridgeContract is IBridgeContractStructs{
     function submitSignedBatch(SignedBatch calldata _signedBatch) external virtual;
 
     // Chain registration through some kind of governance
-    function registerChain(string calldata _chainId, UTXOs calldata _initialUTXOs, string calldata _addressMultisig, string calldata _addressFeePayer) external virtual;
+    function registerChain(string calldata _chainId, UTXOs calldata _initialUTXOs, string calldata _addressMultisig, string calldata _addressFeePayer, bool _isL1) external virtual;
 
     // Queries
 

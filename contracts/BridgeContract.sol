@@ -19,6 +19,7 @@ contract BridgeContract is IBridgeContract{
     mapping(address => bytes32) private validatorsPrivateKeyHashes;  
 
     mapping(string => bool) private registeredChains;
+    mapping(string => bool) public l1chains;
 
     // Blochchain ID -> claimsCounter
     mapping(string => uint256) private lastBatchedClaim;
@@ -95,12 +96,13 @@ contract BridgeContract is IBridgeContract{
         }
     }
 
-    // Chain registration through some kind of governance
+    // Chain registration by Owner
     function registerChain(
         string calldata _chainId,
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
-        string calldata _addressFeePayer
+        string calldata _addressFeePayer,
+        bool _isL1
     ) external override onlyOwner {
         registeredChains[_chainId] = true;
         chains.push();
@@ -108,6 +110,9 @@ contract BridgeContract is IBridgeContract{
         chains[chains.length - 1].utxos = _initialUTXOs;
         chains[chains.length - 1].addressMultisig = _addressMultisig;
         chains[chains.length - 1].addressFeePayer = _addressFeePayer;
+        if(_isL1) {
+            l1chains[_chainId] = true;
+        }
 
         utxosManager.pushUTXOs(_chainId, _initialUTXOs);
 
@@ -120,7 +125,8 @@ contract BridgeContract is IBridgeContract{
         string calldata _chainId,
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
-        string calldata _addressFeePayer
+        string calldata _addressFeePayer,
+        bool _isL1
     ) external onlyValidator {
         if (registeredChains[_chainId]) {
             revert ChainAlreadyRegistered();
@@ -137,6 +143,10 @@ contract BridgeContract is IBridgeContract{
             chains[chains.length - 1].utxos = _initialUTXOs;
             chains[chains.length - 1].addressMultisig = _addressMultisig;
             chains[chains.length - 1].addressFeePayer = _addressFeePayer;
+
+            if(_isL1) {
+                l1chains[_chainId] = true;
+            }
 
             utxosManager.pushUTXOs(_chainId, _initialUTXOs);
 

@@ -125,6 +125,7 @@ interface IBridgeContractStructs {
         UTXOs utxos;
         string addressMultisig;
         string addressFeePayer;
+        bool isL1;
     }
 
     error AlreadyQueued(string _claimhash);
