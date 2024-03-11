@@ -46,7 +46,7 @@ contract BridgeContract is IBridgeContract{
     //TODO: set during initialization
     uint16 private constant MAX_NUMBER_OF_TRANSACTIONS = 1; //intentially set low for testing
     uint8 public constant MAX_NUMBER_OF_BLOCKS = 5;
-    uint8 private validatorsCount;
+    uint8 public validatorsCount;
     
     constructor(address[] memory _validators) {
         for (uint i = 0; i < _validators.length; i++) {
@@ -265,7 +265,7 @@ contract BridgeContract is IBridgeContract{
     }
 
     function getValidatorsCount() external view override returns (uint8) {
-        return claimsHelper.validatorsCount();
+        return validatorsCount;
     }
 
     function getNumberOfVotes(string calldata _id) external view override returns (uint8) {
@@ -295,7 +295,6 @@ contract BridgeContract is IBridgeContract{
 
     function setClaimsHelper(address _claimsHelper) external onlyOwner {
         claimsHelper = ClaimsHelper(_claimsHelper);
-        claimsHelper.setValidatorsCount(validatorsCount);
     }
 
     function setClaimsManager(address _claimsManager) external onlyOwner {

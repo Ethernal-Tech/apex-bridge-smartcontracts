@@ -8,8 +8,6 @@ import "hardhat/console.sol";
 
 contract ClaimsHelper is IBridgeContractStructs {
 
-    uint8 public validatorsCount;
-
     //  claimHash -> claim
     mapping(string => BridgingRequestClaim) public queuedBridgingRequestsClaims;    
     mapping(string => BatchExecutedClaim) public queuedBatchExecutedClaims;
@@ -69,7 +67,7 @@ contract ClaimsHelper is IBridgeContractStructs {
     }
 
     function hasConsensus(string calldata _id) public view returns (bool) {
-        if (claimsManager.numberOfVotes(_id) >= ((validatorsCount * 2) / 3 + ((validatorsCount * 2) % 3 == 0 ? 0 : 1))) {
+        if (claimsManager.numberOfVotes(_id) >= ((bridgeContract.validatorsCount() * 2) / 3 + ((bridgeContract.validatorsCount() * 2) % 3 == 0 ? 0 : 1))) {
             return true;
         }
         return false;
@@ -97,10 +95,6 @@ contract ClaimsHelper is IBridgeContractStructs {
 
     function addToQueuedBatchExecutionFailedClaims(BatchExecutionFailedClaim calldata _claim) external onlyClaimsManager {
         queuedBatchExecutionFailedClaims[_claim.observedTransactionHash] = _claim;
-    }
-
-    function setValidatorsCount(uint8 _validatorsCount) external onlyBridgeContract {
-        validatorsCount = _validatorsCount;
     }
 
     //TODO: think about constraint for setting this value
