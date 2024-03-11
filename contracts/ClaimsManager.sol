@@ -6,7 +6,7 @@ import "./BridgeContract.sol";
 import "./ClaimsHelper.sol";
 import "hardhat/console.sol";
 
-contract ClaimsSubmitter is IBridgeContractStructs {
+contract ClaimsManager is IBridgeContractStructs {
 
     BridgeContract private bridgeContract;
     ClaimsHelper private claimsHelper;

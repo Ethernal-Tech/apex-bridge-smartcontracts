@@ -3,13 +3,14 @@ pragma solidity ^0.8.23;
 
 import "./interfaces/IBridgeContract.sol";
 import "./ClaimsHelper.sol";
+import "./ClaimsManager.sol";
 import "./UTXOsManager.sol";
 import "hardhat/console.sol";
 
 contract BridgeContract is IBridgeContract{
 
     ClaimsHelper private claimsHelper;
-    ClaimsSubmitter private claimsSubmitter;
+    ClaimsManager private claimsManager;
 
     UTXOsManager private utxosManager;
 
@@ -56,14 +57,14 @@ contract BridgeContract is IBridgeContract{
 
     // Claims
     function submitClaims(ValidatorClaims calldata _claims) external override onlyValidator {
-        claimsSubmitter.submitClaims(_claims, msg.sender);
+        claimsManager.submitClaims(_claims, msg.sender);
     }
 
     // Batches
     function submitSignedBatch(SignedBatch calldata _signedBatch) external override onlyValidator {
 
-        claimsSubmitter.setVoted(_signedBatch.id, msg.sender, true);
-        claimsSubmitter.setNumberOfVotes(_signedBatch.id);
+        claimsManager.setVoted(_signedBatch.id, msg.sender, true);
+        claimsManager.setNumberOfVotes(_signedBatch.id);
         signedBatches[_signedBatch.id].push(_signedBatch);
 
         if (claimsHelper.hasConsensus(_signedBatch.id)) {
@@ -124,11 +125,11 @@ contract BridgeContract is IBridgeContract{
         if (registeredChains[_chainId]) {
             revert ChainAlreadyRegistered();
         }
-        if (claimsSubmitter.voted(_chainId, msg.sender)) {
+        if (claimsManager.voted(_chainId, msg.sender)) {
             revert AlreadyProposed(_chainId);
         }
-        claimsSubmitter.setVoted(_chainId, msg.sender, true);
-        claimsSubmitter.setNumberOfVotes(_chainId);
+        claimsManager.setVoted(_chainId, msg.sender, true);
+        claimsManager.setNumberOfVotes(_chainId);
         if (claimsHelper.hasConsensus(_chainId)) {
             registeredChains[_chainId] = true;
             chains.push();
@@ -157,9 +158,9 @@ contract BridgeContract is IBridgeContract{
         // TO DO: Check the logic, this will check if there is "pending" signedBatch from this validator, 
         // I do not see how to check if the batch is related to pending claims, so my guess is that no new 
         // batch should be created if there's "pending" batch
-        if(!claimsSubmitter.voted(lastConfirmedBatch[_destinationChain], msg.sender)) {
+        if(!claimsManager.voted(lastConfirmedBatch[_destinationChain], msg.sender)) {
 
-            if ((claimsSubmitter.claimsCounter(_destinationChain) - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
+            if ((claimsManager.claimsCounter(_destinationChain) - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
                 return true;
             }
 
@@ -178,7 +179,7 @@ contract BridgeContract is IBridgeContract{
     ) external view override returns (ConfirmedTransaction[] memory _confirmedTransactions) {
         if(shouldCreateBatch(_destinationChain)) {
             uint256 lastBatchedClaimNumber = lastBatchedClaim[_destinationChain];
-            uint256 lastConfirmedClaim = claimsSubmitter.claimsCounter(_destinationChain);
+            uint256 lastConfirmedClaim = claimsManager.claimsCounter(_destinationChain);
             uint256 lastClaimToInclude = ((lastConfirmedClaim - lastBatchedClaimNumber) >= MAX_NUMBER_OF_TRANSACTIONS) 
                 ? lastBatchedClaimNumber + MAX_NUMBER_OF_TRANSACTIONS : lastConfirmedClaim;
             
@@ -187,7 +188,7 @@ contract BridgeContract is IBridgeContract{
 
             //TODO: is there a better way?, need to know how big will the array be
             for (uint i = lastBatchedClaimNumber; i < lastClaimToInclude; i++) {
-                ClaimTypes claimType = claimsSubmitter.queuedClaimsTypes(_destinationChain, i);
+                ClaimTypes claimType = claimsManager.queuedClaimsTypes(_destinationChain, i);
                 if(claimType == ClaimTypes.BRIDGING_REQUEST) {
                     arraySize++;
                 }
@@ -196,10 +197,10 @@ contract BridgeContract is IBridgeContract{
             ConfirmedTransaction[] memory confirmedTransactions = new ConfirmedTransaction[](arraySize);
 
             for (uint i = lastBatchedClaimNumber; i < lastClaimToInclude; i++) {
-                ClaimTypes claimType = claimsSubmitter.queuedClaimsTypes(_destinationChain, i);
+                ClaimTypes claimType = claimsManager.queuedClaimsTypes(_destinationChain, i);
 
                 if(claimType == ClaimTypes.BRIDGING_REQUEST) {
-                    Receiver[] memory tempReceivers = claimsHelper.getClaimBRC(claimsSubmitter.queuedClaims(_destinationChain, i)).receivers;
+                    Receiver[] memory tempReceivers = claimsHelper.getClaimBRC(claimsManager.queuedClaims(_destinationChain, i)).receivers;
                     ConfirmedTransaction memory confirmedtransaction = ConfirmedTransaction(
                         i,
                         tempReceivers
@@ -225,7 +226,7 @@ contract BridgeContract is IBridgeContract{
         return utxosManager.getAvailableUTXOs(_destinationChain, txCost);
     }
 
-    function updateUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external onlyClaimsSubmitter {   
+    function updateUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external onlyClaimsManager {   
         utxosManager.updateUTXOs(_chainID, _outputUTXOs);
     }
 
@@ -258,7 +259,7 @@ contract BridgeContract is IBridgeContract{
     }
 
     function getNumberOfVotes(string calldata _id) external view override returns (uint8) {
-        return claimsSubmitter.numberOfVotes(_id);
+        return claimsManager.numberOfVotes(_id);
     }
 
     function getAllPrivateKeyHashes() external view onlyOwner returns (bytes32[] memory) {
@@ -274,11 +275,11 @@ contract BridgeContract is IBridgeContract{
         validatorsAddresses.push(msg.sender);
     }
 
-    function setCurrentBatchBlock(string calldata _chainId, int256 _blockNumber) external onlyClaimsSubmitter {
+    function setCurrentBatchBlock(string calldata _chainId, int256 _blockNumber) external onlyClaimsManager {
         currentBatchBlock[_chainId] = int(_blockNumber);
     }
 
-    function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external onlyClaimsSubmitter {
+    function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external onlyClaimsManager {
         nextTimeoutBlock[_chainId] = _blockNumber;
     }
 
@@ -287,8 +288,8 @@ contract BridgeContract is IBridgeContract{
         claimsHelper.setValidatorsCount(validatorsCount);
     }
 
-    function setClaimsSubmitter(address _claimsSubmitter) external onlyOwner {
-        claimsSubmitter = ClaimsSubmitter(_claimsSubmitter);
+    function setClaimsManager(address _claimsManager) external onlyOwner {
+        claimsManager = ClaimsManager(_claimsManager);
     }
 
     function setUTXOsManager(address _UTXOsManager) external onlyOwner {
@@ -305,8 +306,8 @@ contract BridgeContract is IBridgeContract{
         _;
     }
 
-    modifier onlyClaimsSubmitter() {
-        if (msg.sender != address(claimsSubmitter)) revert NotClaimsSubmitter();
+    modifier onlyClaimsManager() {
+        if (msg.sender != address(claimsManager)) revert NotClaimsManager();
         _;
     }
 }

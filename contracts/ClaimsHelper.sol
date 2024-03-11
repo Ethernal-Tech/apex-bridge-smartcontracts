@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import "./interfaces/IBridgeContractStructs.sol";
 import "./BridgeContract.sol";
-import "./ClaimsSubmitter.sol";
+import "./ClaimsManager.sol";
 import "hardhat/console.sol";
 
 contract ClaimsHelper is IBridgeContractStructs {
@@ -21,13 +21,13 @@ contract ClaimsHelper is IBridgeContractStructs {
     mapping(string => string) public lastObserveredBlock;
 
     BridgeContract private bridgeContract;
-    ClaimsSubmitter private claimsSubmitter;
+    ClaimsManager private claimsManager;
 
     constructor(address _bridgeContractAddress) {
         bridgeContract = BridgeContract(_bridgeContractAddress);
     }
 
-    function updateLastObservedBlockIfNeeded(ValidatorClaims calldata _claims) external onlyClaimsSubmitter{
+    function updateLastObservedBlockIfNeeded(ValidatorClaims calldata _claims) external onlyClaimsManager{
         if (_claims.blockFullyObserved) {
             string memory chainId;
             if(_claims.bridgingRequestClaims.length > 0) {
@@ -69,7 +69,7 @@ contract ClaimsHelper is IBridgeContractStructs {
     }
 
     function hasConsensus(string calldata _id) public view returns (bool) {
-        if (claimsSubmitter.numberOfVotes(_id) >= ((validatorsCount * 2) / 3 + ((validatorsCount * 2) % 3 == 0 ? 0 : 1))) {
+        if (claimsManager.numberOfVotes(_id) >= ((validatorsCount * 2) / 3 + ((validatorsCount * 2) % 3 == 0 ? 0 : 1))) {
             return true;
         }
         return false;
@@ -79,23 +79,23 @@ contract ClaimsHelper is IBridgeContractStructs {
         return queuedBridgingRequestsClaims[_id];
     }
 
-    function addToQueuedBridgingRequestsClaims(BridgingRequestClaim calldata _claim) external onlyClaimsSubmitter {
+    function addToQueuedBridgingRequestsClaims(BridgingRequestClaim calldata _claim) external onlyClaimsManager {
         queuedBridgingRequestsClaims[_claim.observedTransactionHash] = _claim;
     }
 
-    function addToQueuedBatchExecutedClaims(BatchExecutedClaim calldata _claim) external onlyClaimsSubmitter {
+    function addToQueuedBatchExecutedClaims(BatchExecutedClaim calldata _claim) external onlyClaimsManager {
         queuedBatchExecutedClaims[_claim.observedTransactionHash] = _claim;
     }
 
-    function addToQueuedRefundRequestClaims(RefundRequestClaim calldata _claim) external onlyClaimsSubmitter {
+    function addToQueuedRefundRequestClaims(RefundRequestClaim calldata _claim) external onlyClaimsManager {
         queuedRefundRequestClaims[_claim.observedTransactionHash] = _claim;
     }
 
-    function addToQueuedRefundExecutedClaims(RefundExecutedClaim calldata _claim) external onlyClaimsSubmitter {
+    function addToQueuedRefundExecutedClaims(RefundExecutedClaim calldata _claim) external onlyClaimsManager {
         queuedRefundExecutedClaims[_claim.observedTransactionHash] = _claim;
     }
 
-    function addToQueuedBatchExecutionFailedClaims(BatchExecutionFailedClaim calldata _claim) external onlyClaimsSubmitter {
+    function addToQueuedBatchExecutionFailedClaims(BatchExecutionFailedClaim calldata _claim) external onlyClaimsManager {
         queuedBatchExecutionFailedClaims[_claim.observedTransactionHash] = _claim;
     }
 
@@ -104,8 +104,8 @@ contract ClaimsHelper is IBridgeContractStructs {
     }
 
     //TODO: think about constraint for setting this value
-    function setClaimsSubmitter(address _claimsSubmitter) external {
-        claimsSubmitter = ClaimsSubmitter(_claimsSubmitter);
+    function setClaimsManager(address _claimsManager) external {
+        claimsManager = ClaimsManager(_claimsManager);
     }
 
     modifier onlyBridgeContract() {
@@ -113,8 +113,8 @@ contract ClaimsHelper is IBridgeContractStructs {
         _;
     }
 
-    modifier onlyClaimsSubmitter() {
-       if (msg.sender != address(claimsSubmitter)) revert NotClaimsSubmitter();
+    modifier onlyClaimsManager() {
+       if (msg.sender != address(claimsManager)) revert NotClaimsManager();
         _;
     }
 
