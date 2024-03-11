@@ -6,7 +6,7 @@ import "./BridgeContract.sol";
 import "./ClaimsSubmitter.sol";
 import "hardhat/console.sol";
 
-contract ClaimsManager is IBridgeContractStructs {
+contract ClaimsHelper is IBridgeContractStructs {
 
     uint8 public validatorsCount;
 

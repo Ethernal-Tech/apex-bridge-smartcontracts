@@ -3,13 +3,13 @@ pragma solidity ^0.8.23;
 
 import "./interfaces/IBridgeContractStructs.sol";
 import "./BridgeContract.sol";
-import "./ClaimsManager.sol";
+import "./ClaimsHelper.sol";
 import "hardhat/console.sol";
 
 contract ClaimsSubmitter is IBridgeContractStructs {
 
     BridgeContract private bridgeContract;
-    ClaimsManager private claimsManager;
+    ClaimsHelper private claimsHelper;
 
     // Blockchain ID -> claimsCounter
     mapping(string => uint64) public claimsCounter;    
@@ -23,14 +23,14 @@ contract ClaimsSubmitter is IBridgeContractStructs {
     // TansactionHash -> numberOfVotes
     mapping(string => uint8) public numberOfVotes;
 
-    constructor(address _bridgeContract, address _claimsManager) {
+    constructor(address _bridgeContract, address _claimsHelper) {
         bridgeContract = BridgeContract(_bridgeContract);
-        claimsManager = ClaimsManager(_claimsManager);
+        claimsHelper = ClaimsHelper(_claimsHelper);
     }
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {
         for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
-            if (claimsManager.isQueuedBRC(_claims.bridgingRequestClaims[i])) {
+            if (claimsHelper.isQueuedBRC(_claims.bridgingRequestClaims[i])) {
                 revert AlreadyQueued(_claims.bridgingRequestClaims[i].observedTransactionHash);
             }
             if (voted[_claims.bridgingRequestClaims[i].observedTransactionHash][_caller]) {
@@ -39,7 +39,7 @@ contract ClaimsSubmitter is IBridgeContractStructs {
             _submitClaimsBRC(_claims, i, _caller);
         }
         for (uint i = 0; i < _claims.batchExecutedClaims.length; i++) {
-            if (claimsManager.isQueuedBEC(_claims.batchExecutedClaims[i])) {
+            if (claimsHelper.isQueuedBEC(_claims.batchExecutedClaims[i])) {
                 revert AlreadyQueued(_claims.batchExecutedClaims[i].observedTransactionHash);
             }
             if (voted[_claims.batchExecutedClaims[i].observedTransactionHash][_caller]) {
@@ -48,7 +48,7 @@ contract ClaimsSubmitter is IBridgeContractStructs {
             _submitClaimsBEC(_claims, i, _caller);
         }
         for (uint i = 0; i < _claims.batchExecutionFailedClaims.length; i++) {
-            if (claimsManager.isQueuedBEFC(_claims.batchExecutionFailedClaims[i])) {
+            if (claimsHelper.isQueuedBEFC(_claims.batchExecutionFailedClaims[i])) {
                 revert AlreadyQueued(_claims.batchExecutionFailedClaims[i].observedTransactionHash);
             }
             if (voted[_claims.batchExecutionFailedClaims[i].observedTransactionHash][_caller]) {
@@ -57,7 +57,7 @@ contract ClaimsSubmitter is IBridgeContractStructs {
             _submitClaimsBEFC(_claims, i, _caller);
         }
         for (uint i = 0; i < _claims.refundRequestClaims.length; i++) {
-            if (claimsManager.isQueuedRRC(_claims.refundRequestClaims[i])) {
+            if (claimsHelper.isQueuedRRC(_claims.refundRequestClaims[i])) {
                 revert AlreadyQueued(_claims.refundRequestClaims[i].observedTransactionHash);
             }
             if (voted[_claims.refundRequestClaims[i].observedTransactionHash][_caller]) {
@@ -66,7 +66,7 @@ contract ClaimsSubmitter is IBridgeContractStructs {
             _submitClaimsRRC(_claims, i, _caller);
         }
         for (uint i = 0; i < _claims.refundExecutedClaims.length; i++) {
-            if (claimsManager.isQueuedREC(_claims.refundExecutedClaims[i])) {
+            if (claimsHelper.isQueuedREC(_claims.refundExecutedClaims[i])) {
                 revert AlreadyQueued(_claims.refundExecutedClaims[i].observedTransactionHash);
             }
             if (voted[_claims.refundExecutedClaims[i].observedTransactionHash][_caller]) {
@@ -80,8 +80,8 @@ contract ClaimsSubmitter is IBridgeContractStructs {
         voted[_claims.bridgingRequestClaims[index].observedTransactionHash][_caller] = true;
         numberOfVotes[_claims.bridgingRequestClaims[index].observedTransactionHash]++;
 
-        if (claimsManager.hasConsensus(_claims.bridgingRequestClaims[index].observedTransactionHash)) {
-            claimsManager.addToQueuedBridgingRequestsClaims(_claims.bridgingRequestClaims[index]);
+        if (claimsHelper.hasConsensus(_claims.bridgingRequestClaims[index].observedTransactionHash)) {
+            claimsHelper.addToQueuedBridgingRequestsClaims(_claims.bridgingRequestClaims[index]);
 
             queuedClaims[_claims.bridgingRequestClaims[index].destinationChainID][
                 claimsCounter[_claims.bridgingRequestClaims[index].destinationChainID]
@@ -98,8 +98,8 @@ contract ClaimsSubmitter is IBridgeContractStructs {
         voted[_claims.batchExecutedClaims[index].observedTransactionHash][_caller] = true;
         numberOfVotes[_claims.batchExecutedClaims[index].observedTransactionHash]++;
 
-        if (claimsManager.hasConsensus(_claims.batchExecutedClaims[index].observedTransactionHash)) {
-            claimsManager.addToQueuedBatchExecutedClaims(_claims.batchExecutedClaims[index]);
+        if (claimsHelper.hasConsensus(_claims.batchExecutedClaims[index].observedTransactionHash)) {
+            claimsHelper.addToQueuedBatchExecutedClaims(_claims.batchExecutedClaims[index]);
 
             queuedClaims[_claims.batchExecutedClaims[index].chainID][
                 claimsCounter[_claims.batchExecutedClaims[index].chainID]
@@ -111,7 +111,7 @@ contract ClaimsSubmitter is IBridgeContractStructs {
 
             claimsCounter[_claims.batchExecutedClaims[index].chainID]++;
 
-            claimsManager.updateLastObservedBlockIfNeeded(_claims);
+            claimsHelper.updateLastObservedBlockIfNeeded(_claims);
 
             bridgeContract.setCurrentBatchBlock(_claims.batchExecutedClaims[index].chainID, -1);
 
@@ -126,8 +126,8 @@ contract ClaimsSubmitter is IBridgeContractStructs {
         voted[_claims.batchExecutionFailedClaims[index].observedTransactionHash][_caller] = true;
         numberOfVotes[_claims.batchExecutionFailedClaims[index].observedTransactionHash]++;
 
-        if (claimsManager.hasConsensus(_claims.batchExecutionFailedClaims[index].observedTransactionHash)) {
-            claimsManager.addToQueuedBatchExecutionFailedClaims(
+        if (claimsHelper.hasConsensus(_claims.batchExecutionFailedClaims[index].observedTransactionHash)) {
+            claimsHelper.addToQueuedBatchExecutionFailedClaims(
                 _claims.batchExecutionFailedClaims[index]);
 
             queuedClaims[_claims.batchExecutionFailedClaims[index].chainID][
@@ -140,7 +140,7 @@ contract ClaimsSubmitter is IBridgeContractStructs {
 
             claimsCounter[_claims.batchExecutionFailedClaims[index].chainID]++;
 
-            claimsManager.updateLastObservedBlockIfNeeded(_claims);
+            claimsHelper.updateLastObservedBlockIfNeeded(_claims);
 
             bridgeContract.setCurrentBatchBlock(_claims.batchExecutionFailedClaims[index].chainID, -1);
 
@@ -155,8 +155,8 @@ contract ClaimsSubmitter is IBridgeContractStructs {
         voted[_claims.refundRequestClaims[index].observedTransactionHash][_caller] = true;
         numberOfVotes[_claims.refundRequestClaims[index].observedTransactionHash]++;
 
-        if (claimsManager.hasConsensus(_claims.refundRequestClaims[index].observedTransactionHash)) {
-            claimsManager.addToQueuedRefundRequestClaims(_claims.refundRequestClaims[index]);
+        if (claimsHelper.hasConsensus(_claims.refundRequestClaims[index].observedTransactionHash)) {
+            claimsHelper.addToQueuedRefundRequestClaims(_claims.refundRequestClaims[index]);
 
             queuedClaims[_claims.refundRequestClaims[index].chainID][
                 claimsCounter[_claims.refundRequestClaims[index].chainID]
@@ -168,7 +168,7 @@ contract ClaimsSubmitter is IBridgeContractStructs {
 
             claimsCounter[_claims.refundRequestClaims[index].chainID]++;
 
-            claimsManager.updateLastObservedBlockIfNeeded(_claims);
+            claimsHelper.updateLastObservedBlockIfNeeded(_claims);
         }
     }
 
@@ -176,8 +176,8 @@ contract ClaimsSubmitter is IBridgeContractStructs {
         voted[_claims.refundExecutedClaims[index].observedTransactionHash][_caller] = true;
         numberOfVotes[_claims.refundExecutedClaims[index].observedTransactionHash]++;
 
-        if (claimsManager.hasConsensus(_claims.refundExecutedClaims[index].observedTransactionHash)) {
-            claimsManager.addToQueuedRefundExecutedClaims(_claims.refundExecutedClaims[index]);
+        if (claimsHelper.hasConsensus(_claims.refundExecutedClaims[index].observedTransactionHash)) {
+            claimsHelper.addToQueuedRefundExecutedClaims(_claims.refundExecutedClaims[index]);
 
             queuedClaims[_claims.refundExecutedClaims[index].chainID][
                 claimsCounter[_claims.refundExecutedClaims[index].chainID]
@@ -189,7 +189,7 @@ contract ClaimsSubmitter is IBridgeContractStructs {
 
             claimsCounter[_claims.refundExecutedClaims[index].chainID]++;
 
-            claimsManager.updateLastObservedBlockIfNeeded(_claims);
+            claimsHelper.updateLastObservedBlockIfNeeded(_claims);
         }
     }
 

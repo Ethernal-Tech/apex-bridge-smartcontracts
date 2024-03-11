@@ -2,13 +2,13 @@
 pragma solidity ^0.8.23;
 
 import "./interfaces/IBridgeContract.sol";
-import "./ClaimsManager.sol";
+import "./ClaimsHelper.sol";
 import "./UTXOsManager.sol";
 import "hardhat/console.sol";
 
 contract BridgeContract is IBridgeContract{
 
-    ClaimsManager private claimsManager;
+    ClaimsHelper private claimsHelper;
     ClaimsSubmitter private claimsSubmitter;
 
     UTXOsManager private utxosManager;
@@ -66,7 +66,7 @@ contract BridgeContract is IBridgeContract{
         claimsSubmitter.setNumberOfVotes(_signedBatch.id);
         signedBatches[_signedBatch.id].push(_signedBatch);
 
-        if (claimsManager.hasConsensus(_signedBatch.id)) {
+        if (claimsHelper.hasConsensus(_signedBatch.id)) {
             uint256 numberOfSignedBatches = signedBatches[_signedBatch.id].length;
             string[] memory multisigSignatures = new string[](numberOfSignedBatches);
             string[] memory feePayerMultisigSignatures = new string[](numberOfSignedBatches);
@@ -129,7 +129,7 @@ contract BridgeContract is IBridgeContract{
         }
         claimsSubmitter.setVoted(_chainId, msg.sender, true);
         claimsSubmitter.setNumberOfVotes(_chainId);
-        if (claimsManager.hasConsensus(_chainId)) {
+        if (claimsHelper.hasConsensus(_chainId)) {
             registeredChains[_chainId] = true;
             chains.push();
             chains[chains.length - 1].id = _chainId;
@@ -199,7 +199,7 @@ contract BridgeContract is IBridgeContract{
                 ClaimTypes claimType = claimsSubmitter.queuedClaimsTypes(_destinationChain, i);
 
                 if(claimType == ClaimTypes.BRIDGING_REQUEST) {
-                    Receiver[] memory tempReceivers = claimsManager.getClaimBRC(claimsSubmitter.queuedClaims(_destinationChain, i)).receivers;
+                    Receiver[] memory tempReceivers = claimsHelper.getClaimBRC(claimsSubmitter.queuedClaims(_destinationChain, i)).receivers;
                     ConfirmedTransaction memory confirmedtransaction = ConfirmedTransaction(
                         i,
                         tempReceivers
@@ -238,7 +238,7 @@ contract BridgeContract is IBridgeContract{
     function getLastObservedBlock(
         string calldata _sourceChain
     ) external view override returns (string memory blockHash) {
-        return claimsManager.lastObserveredBlock(_sourceChain);
+        return claimsHelper.lastObserveredBlock(_sourceChain);
     }
 
     function getLastConfirmedBatch(string calldata _chainID) external view returns (string memory) {
@@ -254,7 +254,7 @@ contract BridgeContract is IBridgeContract{
     }
 
     function getValidatorsCount() external view override returns (uint8) {
-        return claimsManager.validatorsCount();
+        return claimsHelper.validatorsCount();
     }
 
     function getNumberOfVotes(string calldata _id) external view override returns (uint8) {
@@ -282,9 +282,9 @@ contract BridgeContract is IBridgeContract{
         nextTimeoutBlock[_chainId] = _blockNumber;
     }
 
-    function setClaimsManager(address _claimsManager) external onlyOwner {
-        claimsManager = ClaimsManager(_claimsManager);
-        claimsManager.setValidatorsCount(validatorsCount);
+    function setClaimsHelper(address _claimsHelper) external onlyOwner {
+        claimsHelper = ClaimsHelper(_claimsHelper);
+        claimsHelper.setValidatorsCount(validatorsCount);
     }
 
     function setClaimsSubmitter(address _claimsSubmitter) external onlyOwner {
@@ -302,11 +302,6 @@ contract BridgeContract is IBridgeContract{
 
     modifier onlyOwner() {
        if (msg.sender != owner) revert NotOwner();
-        _;
-    }
-
-    modifier onlyClaimsManager() {
-        if (msg.sender != address(claimsManager)) revert NotClaimsManager();
         _;
     }
 
