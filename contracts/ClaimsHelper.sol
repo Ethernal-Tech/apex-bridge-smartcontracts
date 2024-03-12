@@ -44,6 +44,8 @@ contract ClaimsHelper is IBridgeContractStructs {
         }
     }
     
+    // TODO: claims might differ if inluding signature, check the claims and implement
+    // different way of comparison
     function isQueuedBRC(BridgingRequestClaim calldata _claim) public view returns (bool) {
         return
             keccak256(abi.encode(_claim)) ==

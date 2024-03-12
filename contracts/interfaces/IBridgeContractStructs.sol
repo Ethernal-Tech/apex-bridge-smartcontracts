@@ -125,7 +125,7 @@ interface IBridgeContractStructs {
         UTXOs utxos;
         string addressMultisig;
         string addressFeePayer;
-        bool isL1;
+        uint256 tokenQuantity;
     }
 
     error AlreadyQueued(string _claimhash);
@@ -136,6 +136,7 @@ interface IBridgeContractStructs {
     error NotBridgeContract();
     error NotClaimsManager();
     error NotClaimsSubmitter();
+    error NotEnoughBridgingTokensAwailable();
     
     event newChainProposal(string indexed chainId, address indexed sender);
     event newChainRegistered(string indexed chainId);

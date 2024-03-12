@@ -4,12 +4,14 @@ pragma solidity ^0.8.23;
 import "./interfaces/IBridgeContractStructs.sol";
 import "./BridgeContract.sol";
 import "./ClaimsHelper.sol";
+import "./BridgedTokensManager.sol";
 import "hardhat/console.sol";
 
 contract ClaimsManager is IBridgeContractStructs {
 
     BridgeContract private bridgeContract;
     ClaimsHelper private claimsHelper;
+    BridgedTokensManager private bridgedTokensManager;
 
     // Blockchain ID -> claimsCounter
     mapping(string => uint64) public claimsCounter;    
@@ -77,10 +79,31 @@ contract ClaimsManager is IBridgeContractStructs {
     }
 
     function _submitClaimsBRC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
+        //
+
         voted[_claims.bridgingRequestClaims[index].observedTransactionHash][_caller] = true;
         numberOfVotes[_claims.bridgingRequestClaims[index].observedTransactionHash]++;
 
         if (claimsHelper.hasConsensus(_claims.bridgingRequestClaims[index].observedTransactionHash)) {
+            // TODO: At this point in time transaction is not yet executed and tokens are
+            // still not bridged. Would it make more sence to do this with BridgeExecutedClaims
+            // in that case we would need to be able to track the amount from there.abi
+            // On other hand, doing it here would make sence also since, new BridgeRequestClaims
+            // will not be put in queue if there is already a claim that would make the new one
+            // invalid
+
+            uint256 tokenQuantity;
+
+            for (uint256 i = 0; i<_claims.bridgingRequestClaims[index].receivers.length; i++) {
+                tokenQuantity += _claims.bridgingRequestClaims[index].receivers[i].amount;
+            }
+            
+            if (bridgedTokensManager.chainTokenQuantity(_claims.bridgingRequestClaims[index].sourceChainID) >= tokenQuantity) {
+                revert NotEnoughBridgingTokensAwailable();
+            }
+
+            bridgedTokensManager.registerTokensTransfer(_claims.bridgingRequestClaims[index], tokenQuantity);
+
             claimsHelper.addToQueuedBridgingRequestsClaims(_claims.bridgingRequestClaims[index]);
 
             queuedClaims[_claims.bridgingRequestClaims[index].destinationChainID][
@@ -91,6 +114,7 @@ contract ClaimsManager is IBridgeContractStructs {
             ] = ClaimTypes.BRIDGING_REQUEST;
 
             claimsCounter[_claims.bridgingRequestClaims[index].destinationChainID]++;
+
         }
     }
 
@@ -199,6 +223,10 @@ contract ClaimsManager is IBridgeContractStructs {
 
     function setNumberOfVotes(string calldata _id) external onlyBridgeContract {
         numberOfVotes[_id]++;
+    }
+
+    function setBridgedTokensManager(address _bridgedTokensManager) external {
+        bridgedTokensManager = BridgedTokensManager(_bridgedTokensManager);
     }
 
     modifier onlyBridgeContract() {

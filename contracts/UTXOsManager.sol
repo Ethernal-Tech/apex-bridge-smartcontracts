@@ -8,7 +8,7 @@ import "hardhat/console.sol";
 contract UTXOsManager is IBridgeContractStructs{
     BridgeContract private bridgeContract;
 
-    // BLockchain ID -> UTXOs
+    // Blockchain ID -> UTXOs
     mapping(string => UTXOs) private chainUTXOs;
 
     constructor(address _bridgeContractAddress) {
