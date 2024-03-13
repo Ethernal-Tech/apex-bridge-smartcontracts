@@ -27,8 +27,8 @@ describe("Bridge Contract", function () {
     await bridgeContract.setClaimsManager(claimsManager.target);
     await bridgeContract.setUTXOsManager(uTXOsManager.target);
     
-
     await claimsHelper.setClaimsManager(claimsManager.target);
+    await claimsHelper.setUTXOsManager(uTXOsManager.target);
 
     const UTXOs = {
       multisigOwnedUTXOs: [
@@ -674,7 +674,7 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEFC);
 
       expect(await bridgeContract.currentBatchBlock(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID)).to.equal(-1);
-      expect(await bridgeContract.nextTimeoutBlock(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID)).to.equal(17);
+      expect(await bridgeContract.nextTimeoutBlock(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID)).to.equal(18);
     });
   });
   describe("Submit new Refund Request Claims", function () {

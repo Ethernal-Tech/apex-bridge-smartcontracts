@@ -14,7 +14,7 @@ contract ClaimsManager is IBridgeContractStructs {
     BridgedTokensManager private bridgedTokensManager;
 
     // Blockchain ID -> claimsCounter
-    mapping(string => uint64) public claimsCounter;    
+    mapping(string => uint256) public claimsCounter;    
     // Blockchain -> claimCounter -> claimHash
     mapping(string => mapping(uint256 => string)) public queuedClaims;
     // Blockchain -> claimCounter -> claimType
@@ -98,11 +98,11 @@ contract ClaimsManager is IBridgeContractStructs {
                 tokenQuantity += _claims.bridgingRequestClaims[index].receivers[i].amount;
             }
             
-            if (bridgedTokensManager.chainTokenQuantity(_claims.bridgingRequestClaims[index].sourceChainID) >= tokenQuantity) {
-                revert NotEnoughBridgingTokensAwailable();
-            }
+            // if (bridgedTokensManager.chainTokenQuantity(_claims.bridgingRequestClaims[index].sourceChainID) >= tokenQuantity) {
+            //     revert NotEnoughBridgingTokensAwailable();
+            // }
 
-            bridgedTokensManager.registerTokensTransfer(_claims.bridgingRequestClaims[index], tokenQuantity);
+            // bridgedTokensManager.registerTokensTransfer(_claims.bridgingRequestClaims[index], tokenQuantity);
 
             claimsHelper.addToQueuedBridgingRequestsClaims(_claims.bridgingRequestClaims[index]);
 

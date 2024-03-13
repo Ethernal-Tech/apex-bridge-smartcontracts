@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import "./interfaces/IBridgeContractStructs.sol";
 import "./BridgeContract.sol";
 import "./ClaimsManager.sol";
+import "./UTXOsManager.sol";
 import "hardhat/console.sol";
 
 contract ClaimsHelper is IBridgeContractStructs {
@@ -20,6 +21,7 @@ contract ClaimsHelper is IBridgeContractStructs {
 
     BridgeContract private bridgeContract;
     ClaimsManager private claimsManager;
+    UTXOsManager private utxosManager;
 
     constructor(address _bridgeContractAddress) {
         bridgeContract = BridgeContract(_bridgeContractAddress);
@@ -47,25 +49,52 @@ contract ClaimsHelper is IBridgeContractStructs {
     // TODO: claims might differ if inluding signature, check the claims and implement
     // different way of comparison
     function isQueuedBRC(BridgingRequestClaim calldata _claim) public view returns (bool) {
+        // return
+        //     keccak256(abi.encode(_claim)) ==
+        //     keccak256(abi.encode(queuedBridgingRequestsClaims[_claim.observedTransactionHash]));
+
         return
-            keccak256(abi.encode(_claim)) ==
-            keccak256(abi.encode(queuedBridgingRequestsClaims[_claim.observedTransactionHash]));
+            _equal(_claim.observedTransactionHash, queuedBridgingRequestsClaims[_claim.observedTransactionHash].observedTransactionHash) &&
+            utxosManager.equalUTXO(_claim.outputUTXO, queuedBridgingRequestsClaims[_claim.observedTransactionHash].outputUTXO) &&
+            _equalReveivers(_claim.receivers, queuedBridgingRequestsClaims[_claim.observedTransactionHash].receivers) &&
+            _equal(_claim.sourceChainID, queuedBridgingRequestsClaims[_claim.observedTransactionHash].sourceChainID) &&
+            _equal(_claim.destinationChainID, queuedBridgingRequestsClaims[_claim.observedTransactionHash].destinationChainID);
     }
 
     function isQueuedBEC(BatchExecutedClaim calldata _claim) public view returns (bool) {
-        return keccak256(abi.encode(_claim)) == keccak256(abi.encode(queuedBatchExecutedClaims[_claim.observedTransactionHash]));
+        return
+            _equal(_claim.observedTransactionHash, queuedBatchExecutedClaims[_claim.observedTransactionHash].observedTransactionHash) &&
+            _equal(_claim.chainID, queuedBatchExecutedClaims[_claim.observedTransactionHash].chainID) &&
+            _claim.batchNonceID == queuedBatchExecutedClaims[_claim.observedTransactionHash].batchNonceID &&
+            utxosManager.equalUTXOs(_claim.outputUTXOs, queuedBatchExecutedClaims[_claim.observedTransactionHash].outputUTXOs);
+
+
     }
 
-    function isQueuedBEFC(BatchExecutionFailedClaim calldata _claim) public view returns (bool) {
-        return keccak256(abi.encode(_claim)) == keccak256(abi.encode(queuedBatchExecutionFailedClaims[_claim.observedTransactionHash]));
+    function isQueuedBEFC(BatchExecutionFailedClaim calldata _claim) public view returns (bool) {        
+        return
+            _equal(_claim.observedTransactionHash, queuedBatchExecutionFailedClaims[_claim.observedTransactionHash].observedTransactionHash) &&
+            _equal(_claim.chainID, queuedBatchExecutionFailedClaims[_claim.observedTransactionHash].chainID) &&
+            _claim.batchNonceID == queuedBatchExecutionFailedClaims[_claim.observedTransactionHash].batchNonceID;
     }
 
     function isQueuedRRC(RefundRequestClaim calldata _claim) public view returns (bool) {
-        return keccak256(abi.encode(_claim)) == keccak256(abi.encode(queuedRefundRequestClaims[_claim.observedTransactionHash]));
+        return
+            _equal(_claim.observedTransactionHash, queuedRefundRequestClaims[_claim.observedTransactionHash].observedTransactionHash) &&
+            _equal(_claim.previousRefundTxHash, queuedRefundRequestClaims[_claim.observedTransactionHash].previousRefundTxHash) &&
+            _equal(_claim.chainID, queuedRefundRequestClaims[_claim.observedTransactionHash].chainID) &&
+            _equal(_claim.receiver, queuedRefundRequestClaims[_claim.observedTransactionHash].receiver) &&
+            utxosManager.equalUTXO(_claim.utxo, queuedRefundRequestClaims[_claim.observedTransactionHash].utxo) &&
+            _equal(_claim.rawTransaction, queuedRefundRequestClaims[_claim.observedTransactionHash].rawTransaction) &&
+            _claim.retryCounter == queuedRefundRequestClaims[_claim.observedTransactionHash].retryCounter;
     }
 
     function isQueuedREC(RefundExecutedClaim calldata _claim) public view returns (bool) {
-        return keccak256(abi.encode(_claim)) == keccak256(abi.encode(queuedRefundExecutedClaims[_claim.observedTransactionHash]));     
+        return 
+            _equal(_claim.observedTransactionHash, queuedRefundExecutedClaims[_claim.observedTransactionHash].observedTransactionHash) &&
+            _equal(_claim.chainID, queuedRefundExecutedClaims[_claim.observedTransactionHash].chainID) &&
+            _equal(_claim.refundTxHash, queuedRefundExecutedClaims[_claim.observedTransactionHash].refundTxHash) &&
+            utxosManager.equalUTXO(_claim.utxo, queuedRefundExecutedClaims[_claim.observedTransactionHash].utxo);
     }
 
     function hasConsensus(string calldata _id) public view returns (bool) {
@@ -99,9 +128,33 @@ contract ClaimsHelper is IBridgeContractStructs {
         queuedBatchExecutionFailedClaims[_claim.observedTransactionHash] = _claim;
     }
 
+    function _equal(string memory a, string memory b) internal pure returns (bool) {
+        return bytes(a).length == bytes(b).length && keccak256(bytes(a)) == keccak256(bytes(b));
+    }
+    
+    function  _equalReveivers(Receiver[] memory a, Receiver[] memory b) internal pure returns (bool) {
+        if(a.length != b.length){
+            return false;
+        }
+
+        for(uint256 i = 0; i < a.length; i++) {
+            if(!_equal(a[i].destinationAddress, b[i].destinationAddress)) {
+                return false;
+            }
+            if(a[i].amount != b[i].amount) {
+                return false;
+            }
+        }
+
+        return true;
+    }
     //TODO: think about constraint for setting this value
     function setClaimsManager(address _claimsManager) external {
         claimsManager = ClaimsManager(_claimsManager);
+    }
+
+    function setUTXOsManager(address _utxosManager) external {
+        utxosManager = UTXOsManager(_utxosManager);
     }
 
     modifier onlyBridgeContract() {
@@ -113,6 +166,5 @@ contract ClaimsHelper is IBridgeContractStructs {
        if (msg.sender != address(claimsManager)) revert NotClaimsManager();
         _;
     }
-
-    
+   
 }

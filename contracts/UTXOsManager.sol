@@ -25,12 +25,10 @@ contract UTXOsManager is IBridgeContractStructs{
 
         //counter - other option would required using storage variable
         for (uint i = 0; i < utxos.multisigOwnedUTXOs.length; i++) {
-            if ((sum + utxos.multisigOwnedUTXOs[i].amount) >= txCost) {
-                counterForArraySize++;
+            sum += utxos.multisigOwnedUTXOs[i].amount;
+            counterForArraySize++;
+            if (sum  >= txCost) {
                 break;
-            } else {
-                sum = utxos.multisigOwnedUTXOs[i].amount;
-                counterForArraySize++;
             }
         }
 
@@ -61,22 +59,16 @@ contract UTXOsManager is IBridgeContractStructs{
 
         for(uint i = 0; i < utxos.multisigOwnedUTXOs.length; i++) {
             for(uint j = 0; j < chainUTXOs[_chainID].multisigOwnedUTXOs.length; j++) {
-                if(keccak256(abi.encode(utxos.multisigOwnedUTXOs[i])) == keccak256(abi.encode(chainUTXOs[_chainID].multisigOwnedUTXOs[j]))) {
+                if(equalUTXO(utxos.multisigOwnedUTXOs[i], chainUTXOs[_chainID].multisigOwnedUTXOs[j])) {
                     indices[i] = j;
                     break;
                 }
             }
         }
 
-        // TODO: better way?
-        // delete used UTXOs
-        for(uint i = 0; i < indices.length; i++) {
-            delete chainUTXOs[_chainID].multisigOwnedUTXOs[indices[i]];
-        }
-
         // //cleanup
         for(uint i = 0; i < indices.length; i++) {
-            chainUTXOs[_chainID].multisigOwnedUTXOs[indices[i]] = chainUTXOs[_chainID].multisigOwnedUTXOs[chainUTXOs[_chainID].multisigOwnedUTXOs.length - indices[i] - 1];
+            chainUTXOs[_chainID].multisigOwnedUTXOs[indices[i]] = chainUTXOs[_chainID].multisigOwnedUTXOs[chainUTXOs[_chainID].multisigOwnedUTXOs.length - i - 1];
         }
 
         for(uint i = 0; i < indices.length; i++) {
@@ -104,6 +96,33 @@ contract UTXOsManager is IBridgeContractStructs{
 
     function getChainUTXOs(string memory _chainID) external view returns (UTXOs memory) {
         return chainUTXOs[_chainID];
+    }
+
+    function equalUTXO(UTXO memory a, UTXO memory b) public pure returns (bool) {
+        return
+            bytes(a.txHash).length == bytes(b.txHash).length && keccak256(bytes(a.txHash)) == keccak256(bytes(b.txHash)) &&
+            a.txIndex == b.txIndex &&
+            a.amount == b.amount;
+    }
+
+    function equalUTXOs(UTXOs memory a, UTXOs memory b) public pure returns (bool) {
+        if(a.multisigOwnedUTXOs.length != b.multisigOwnedUTXOs.length ||
+        a.feePayerOwnedUTXOs.length != b.feePayerOwnedUTXOs.length){
+            return false;
+        }
+
+        for(uint256 i = 0; i < a.multisigOwnedUTXOs.length; i++) {
+            if(!equalUTXO(a.multisigOwnedUTXOs[i], b.multisigOwnedUTXOs[i])) {
+                return false;
+            }
+        }
+        for(uint256 i = 0; i < a.feePayerOwnedUTXOs.length; i++) {
+            if(!equalUTXO(a.feePayerOwnedUTXOs[i], b.feePayerOwnedUTXOs[i])) {
+                return false;
+            }   
+        }
+
+        return true;
     }
 
     modifier onlyBridgeContract() {
