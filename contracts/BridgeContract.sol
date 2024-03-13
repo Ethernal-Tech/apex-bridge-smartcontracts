@@ -102,20 +102,12 @@ contract BridgeContract is IBridgeContract{
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
         uint256 _tokenQuantity
-    ) external override onlyOwner {
-        registeredChains[_chainId] = true;
-        chains.push();
-        chains[chains.length - 1].id = _chainId;
-        chains[chains.length - 1].utxos = _initialUTXOs;
-        chains[chains.length - 1].addressMultisig = _addressMultisig;
-        chains[chains.length - 1].addressFeePayer = _addressFeePayer;
-        chains[chains.length - 1].tokenQuantity = _tokenQuantity;
-
-        utxosManager.pushUTXOs(_chainId, _initialUTXOs);
-
-        nextTimeoutBlock[_chainId] = block.number + MAX_NUMBER_OF_BLOCKS;
-
-        emit newChainRegistered(_chainId);
+    ) public override onlyOwner {
+        _registerChain(_chainId,
+                _initialUTXOs,
+                _addressMultisig,
+                _addressFeePayer,
+                _tokenQuantity);
     }
 
     function registerChainGovernance(
@@ -134,6 +126,22 @@ contract BridgeContract is IBridgeContract{
         claimsManager.setVoted(_chainId, msg.sender, true);
         claimsManager.setNumberOfVotes(_chainId);
         if (claimsHelper.hasConsensus(_chainId)) {
+            _registerChain(_chainId,
+                _initialUTXOs,
+                _addressMultisig,
+                _addressFeePayer,
+                _tokenQuantity);
+            
+        } else {
+            emit newChainProposal(_chainId, msg.sender);
+        }
+    }
+
+    function _registerChain(string calldata _chainId,
+        UTXOs calldata _initialUTXOs,
+        string calldata _addressMultisig,
+        string calldata _addressFeePayer,
+        uint256 _tokenQuantity) internal {
             registeredChains[_chainId] = true;
             chains.push();
             chains[chains.length - 1].id = _chainId;
@@ -147,10 +155,6 @@ contract BridgeContract is IBridgeContract{
             nextTimeoutBlock[_chainId] = block.number + MAX_NUMBER_OF_BLOCKS;
             
             emit newChainRegistered(_chainId);
-            
-        } else {
-            emit newChainProposal(_chainId, msg.sender);
-        }
     }
 
     // Queries
