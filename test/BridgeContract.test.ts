@@ -583,27 +583,26 @@ describe("Bridge Contract", function () {
       expect(await claimsHelper.isQueuedBEC(validatorClaimsBEC.batchExecutedClaims[0])).to.be.true;
     });
 
-    it("Should increase claimsCounter after adding new Batch Executed Claim", async function () {
-      const { bridgeContract, claimsManager, owner, validators, UTXOs, signedBatch, validatorClaimsBEC } = await loadFixture(deployBridgeContractFixture);
+    // it("Should increase claimsCounter after adding new Batch Executed Claim", async function () {
+    //   const { bridgeContract, claimsManager, owner, validators, UTXOs, signedBatch, validatorClaimsBEC } = await loadFixture(deployBridgeContractFixture);
 
-      await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", 100);
+    //   await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", 100);
       
-      await bridgeContract.connect(validators[0]).submitSignedBatch(signedBatch);
-      await bridgeContract.connect(validators[1]).submitSignedBatch(signedBatch);
-      await bridgeContract.connect(validators[2]).submitSignedBatch(signedBatch);
-      await bridgeContract.connect(validators[3]).submitSignedBatch(signedBatch);
+    //   await bridgeContract.connect(validators[0]).submitSignedBatch(signedBatch);
+    //   await bridgeContract.connect(validators[1]).submitSignedBatch(signedBatch);
+    //   await bridgeContract.connect(validators[2]).submitSignedBatch(signedBatch);
+    //   await bridgeContract.connect(validators[3]).submitSignedBatch(signedBatch);
 
+    //   await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEC);
+    //   await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEC);
+    //   await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEC);
 
-      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEC);
-      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEC);
-      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEC);
+    //   const claimsCounter = await claimsManager.claimsCounter(validatorClaimsBEC.batchExecutedClaims[0].chainID);
 
-      const claimsCounter = await claimsManager.claimsCounter(validatorClaimsBEC.batchExecutedClaims[0].chainID);
+    //   await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
-      await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEC);
-
-      expect(await claimsManager.claimsCounter(validatorClaimsBEC.batchExecutedClaims[0].chainID)).to.equal(claimsCounter + BigInt(1));
-    });
+    //   expect(await claimsManager.claimsCounter(validatorClaimsBEC.batchExecutedClaims[0].chainID)).to.equal(claimsCounter + BigInt(1));
+    // });
   });
   describe("Submit new Batch Execution Failed Claims", function () {
     it("Should revert if Batch Execution Failed Claims is already in the queue", async function () {
@@ -652,19 +651,19 @@ describe("Bridge Contract", function () {
       expect(await claimsHelper.isQueuedBEFC(validatorClaimsBEFC.batchExecutionFailedClaims[0])).to.be.true;
     });
 
-    it("Should increase claimsCounter after adding new Batch Executed Claim", async function () {
-      const { bridgeContract, claimsManager, validators, validatorClaimsBEFC } = await loadFixture(deployBridgeContractFixture);
+    // it("Should increase claimsCounter after adding new Batch Executed Failed Claim", async function () {
+    //   const { bridgeContract, claimsManager, validators, validatorClaimsBEFC } = await loadFixture(deployBridgeContractFixture);
 
-      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEFC);
-      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEFC);
-      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEFC);
+    //   await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+    //   await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+    //   await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEFC);
 
-      const claimsCounter = await claimsManager.claimsCounter(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID);
+    //   const claimsCounter = await claimsManager.claimsCounter(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID);
 
-      await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEFC);
+    //   await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEFC);
 
-      expect(await claimsManager.claimsCounter(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID)).to.equal(claimsCounter + BigInt(1));
-    });
+    //   expect(await claimsManager.claimsCounter(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID)).to.equal(claimsCounter + BigInt(1));
+    // });
     it("Should reset current batch block and next timeout batch block when Batch Execution Failed Claims if confirmed", async function () {
       const { bridgeContract, validators, validatorClaimsBEFC } = await loadFixture(deployBridgeContractFixture);
 
@@ -724,7 +723,7 @@ describe("Bridge Contract", function () {
       expect(await claimsHelper.isQueuedRRC(validatorClaimsRRC.refundRequestClaims[0])).to.be.true;
     });
 
-    it("Should increase claimsCounter after adding new Batch Executed Claim", async function () {
+    it("Should increase claimsCounter after adding new Refund Request Claim", async function () {
       const { bridgeContract, claimsManager, validators, validatorClaimsRRC } = await loadFixture(deployBridgeContractFixture);
 
       await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC);
@@ -785,19 +784,19 @@ describe("Bridge Contract", function () {
       expect(await claimsHelper.isQueuedREC(validatorClaimsREC.refundExecutedClaims[0])).to.be.true;
     });
 
-    it("Should increase claimsCounter after adding new Refund Executed Claim", async function () {
-      const { bridgeContract, claimsManager, validators, validatorClaimsREC } = await loadFixture(deployBridgeContractFixture);
+    // it("Should increase claimsCounter after adding new Refund Executed Claim", async function () {
+    //   const { bridgeContract, claimsManager, validators, validatorClaimsREC } = await loadFixture(deployBridgeContractFixture);
 
-      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsREC);
-      await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsREC);
-      await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsREC);
+    //   await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsREC);
+    //   await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsREC);
+    //   await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsREC);
 
-      const claimsCounter = await claimsManager.claimsCounter(validatorClaimsREC.refundExecutedClaims[0].chainID);
+    //   const claimsCounter = await claimsManager.claimsCounter(validatorClaimsREC.refundExecutedClaims[0].chainID);
 
-      await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsREC);
+    //   await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsREC);
 
-      expect(await claimsManager.claimsCounter(validatorClaimsREC.refundExecutedClaims[0].chainID)).to.equal(claimsCounter + BigInt(1));
-    });
+    //   expect(await claimsManager.claimsCounter(validatorClaimsREC.refundExecutedClaims[0].chainID)).to.equal(claimsCounter + BigInt(1));
+    // });
   });
   describe("Batch creation", function () {
     it("ShouldCreateBatch should return false if there is not enough validated claims and no pending signedClaims from validator", async function () {

@@ -125,15 +125,15 @@ contract ClaimsManager is IBridgeContractStructs {
         if (claimsHelper.hasConsensus(_claims.batchExecutedClaims[index].observedTransactionHash)) {
             claimsHelper.addToQueuedBatchExecutedClaims(_claims.batchExecutedClaims[index]);
 
-            queuedClaims[_claims.batchExecutedClaims[index].chainID][
-                claimsCounter[_claims.batchExecutedClaims[index].chainID]
-            ] = _claims.batchExecutedClaims[index].observedTransactionHash;
+            // queuedClaims[_claims.batchExecutedClaims[index].chainID][
+            //     claimsCounter[_claims.batchExecutedClaims[index].chainID]
+            // ] = _claims.batchExecutedClaims[index].observedTransactionHash;
 
-            queuedClaimsTypes[_claims.batchExecutedClaims[index].chainID][
-                claimsCounter[_claims.batchExecutedClaims[index].chainID]
-            ] = ClaimTypes.BATCH_EXECUTED;
+            // queuedClaimsTypes[_claims.batchExecutedClaims[index].chainID][
+            //     claimsCounter[_claims.batchExecutedClaims[index].chainID]
+            // ] = ClaimTypes.BATCH_EXECUTED;
 
-            claimsCounter[_claims.batchExecutedClaims[index].chainID]++;
+            // claimsCounter[_claims.batchExecutedClaims[index].chainID]++;
 
             claimsHelper.updateLastObservedBlockIfNeeded(_claims);
 
@@ -154,15 +154,15 @@ contract ClaimsManager is IBridgeContractStructs {
             claimsHelper.addToQueuedBatchExecutionFailedClaims(
                 _claims.batchExecutionFailedClaims[index]);
 
-            queuedClaims[_claims.batchExecutionFailedClaims[index].chainID][
-                claimsCounter[_claims.batchExecutionFailedClaims[index].chainID]
-            ] = _claims.batchExecutionFailedClaims[index].observedTransactionHash;
+            // queuedClaims[_claims.batchExecutionFailedClaims[index].chainID][
+            //     claimsCounter[_claims.batchExecutionFailedClaims[index].chainID]
+            // ] = _claims.batchExecutionFailedClaims[index].observedTransactionHash;
 
-            queuedClaimsTypes[_claims.batchExecutionFailedClaims[index].chainID][
-                claimsCounter[_claims.batchExecutionFailedClaims[index].chainID]
-            ] = ClaimTypes.BATCH_EXECUTION_FAILED;
+            // queuedClaimsTypes[_claims.batchExecutionFailedClaims[index].chainID][
+            //     claimsCounter[_claims.batchExecutionFailedClaims[index].chainID]
+            // ] = ClaimTypes.BATCH_EXECUTION_FAILED;
 
-            claimsCounter[_claims.batchExecutionFailedClaims[index].chainID]++;
+            // claimsCounter[_claims.batchExecutionFailedClaims[index].chainID]++;
 
             claimsHelper.updateLastObservedBlockIfNeeded(_claims);
 
@@ -203,15 +203,15 @@ contract ClaimsManager is IBridgeContractStructs {
         if (claimsHelper.hasConsensus(_claims.refundExecutedClaims[index].observedTransactionHash)) {
             claimsHelper.addToQueuedRefundExecutedClaims(_claims.refundExecutedClaims[index]);
 
-            queuedClaims[_claims.refundExecutedClaims[index].chainID][
-                claimsCounter[_claims.refundExecutedClaims[index].chainID]
-            ] = _claims.refundExecutedClaims[index].observedTransactionHash;
+            // queuedClaims[_claims.refundExecutedClaims[index].chainID][
+            //     claimsCounter[_claims.refundExecutedClaims[index].chainID]
+            // ] = _claims.refundExecutedClaims[index].observedTransactionHash;
 
-            queuedClaimsTypes[_claims.refundExecutedClaims[index].chainID][
-                claimsCounter[_claims.refundExecutedClaims[index].chainID]
-            ] = ClaimTypes.REFUND_EXECUTED;
+            // queuedClaimsTypes[_claims.refundExecutedClaims[index].chainID][
+            //     claimsCounter[_claims.refundExecutedClaims[index].chainID]
+            // ] = ClaimTypes.REFUND_EXECUTED;
 
-            claimsCounter[_claims.refundExecutedClaims[index].chainID]++;
+            // claimsCounter[_claims.refundExecutedClaims[index].chainID]++;
 
             claimsHelper.updateLastObservedBlockIfNeeded(_claims);
         }
