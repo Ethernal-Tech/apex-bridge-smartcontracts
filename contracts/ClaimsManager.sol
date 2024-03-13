@@ -14,7 +14,7 @@ contract ClaimsManager is IBridgeContractStructs {
     BridgedTokensManager private bridgedTokensManager;
 
     // Blockchain ID -> claimsCounter
-    mapping(string => uint256) public claimsCounter;    
+    mapping(string => uint256) public claimsCounter;
     // Blockchain -> claimCounter -> claimHash
     mapping(string => mapping(uint256 => string)) public queuedClaims;
     // Blockchain -> claimCounter -> claimType
@@ -22,6 +22,9 @@ contract ClaimsManager is IBridgeContractStructs {
 
     // TansactionHash -> Voter -> Voted
     mapping(string => mapping(address => bool)) public voted;
+
+    //batchID -> voterAddress
+
     // TansactionHash -> numberOfVotes
     mapping(string => uint8) public numberOfVotes;
 

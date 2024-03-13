@@ -8,7 +8,7 @@ describe("Bridge Contract", function () {
   // and reset Hardhat Network to that snapshot in every test.
   async function deployBridgeContractFixture() {
     // Contracts are deployed using the first signer/account by default
-    const [owner, validator1, validator2, validator3, validator4, validator5] = await ethers.getSigners();
+    const [owner, validator1, validator2, validator3, validator4, validator5, validator6] = await ethers.getSigners();
     const validators = [validator1, validator2, validator3, validator4, validator5];
 
     const BridgeContract = await ethers.getContractFactory("BridgeContract");
@@ -72,6 +72,13 @@ describe("Bridge Contract", function () {
         }
       ],
     };
+
+    const validatorCardanoData = {
+      keyHash: "Ox123...",
+      keyHashFee: "keyHashFee...",
+      verifyingKey: "0x0123456789abcdef",
+      verifyingKeyFee: "0xabcdef0123456789"
+    }
 
     const validatorClaimsBRC = {
       bridgingRequestClaims: [
@@ -254,8 +261,8 @@ describe("Bridge Contract", function () {
       },
     };
 
-    return { bridgeContract, claimsHelper, claimsManager, uTXOsManager, owner, UTXOs, validators, validatorClaimsBRC, 
-      validatorClaimsBEC, validatorClaimsBEFC, validatorClaimsRRC, validatorClaimsREC, 
+    return { bridgeContract, claimsHelper, claimsManager, uTXOsManager, owner, UTXOs, validators, validator6, validatorCardanoData, 
+      validatorClaimsBRC, validatorClaimsBEC, validatorClaimsBEFC, validatorClaimsRRC, validatorClaimsREC, 
       validatorClaimsRECObserverdFalse, signedBatch };
   }
 
@@ -267,21 +274,33 @@ describe("Bridge Contract", function () {
       expect(numberOfValidators).to.equal(5);
     });
 
-    it("Should reject private key setting if not called by validator", async function () {
-      const { bridgeContract, owner } = await loadFixture(deployBridgeContractFixture);
+    it("Should return return all ValidatorsCardanoData", async function () {
+      const { bridgeContract, validators, validatorCardanoData } = await loadFixture(deployBridgeContractFixture);
 
-      await expect(
-        bridgeContract.connect(owner).setPrivateKeyHash(ethers.ZeroHash)
-      ).to.be.revertedWithCustomError(bridgeContract, "NotValidator");
+      await bridgeContract.connect(validators[0]).setValidatorCardanoData(validatorCardanoData, "chainID1");
+      await bridgeContract.connect(validators[1]).setValidatorCardanoData(validatorCardanoData, "chainID1");
+      await bridgeContract.connect(validators[2]).setValidatorCardanoData(validatorCardanoData, "chainID1");
+      await bridgeContract.connect(validators[3]).setValidatorCardanoData(validatorCardanoData, "chainID1");
+      await bridgeContract.connect(validators[4]).setValidatorCardanoData(validatorCardanoData, "chainID1");
+
+      expect((await bridgeContract.getValidatorsCardanoData("chainID1")).length).to.equal(5);
+      expect((await bridgeContract.getValidatorsCardanoData("chainID1"))[0].keyHash).to.equal(validatorCardanoData.keyHash);
+      expect((await bridgeContract.getValidatorsCardanoData("chainID1"))[0].keyHashFee).to.equal(validatorCardanoData.keyHashFee);
+      expect((await bridgeContract.getValidatorsCardanoData("chainID1"))[0].verifyingKey).to.equal(validatorCardanoData.verifyingKey);
+      expect((await bridgeContract.getValidatorsCardanoData("chainID1"))[0].verifyingKeyFee).to.equal(validatorCardanoData.verifyingKeyFee);
     });
 
-    it("Should register private key setting if called by validator", async function () {
-      const { bridgeContract, validators } = await loadFixture(deployBridgeContractFixture);
+    it("Should return return all ValidatorsCardanoData, but just for validators", async function () {
+      const { bridgeContract, validators, validator6, validatorCardanoData } = await loadFixture(deployBridgeContractFixture);
 
-      await bridgeContract.connect(validators[0]).setPrivateKeyHash(ethers.ZeroHash);
+      await bridgeContract.connect(validators[0]).setValidatorCardanoData(validatorCardanoData, "chainID1");
+      await bridgeContract.connect(validators[1]).setValidatorCardanoData(validatorCardanoData, "chainID1");
+      await bridgeContract.connect(validators[2]).setValidatorCardanoData(validatorCardanoData, "chainID1");
+      await bridgeContract.connect(validators[3]).setValidatorCardanoData(validatorCardanoData, "chainID1");
+      await bridgeContract.connect(validators[4]).setValidatorCardanoData(validatorCardanoData, "chainID1");
+      await bridgeContract.connect(validator6).setValidatorCardanoData(validatorCardanoData, "chainID1");
 
-      expect((await bridgeContract.getAllPrivateKeyHashes()).length).to.equal(1);
-      expect((await bridgeContract.getAllPrivateKeyHashes())[0]).to.equal(ethers.ZeroHash);
+      expect((await bridgeContract.getValidatorsCardanoData("chainID1")).length).to.equal(5);
     });
 
   });

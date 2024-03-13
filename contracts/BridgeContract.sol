@@ -15,8 +15,9 @@ contract BridgeContract is IBridgeContract{
     UTXOsManager private utxosManager;
 
     // mapping in case they could be added/removed
-    mapping(address => bool) private validators;
-    mapping(address => bytes32) private validatorsPrivateKeyHashes;  
+    mapping(address => bool) private isValidator;
+    // validatorAddress -> chaindID -> ValidatorCardanoData
+    mapping(address => mapping (string => ValidatorCardanoData)) private validatorsCardanoData;  
 
     mapping(string => bool) private registeredChains;
 
@@ -49,7 +50,8 @@ contract BridgeContract is IBridgeContract{
     
     constructor(address[] memory _validators) {
         for (uint i = 0; i < _validators.length; i++) {
-            validators[_validators[i]] = true;
+            isValidator[_validators[i]] = true;
+            validatorsAddresses.push(_validators[i]);
         }
         validatorsCount = uint8(_validators.length);
         owner = msg.sender;
@@ -270,17 +272,17 @@ contract BridgeContract is IBridgeContract{
         return claimsManager.numberOfVotes(_id);
     }
 
-    function getAllPrivateKeyHashes() external view onlyOwner returns (bytes32[] memory) {
-        bytes32[] memory _hashes = new bytes32[](validatorsAddresses.length);
-        for (uint i = 0; i < validatorsAddresses.length; i++) {
-            _hashes[i] = validatorsPrivateKeyHashes[validatorsAddresses[i]];
-        }
-        return _hashes;
+    function setValidatorCardanoData(ValidatorCardanoData calldata _validatorCardanoData, string calldata _chainID) external {
+        validatorsCardanoData[msg.sender][_chainID] = _validatorCardanoData;
     }
 
-    function setPrivateKeyHash(bytes32 _hash) external onlyValidator {
-        validatorsPrivateKeyHashes[msg.sender] = _hash;
-        validatorsAddresses.push(msg.sender);
+    // TODO: who is calling this?
+    function getValidatorsCardanoData(string calldata _chainID) external view returns (ValidatorCardanoData[] memory) {
+        ValidatorCardanoData[] memory _validatorsCardanoData = new ValidatorCardanoData[](validatorsAddresses.length);
+        for (uint i = 0; i < validatorsAddresses.length; i++) {
+            _validatorsCardanoData[i] = validatorsCardanoData[validatorsAddresses[i]][_chainID];
+        }
+        return _validatorsCardanoData;
     }
 
     function setCurrentBatchBlock(string calldata _chainId, int256 _blockNumber) external onlyClaimsManager {
@@ -304,7 +306,7 @@ contract BridgeContract is IBridgeContract{
     }
 
     modifier onlyValidator() {
-        if (!validators[msg.sender]) revert NotValidator();
+        if (!isValidator[msg.sender]) revert NotValidator();
         _;
     }
 

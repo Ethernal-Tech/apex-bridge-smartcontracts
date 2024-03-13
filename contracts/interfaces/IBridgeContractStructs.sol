@@ -128,6 +128,13 @@ interface IBridgeContractStructs {
         uint256 tokenQuantity;
     }
 
+    struct ValidatorCardanoData {
+        string keyHash;
+        string keyHashFee;
+        bytes verifyingKey;
+        bytes verifyingKeyFee;
+    }
+
     error AlreadyQueued(string _claimhash);
     error AlreadyProposed(string _claimhash);
     error ChainAlreadyRegistered();
