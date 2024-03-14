@@ -6,14 +6,15 @@ import './ClaimsManager.sol';
 import "hardhat/console.sol";
 
 contract BridgedTokensManager is IBridgeContractStructs{
-    ClaimsManager private claimsManager;
+    address private claimsManagerAddress;
+    address private bridgeContractAddress;
 
     // chainID => tokenQuantity;
     mapping(string => uint256) public chainTokenQuantity;
-    // sourceChainID => destinationChainId => amount
 
-    constructor(address _claimsManager) {
-        claimsManager = ClaimsManager(_claimsManager);
+    constructor(address _bridgeContractAddress, address _claimsManagerAddress) {
+        bridgeContractAddress = _bridgeContractAddress;
+        claimsManagerAddress = _claimsManagerAddress;
     }
 
     function registerTokensTransfer(BridgingRequestClaim calldata _claim, uint256 _tokenQuantity) external onlyClaimsManager {
@@ -23,8 +24,17 @@ contract BridgedTokensManager is IBridgeContractStructs{
 
     }
 
+    function setTokenQuantity(string calldata _chainId, uint256 _tokenQuantity) external onlyBridgeContract {
+        chainTokenQuantity[_chainId] = _tokenQuantity;
+    }
+
     modifier onlyClaimsManager() {
-       if (msg.sender != address(claimsManager)) revert NotClaimsManager();
+       if (msg.sender != claimsManagerAddress) revert NotClaimsManager();
+        _;
+    }
+
+    modifier onlyBridgeContract() {
+       if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
         _;
     }
 

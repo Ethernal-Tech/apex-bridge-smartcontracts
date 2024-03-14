@@ -35,12 +35,18 @@ contract ClaimsManager is IBridgeContractStructs {
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {
         for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
+            if (!claimsHelper.isThereEnoughTokensToBridge(_claims.bridgingRequestClaims[i])) {
+                revert NotEnoughBridgingTokensAwailable(_claims.bridgingRequestClaims[i].observedTransactionHash);
+            }
+
             if (claimsHelper.isQueuedBRC(_claims.bridgingRequestClaims[i])) {
                 revert AlreadyQueued(_claims.bridgingRequestClaims[i].observedTransactionHash);
             }
+
             if (voted[_claims.bridgingRequestClaims[i].observedTransactionHash][_caller]) {
                 revert AlreadyProposed(_claims.bridgingRequestClaims[i].observedTransactionHash);
             }
+
             _submitClaimsBRC(_claims, i, _caller);
         }
         for (uint i = 0; i < _claims.batchExecutedClaims.length; i++) {
@@ -82,7 +88,6 @@ contract ClaimsManager is IBridgeContractStructs {
     }
 
     function _submitClaimsBRC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        //
 
         voted[_claims.bridgingRequestClaims[index].observedTransactionHash][_caller] = true;
         numberOfVotes[_claims.bridgingRequestClaims[index].observedTransactionHash]++;
@@ -90,22 +95,18 @@ contract ClaimsManager is IBridgeContractStructs {
         if (claimsHelper.hasConsensus(_claims.bridgingRequestClaims[index].observedTransactionHash)) {
             // TODO: At this point in time transaction is not yet executed and tokens are
             // still not bridged. Would it make more sence to do this with BridgeExecutedClaims
-            // in that case we would need to be able to track the amount from there.abi
+            // in that case we would need to be able to track the amount from there
             // On other hand, doing it here would make sence also since, new BridgeRequestClaims
-            // will not be put in queue if there is already a claim that would make the new one
+            // will not be put in queue if there is already a claim that would make the new ones
             // invalid
 
             uint256 tokenQuantity;
 
-            for (uint256 i = 0; i<_claims.bridgingRequestClaims[index].receivers.length; i++) {
-                tokenQuantity += _claims.bridgingRequestClaims[index].receivers[i].amount;
+            for (uint256 i = 0; i < _claims.bridgingRequestClaims[index].receivers.length; i++) {
+                tokenQuantity +=_claims.bridgingRequestClaims[index].receivers[i].amount;
             }
-            
-            // if (bridgedTokensManager.chainTokenQuantity(_claims.bridgingRequestClaims[index].sourceChainID) >= tokenQuantity) {
-            //     revert NotEnoughBridgingTokensAwailable();
-            // }
 
-            // bridgedTokensManager.registerTokensTransfer(_claims.bridgingRequestClaims[index], tokenQuantity);
+            bridgedTokensManager.registerTokensTransfer(_claims.bridgingRequestClaims[index], tokenQuantity);
 
             claimsHelper.addToQueuedBridgingRequestsClaims(_claims.bridgingRequestClaims[index]);
 

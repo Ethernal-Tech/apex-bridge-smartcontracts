@@ -8,6 +8,10 @@ import "./UTXOsManager.sol";
 import "hardhat/console.sol";
 
 contract ClaimsHelper is IBridgeContractStructs {
+    BridgeContract private bridgeContract;
+    ClaimsManager private claimsManager;
+    BridgedTokensManager private bridgedTokensManager;
+    UTXOsManager private utxosManager;
 
     //  claimHash -> claim
     mapping(string => BridgingRequestClaim) public queuedBridgingRequestsClaims;    
@@ -18,10 +22,6 @@ contract ClaimsHelper is IBridgeContractStructs {
 
     //  Blochchain ID -> blockHash
     mapping(string => string) public lastObserveredBlock;
-
-    BridgeContract private bridgeContract;
-    ClaimsManager private claimsManager;
-    UTXOsManager private utxosManager;
 
     constructor(address _bridgeContractAddress) {
         bridgeContract = BridgeContract(_bridgeContractAddress);
@@ -128,6 +128,20 @@ contract ClaimsHelper is IBridgeContractStructs {
         queuedBatchExecutionFailedClaims[_claim.observedTransactionHash] = _claim;
     }
 
+    function isThereEnoughTokensToBridge(BridgingRequestClaim calldata _claim) external view returns (bool) {
+        uint256 tokenQuantity;
+
+        for (uint256 i = 0; i<_claim.receivers.length; i++) {
+            tokenQuantity += _claim.receivers[i].amount;
+        }
+            
+        if (bridgedTokensManager.chainTokenQuantity(_claim.sourceChainID) < tokenQuantity) {
+            revert NotEnoughBridgingTokensAwailable(_claim.observedTransactionHash);
+        }
+
+        return true;
+    }
+
     function _equal(string memory a, string memory b) internal pure returns (bool) {
         return bytes(a).length == bytes(b).length && keccak256(bytes(a)) == keccak256(bytes(b));
     }
@@ -148,6 +162,7 @@ contract ClaimsHelper is IBridgeContractStructs {
 
         return true;
     }
+
     //TODO: think about constraint for setting this value
     function setClaimsManager(address _claimsManager) external {
         claimsManager = ClaimsManager(_claimsManager);
@@ -155,6 +170,10 @@ contract ClaimsHelper is IBridgeContractStructs {
 
     function setUTXOsManager(address _utxosManager) external {
         utxosManager = UTXOsManager(_utxosManager);
+    }
+
+    function setBridgedTokensManager(address _bridgedTokensManager) external {
+        bridgedTokensManager = BridgedTokensManager(_bridgedTokensManager);
     }
 
     modifier onlyBridgeContract() {

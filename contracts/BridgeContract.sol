@@ -5,14 +5,15 @@ import "./interfaces/IBridgeContract.sol";
 import "./ClaimsHelper.sol";
 import "./ClaimsManager.sol";
 import "./UTXOsManager.sol";
+import "./BridgedTokensManager.sol";
 import "hardhat/console.sol";
 
 contract BridgeContract is IBridgeContract{
 
     ClaimsHelper private claimsHelper;
     ClaimsManager private claimsManager;
-
     UTXOsManager private utxosManager;
+    BridgedTokensManager private bridgedTokensManager;
 
     // mapping in case they could be added/removed
     mapping(address => bool) private isValidator;
@@ -153,6 +154,8 @@ contract BridgeContract is IBridgeContract{
             chains[chains.length - 1].tokenQuantity = _tokenQuantity;
 
             utxosManager.pushUTXOs(_chainId, _initialUTXOs);
+
+            bridgedTokensManager.setTokenQuantity(_chainId, _tokenQuantity);
 
             nextTimeoutBlock[_chainId] = block.number + MAX_NUMBER_OF_BLOCKS;
             
@@ -301,8 +304,12 @@ contract BridgeContract is IBridgeContract{
         claimsManager = ClaimsManager(_claimsManager);
     }
 
-    function setUTXOsManager(address _UTXOsManager) external onlyOwner {
-        utxosManager = UTXOsManager(_UTXOsManager);
+    function setUTXOsManager(address _utxosManager) external onlyOwner {
+        utxosManager = UTXOsManager(_utxosManager);
+    }
+
+    function setBridgedTokensManager(address _bridgedTokensManager) external onlyOwner {
+        bridgedTokensManager = BridgedTokensManager(_bridgedTokensManager);
     }
 
     modifier onlyValidator() {

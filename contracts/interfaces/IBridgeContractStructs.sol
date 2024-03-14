@@ -143,7 +143,7 @@ interface IBridgeContractStructs {
     error NotBridgeContract();
     error NotClaimsManager();
     error NotClaimsSubmitter();
-    error NotEnoughBridgingTokensAwailable();
+    error NotEnoughBridgingTokensAwailable(string _claimhash);
     
     event newChainProposal(string indexed chainId, address indexed sender);
     event newChainRegistered(string indexed chainId);
