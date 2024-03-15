@@ -40,8 +40,8 @@ contract BridgeContract is IBridgeContract{
     // BlockchainID -> ConfirmedBatch
     mapping(string => ConfirmedBatch) public confirmedBatch;
 
-    // BlockchaID -> batchId
-    mapping(string => string) public lastConfirmedBatch;
+    // BlockchainID -> batchId
+    // mapping(string => string) public lastConfirmedBatch;
 
     Chain[] private chains;
     address[] private validatorsAddresses;
@@ -94,7 +94,7 @@ contract BridgeContract is IBridgeContract{
 
             currentBatchBlock[_signedBatch.destinationChainId] = int(block.number);
 
-            lastConfirmedBatch[_signedBatch.destinationChainId] = _signedBatch.id;
+            // lastConfirmedBatch[_signedBatch.destinationChainId] = _signedBatch.id;
 
             lastSignedBatch[_signedBatch.destinationChainId] = _signedBatch.id;
 
@@ -171,18 +171,13 @@ contract BridgeContract is IBridgeContract{
     // It will also check if the given validator already submitted a signed batch and return the response accordingly.
     function shouldCreateBatch(string calldata _destinationChain) public view override returns (bool batch) {
 
-        // TO DO: Check the logic, this will check if there is "pending" signedBatch from this validator, 
-        // I do not see how to check if the batch is related to pending claims, so my guess is that no new 
-        // batch should be created if there's "pending" batch
-        if(!claimsManager.voted(lastConfirmedBatch[_destinationChain], msg.sender)) {
 
-            if ((claimsManager.claimsCounter(_destinationChain) - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
-                return true;
-            }
+        if ((claimsManager.claimsCounter(_destinationChain) - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
+            return true;
+        }
 
-            if ((block.number >= nextTimeoutBlock[_destinationChain])) {
-                return true;
-            }
+        if ((block.number >= nextTimeoutBlock[_destinationChain])) {
+            return true;
         }
 
         return false;
@@ -254,10 +249,6 @@ contract BridgeContract is IBridgeContract{
         return claimsHelper.lastObserveredBlock(_sourceChain);
     }
 
-    function getLastConfirmedBatch(string calldata _chainID) external view returns (string memory) {
-        return lastConfirmedBatch[_chainID];
-
-    }
     function getAllRegisteredChains() external view override returns (Chain[] memory _chains) {
         return chains;
     }
