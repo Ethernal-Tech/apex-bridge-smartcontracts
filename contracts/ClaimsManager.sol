@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import "./interfaces/IBridgeContractStructs.sol";
 import "./BridgeContract.sol";
 import "./ClaimsHelper.sol";
+import "./UTXOsManager.sol";
 import "./BridgedTokensManager.sol";
 import "hardhat/console.sol";
 
@@ -11,6 +12,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
     BridgeContract private bridgeContract;
     ClaimsHelper private claimsHelper;
+    UTXOsManager private utxosManager;
     BridgedTokensManager private bridgedTokensManager;
 
     // Blockchain ID -> claimsCounter
@@ -143,7 +145,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             bridgeContract.setCurrentBatchBlock(_claims.batchExecutedClaims[index].chainID, -1);
 
-            bridgeContract.updateUTXOs(
+            utxosManager.updateUTXOs(
                 _claims.batchExecutedClaims[index].chainID,
                 _claims.batchExecutedClaims[index].outputUTXOs
             );
@@ -227,6 +229,11 @@ contract ClaimsManager is IBridgeContractStructs {
 
     function setNumberOfVotes(string calldata _id) external onlyBridgeContract {
         numberOfVotes[_id]++;
+    }
+
+    // TODO: who will set this value?
+    function setUTXOsManager(address _utxosManager) external {
+        utxosManager = UTXOsManager(_utxosManager);
     }
 
     function setBridgedTokensManager(address _bridgedTokensManager) external {

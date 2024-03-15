@@ -239,10 +239,6 @@ contract BridgeContract is IBridgeContract{
         return utxosManager.getAvailableUTXOs(_destinationChain, txCost);
     }
 
-    function updateUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external onlyClaimsManager {   
-        utxosManager.updateUTXOs(_chainID, _outputUTXOs);
-    }
-
     function getConfirmedBatch(
         string calldata _destinationChain
     ) external view override returns (ConfirmedBatch memory batch) {
