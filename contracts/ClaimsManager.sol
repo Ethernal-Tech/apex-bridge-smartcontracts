@@ -145,6 +145,11 @@ contract ClaimsManager is IBridgeContractStructs {
 
             bridgeContract.setCurrentBatchBlock(_claims.batchExecutedClaims[index].chainID, -1);
 
+            bridgeContract.setNextTimeoutBlock(
+                _claims.batchExecutedClaims[index].chainID,
+                block.number + bridgeContract.MAX_NUMBER_OF_BLOCKS()
+            );
+
             utxosManager.updateUTXOs(
                 _claims.batchExecutedClaims[index].chainID,
                 _claims.batchExecutedClaims[index].outputUTXOs

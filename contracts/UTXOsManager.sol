@@ -88,7 +88,7 @@ contract UTXOsManager is IBridgeContractStructs{
     function _removeUsedUTXOs(string calldata _chainID) internal {
         string memory lastSignedBatch = bridgeContract.lastConfirmedBatch(_chainID);
         UTXOs memory utxos;
-        (, , , , , utxos) = bridgeContract.signedBatches(lastSignedBatch, 0);
+        (, , , , , utxos) = bridgeContract.signedBatches(_chainID, lastSignedBatch, 0);
 
         _removeMultisigUTXOs(_chainID, utxos);
         _removeFeeUTXOs(_chainID, utxos);

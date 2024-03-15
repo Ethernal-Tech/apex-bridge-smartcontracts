@@ -943,10 +943,10 @@ describe("Bridge Contract", function () {
       const { bridgeContract, validators, signedBatch } = await loadFixture(deployBridgeContractFixture);
       await bridgeContract.connect(validators[0]).submitSignedBatch(signedBatch);
 
-      expect((await bridgeContract.connect(validators[0]).signedBatches(signedBatch.id, 0)).id).to.equal(signedBatch.id);
-      expect((await bridgeContract.connect(validators[0]).signedBatches(signedBatch.id, 0)).rawTransaction).to.equal(signedBatch.rawTransaction);
-      expect((await bridgeContract.connect(validators[0]).signedBatches(signedBatch.id, 0)).multisigSignature).to.equal(signedBatch.multisigSignature);
-      expect((await bridgeContract.connect(validators[0]).signedBatches(signedBatch.id, 0)).feePayerMultisigSignature).to.equal(signedBatch.feePayerMultisigSignature);
+      expect((await bridgeContract.connect(validators[0]).signedBatches(signedBatch.destinationChainId, signedBatch.id, 0)).id).to.equal(signedBatch.id);
+      expect((await bridgeContract.connect(validators[0]).signedBatches(signedBatch.destinationChainId, signedBatch.id, 0)).rawTransaction).to.equal(signedBatch.rawTransaction);
+      expect((await bridgeContract.connect(validators[0]).signedBatches(signedBatch.destinationChainId, signedBatch.id, 0)).multisigSignature).to.equal(signedBatch.multisigSignature);
+      expect((await bridgeContract.connect(validators[0]).signedBatches(signedBatch.destinationChainId, signedBatch.id, 0)).feePayerMultisigSignature).to.equal(signedBatch.feePayerMultisigSignature);
     });
 
     it("Should create ConfirmedBatch if there is enough votes", async function () {

@@ -32,7 +32,10 @@ contract BridgeContract is IBridgeContract{
     mapping(string => uint256) public nextTimeoutBlock;
 
     // BatchId -> SignedBatch[]
-    mapping(string => SignedBatch[]) public signedBatches;
+    // mapping(string => SignedBatch[]) public signedBatches;
+    // BlockchaID -> batchId -> SignedBatch[]
+    mapping(string => mapping(string => SignedBatch[])) public signedBatches;
+    
     // BlockchaID -> batchId
     mapping(string => string) public lastSignedBatch;
 
@@ -68,16 +71,16 @@ contract BridgeContract is IBridgeContract{
 
         claimsManager.setVoted(_signedBatch.id, msg.sender, true);
         claimsManager.setNumberOfVotes(_signedBatch.id);
-        signedBatches[_signedBatch.id].push(_signedBatch);
+        signedBatches[_signedBatch.destinationChainId][_signedBatch.id].push(_signedBatch);
 
         if (claimsHelper.hasConsensus(_signedBatch.id)) {
-            uint256 numberOfSignedBatches = signedBatches[_signedBatch.id].length;
+            uint256 numberOfSignedBatches = signedBatches[_signedBatch.destinationChainId][_signedBatch.id].length;
             string[] memory multisigSignatures = new string[](numberOfSignedBatches);
             string[] memory feePayerMultisigSignatures = new string[](numberOfSignedBatches);
 
             for (uint i = 0; i < numberOfSignedBatches; i++) {
-                multisigSignatures[i] = signedBatches[_signedBatch.id][i].multisigSignature;
-                feePayerMultisigSignatures[i] = signedBatches[_signedBatch.id][i].feePayerMultisigSignature;
+                multisigSignatures[i] = signedBatches[_signedBatch.destinationChainId][_signedBatch.id][i].multisigSignature;
+                feePayerMultisigSignatures[i] = signedBatches[_signedBatch.destinationChainId][_signedBatch.id][i].feePayerMultisigSignature;
             }
 
             ConfirmedBatch memory confirmedBatch = ConfirmedBatch(
