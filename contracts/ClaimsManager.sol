@@ -179,10 +179,10 @@ contract ClaimsManager is IBridgeContractStructs {
 
             bridgeContract.setCurrentBatchBlock(_claims.batchExecutionFailedClaims[index].chainID, -1);
 
-            bridgeContract.setNextTimeoutBlock(
-                _claims.batchExecutionFailedClaims[index].chainID,
-                block.number + bridgeContract.MAX_NUMBER_OF_BLOCKS()
-            );
+            // bridgeContract.setNextTimeoutBlock(
+            //     _claims.batchExecutionFailedClaims[index].chainID,
+            //     block.number + bridgeContract.MAX_NUMBER_OF_BLOCKS()
+            // );
         }
     }
 
