@@ -31,21 +31,21 @@ contract BridgeContract is IBridgeContract{
     // Blochchain ID -> blockNumber
     mapping(string => uint256) public nextTimeoutBlock;
 
-    // BatchId -> SignedBatch[]
-    // mapping(string => SignedBatch[]) public signedBatches;
     // BlockchaID -> batchId -> SignedBatch[]
     mapping(string => mapping(string => SignedBatch[])) public signedBatches;
     
     // BlockchaID -> batchId
     mapping(string => string) public lastSignedBatch;
 
-    // BatchId -> ConfirmedBatch
+    // BlockchainID -> ConfirmedBatch
     mapping(string => ConfirmedBatch) public confirmedBatches;
+
     // BlockchaID -> batchId
     mapping(string => string) public lastConfirmedBatch;
 
     Chain[] private chains;
     address[] private validatorsAddresses;
+    
     address private owner;
     //TODO: set during initialization
     uint16 private constant MAX_NUMBER_OF_TRANSACTIONS = 1; //intentially set low for testing
@@ -90,7 +90,7 @@ contract BridgeContract is IBridgeContract{
                 feePayerMultisigSignatures
             );
             
-            confirmedBatches[_signedBatch.id] = confirmedBatch;
+            confirmedBatches[_signedBatch.destinationChainId] = confirmedBatch;
 
             currentBatchBlock[_signedBatch.destinationChainId] = int(block.number);
 
