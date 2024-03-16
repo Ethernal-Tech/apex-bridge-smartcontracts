@@ -86,13 +86,12 @@ contract UTXOsManager is IBridgeContractStructs{
     }
 
     function _removeUsedUTXOs(string calldata _chainID) internal {
-        ConfirmedBatch memory confirmedTransaction = bridgeContract.getConfirmedBatch(_chainID);
-        string memory signedBatchId = confirmedTransaction.id;
-        UTXOs memory utxos;
-        (, , , , , utxos) = bridgeContract.signedBatches(_chainID, signedBatchId, 0);
+        string memory _signedBatchId = bridgeContract.lastConfirmedBatch(_chainID);
+        UTXOs memory _utxos;
+        (, , , , , _utxos) = bridgeContract.signedBatches(_chainID, _signedBatchId, 0);
 
-        _removeMultisigUTXOs(_chainID, utxos);
-        _removeFeeUTXOs(_chainID, utxos);
+        _removeMultisigUTXOs(_chainID, _utxos);
+        _removeFeeUTXOs(_chainID, _utxos);
 
     }
 

@@ -15,11 +15,11 @@ contract ClaimsManager is IBridgeContractStructs {
     UTXOsManager private utxosManager;
     BridgedTokensManager private bridgedTokensManager;
 
-    // Blockchain ID -> claimsCounter
+    // BlockchainID -> claimsCounter
     mapping(string => uint256) public claimsCounter;
-    // Blockchain -> claimCounter -> claimHash
+    // BlockchainID -> claimCounter -> claimHash
     mapping(string => mapping(uint256 => string)) public queuedClaims;
-    // Blockchain -> claimCounter -> claimType
+    // BlockchainID -> claimCounter -> claimType
     mapping (string => mapping(uint256 => ClaimTypes)) public queuedClaimsTypes;
 
     // TansactionHash -> Voter -> Voted

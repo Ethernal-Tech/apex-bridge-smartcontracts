@@ -37,11 +37,11 @@ contract BridgeContract is IBridgeContract{
     // BlockchaID -> batchId
     mapping(string => string) public lastSignedBatch;
 
-    // BlockchainID -> ConfirmedBatch
-    mapping(string => ConfirmedBatch) public confirmedBatch;
+    // BlockchainID -> batchID -> ConfirmedBatch
+    mapping(string => mapping(string => ConfirmedBatch)) public confirmedBatches;
 
     // BlockchainID -> batchId
-    // mapping(string => string) public lastConfirmedBatch;
+    mapping(string => string) public lastConfirmedBatch;
 
     Chain[] private chains;
     address[] private validatorsAddresses;
@@ -90,11 +90,11 @@ contract BridgeContract is IBridgeContract{
                 feePayerMultisigSignatures
             );
             
-            confirmedBatch[_signedBatch.destinationChainId] = _confirmedBatch;
+            confirmedBatches[_signedBatch.destinationChainId][_signedBatch.id] = _confirmedBatch;
 
             currentBatchBlock[_signedBatch.destinationChainId] = int(block.number);
 
-            // lastConfirmedBatch[_signedBatch.destinationChainId] = _signedBatch.id;
+            lastConfirmedBatch[_signedBatch.destinationChainId] = _signedBatch.id;
 
             lastSignedBatch[_signedBatch.destinationChainId] = _signedBatch.id;
 
@@ -240,7 +240,7 @@ contract BridgeContract is IBridgeContract{
     function getConfirmedBatch(
         string calldata _destinationChain
     ) external view override returns (ConfirmedBatch memory batch) {
-        return confirmedBatch[_destinationChain];
+        return confirmedBatches[_destinationChain][lastConfirmedBatch[_destinationChain]];
     }
 
     function getLastObservedBlock(
