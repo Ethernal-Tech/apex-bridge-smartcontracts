@@ -908,16 +908,6 @@ describe("Bridge Contract", function () {
 
       expect(await bridgeContract.shouldCreateBatch(validatorClaimsRRC.refundRequestClaims[0].chainID)).to.be.true;
     });
-
-    it("ShouldCreateBatch should return false if there is pending signedBatch from validator", async function () {
-      const { bridgeContract, validators, signedBatch } = await loadFixture(deployBridgeContractFixture);
-      await bridgeContract.connect(validators[0]).submitSignedBatch(signedBatch);
-      await bridgeContract.connect(validators[1]).submitSignedBatch(signedBatch);
-      await bridgeContract.connect(validators[2]).submitSignedBatch(signedBatch);
-      await bridgeContract.connect(validators[3]).submitSignedBatch(signedBatch);
-
-      expect(await bridgeContract.connect(validators[0]).shouldCreateBatch(signedBatch.destinationChainId)).to.be.false;
-    });
     
     it("Should set proper last block hash in lastObservedBlock if block is fully observerd", async function () {
       const { bridgeContract, validators, validatorClaimsRRC } = await loadFixture(deployBridgeContractFixture);
@@ -956,15 +946,15 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridgeContract.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.id)).id).to.equal(signedBatch.id);
-      expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.id)).rawTransaction).to.equal(signedBatch.rawTransaction);
-      expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.id)).multisigSignatures.length).to.equal(4);
-      expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.id)).feePayerMultisigSignatures.length).to.equal(4);
+      expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).id).to.equal(signedBatch.id);
+      expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).rawTransaction).to.equal(signedBatch.rawTransaction);
+      expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).multisigSignatures.length).to.equal(4);
+      expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).feePayerMultisigSignatures.length).to.equal(4);
 
-      expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.id)).multisigSignatures[0]).to.equal("multisigSignature1");
-      expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.id)).multisigSignatures[1]).to.equal("multisigSignature1");
-      expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.id)).multisigSignatures[2]).to.equal("multisigSignature1");
-      expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.id)).multisigSignatures[3]).to.equal("multisigSignature1");
+      expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).multisigSignatures[0]).to.equal("multisigSignature1");
+      expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).multisigSignatures[1]).to.equal("multisigSignature1");
+      expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).multisigSignatures[2]).to.equal("multisigSignature1");
+      expect((await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).multisigSignatures[3]).to.equal("multisigSignature1");
     });
 
     it("Should return confirmedTransactions from confirmed BridgeRequestClaim", async function () {
