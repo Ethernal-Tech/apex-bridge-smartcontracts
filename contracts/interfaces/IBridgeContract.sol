@@ -23,7 +23,7 @@ abstract contract IBridgeContract is IBridgeContractStructs{
     // Will return confirmed transactions until NEXT_BATCH_TIMEOUT_BLOCK or maximum number of transactions that 
     // can be included in the batch, if the maximum number of transactions in a batch has been exceeded
     function getConfirmedTransactions(string calldata _destinationChain) 
-        external virtual view returns (ConfirmedTransaction[] memory confirmedTransactions);
+        external virtual returns (ConfirmedTransaction[] memory confirmedTransactions);
 
     // Will return available UTXOs that can cover the cost of bridging transactions included in some batch.
     // Each Batcher will first call the GetConfirmedTransactions() and then calculate (off-chain) how many tokens 

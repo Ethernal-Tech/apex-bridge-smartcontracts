@@ -144,6 +144,7 @@ interface IBridgeContractStructs {
     error NotClaimsManager();
     error NotClaimsSubmitter();
     error NotEnoughBridgingTokensAwailable(string _claimhash);
+    error CanNotCreateBatchYet(string _blockchainID);
     
     event newChainProposal(string indexed chainId, address indexed sender);
     event newChainRegistered(string indexed chainId);

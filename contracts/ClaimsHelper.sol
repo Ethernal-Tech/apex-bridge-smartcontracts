@@ -129,17 +129,22 @@ contract ClaimsHelper is IBridgeContractStructs {
     }
 
     function isThereEnoughTokensToBridge(BridgingRequestClaim calldata _claim) external view returns (bool) {
+            
+        if (bridgedTokensManager.chainTokenQuantity(_claim.sourceChainID) < getNeededTokenQuantity(_claim)) {
+            revert NotEnoughBridgingTokensAwailable(_claim.observedTransactionHash);
+        }
+
+        return true;
+    }
+
+    function getNeededTokenQuantity(BridgingRequestClaim calldata _claim) public pure returns (uint256) {
         uint256 tokenQuantity;
 
         for (uint256 i = 0; i<_claim.receivers.length; i++) {
             tokenQuantity += _claim.receivers[i].amount;
         }
-            
-        if (bridgedTokensManager.chainTokenQuantity(_claim.sourceChainID) < tokenQuantity) {
-            revert NotEnoughBridgingTokensAwailable(_claim.observedTransactionHash);
-        }
 
-        return true;
+        return tokenQuantity;
     }
 
     function _equal(string memory a, string memory b) internal pure returns (bool) {

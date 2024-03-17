@@ -101,14 +101,7 @@ contract ClaimsManager is IBridgeContractStructs {
             // On other hand, doing it here would make sence also since, new BridgeRequestClaims
             // will not be put in queue if there is already a claim that would make the new ones
             // invalid
-
-            uint256 tokenQuantity;
-
-            for (uint256 i = 0; i < _claims.bridgingRequestClaims[index].receivers.length; i++) {
-                tokenQuantity +=_claims.bridgingRequestClaims[index].receivers[i].amount;
-            }
-
-            bridgedTokensManager.registerTokensTransfer(_claims.bridgingRequestClaims[index], tokenQuantity);
+            bridgedTokensManager.registerTokensTransfer(_claims.bridgingRequestClaims[index], claimsHelper.getNeededTokenQuantity(_claims.bridgingRequestClaims[index]));
 
             claimsHelper.addToQueuedBridgingRequestsClaims(_claims.bridgingRequestClaims[index]);
 

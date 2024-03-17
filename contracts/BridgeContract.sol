@@ -17,8 +17,8 @@ contract BridgeContract is IBridgeContract{
 
     // mapping in case they could be added/removed
     mapping(address => bool) private isValidator;
-    // validatorAddress -> chaindID -> ValidatorCardanoData
-    mapping(address => mapping (string => ValidatorCardanoData)) private validatorsCardanoData;  
+    // blockchainID -> address -> ValidatorCardanoData
+    mapping(string => mapping (address => ValidatorCardanoData)) private validatorsCardanoData;  
 
     mapping(string => bool) private registeredChains;
 
@@ -42,6 +42,9 @@ contract BridgeContract is IBridgeContract{
 
     // BlockchainID -> batchId
     mapping(string => string) public lastConfirmedBatch;
+
+    // BlockchainID -> nounce
+    mapping(string => uint256) public confirmedTransactionNounce;
 
     Chain[] private chains;
     address[] private validatorsAddresses;
@@ -171,7 +174,6 @@ contract BridgeContract is IBridgeContract{
     // It will also check if the given validator already submitted a signed batch and return the response accordingly.
     function shouldCreateBatch(string calldata _destinationChain) public view override returns (bool batch) {
 
-
         if ((claimsManager.claimsCounter(_destinationChain) - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
             return true;
         }
@@ -187,41 +189,47 @@ contract BridgeContract is IBridgeContract{
     // can be included in the batch, if the maximum number of transactions in a batch has been exceeded
     function getConfirmedTransactions(
         string calldata _destinationChain
-    ) external view override returns (ConfirmedTransaction[] memory _confirmedTransactions) {
-        if(shouldCreateBatch(_destinationChain)) {
-            uint256 lastBatchedClaimNumber = lastBatchedClaim[_destinationChain];
-            uint256 lastConfirmedClaim = claimsManager.claimsCounter(_destinationChain);
-            uint256 lastClaimToInclude = ((lastConfirmedClaim - lastBatchedClaimNumber) >= MAX_NUMBER_OF_TRANSACTIONS) 
-                ? lastBatchedClaimNumber + MAX_NUMBER_OF_TRANSACTIONS : lastConfirmedClaim;
-            
-            uint256 counterConfirmedTransactions;
-            uint256 arraySize;
-
-            //TODO: is there a better way?, need to know how big will the array be
-            for (uint i = lastBatchedClaimNumber; i < lastClaimToInclude; i++) {
-                ClaimTypes claimType = claimsManager.queuedClaimsTypes(_destinationChain, i);
-                if(claimType == ClaimTypes.BRIDGING_REQUEST) {
-                    arraySize++;
-                }
-            }
-
-            ConfirmedTransaction[] memory confirmedTransactions = new ConfirmedTransaction[](arraySize);
-
-            for (uint i = lastBatchedClaimNumber; i < lastClaimToInclude; i++) {
-                ClaimTypes claimType = claimsManager.queuedClaimsTypes(_destinationChain, i);
-
-                if(claimType == ClaimTypes.BRIDGING_REQUEST) {
-                    Receiver[] memory tempReceivers = claimsHelper.getClaimBRC(claimsManager.queuedClaims(_destinationChain, i)).receivers;
-                    ConfirmedTransaction memory confirmedtransaction = ConfirmedTransaction(
-                        i,
-                        tempReceivers
-                    );
-                    confirmedTransactions[counterConfirmedTransactions] = confirmedtransaction;
-                    counterConfirmedTransactions++;
-                }
-            }
-            return confirmedTransactions;
+    ) external override returns (ConfirmedTransaction[] memory _confirmedTransactions) {
+        if(!shouldCreateBatch(_destinationChain)) {
+            revert CanNotCreateBatchYet(_destinationChain);
         }
+        
+        uint256 lastBatchedClaimNumber = lastBatchedClaim[_destinationChain];
+        uint256 lastConfirmedClaim = claimsManager.claimsCounter(_destinationChain);
+        uint256 lastClaimToInclude = ((lastConfirmedClaim - lastBatchedClaimNumber) >= MAX_NUMBER_OF_TRANSACTIONS) 
+            ? lastBatchedClaimNumber + MAX_NUMBER_OF_TRANSACTIONS : lastConfirmedClaim;
+            
+        uint256 counterConfirmedTransactions;
+        uint256 arraySize;
+
+        //TODO: is there a better way?, need to know how big will the array be
+        for (uint i = lastBatchedClaimNumber +1; i <= lastClaimToInclude; i++) {
+            ClaimTypes claimType = claimsManager.queuedClaimsTypes(_destinationChain, i);
+            if(claimType == ClaimTypes.BRIDGING_REQUEST) {
+                arraySize++;
+            }
+        }
+
+        ConfirmedTransaction[] memory confirmedTransactions = new ConfirmedTransaction[](arraySize);
+
+        for (uint i = lastBatchedClaimNumber; i < lastClaimToInclude; i++) {
+            ClaimTypes claimType = claimsManager.queuedClaimsTypes(_destinationChain, i);
+
+            if(claimType == ClaimTypes.BRIDGING_REQUEST) {
+                Receiver[] memory tempReceivers = claimsHelper.getClaimBRC(claimsManager.queuedClaims(_destinationChain, i)).receivers;
+                
+                ConfirmedTransaction memory confirmedtransaction = ConfirmedTransaction(
+                // function can not be view anymore
+                confirmedTransactionNounce[_destinationChain]++,
+                tempReceivers
+                );
+            
+                confirmedTransactions[counterConfirmedTransactions] = confirmedtransaction;
+                counterConfirmedTransactions++;
+                }
+            }
+            console.log("VELICINA SC", confirmedTransactions.length);
+            return confirmedTransactions;
     }
 
     // Will return available UTXOs that can cover the cost of bridging transactions included in some batch.
@@ -266,14 +274,14 @@ contract BridgeContract is IBridgeContract{
     }
 
     function setValidatorCardanoData(ValidatorCardanoData calldata _validatorCardanoData, string calldata _chainID) external {
-        validatorsCardanoData[msg.sender][_chainID] = _validatorCardanoData;
+        validatorsCardanoData[_chainID][msg.sender] = _validatorCardanoData;
     }
 
     // TODO: who is calling this?
     function getValidatorsCardanoData(string calldata _chainID) external view returns (ValidatorCardanoData[] memory) {
         ValidatorCardanoData[] memory _validatorsCardanoData = new ValidatorCardanoData[](validatorsAddresses.length);
         for (uint i = 0; i < validatorsAddresses.length; i++) {
-            _validatorsCardanoData[i] = validatorsCardanoData[validatorsAddresses[i]][_chainID];
+            _validatorsCardanoData[i] = validatorsCardanoData[_chainID][validatorsAddresses[i]];
         }
         return _validatorsCardanoData;
     }
