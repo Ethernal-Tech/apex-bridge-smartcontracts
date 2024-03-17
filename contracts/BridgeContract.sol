@@ -163,6 +163,8 @@ contract BridgeContract is IBridgeContract{
 
             bridgedTokensManager.setTokenQuantity(_chainId, _tokenQuantity);
 
+            currentBatchBlock[_chainId] = int(-1);
+
             nextTimeoutBlock[_chainId] = block.number + MAX_NUMBER_OF_BLOCKS;
             
             emit newChainRegistered(_chainId);
@@ -174,11 +176,13 @@ contract BridgeContract is IBridgeContract{
     // It will also check if the given validator already submitted a signed batch and return the response accordingly.
     function shouldCreateBatch(string calldata _destinationChain) public view override returns (bool batch) {
 
-        if ((claimsManager.claimsCounter(_destinationChain) - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS) {
+        if(block.number >= nextTimeoutBlock[_destinationChain]
+        && currentBatchBlock[_destinationChain] == int(-1)) {
             return true;
         }
 
-        if ((block.number >= nextTimeoutBlock[_destinationChain])) {
+        if((claimsManager.claimsCounter(_destinationChain) - lastBatchedClaim[_destinationChain]) >= MAX_NUMBER_OF_TRANSACTIONS
+        && currentBatchBlock[_destinationChain] == int(-1)) {
             return true;
         }
 
@@ -202,7 +206,6 @@ contract BridgeContract is IBridgeContract{
         uint256 counterConfirmedTransactions;
         uint256 arraySize;
 
-        //TODO: is there a better way?, need to know how big will the array be
         for (uint i = lastBatchedClaimNumber +1; i <= lastClaimToInclude; i++) {
             ClaimTypes claimType = claimsManager.queuedClaimsTypes(_destinationChain, i);
             if(claimType == ClaimTypes.BRIDGING_REQUEST) {
@@ -217,18 +220,16 @@ contract BridgeContract is IBridgeContract{
 
             if(claimType == ClaimTypes.BRIDGING_REQUEST) {
                 Receiver[] memory tempReceivers = claimsHelper.getClaimBRC(claimsManager.queuedClaims(_destinationChain, i)).receivers;
-                
+
                 ConfirmedTransaction memory confirmedtransaction = ConfirmedTransaction(
                 // function can not be view anymore
                 confirmedTransactionNounce[_destinationChain]++,
                 tempReceivers
                 );
-            
                 confirmedTransactions[counterConfirmedTransactions] = confirmedtransaction;
                 counterConfirmedTransactions++;
                 }
             }
-            console.log("VELICINA SC", confirmedTransactions.length);
             return confirmedTransactions;
     }
 
