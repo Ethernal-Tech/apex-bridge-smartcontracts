@@ -10,17 +10,19 @@ import "hardhat/console.sol";
 contract ClaimsHelper is IBridgeContractStructs {
     BridgeContract private bridgeContract;
     ClaimsManager private claimsManager;
-    BridgedTokensManager private bridgedTokensManager;
     UTXOsManager private utxosManager;
 
-    //  claimHash -> claim
+    // blockchain -> claimHash -> queued
+    mapping(string => mapping(string => bool)) public isClaimsQueued;
+
+    // claimHash -> claim
     mapping(string => BridgingRequestClaim) public queuedBridgingRequestsClaims;    
     mapping(string => BatchExecutedClaim) public queuedBatchExecutedClaims;
     mapping(string => BatchExecutionFailedClaim) public queuedBatchExecutionFailedClaims;
     mapping(string => RefundRequestClaim) public queuedRefundRequestClaims;
     mapping(string => RefundExecutedClaim) public queuedRefundExecutedClaims;
 
-    //  Blochchain ID -> blockHash
+    // blochchainID -> blockHash
     mapping(string => string) public lastObserveredBlock;
 
     constructor(address _bridgeContractAddress) {
@@ -48,20 +50,20 @@ contract ClaimsHelper is IBridgeContractStructs {
     
     // TODO: claims might differ if inluding signature, check the claims and implement
     // different way of comparison
-    function isQueuedBRC(BridgingRequestClaim calldata _claim) public view returns (bool) {
-        // return
-        //     keccak256(abi.encode(_claim)) ==
-        //     keccak256(abi.encode(queuedBridgingRequestsClaims[_claim.observedTransactionHash]));
-
+    function isAlreadyQueuedBRC(BridgingRequestClaim calldata _claim) public view returns (bool) {
         return
-            _equal(_claim.observedTransactionHash, queuedBridgingRequestsClaims[_claim.observedTransactionHash].observedTransactionHash) &&
-            utxosManager.equalUTXO(_claim.outputUTXO, queuedBridgingRequestsClaims[_claim.observedTransactionHash].outputUTXO) &&
-            _equalReveivers(_claim.receivers, queuedBridgingRequestsClaims[_claim.observedTransactionHash].receivers) &&
-            _equal(_claim.sourceChainID, queuedBridgingRequestsClaims[_claim.observedTransactionHash].sourceChainID) &&
-            _equal(_claim.destinationChainID, queuedBridgingRequestsClaims[_claim.observedTransactionHash].destinationChainID);
+            keccak256(abi.encode(_claim)) ==
+            keccak256(abi.encode(queuedBridgingRequestsClaims[_claim.observedTransactionHash]));
+
+        // return
+        //     _equal(_claim.observedTransactionHash, queuedBridgingRequestsClaims[_claim.observedTransactionHash].observedTransactionHash) &&
+        //     utxosManager.equalUTXO(_claim.outputUTXO, queuedBridgingRequestsClaims[_claim.observedTransactionHash].outputUTXO) &&
+        //     _equalReveivers(_claim.receivers, queuedBridgingRequestsClaims[_claim.observedTransactionHash].receivers) &&
+        //     _equal(_claim.sourceChainID, queuedBridgingRequestsClaims[_claim.observedTransactionHash].sourceChainID) &&
+        //     _equal(_claim.destinationChainID, queuedBridgingRequestsClaims[_claim.observedTransactionHash].destinationChainID);
     }
 
-    function isQueuedBEC(BatchExecutedClaim calldata _claim) public view returns (bool) {
+    function isAlreadyQueuedBEC(BatchExecutedClaim calldata _claim) public view returns (bool) {
         return
             _equal(_claim.observedTransactionHash, queuedBatchExecutedClaims[_claim.observedTransactionHash].observedTransactionHash) &&
             _equal(_claim.chainID, queuedBatchExecutedClaims[_claim.observedTransactionHash].chainID) &&
@@ -71,14 +73,14 @@ contract ClaimsHelper is IBridgeContractStructs {
 
     }
 
-    function isQueuedBEFC(BatchExecutionFailedClaim calldata _claim) public view returns (bool) {        
+    function isAlreadyQueuedBEFC(BatchExecutionFailedClaim calldata _claim) public view returns (bool) {        
         return
             _equal(_claim.observedTransactionHash, queuedBatchExecutionFailedClaims[_claim.observedTransactionHash].observedTransactionHash) &&
             _equal(_claim.chainID, queuedBatchExecutionFailedClaims[_claim.observedTransactionHash].chainID) &&
             _claim.batchNonceID == queuedBatchExecutionFailedClaims[_claim.observedTransactionHash].batchNonceID;
     }
 
-    function isQueuedRRC(RefundRequestClaim calldata _claim) public view returns (bool) {
+    function isAlreadyQueuedRRC(RefundRequestClaim calldata _claim) public view returns (bool) {
         return
             _equal(_claim.observedTransactionHash, queuedRefundRequestClaims[_claim.observedTransactionHash].observedTransactionHash) &&
             _equal(_claim.previousRefundTxHash, queuedRefundRequestClaims[_claim.observedTransactionHash].previousRefundTxHash) &&
@@ -89,7 +91,7 @@ contract ClaimsHelper is IBridgeContractStructs {
             _claim.retryCounter == queuedRefundRequestClaims[_claim.observedTransactionHash].retryCounter;
     }
 
-    function isQueuedREC(RefundExecutedClaim calldata _claim) public view returns (bool) {
+    function isAlreadyQueuedREC(RefundExecutedClaim calldata _claim) public view returns (bool) {
         return 
             _equal(_claim.observedTransactionHash, queuedRefundExecutedClaims[_claim.observedTransactionHash].observedTransactionHash) &&
             _equal(_claim.chainID, queuedRefundExecutedClaims[_claim.observedTransactionHash].chainID) &&
@@ -130,7 +132,7 @@ contract ClaimsHelper is IBridgeContractStructs {
 
     function isThereEnoughTokensToBridge(BridgingRequestClaim calldata _claim) external view returns (bool) {
             
-        if (bridgedTokensManager.chainTokenQuantity(_claim.sourceChainID) < getNeededTokenQuantity(_claim)) {
+        if (claimsManager.chainTokenQuantity(_claim.sourceChainID) < getNeededTokenQuantity(_claim)) {
             revert NotEnoughBridgingTokensAwailable(_claim.observedTransactionHash);
         }
 
@@ -175,10 +177,6 @@ contract ClaimsHelper is IBridgeContractStructs {
 
     function setUTXOsManager(address _utxosManager) external {
         utxosManager = UTXOsManager(_utxosManager);
-    }
-
-    function setBridgedTokensManager(address _bridgedTokensManager) external {
-        bridgedTokensManager = BridgedTokensManager(_bridgedTokensManager);
     }
 
     modifier onlyBridgeContract() {

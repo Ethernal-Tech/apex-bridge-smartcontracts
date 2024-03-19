@@ -135,16 +135,20 @@ interface IBridgeContractStructs {
         bytes verifyingKeyFee;
     }
 
-    error AlreadyQueued(string _claimhash);
-    error AlreadyProposed(string _claimhash);
+    error AlreadyQueued(string _claimTransactionHash);
+    error AlreadyProposed(string _claimTransactionHash);
     error ChainAlreadyRegistered();
     error NotOwner();
     error NotValidator();
     error NotBridgeContract();
     error NotClaimsManager();
     error NotClaimsSubmitter();
-    error NotEnoughBridgingTokensAwailable(string _claimhash);
+    error NotEnoughBridgingTokensAwailable(string _claimTransactionHash);
     error CanNotCreateBatchYet(string _blockchainID);
+    error NotValidClaimHash(string _claimTransactionHash);
+    error DoesNotMatchAreadyStoredClaim(string _claimTransactionHash);
+    //TODO: remove when not needed anymore
+    error RefundRequestClaimNotYetSupporter();
     
     event newChainProposal(string indexed chainId, address indexed sender);
     event newChainRegistered(string indexed chainId);
