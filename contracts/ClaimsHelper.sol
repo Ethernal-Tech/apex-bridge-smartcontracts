@@ -15,6 +15,11 @@ contract ClaimsHelper is IBridgeContractStructs {
     // blockchain -> claimHash -> queued
     mapping(string => mapping(string => bool)) public isClaimsQueued;
 
+    // BlockchainID -> claimHash -> bool
+    mapping(string => mapping(string => bool)) public isClaimHashed;
+    // BlockchainID -> claimHash -> keccak256(claim)
+    mapping(string => mapping(string => bytes32)) public claimsHashes;
+
     // claimHash -> claim
     mapping(string => BridgingRequestClaim) public queuedBridgingRequestsClaims;
     mapping(string => BatchExecutedClaim) public queuedBatchExecutedClaims;
@@ -54,13 +59,6 @@ contract ClaimsHelper is IBridgeContractStructs {
         return
             keccak256(abi.encode(_claim)) ==
             keccak256(abi.encode(queuedBridgingRequestsClaims[_claim.observedTransactionHash]));
-
-        // return
-        //     _equal(_claim.observedTransactionHash, queuedBridgingRequestsClaims[_claim.observedTransactionHash].observedTransactionHash) &&
-        //     utxosManager.equalUTXO(_claim.outputUTXO, queuedBridgingRequestsClaims[_claim.observedTransactionHash].outputUTXO) &&
-        //     _equalReveivers(_claim.receivers, queuedBridgingRequestsClaims[_claim.observedTransactionHash].receivers) &&
-        //     _equal(_claim.sourceChainID, queuedBridgingRequestsClaims[_claim.observedTransactionHash].sourceChainID) &&
-        //     _equal(_claim.destinationChainID, queuedBridgingRequestsClaims[_claim.observedTransactionHash].destinationChainID);
     }
 
     function isAlreadyQueuedBEC(BatchExecutedClaim calldata _claim) public view returns (bool) {
@@ -151,7 +149,79 @@ contract ClaimsHelper is IBridgeContractStructs {
         queuedBatchExecutionFailedClaims[_claim.observedTransactionHash] = _claim;
     }
 
-    function isThereEnoughTokensToBridge(BridgingRequestClaim calldata _claim) external view returns (bool) {
+    // For new claims based on transaction hash, hash of the whole claim is stored after being
+    // being check that there is enough tokens available for bridging
+    // for claims that are already hashed, their hash is compared with submitted claim based on
+    // their transaction hashes
+    function validateClaimBRC(BridgingRequestClaim calldata _claim) external onlyClaimsManager {
+        //TODO: "locks" the hash to the claim that might not be valid :(
+        if (!isClaimHashed[_claim.sourceChainID][_claim.observedTransactionHash]) {
+            if (!_isThereEnoughTokensToBridge(_claim)) {
+                revert NotEnoughBridgingTokensAwailable(_claim.observedTransactionHash);
+            }
+            claimsHashes[_claim.sourceChainID][_claim.observedTransactionHash] = keccak256(abi.encode(_claim));
+
+            isClaimHashed[_claim.sourceChainID][_claim.observedTransactionHash] = true;
+        } else {
+            if (claimsHashes[_claim.sourceChainID][_claim.observedTransactionHash] != keccak256(abi.encode(_claim))) {
+                revert DoesNotMatchAreadyStoredClaim(_claim.observedTransactionHash);
+            }
+        }
+    }
+
+    function validateClaimBEC(BatchExecutedClaim calldata _claim) external onlyClaimsManager {
+        //TODO: "locks" the hash to the claim that might not be valid :(
+        if (!isClaimHashed[_claim.chainID][_claim.observedTransactionHash]) {
+            claimsHashes[_claim.chainID][_claim.observedTransactionHash] = keccak256(abi.encode(_claim));
+
+            isClaimHashed[_claim.chainID][_claim.observedTransactionHash] = true;
+        } else {
+            if (claimsHashes[_claim.chainID][_claim.observedTransactionHash] != keccak256(abi.encode(_claim))) {
+                revert DoesNotMatchAreadyStoredClaim(_claim.observedTransactionHash);
+            }
+        }
+    }
+
+    function validateClaimBEFC(BatchExecutionFailedClaim calldata _claim) external onlyClaimsManager {
+        //TODO: "locks" the hash to the claim that might not be valid :(
+        if (!isClaimHashed[_claim.chainID][_claim.observedTransactionHash]) {
+            claimsHashes[_claim.chainID][_claim.observedTransactionHash] = keccak256(abi.encode(_claim));
+
+            isClaimHashed[_claim.chainID][_claim.observedTransactionHash] = true;
+        } else {
+            if (claimsHashes[_claim.chainID][_claim.observedTransactionHash] != keccak256(abi.encode(_claim))) {
+                revert DoesNotMatchAreadyStoredClaim(_claim.observedTransactionHash);
+            }
+        }
+    }
+
+    function validateClaimRRC(RefundRequestClaim calldata _claim) external onlyClaimsManager {
+        //TODO: "locks" the hash to the claim that might not be valid :(
+        if (!isClaimHashed[_claim.chainID][_claim.observedTransactionHash]) {
+            claimsHashes[_claim.chainID][_claim.observedTransactionHash] = keccak256(abi.encode(_claim));
+
+            isClaimHashed[_claim.chainID][_claim.observedTransactionHash] = true;
+        } else {
+            if (claimsHashes[_claim.chainID][_claim.observedTransactionHash] != keccak256(abi.encode(_claim))) {
+                revert DoesNotMatchAreadyStoredClaim(_claim.observedTransactionHash);
+            }
+        }
+    }
+
+    function validateClaimREC(RefundExecutedClaim calldata _claim) external onlyClaimsManager {
+        //TODO: "locks" the hash to the claim that might not be valid :(
+        if (!isClaimHashed[_claim.chainID][_claim.observedTransactionHash]) {
+            claimsHashes[_claim.chainID][_claim.observedTransactionHash] = keccak256(abi.encode(_claim));
+
+            isClaimHashed[_claim.chainID][_claim.observedTransactionHash] = true;
+        } else {
+            if (claimsHashes[_claim.chainID][_claim.observedTransactionHash] != keccak256(abi.encode(_claim))) {
+                revert DoesNotMatchAreadyStoredClaim(_claim.observedTransactionHash);
+            }
+        }
+    }
+
+    function _isThereEnoughTokensToBridge(BridgingRequestClaim calldata _claim) internal view returns (bool) {
         if (claimsManager.chainTokenQuantity(_claim.sourceChainID) < getNeededTokenQuantity(_claim.receivers)) {
             revert NotEnoughBridgingTokensAwailable(_claim.observedTransactionHash);
         }

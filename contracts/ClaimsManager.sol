@@ -19,12 +19,6 @@ contract ClaimsManager is IBridgeContractStructs {
     // BlockchainID -> claimCounter -> claimType
     mapping(string => mapping(uint256 => ClaimTypes)) public queuedClaimsTypes;
 
-    //working version
-    // BlockchainID -> claimHash -> bool
-    mapping(string => mapping(string => bool)) public isClaimHashed;
-    // BlockchainID -> claimHash -> keccak256(claim)
-    mapping(string => mapping(string => bytes32)) public claimsHashes;
-
     // TansactionHash -> Voter -> Voted
     mapping(string => mapping(address => bool)) public voted;
 
@@ -48,67 +42,60 @@ contract ClaimsManager is IBridgeContractStructs {
                 revert AlreadyQueued(_claims.bridgingRequestClaims[i].observedTransactionHash);
             }
 
-            //TODO: "locks" the hash to the claim that might not be valid :(
-            if (
-                !isClaimHashed[_claims.bridgingRequestClaims[i].sourceChainID][
-                    _claims.bridgingRequestClaims[i].observedTransactionHash
-                ]
-            ) {
-                if (!claimsHelper.isThereEnoughTokensToBridge(_claims.bridgingRequestClaims[i])) {
-                    revert NotEnoughBridgingTokensAwailable(_claims.bridgingRequestClaims[i].observedTransactionHash);
-                }
-                claimsHashes[_claims.bridgingRequestClaims[i].sourceChainID][
-                    _claims.bridgingRequestClaims[i].observedTransactionHash
-                ] = keccak256(abi.encode(_claims.bridgingRequestClaims[i]));
-                isClaimHashed[_claims.bridgingRequestClaims[i].sourceChainID][
-                    _claims.bridgingRequestClaims[i].observedTransactionHash
-                ] = true;
-            } else {
-                if (
-                    claimsHashes[_claims.bridgingRequestClaims[i].sourceChainID][
-                        _claims.bridgingRequestClaims[i].observedTransactionHash
-                    ] != keccak256(abi.encode(_claims.bridgingRequestClaims[i]))
-                ) {
-                    revert DoesNotMatchAreadyStoredClaim(_claims.bridgingRequestClaims[i].observedTransactionHash);
-                }
-            }
+            claimsHelper.validateClaimBRC(_claims.bridgingRequestClaims[i]);
 
             _submitClaimsBRC(_claims, i, _caller);
         }
         for (uint i = 0; i < _claims.batchExecutedClaims.length; i++) {
-            if (claimsHelper.isAlreadyQueuedBEC(_claims.batchExecutedClaims[i])) {
-                revert AlreadyQueued(_claims.batchExecutedClaims[i].observedTransactionHash);
-            }
             if (voted[_claims.batchExecutedClaims[i].observedTransactionHash][_caller]) {
                 revert AlreadyProposed(_claims.batchExecutedClaims[i].observedTransactionHash);
             }
+
+            if (claimsHelper.isAlreadyQueuedBEC(_claims.batchExecutedClaims[i])) {
+                revert AlreadyQueued(_claims.batchExecutedClaims[i].observedTransactionHash);
+            }
+
+            claimsHelper.validateClaimBEC(_claims.batchExecutedClaims[i]);
+
             _submitClaimsBEC(_claims, i, _caller);
         }
         for (uint i = 0; i < _claims.batchExecutionFailedClaims.length; i++) {
-            if (claimsHelper.isAlreadyQueuedBEFC(_claims.batchExecutionFailedClaims[i])) {
-                revert AlreadyQueued(_claims.batchExecutionFailedClaims[i].observedTransactionHash);
-            }
             if (voted[_claims.batchExecutionFailedClaims[i].observedTransactionHash][_caller]) {
                 revert AlreadyProposed(_claims.batchExecutionFailedClaims[i].observedTransactionHash);
             }
+
+            if (claimsHelper.isAlreadyQueuedBEFC(_claims.batchExecutionFailedClaims[i])) {
+                revert AlreadyQueued(_claims.batchExecutionFailedClaims[i].observedTransactionHash);
+            }
+
+            claimsHelper.validateClaimBEFC(_claims.batchExecutionFailedClaims[i]);
+
             _submitClaimsBEFC(_claims, i, _caller);
         }
         for (uint i = 0; i < _claims.refundRequestClaims.length; i++) {
-            if (claimsHelper.isAlreadyQueuedRRC(_claims.refundRequestClaims[i])) {
-                revert AlreadyQueued(_claims.refundRequestClaims[i].observedTransactionHash);
-            }
             if (voted[_claims.refundRequestClaims[i].observedTransactionHash][_caller]) {
                 revert AlreadyProposed(_claims.refundRequestClaims[i].observedTransactionHash);
             }
+
+            if (claimsHelper.isAlreadyQueuedRRC(_claims.refundRequestClaims[i])) {
+                revert AlreadyQueued(_claims.refundRequestClaims[i].observedTransactionHash);
+            }
+
+            claimsHelper.validateClaimRRC(_claims.refundRequestClaims[i]);
+
             _submitClaimsRRC(_claims, i, _caller);
         }
         for (uint i = 0; i < _claims.refundExecutedClaims.length; i++) {
-            if (claimsHelper.isAlreadyQueuedREC(_claims.refundExecutedClaims[i])) {
-                revert AlreadyQueued(_claims.refundExecutedClaims[i].observedTransactionHash);
-            }
             if (voted[_claims.refundExecutedClaims[i].observedTransactionHash][_caller]) {
                 revert AlreadyProposed(_claims.refundExecutedClaims[i].observedTransactionHash);
             }
+
+            if (claimsHelper.isAlreadyQueuedREC(_claims.refundExecutedClaims[i])) {
+                revert AlreadyQueued(_claims.refundExecutedClaims[i].observedTransactionHash);
+            }
+
+            claimsHelper.validateClaimREC(_claims.refundExecutedClaims[i]);
+
             _submitClaimsREC(_claims, i, _caller);
         }
     }
@@ -128,6 +115,7 @@ contract ClaimsManager is IBridgeContractStructs {
             queuedClaims[_claims.bridgingRequestClaims[index].destinationChainID][
                 claimsCounter[_claims.bridgingRequestClaims[index].destinationChainID]
             ] = _claims.bridgingRequestClaims[index].observedTransactionHash;
+
             queuedClaimsTypes[_claims.bridgingRequestClaims[index].destinationChainID][
                 claimsCounter[_claims.bridgingRequestClaims[index].destinationChainID]
             ] = ClaimTypes.BRIDGING_REQUEST;

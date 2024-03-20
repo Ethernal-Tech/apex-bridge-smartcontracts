@@ -112,6 +112,34 @@ describe("Bridge Contract", function () {
       blockFullyObserved: true,
     };
 
+    const validatorClaimsBRCerror = {
+      bridgingRequestClaims: [
+        {
+          observedTransactionHash: "0xabc...",
+          receivers: [
+            {
+              destinationAddress: "0x123...11111111",
+              amount: 100,
+            },
+          ],
+          outputUTXO: {
+            txHash: "0xdef...",
+            txIndex: 0,
+            addressUTXO: "0x456...",
+            amount: 200,
+          },
+          sourceChainID: "sourceChainID1",
+          destinationChainID: "chainID1",
+        },
+      ],
+      batchExecutedClaims: [],
+      batchExecutionFailedClaims: [],
+      refundRequestClaims: [],
+      refundExecutedClaims: [],
+      blockHash: "0x123...",
+      blockFullyObserved: true,
+    };
+
     const validatorClaimsBEC = {
       bridgingRequestClaims: [],
       batchExecutedClaims: [
@@ -119,6 +147,40 @@ describe("Bridge Contract", function () {
           observedTransactionHash: "0xabc...",
           chainID: "chainID1",
           batchNonceID: 1,
+          outputUTXOs: {
+            multisigOwnedUTXOs: [
+              {
+                txHash: "0xdef...",
+                txIndex: 0,
+                addressUTXO: "0x456...",
+                amount: 201,
+              },
+            ],
+            feePayerOwnedUTXOs: [
+              {
+                txHash: "0xdef...",
+                txIndex: 2,
+                addressUTXO: "0x456...",
+                amount: 51,
+              },
+            ],
+          },
+        },
+      ],
+      batchExecutionFailedClaims: [],
+      refundRequestClaims: [],
+      refundExecutedClaims: [],
+      blockHash: "0x123...",
+      blockFullyObserved: true,
+    };
+
+    const validatorClaimsBECerror = {
+      bridgingRequestClaims: [],
+      batchExecutedClaims: [
+        {
+          observedTransactionHash: "0xabc...",
+          chainID: "chainID1",
+          batchNonceID: 1111111111,
           outputUTXOs: {
             multisigOwnedUTXOs: [
               {
@@ -162,6 +224,22 @@ describe("Bridge Contract", function () {
       blockFullyObserved: true,
     };
 
+    const validatorClaimsBEFCerror = {
+      bridgingRequestClaims: [],
+      batchExecutedClaims: [],
+      batchExecutionFailedClaims: [
+        {
+          observedTransactionHash: "0xabc...",
+          chainID: "chainID1",
+          batchNonceID: 111111,
+        },
+      ],
+      refundRequestClaims: [],
+      refundExecutedClaims: [],
+      blockHash: "0x123...",
+      blockFullyObserved: true,
+    };
+
     const validatorClaimsRRC = {
       bridgingRequestClaims: [],
       batchExecutedClaims: [],
@@ -188,6 +266,32 @@ describe("Bridge Contract", function () {
       blockFullyObserved: true,
     };
 
+    const validatorClaimsRRCerror = {
+      bridgingRequestClaims: [],
+      batchExecutedClaims: [],
+      batchExecutionFailedClaims: [],
+      refundRequestClaims: [
+        {
+          observedTransactionHash: "0xabc...",
+          previousRefundTxHash: "previousRefundTxHash1",
+          chainID: "chainID1",
+          receiver: "receiver1111111111",
+          utxo: {
+            txHash: "0xdef...",
+            txIndex: 0,
+            addressUTXO: "0x456...",
+            amount: 200,
+          },
+          rawTransaction: "rawTransaction1",
+          multisigSignature: "multisigSignature1",
+          retryCounter: 1,
+        },
+      ],
+      refundExecutedClaims: [],
+      blockHash: "0x123...",
+      blockFullyObserved: true,
+    };
+
     const validatorClaimsREC = {
       bridgingRequestClaims: [],
       batchExecutedClaims: [],
@@ -198,6 +302,28 @@ describe("Bridge Contract", function () {
           observedTransactionHash: "0xabc...",
           chainID: "chainID1",
           refundTxHash: "refundTxHash1",
+          utxo: {
+            txHash: "0xdef...",
+            txIndex: 0,
+            addressUTXO: "0x456...",
+            amount: 200,
+          },
+        },
+      ],
+      blockHash: "0x123...",
+      blockFullyObserved: true,
+    };
+
+    const validatorClaimsRECerror = {
+      bridgingRequestClaims: [],
+      batchExecutedClaims: [],
+      batchExecutionFailedClaims: [],
+      refundRequestClaims: [],
+      refundExecutedClaims: [
+        {
+          observedTransactionHash: "0xabc...",
+          chainID: "chainID1",
+          refundTxHash: "refundTxHash11111111111",
           utxo: {
             txHash: "0xdef...",
             txIndex: 0,
@@ -290,6 +416,11 @@ describe("Bridge Contract", function () {
       validatorClaimsBEFC,
       validatorClaimsRRC,
       validatorClaimsREC,
+      validatorClaimsBRCerror,
+      validatorClaimsBECerror,
+      validatorClaimsBEFCerror,
+      validatorClaimsRRCerror,
+      validatorClaimsRECerror,
       validatorClaimsRECObserverdFalse,
       signedBatch,
     };
@@ -542,8 +673,8 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       await expect(
-        bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC)
-      ).to.be.revertedWithCustomError(claimsHelper, "AlreadyProposed");
+        bridgeContract.connect(validators[4]).submitClaims(validatorClaimsBRC)
+      ).to.be.revertedWithCustomError(claimsHelper, "AlreadyQueued");
     });
 
     it("Should revert if same validator submits the same Bridging Request Claim twice", async function () {
@@ -648,6 +779,21 @@ describe("Bridge Contract", function () {
       ).to.be.revertedWithCustomError(claimsHelper, "NotEnoughBridgingTokensAwailable");
     });
 
+    it("Should revert if Bridging Request Claim do not match", async function () {
+      const { bridgeContract, claimsHelper, owner, UTXOs, validators, validatorClaimsBRC, validatorClaimsBRCerror } =
+        await loadFixture(deployBridgeContractFixture);
+
+      await bridgeContract
+        .connect(owner)
+        .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", 1000);
+
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
+
+      await expect(
+        bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRCerror)
+      ).to.be.revertedWithCustomError(claimsHelper, "DoesNotMatchAreadyStoredClaim");
+    });
+
     it("Should remove requred amount of tokens from source chain when Bridging Request Claim is confirmed", async function () {
       const { bridgeContract, claimsManager, owner, validators, UTXOs, validatorClaimsBRC } = await loadFixture(
         deployBridgeContractFixture
@@ -688,7 +834,7 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
       await expect(
-        bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEC)
+        bridgeContract.connect(validators[4]).submitClaims(validatorClaimsBEC)
       ).to.be.revertedWithCustomError(bridgeContract, "AlreadyQueued");
     });
 
@@ -701,6 +847,16 @@ describe("Bridge Contract", function () {
       await expect(
         bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEC)
       ).to.be.revertedWithCustomError(claimsHelper, "AlreadyProposed");
+    });
+
+    it("Should revert if Batch Executed Claim do not match", async function () {
+      const { bridgeContract, claimsHelper, validators, validatorClaimsBEC, validatorClaimsBECerror } =
+        await loadFixture(deployBridgeContractFixture);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEC);
+
+      await expect(
+        bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBECerror)
+      ).to.be.revertedWithCustomError(claimsHelper, "DoesNotMatchAreadyStoredClaim");
     });
 
     it("Should have correct number of votes for new Batch Executed Claim", async function () {
@@ -736,6 +892,7 @@ describe("Bridge Contract", function () {
 
       expect(await claimsHelper.isAlreadyQueuedBEC(validatorClaimsBEC.batchExecutedClaims[0])).to.be.true;
     });
+
     it("Should add requred amount of tokens from source chain when Bridging Executed Claim is confirmed", async function () {
       const {
         bridgeContract,
@@ -779,7 +936,7 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEFC);
 
       await expect(
-        bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEFC)
+        bridgeContract.connect(validators[4]).submitClaims(validatorClaimsBEFC)
       ).to.be.revertedWithCustomError(bridgeContract, "AlreadyQueued");
     });
 
@@ -792,6 +949,16 @@ describe("Bridge Contract", function () {
       await expect(
         bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEFC)
       ).to.be.revertedWithCustomError(claimsHelper, "AlreadyProposed");
+    });
+
+    it("Should revert if Batch Execution Failed Claims do not match", async function () {
+      const { bridgeContract, claimsHelper, validators, validatorClaimsBEFC, validatorClaimsBEFCerror } =
+        await loadFixture(deployBridgeContractFixture);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+
+      await expect(
+        bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEFCerror)
+      ).to.be.revertedWithCustomError(claimsHelper, "DoesNotMatchAreadyStoredClaim");
     });
 
     it("Should have correct number of votes for new Batch Execution Failed Claims", async function () {
@@ -850,7 +1017,7 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsRRC);
 
       await expect(
-        bridgeContract.connect(validators[3]).submitClaims(validatorClaimsRRC)
+        bridgeContract.connect(validators[4]).submitClaims(validatorClaimsRRC)
       ).to.be.revertedWithCustomError(bridgeContract, "AlreadyQueued");
     });
 
@@ -863,6 +1030,16 @@ describe("Bridge Contract", function () {
       await expect(
         bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC)
       ).to.be.revertedWithCustomError(claimsHelper, "AlreadyProposed");
+    });
+
+    it("Should revert if Refund Request Claims do not match", async function () {
+      const { bridgeContract, claimsHelper, validators, validatorClaimsRRC, validatorClaimsRRCerror } =
+        await loadFixture(deployBridgeContractFixture);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC);
+
+      await expect(
+        bridgeContract.connect(validators[1]).submitClaims(validatorClaimsRRCerror)
+      ).to.be.revertedWithCustomError(claimsHelper, "DoesNotMatchAreadyStoredClaim");
     });
 
     it("Should have correct number of votes for new Refund Request Claims", async function () {
@@ -923,7 +1100,7 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsRRC);
 
       await expect(
-        bridgeContract.connect(validators[3]).submitClaims(validatorClaimsRRC)
+        bridgeContract.connect(validators[4]).submitClaims(validatorClaimsRRC)
       ).to.be.revertedWithCustomError(bridgeContract, "AlreadyQueued");
     });
 
@@ -936,6 +1113,16 @@ describe("Bridge Contract", function () {
       await expect(
         bridgeContract.connect(validators[0]).submitClaims(validatorClaimsREC)
       ).to.be.revertedWithCustomError(claimsHelper, "AlreadyProposed");
+    });
+
+    it("Should revert if Refund Executed Claims do not match", async function () {
+      const { bridgeContract, claimsHelper, validators, validatorClaimsREC, validatorClaimsRECerror } =
+        await loadFixture(deployBridgeContractFixture);
+      await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsREC);
+
+      await expect(
+        bridgeContract.connect(validators[1]).submitClaims(validatorClaimsRECerror)
+      ).to.be.revertedWithCustomError(claimsHelper, "DoesNotMatchAreadyStoredClaim");
     });
 
     it("Should have correct number of votes for new Refund Executed Claim", async function () {
