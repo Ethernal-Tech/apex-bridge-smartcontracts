@@ -8,7 +8,6 @@ import "./UTXOsManager.sol";
 import "hardhat/console.sol";
 
 contract ClaimsManager is IBridgeContractStructs {
-
     BridgeContract private bridgeContract;
     ClaimsHelper private claimsHelper;
     UTXOsManager private utxosManager;
@@ -18,7 +17,7 @@ contract ClaimsManager is IBridgeContractStructs {
     // BlockchainID -> claimCounter -> claimHash
     mapping(string => mapping(uint256 => string)) public queuedClaims;
     // BlockchainID -> claimCounter -> claimType
-    mapping (string => mapping(uint256 => ClaimTypes)) public queuedClaimsTypes;
+    mapping(string => mapping(uint256 => ClaimTypes)) public queuedClaimsTypes;
 
     //working version
     // BlockchainID -> claimHash -> bool
@@ -48,16 +47,28 @@ contract ClaimsManager is IBridgeContractStructs {
             if (claimsHelper.isAlreadyQueuedBRC(_claims.bridgingRequestClaims[i])) {
                 revert AlreadyQueued(_claims.bridgingRequestClaims[i].observedTransactionHash);
             }
-            
+
             //TODO: "locks" the hash to the claim that might not be valid :(
-            if(!isClaimHashed[_claims.bridgingRequestClaims[i].sourceChainID][_claims.bridgingRequestClaims[i].observedTransactionHash]) {
+            if (
+                !isClaimHashed[_claims.bridgingRequestClaims[i].sourceChainID][
+                    _claims.bridgingRequestClaims[i].observedTransactionHash
+                ]
+            ) {
                 if (!claimsHelper.isThereEnoughTokensToBridge(_claims.bridgingRequestClaims[i])) {
                     revert NotEnoughBridgingTokensAwailable(_claims.bridgingRequestClaims[i].observedTransactionHash);
                 }
-                claimsHashes[_claims.bridgingRequestClaims[i].sourceChainID][_claims.bridgingRequestClaims[i].observedTransactionHash] = keccak256(abi.encode(_claims.bridgingRequestClaims[i]));
-                isClaimHashed[_claims.bridgingRequestClaims[i].sourceChainID][_claims.bridgingRequestClaims[i].observedTransactionHash] = true;
+                claimsHashes[_claims.bridgingRequestClaims[i].sourceChainID][
+                    _claims.bridgingRequestClaims[i].observedTransactionHash
+                ] = keccak256(abi.encode(_claims.bridgingRequestClaims[i]));
+                isClaimHashed[_claims.bridgingRequestClaims[i].sourceChainID][
+                    _claims.bridgingRequestClaims[i].observedTransactionHash
+                ] = true;
             } else {
-                if (claimsHashes[_claims.bridgingRequestClaims[i].sourceChainID][_claims.bridgingRequestClaims[i].observedTransactionHash] != keccak256(abi.encode(_claims.bridgingRequestClaims[i]))) {
+                if (
+                    claimsHashes[_claims.bridgingRequestClaims[i].sourceChainID][
+                        _claims.bridgingRequestClaims[i].observedTransactionHash
+                    ] != keccak256(abi.encode(_claims.bridgingRequestClaims[i]))
+                ) {
                     revert DoesNotMatchAreadyStoredClaim(_claims.bridgingRequestClaims[i].observedTransactionHash);
                 }
             }
@@ -103,27 +114,23 @@ contract ClaimsManager is IBridgeContractStructs {
     }
 
     function _submitClaimsBRC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-
         voted[_claims.bridgingRequestClaims[index].observedTransactionHash][_caller] = true;
         numberOfVotes[_claims.bridgingRequestClaims[index].observedTransactionHash]++;
 
         if (claimsHelper.hasConsensus(_claims.bridgingRequestClaims[index].observedTransactionHash)) {
-
             claimsCounter[_claims.bridgingRequestClaims[index].destinationChainID]++;
 
-            chainTokenQuantity[_claims.bridgingRequestClaims[index].sourceChainID] -= claimsHelper.getNeededTokenQuantity(_claims.bridgingRequestClaims[index]);
+            chainTokenQuantity[_claims.bridgingRequestClaims[index].sourceChainID] -= claimsHelper
+                .getNeededTokenQuantity(_claims.bridgingRequestClaims[index].receivers);
 
             claimsHelper.addToQueuedBridgingRequestsClaims(_claims.bridgingRequestClaims[index]);
-            
+
             queuedClaims[_claims.bridgingRequestClaims[index].destinationChainID][
                 claimsCounter[_claims.bridgingRequestClaims[index].destinationChainID]
             ] = _claims.bridgingRequestClaims[index].observedTransactionHash;
             queuedClaimsTypes[_claims.bridgingRequestClaims[index].destinationChainID][
                 claimsCounter[_claims.bridgingRequestClaims[index].destinationChainID]
             ] = ClaimTypes.BRIDGING_REQUEST;
-
-            
-
         }
     }
 
@@ -132,9 +139,11 @@ contract ClaimsManager is IBridgeContractStructs {
         numberOfVotes[_claims.batchExecutedClaims[index].observedTransactionHash]++;
 
         if (claimsHelper.hasConsensus(_claims.batchExecutedClaims[index].observedTransactionHash)) {
-
-            //FIX ME
-            // chainTokenQuantity[_claims.bridgingRequestClaims[index].sourceChainID] += claimsHelper.getNeededTokenQuantity(_claims.bridgingRequestClaims[index]);
+            chainTokenQuantity[_claims.batchExecutedClaims[index].chainID] += bridgeContract
+                .getTokenQuantityFromSignedBatch(
+                    _claims.batchExecutedClaims[index].chainID,
+                    _claims.batchExecutedClaims[index].batchNonceID
+                );
 
             claimsHelper.addToQueuedBatchExecutedClaims(_claims.batchExecutedClaims[index]);
 
@@ -159,8 +168,7 @@ contract ClaimsManager is IBridgeContractStructs {
         numberOfVotes[_claims.batchExecutionFailedClaims[index].observedTransactionHash]++;
 
         if (claimsHelper.hasConsensus(_claims.batchExecutionFailedClaims[index].observedTransactionHash)) {
-            claimsHelper.addToQueuedBatchExecutionFailedClaims(
-                _claims.batchExecutionFailedClaims[index]);
+            claimsHelper.addToQueuedBatchExecutionFailedClaims(_claims.batchExecutionFailedClaims[index]);
 
             claimsHelper.updateLastObservedBlockIfNeeded(_claims);
 
@@ -223,8 +231,7 @@ contract ClaimsManager is IBridgeContractStructs {
     }
 
     modifier onlyBridgeContract() {
-       if (msg.sender != address(bridgeContract)) revert NotBridgeContract();
+        if (msg.sender != address(bridgeContract)) revert NotBridgeContract();
         _;
     }
-    
 }

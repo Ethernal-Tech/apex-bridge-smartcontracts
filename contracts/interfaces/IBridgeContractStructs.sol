@@ -2,7 +2,6 @@
 pragma solidity ^0.8.23;
 
 interface IBridgeContractStructs {
-
     enum ClaimTypes {
         BRIDGING_REQUEST,
         BATCH_EXECUTED,
@@ -12,18 +11,17 @@ interface IBridgeContractStructs {
     }
 
     struct SignedBatch {
-        string id;
+        uint256 id;
         string destinationChainId;
         string rawTransaction;
         string multisigSignature;
         string feePayerMultisigSignature;
-
         ConfirmedTransaction[] includedTransactions;
         UTXOs usedUTXOs;
     }
 
     struct ConfirmedBatch {
-        string id;
+        uint256 id;
         string rawTransaction;
         string[] multisigSignatures;
         string[] feePayerMultisigSignatures;
@@ -43,7 +41,7 @@ interface IBridgeContractStructs {
     struct UTXO {
         string txHash;
         uint256 txIndex;
-        string  addressUTXO; // TODO: do we need this? I think we do
+        string addressUTXO; // TODO: do we need this? I think we do
         uint256 amount;
     }
 
@@ -53,7 +51,6 @@ interface IBridgeContractStructs {
         BatchExecutionFailedClaim[] batchExecutionFailedClaims;
         RefundRequestClaim[] refundRequestClaims;
         RefundExecutedClaim[] refundExecutedClaims;
-        
         string blockHash;
         bool blockFullyObserved;
     }
@@ -149,8 +146,7 @@ interface IBridgeContractStructs {
     error DoesNotMatchAreadyStoredClaim(string _claimTransactionHash);
     //TODO: remove when not needed anymore
     error RefundRequestClaimNotYetSupporter();
-    
+
     event newChainProposal(string indexed chainId, address indexed sender);
     event newChainRegistered(string indexed chainId);
-    
 }

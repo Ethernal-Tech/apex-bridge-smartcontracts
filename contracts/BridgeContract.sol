@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBridgeContract.sol";
 import "./ClaimsHelper.sol";
 import "./ClaimsManager.sol";
@@ -29,19 +30,25 @@ contract BridgeContract is IBridgeContract {
     mapping(string => uint256) public nextTimeoutBlock;
 
     // BlockchaID -> batchId -> SignedBatch[]
-    mapping(string => mapping(string => SignedBatch[])) public signedBatches;
+    mapping(string => mapping(uint256 => SignedBatch[])) public signedBatches;
 
-    // BlockchaID -> batchId
-    mapping(string => string) public lastSignedBatch;
+    // // BlockchaID -> batchId
+    // mapping(string => uint256) public lastSignedBatch;
 
     // BlockchainID -> batchID -> ConfirmedBatch
-    mapping(string => mapping(string => ConfirmedBatch)) public confirmedBatches;
+    mapping(string => mapping(uint256 => ConfirmedBatch)) public confirmedBatches;
 
     // BlockchainID -> batchId
-    mapping(string => string) public lastConfirmedBatch;
+    mapping(string => uint256) public lastConfirmedBatch;
 
     // BlockchainID -> nounce
     mapping(string => uint256) public confirmedTransactionNounce;
+
+    // blockchainID -> nounce
+    mapping(string => uint256) public confirmedBatchNounce;
+
+    // blockchchainID -> confirmedTansactionNounce -> signedBatchNounce
+    mapping(string => mapping(uint256 => uint256)) public confirmedToSignedBatch;
 
     Chain[] private chains;
     address[] private validatorsAddresses;
@@ -69,13 +76,12 @@ contract BridgeContract is IBridgeContract {
     // Batches
     function submitSignedBatch(SignedBatch calldata _signedBatch) external override onlyValidator {
         // TODO: call precompile to check if signedBatch is valid
-        //
 
-        claimsManager.setVoted(_signedBatch.id, msg.sender, true);
-        claimsManager.setNumberOfVotes(_signedBatch.id);
+        claimsManager.setVoted(Strings.toString(_signedBatch.id), msg.sender, true);
+        claimsManager.setNumberOfVotes(Strings.toString(_signedBatch.id));
         signedBatches[_signedBatch.destinationChainId][_signedBatch.id].push(_signedBatch);
 
-        if (claimsHelper.hasConsensus(_signedBatch.id)) {
+        if (claimsHelper.hasConsensus(Strings.toString(_signedBatch.id))) {
             uint256 numberOfSignedBatches = signedBatches[_signedBatch.destinationChainId][_signedBatch.id].length;
             string[] memory multisigSignatures = new string[](numberOfSignedBatches);
             string[] memory feePayerMultisigSignatures = new string[](numberOfSignedBatches);
@@ -88,19 +94,26 @@ contract BridgeContract is IBridgeContract {
             }
 
             ConfirmedBatch memory _confirmedBatch = ConfirmedBatch(
-                _signedBatch.id,
+                confirmedBatchNounce[_signedBatch.destinationChainId]++,
                 _signedBatch.rawTransaction,
                 multisigSignatures,
                 feePayerMultisigSignatures
             );
 
-            confirmedBatches[_signedBatch.destinationChainId][_signedBatch.id] = _confirmedBatch;
+            confirmedBatches[_signedBatch.destinationChainId][
+                confirmedBatchNounce[_signedBatch.destinationChainId]
+            ] = _confirmedBatch;
+
+            lastConfirmedBatch[_signedBatch.destinationChainId] = confirmedBatchNounce[_signedBatch.destinationChainId];
+
+            confirmedToSignedBatch[_signedBatch.destinationChainId][
+                confirmedBatchNounce[_signedBatch.destinationChainId]
+            ] = _signedBatch.id;
 
             currentBatchBlock[_signedBatch.destinationChainId] = int(block.number);
 
-            lastConfirmedBatch[_signedBatch.destinationChainId] = _signedBatch.id;
-
-            lastSignedBatch[_signedBatch.destinationChainId] = _signedBatch.id;
+            // DISCUSS in CR
+            //lastSignedBatch[_signedBatch.destinationChainId] = _signedBatch.id;
         }
     }
 
@@ -198,7 +211,7 @@ contract BridgeContract is IBridgeContract {
 
         uint256 lastBatchedClaimNumber = lastBatchedClaim[_destinationChain];
         uint256 lastConfirmedClaim = claimsManager.claimsCounter(_destinationChain);
-        
+
         uint256 lastClaimToInclude = ((lastConfirmedClaim - lastBatchedClaimNumber) >= MAX_NUMBER_OF_TRANSACTIONS)
             ? lastBatchedClaimNumber + MAX_NUMBER_OF_TRANSACTIONS
             : lastConfirmedClaim;
@@ -208,7 +221,7 @@ contract BridgeContract is IBridgeContract {
         ConfirmedTransaction[] memory confirmedTransactions = new ConfirmedTransaction[](
             lastClaimToInclude - lastBatchedClaimNumber
         );
-        
+
         for (uint i = lastBatchedClaimNumber + 1; i <= lastClaimToInclude; i++) {
             ClaimTypes claimType = claimsManager.queuedClaimsTypes(_destinationChain, i);
 
@@ -263,6 +276,27 @@ contract BridgeContract is IBridgeContract {
 
     function isChainRegistered(string calldata _chainId) external view override returns (bool) {
         return registeredChains[_chainId];
+    }
+
+    function getTokenQuantityFromSignedBatch(
+        string calldata _chainId,
+        uint256 _batchNonceID
+    ) external view returns (uint256) {
+        ConfirmedTransaction[] memory _includedTransactions = signedBatches[_chainId][
+            confirmedToSignedBatch[_chainId][_batchNonceID]
+        ][0].includedTransactions;
+
+        uint256 bridgedAmount;
+
+        for (uint256 i = 0; i < _includedTransactions.length; i++) {
+            for (uint256 j = 0; j < _includedTransactions[i].receivers.length; j++) {
+                bridgedAmount += _includedTransactions[i].receivers[j].amount;
+                j++;
+            }
+            i++;
+        }
+
+        return bridgedAmount;
     }
 
     function getValidatorsCount() external view override returns (uint8) {

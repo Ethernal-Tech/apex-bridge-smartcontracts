@@ -16,7 +16,7 @@ contract ClaimsHelper is IBridgeContractStructs {
     mapping(string => mapping(string => bool)) public isClaimsQueued;
 
     // claimHash -> claim
-    mapping(string => BridgingRequestClaim) public queuedBridgingRequestsClaims;    
+    mapping(string => BridgingRequestClaim) public queuedBridgingRequestsClaims;
     mapping(string => BatchExecutedClaim) public queuedBatchExecutedClaims;
     mapping(string => BatchExecutionFailedClaim) public queuedBatchExecutionFailedClaims;
     mapping(string => RefundRequestClaim) public queuedRefundRequestClaims;
@@ -29,25 +29,25 @@ contract ClaimsHelper is IBridgeContractStructs {
         bridgeContract = BridgeContract(_bridgeContractAddress);
     }
 
-    function updateLastObservedBlockIfNeeded(ValidatorClaims calldata _claims) external onlyClaimsManager{
+    function updateLastObservedBlockIfNeeded(ValidatorClaims calldata _claims) external onlyClaimsManager {
         if (_claims.blockFullyObserved) {
             string memory chainId;
-            if(_claims.bridgingRequestClaims.length > 0) {
+            if (_claims.bridgingRequestClaims.length > 0) {
                 chainId = _claims.bridgingRequestClaims[0].sourceChainID;
-            } else if(_claims.batchExecutedClaims.length > 0) {
+            } else if (_claims.batchExecutedClaims.length > 0) {
                 chainId = _claims.batchExecutedClaims[0].chainID;
-            } else if(_claims.batchExecutionFailedClaims.length > 0) {
+            } else if (_claims.batchExecutionFailedClaims.length > 0) {
                 chainId = _claims.batchExecutionFailedClaims[0].chainID;
-            } else if(_claims.refundRequestClaims.length > 0) {
+            } else if (_claims.refundRequestClaims.length > 0) {
                 chainId = _claims.refundRequestClaims[0].chainID;
-            } else if(_claims.refundExecutedClaims.length > 0) {
+            } else if (_claims.refundExecutedClaims.length > 0) {
                 chainId = _claims.refundExecutedClaims[0].chainID;
             }
 
             lastObserveredBlock[chainId] = _claims.blockHash;
         }
     }
-    
+
     // TODO: claims might differ if inluding signature, check the claims and implement
     // different way of comparison
     function isAlreadyQueuedBRC(BridgingRequestClaim calldata _claim) public view returns (bool) {
@@ -65,25 +65,38 @@ contract ClaimsHelper is IBridgeContractStructs {
 
     function isAlreadyQueuedBEC(BatchExecutedClaim calldata _claim) public view returns (bool) {
         return
-            _equal(_claim.observedTransactionHash, queuedBatchExecutedClaims[_claim.observedTransactionHash].observedTransactionHash) &&
+            _equal(
+                _claim.observedTransactionHash,
+                queuedBatchExecutedClaims[_claim.observedTransactionHash].observedTransactionHash
+            ) &&
             _equal(_claim.chainID, queuedBatchExecutedClaims[_claim.observedTransactionHash].chainID) &&
             _claim.batchNonceID == queuedBatchExecutedClaims[_claim.observedTransactionHash].batchNonceID &&
-            utxosManager.equalUTXOs(_claim.outputUTXOs, queuedBatchExecutedClaims[_claim.observedTransactionHash].outputUTXOs);
-
-
+            utxosManager.equalUTXOs(
+                _claim.outputUTXOs,
+                queuedBatchExecutedClaims[_claim.observedTransactionHash].outputUTXOs
+            );
     }
 
-    function isAlreadyQueuedBEFC(BatchExecutionFailedClaim calldata _claim) public view returns (bool) {        
+    function isAlreadyQueuedBEFC(BatchExecutionFailedClaim calldata _claim) public view returns (bool) {
         return
-            _equal(_claim.observedTransactionHash, queuedBatchExecutionFailedClaims[_claim.observedTransactionHash].observedTransactionHash) &&
+            _equal(
+                _claim.observedTransactionHash,
+                queuedBatchExecutionFailedClaims[_claim.observedTransactionHash].observedTransactionHash
+            ) &&
             _equal(_claim.chainID, queuedBatchExecutionFailedClaims[_claim.observedTransactionHash].chainID) &&
             _claim.batchNonceID == queuedBatchExecutionFailedClaims[_claim.observedTransactionHash].batchNonceID;
     }
 
     function isAlreadyQueuedRRC(RefundRequestClaim calldata _claim) public view returns (bool) {
         return
-            _equal(_claim.observedTransactionHash, queuedRefundRequestClaims[_claim.observedTransactionHash].observedTransactionHash) &&
-            _equal(_claim.previousRefundTxHash, queuedRefundRequestClaims[_claim.observedTransactionHash].previousRefundTxHash) &&
+            _equal(
+                _claim.observedTransactionHash,
+                queuedRefundRequestClaims[_claim.observedTransactionHash].observedTransactionHash
+            ) &&
+            _equal(
+                _claim.previousRefundTxHash,
+                queuedRefundRequestClaims[_claim.observedTransactionHash].previousRefundTxHash
+            ) &&
             _equal(_claim.chainID, queuedRefundRequestClaims[_claim.observedTransactionHash].chainID) &&
             _equal(_claim.receiver, queuedRefundRequestClaims[_claim.observedTransactionHash].receiver) &&
             utxosManager.equalUTXO(_claim.utxo, queuedRefundRequestClaims[_claim.observedTransactionHash].utxo) &&
@@ -92,15 +105,21 @@ contract ClaimsHelper is IBridgeContractStructs {
     }
 
     function isAlreadyQueuedREC(RefundExecutedClaim calldata _claim) public view returns (bool) {
-        return 
-            _equal(_claim.observedTransactionHash, queuedRefundExecutedClaims[_claim.observedTransactionHash].observedTransactionHash) &&
+        return
+            _equal(
+                _claim.observedTransactionHash,
+                queuedRefundExecutedClaims[_claim.observedTransactionHash].observedTransactionHash
+            ) &&
             _equal(_claim.chainID, queuedRefundExecutedClaims[_claim.observedTransactionHash].chainID) &&
             _equal(_claim.refundTxHash, queuedRefundExecutedClaims[_claim.observedTransactionHash].refundTxHash) &&
             utxosManager.equalUTXO(_claim.utxo, queuedRefundExecutedClaims[_claim.observedTransactionHash].utxo);
     }
 
     function hasConsensus(string calldata _id) public view returns (bool) {
-        if (claimsManager.numberOfVotes(_id) >= ((bridgeContract.validatorsCount() * 2) / 3 + ((bridgeContract.validatorsCount() * 2) % 3 == 0 ? 0 : 1))) {
+        if (
+            claimsManager.numberOfVotes(_id) >=
+            ((bridgeContract.validatorsCount() * 2) / 3 + ((bridgeContract.validatorsCount() * 2) % 3 == 0 ? 0 : 1))
+        ) {
             return true;
         }
         return false;
@@ -126,24 +145,25 @@ contract ClaimsHelper is IBridgeContractStructs {
         queuedRefundExecutedClaims[_claim.observedTransactionHash] = _claim;
     }
 
-    function addToQueuedBatchExecutionFailedClaims(BatchExecutionFailedClaim calldata _claim) external onlyClaimsManager {
+    function addToQueuedBatchExecutionFailedClaims(
+        BatchExecutionFailedClaim calldata _claim
+    ) external onlyClaimsManager {
         queuedBatchExecutionFailedClaims[_claim.observedTransactionHash] = _claim;
     }
 
     function isThereEnoughTokensToBridge(BridgingRequestClaim calldata _claim) external view returns (bool) {
-            
-        if (claimsManager.chainTokenQuantity(_claim.sourceChainID) < getNeededTokenQuantity(_claim)) {
+        if (claimsManager.chainTokenQuantity(_claim.sourceChainID) < getNeededTokenQuantity(_claim.receivers)) {
             revert NotEnoughBridgingTokensAwailable(_claim.observedTransactionHash);
         }
 
         return true;
     }
 
-    function getNeededTokenQuantity(BridgingRequestClaim calldata _claim) public pure returns (uint256) {
+    function getNeededTokenQuantity(Receiver[] calldata _receivers) public pure returns (uint256) {
         uint256 tokenQuantity;
 
-        for (uint256 i = 0; i<_claim.receivers.length; i++) {
-            tokenQuantity += _claim.receivers[i].amount;
+        for (uint256 i = 0; i < _receivers.length; i++) {
+            tokenQuantity += _receivers[i].amount;
         }
 
         return tokenQuantity;
@@ -152,17 +172,17 @@ contract ClaimsHelper is IBridgeContractStructs {
     function _equal(string memory a, string memory b) internal pure returns (bool) {
         return bytes(a).length == bytes(b).length && keccak256(bytes(a)) == keccak256(bytes(b));
     }
-    
-    function  _equalReveivers(Receiver[] memory a, Receiver[] memory b) internal pure returns (bool) {
-        if(a.length != b.length){
+
+    function _equalReveivers(Receiver[] memory a, Receiver[] memory b) internal pure returns (bool) {
+        if (a.length != b.length) {
             return false;
         }
 
-        for(uint256 i = 0; i < a.length; i++) {
-            if(!_equal(a[i].destinationAddress, b[i].destinationAddress)) {
+        for (uint256 i = 0; i < a.length; i++) {
+            if (!_equal(a[i].destinationAddress, b[i].destinationAddress)) {
                 return false;
             }
-            if(a[i].amount != b[i].amount) {
+            if (a[i].amount != b[i].amount) {
                 return false;
             }
         }
@@ -180,13 +200,12 @@ contract ClaimsHelper is IBridgeContractStructs {
     }
 
     modifier onlyBridgeContract() {
-       if (msg.sender != address(bridgeContract)) revert NotBridgeContract();
+        if (msg.sender != address(bridgeContract)) revert NotBridgeContract();
         _;
     }
 
     modifier onlyClaimsManager() {
-       if (msg.sender != address(claimsManager)) revert NotClaimsManager();
+        if (msg.sender != address(claimsManager)) revert NotClaimsManager();
         _;
     }
-   
 }
