@@ -89,6 +89,24 @@ contract ClaimsHelper is IBridgeContractStructs {
         queuedBatchExecutionFailedClaims[_claim.observedTransactionHash] = _claim;
     }
 
+    function validateChain(
+        string calldata _chainId,
+        UTXOs calldata _initialUTXOs,
+        string calldata _addressMultisig,
+        string calldata _addressFeePayer,
+        uint256 _tokenQuantity
+    ) external onlyBridgeContract {
+        Chain memory chain = Chain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
+        if (!isClaimHashed[_chainId][_chainId]) {
+            claimsHashes[_chainId][_chainId] = keccak256(abi.encode(chain));
+            isClaimHashed[_chainId][_chainId] = true;
+        } else {
+            if (claimsHashes[_chainId][_chainId] != keccak256(abi.encode(chain))) {
+                revert DoesNotMatchAreadyStoredClaim(_chainId);
+            }
+        }
+    }
+
     // For new claims based on transaction hash, hash of the whole claim is stored after being
     // being check that there is enough tokens available for bridging
     // for claims that are already hashed, their hash is compared with submitted claim based on
@@ -159,6 +177,29 @@ contract ClaimsHelper is IBridgeContractStructs {
                 revert DoesNotMatchAreadyStoredClaim(_claim.observedTransactionHash);
             }
         }
+    }
+
+    function validateSignedBatches(
+        SignedBatch calldata _newSignedBatch,
+        SignedBatch calldata _storedSignedBatch
+    ) external onlyBridgeContract {
+        // if (!isClaimHashed[_signedBatch.destinationChainId][Strings.toString(_signedBatch.id]) {
+        //     claimsHelper.setClaimHashed(_signedBatch.destinationChainId, Strings.toString(_signedBatch.id));
+        // } else {
+        // SignedBatch memory _signedBatchStored = signedBatches[_signedBatch.destinationChainId][_signedBatch.id][0];
+        // if (
+        //     _signedBatch.id != _signedBatchStored.id ||
+        //     Strings.equal(_signedBatch.destinationChainId, _signedBatchStored.destinationChainId) ||
+        //     Strings.equal(_signedBatch.rawTransaction, _signedBatchStored.rawTransaction)
+        // ) {
+        //     revert DoesNotMatchAreadyStoredClaim(Strings.toString(_signedBatch.id));
+        // }
+        // uint256 id;
+        // string destinationChainId;
+        // string rawTransaction;
+        // ConfirmedTransaction[] includedTransactions;
+        // UTXOs usedUTXOs;
+        // }
     }
 
     function _isThereEnoughTokensToBridge(BridgingRequestClaim calldata _claim) internal view returns (bool) {

@@ -51,7 +51,9 @@ interface IBridgeContractStructs {
         BatchExecutionFailedClaim[] batchExecutionFailedClaims;
         RefundRequestClaim[] refundRequestClaims;
         RefundExecutedClaim[] refundExecutedClaims;
+        string chainID;
         string blockHash;
+        uint256 slot;
         bool blockFullyObserved;
     }
 
@@ -134,7 +136,7 @@ interface IBridgeContractStructs {
 
     error AlreadyConfirmed(string _claimTransactionHash);
     error AlreadyProposed(string _claimTransactionHash);
-    error ChainAlreadyRegistered();
+    error ChainAlreadyRegistered(string _claimId);
     error NotOwner();
     error NotValidator();
     error NotBridgeContract();

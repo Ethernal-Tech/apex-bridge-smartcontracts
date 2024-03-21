@@ -108,7 +108,9 @@ describe("Bridge Contract", function () {
       batchExecutionFailedClaims: [],
       refundRequestClaims: [],
       refundExecutedClaims: [],
+      chainID: "chainId",
       blockHash: "0x123...",
+      slot: 1,
       blockFullyObserved: true,
     };
 
@@ -136,7 +138,9 @@ describe("Bridge Contract", function () {
       batchExecutionFailedClaims: [],
       refundRequestClaims: [],
       refundExecutedClaims: [],
+      chainID: "chainId",
       blockHash: "0x123...",
+      slot: 1,
       blockFullyObserved: true,
     };
 
@@ -170,7 +174,9 @@ describe("Bridge Contract", function () {
       batchExecutionFailedClaims: [],
       refundRequestClaims: [],
       refundExecutedClaims: [],
+      chainID: "chainId",
       blockHash: "0x123...",
+      slot: 1,
       blockFullyObserved: true,
     };
 
@@ -204,7 +210,9 @@ describe("Bridge Contract", function () {
       batchExecutionFailedClaims: [],
       refundRequestClaims: [],
       refundExecutedClaims: [],
+      chainID: "chainId",
       blockHash: "0x123...",
+      slot: 1,
       blockFullyObserved: true,
     };
 
@@ -220,7 +228,9 @@ describe("Bridge Contract", function () {
       ],
       refundRequestClaims: [],
       refundExecutedClaims: [],
+      chainID: "chainId",
       blockHash: "0x123...",
+      slot: 1,
       blockFullyObserved: true,
     };
 
@@ -236,7 +246,9 @@ describe("Bridge Contract", function () {
       ],
       refundRequestClaims: [],
       refundExecutedClaims: [],
+      chainID: "chainId",
       blockHash: "0x123...",
+      slot: 1,
       blockFullyObserved: true,
     };
 
@@ -262,7 +274,9 @@ describe("Bridge Contract", function () {
         },
       ],
       refundExecutedClaims: [],
+      chainID: "chainId",
       blockHash: "0x123...",
+      slot: 1,
       blockFullyObserved: true,
     };
 
@@ -288,7 +302,9 @@ describe("Bridge Contract", function () {
         },
       ],
       refundExecutedClaims: [],
+      chainID: "chainId",
       blockHash: "0x123...",
+      slot: 1,
       blockFullyObserved: true,
     };
 
@@ -310,7 +326,9 @@ describe("Bridge Contract", function () {
           },
         },
       ],
+      chainID: "chainId",
       blockHash: "0x123...",
+      slot: 1,
       blockFullyObserved: true,
     };
 
@@ -332,7 +350,9 @@ describe("Bridge Contract", function () {
           },
         },
       ],
+      chainID: "chainId",
       blockHash: "0x123...",
+      slot: 1,
       blockFullyObserved: true,
     };
 
@@ -354,7 +374,9 @@ describe("Bridge Contract", function () {
           },
         },
       ],
+      chainID: "chainId",
       blockHash: "0x123...",
+      slot: 1,
       blockFullyObserved: false,
     };
 
@@ -1317,7 +1339,7 @@ describe("Bridge Contract", function () {
       );
     });
 
-    it("Should not change block hash in lastObservedBlock if block is not fully observerd", async function () {
+    it("Should not change block hash in lastObservedBlock if block is not fully observered", async function () {
       const { bridgeContract, validators, validatorClaimsRECObserverdFalse } = await loadFixture(
         deployBridgeContractFixture
       );

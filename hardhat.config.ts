@@ -11,10 +11,10 @@ const config: HardhatUserConfig = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 55
-      }
-    }
-  }
+        runs: 55,
+      },
+    },
+  },
 };
 
 export default config;

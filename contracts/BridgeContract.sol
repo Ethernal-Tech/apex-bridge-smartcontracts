@@ -77,6 +77,23 @@ contract BridgeContract is IBridgeContract {
     function submitSignedBatch(SignedBatch calldata _signedBatch) external override onlyValidator {
         // TODO: call precompile to check if signedBatch is valid
 
+        if (claimsManager.voted(Strings.toString(_signedBatch.id), msg.sender)) {
+            revert AlreadyProposed(Strings.toString(_signedBatch.id));
+        }
+
+        if (claimsHelper.isClaimConfirmed(_signedBatch.destinationChainId, Strings.toString(_signedBatch.id))) {
+            revert AlreadyConfirmed(Strings.toString(_signedBatch.id));
+        }
+
+        // claimsHelper.validateSignedBatches(
+        //     _signedBatch,
+        //     signedBatches[_signedBatch.destinationChainId][_signedBatch.id][0]
+        // );
+
+        _submitSignedBatch(_signedBatch);
+    }
+
+    function _submitSignedBatch(SignedBatch calldata _signedBatch) internal {
         claimsManager.setVoted(Strings.toString(_signedBatch.id), msg.sender, true);
         claimsManager.setNumberOfVotes(Strings.toString(_signedBatch.id));
         signedBatches[_signedBatch.destinationChainId][_signedBatch.id].push(_signedBatch);
@@ -136,11 +153,14 @@ contract BridgeContract is IBridgeContract {
         uint256 _tokenQuantity
     ) external onlyValidator {
         if (registeredChains[_chainId]) {
-            revert ChainAlreadyRegistered();
+            revert ChainAlreadyRegistered(_chainId);
         }
         if (claimsManager.voted(_chainId, msg.sender)) {
             revert AlreadyProposed(_chainId);
         }
+
+        claimsHelper.validateChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
+
         claimsManager.setVoted(_chainId, msg.sender, true);
         claimsManager.setNumberOfVotes(_chainId);
         if (claimsHelper.hasConsensus(_chainId)) {
