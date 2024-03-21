@@ -656,7 +656,7 @@ describe("Bridge Contract", function () {
       );
     });
 
-    it("Should revert if Bridging Request Claim is already in the queue", async function () {
+    it("Should revert if Bridging Request Claim is already confirmed", async function () {
       const { bridgeContract, claimsHelper, owner, validators, UTXOs, validatorClaimsBRC } = await loadFixture(
         deployBridgeContractFixture
       );
@@ -674,7 +674,7 @@ describe("Bridge Contract", function () {
 
       await expect(
         bridgeContract.connect(validators[4]).submitClaims(validatorClaimsBRC)
-      ).to.be.revertedWithCustomError(claimsHelper, "AlreadyQueued");
+      ).to.be.revertedWithCustomError(claimsHelper, "AlreadyConfirmed");
     });
 
     it("Should revert if same validator submits the same Bridging Request Claim twice", async function () {
@@ -730,11 +730,21 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
 
-      expect(await claimsHelper.isAlreadyQueuedBRC(validatorClaimsBRC.bridgingRequestClaims[0])).to.be.false;
+      expect(
+        await claimsHelper.isClaimConfirmed(
+          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash
+        )
+      ).to.be.false;
 
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-      expect(await claimsHelper.isAlreadyQueuedBRC(validatorClaimsBRC.bridgingRequestClaims[0])).to.be.true;
+      expect(
+        await claimsHelper.isClaimConfirmed(
+          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash
+        )
+      ).to.be.true;
     });
 
     it("Should increase claimsCounter after adding new Bridging Request Claim", async function () {
@@ -816,7 +826,7 @@ describe("Bridge Contract", function () {
     });
   });
   describe("Submit new Batch Executed Claim", function () {
-    it("Should revert if Batch Executed Claim is already in the queue", async function () {
+    it("Should revert if Batch Executed Claim is already confirmed", async function () {
       const { bridgeContract, owner, validators, UTXOs, validatorClaimsBEC, signedBatch } = await loadFixture(
         deployBridgeContractFixture
       );
@@ -835,7 +845,7 @@ describe("Bridge Contract", function () {
 
       await expect(
         bridgeContract.connect(validators[4]).submitClaims(validatorClaimsBEC)
-      ).to.be.revertedWithCustomError(bridgeContract, "AlreadyQueued");
+      ).to.be.revertedWithCustomError(bridgeContract, "AlreadyConfirmed");
     });
 
     it("Should revert if same validator submits the same Batch Executed Claim twice", async function () {
@@ -886,11 +896,21 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEC);
       await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEC);
 
-      expect(await claimsHelper.isAlreadyQueuedBEC(validatorClaimsBEC.batchExecutedClaims[0])).to.be.false;
+      expect(
+        await claimsHelper.isClaimConfirmed(
+          validatorClaimsBEC.batchExecutedClaims[0].chainID,
+          validatorClaimsBEC.batchExecutedClaims[0].observedTransactionHash
+        )
+      ).to.be.false;
 
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
-      expect(await claimsHelper.isAlreadyQueuedBEC(validatorClaimsBEC.batchExecutedClaims[0])).to.be.true;
+      expect(
+        await claimsHelper.isClaimConfirmed(
+          validatorClaimsBEC.batchExecutedClaims[0].chainID,
+          validatorClaimsBEC.batchExecutedClaims[0].observedTransactionHash
+        )
+      ).to.be.true;
     });
 
     it("Should add requred amount of tokens from source chain when Bridging Executed Claim is confirmed", async function () {
@@ -925,19 +945,16 @@ describe("Bridge Contract", function () {
     });
   });
   describe("Submit new Batch Execution Failed Claims", function () {
-    it("Should revert if Batch Execution Failed Claims is already in the queue", async function () {
+    it("Should revert if Batch Execution Failed Claims is already confirmed", async function () {
       const { bridgeContract, validators, validatorClaimsBEFC } = await loadFixture(deployBridgeContractFixture);
       await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEFC);
-
       await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEFC);
-
       await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEFC);
-
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEFC);
 
       await expect(
         bridgeContract.connect(validators[4]).submitClaims(validatorClaimsBEFC)
-      ).to.be.revertedWithCustomError(bridgeContract, "AlreadyQueued");
+      ).to.be.revertedWithCustomError(bridgeContract, "AlreadyConfirmed");
     });
 
     it("Should revert if same validator submits the same Batch Execution Failed Claims twice", async function () {
@@ -982,11 +999,21 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEFC);
       await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEFC);
 
-      expect(await claimsHelper.isAlreadyQueuedBEFC(validatorClaimsBEFC.batchExecutionFailedClaims[0])).to.be.false;
+      expect(
+        await claimsHelper.isClaimConfirmed(
+          validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID,
+          validatorClaimsBEFC.batchExecutionFailedClaims[0].observedTransactionHash
+        )
+      ).to.be.false;
 
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEFC);
 
-      expect(await claimsHelper.isAlreadyQueuedBEFC(validatorClaimsBEFC.batchExecutionFailedClaims[0])).to.be.true;
+      expect(
+        await claimsHelper.isClaimConfirmed(
+          validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID,
+          validatorClaimsBEFC.batchExecutionFailedClaims[0].observedTransactionHash
+        )
+      ).to.be.true;
     });
 
     it("Should reset current batch block and next timeout batch block when Batch Execution Failed Claims if confirmed", async function () {
@@ -1006,7 +1033,7 @@ describe("Bridge Contract", function () {
     });
   });
   describe("Submit new Refund Request Claims", function () {
-    it("Should revert if Refund Request Claims is already in the queue", async function () {
+    it("Should revert if Refund Request Claims is already confirmed", async function () {
       const { bridgeContract, validators, validatorClaimsRRC } = await loadFixture(deployBridgeContractFixture);
       await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC);
 
@@ -1018,7 +1045,7 @@ describe("Bridge Contract", function () {
 
       await expect(
         bridgeContract.connect(validators[4]).submitClaims(validatorClaimsRRC)
-      ).to.be.revertedWithCustomError(bridgeContract, "AlreadyQueued");
+      ).to.be.revertedWithCustomError(bridgeContract, "AlreadyConfirmed");
     });
 
     it("Should revert if same validator submits the same Refund Request Claims twice", async function () {
@@ -1063,11 +1090,21 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsRRC);
       await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsRRC);
 
-      expect(await claimsHelper.isAlreadyQueuedRRC(validatorClaimsRRC.refundRequestClaims[0])).to.be.false;
+      expect(
+        await claimsHelper.isClaimConfirmed(
+          validatorClaimsRRC.refundRequestClaims[0].chainID,
+          validatorClaimsRRC.refundRequestClaims[0].observedTransactionHash
+        )
+      ).to.be.false;
 
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsRRC);
 
-      expect(await claimsHelper.isAlreadyQueuedRRC(validatorClaimsRRC.refundRequestClaims[0])).to.be.true;
+      expect(
+        await claimsHelper.isClaimConfirmed(
+          validatorClaimsRRC.refundRequestClaims[0].chainID,
+          validatorClaimsRRC.refundRequestClaims[0].observedTransactionHash
+        )
+      ).to.be.true;
     });
 
     it("Should increase claimsCounter after adding new Refund Request Claim", async function () {
@@ -1089,7 +1126,7 @@ describe("Bridge Contract", function () {
     });
   });
   describe("Submit new Refund Executed Claim", function () {
-    it("Should revert if Refund Executed Claim is already in the queue", async function () {
+    it("Should revert if Refund Executed Claim is already confirmed", async function () {
       const { bridgeContract, validators, validatorClaimsRRC } = await loadFixture(deployBridgeContractFixture);
       await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC);
 
@@ -1101,7 +1138,7 @@ describe("Bridge Contract", function () {
 
       await expect(
         bridgeContract.connect(validators[4]).submitClaims(validatorClaimsRRC)
-      ).to.be.revertedWithCustomError(bridgeContract, "AlreadyQueued");
+      ).to.be.revertedWithCustomError(bridgeContract, "AlreadyConfirmed");
     });
 
     it("Should revert if same validator submits the same Refund Executed Claim twice", async function () {
@@ -1146,11 +1183,21 @@ describe("Bridge Contract", function () {
       await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsREC);
       await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsREC);
 
-      expect(await claimsHelper.isAlreadyQueuedREC(validatorClaimsREC.refundExecutedClaims[0])).to.be.false;
+      expect(
+        await claimsHelper.isClaimConfirmed(
+          validatorClaimsREC.refundExecutedClaims[0].chainID,
+          validatorClaimsREC.refundExecutedClaims[0].observedTransactionHash
+        )
+      ).to.be.false;
 
       await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsREC);
 
-      expect(await claimsHelper.isAlreadyQueuedREC(validatorClaimsREC.refundExecutedClaims[0])).to.be.true;
+      expect(
+        await claimsHelper.isClaimConfirmed(
+          validatorClaimsREC.refundExecutedClaims[0].chainID,
+          validatorClaimsREC.refundExecutedClaims[0].observedTransactionHash
+        )
+      ).to.be.true;
     });
   });
   describe("Batch creation", function () {

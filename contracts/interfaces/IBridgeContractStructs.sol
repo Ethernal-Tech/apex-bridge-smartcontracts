@@ -132,7 +132,7 @@ interface IBridgeContractStructs {
         bytes verifyingKeyFee;
     }
 
-    error AlreadyQueued(string _claimTransactionHash);
+    error AlreadyConfirmed(string _claimTransactionHash);
     error AlreadyProposed(string _claimTransactionHash);
     error ChainAlreadyRegistered();
     error NotOwner();

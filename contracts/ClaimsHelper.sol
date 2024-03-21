@@ -13,7 +13,7 @@ contract ClaimsHelper is IBridgeContractStructs {
     UTXOsManager private utxosManager;
 
     // blockchain -> claimHash -> queued
-    mapping(string => mapping(string => bool)) public isClaimsQueued;
+    mapping(string => mapping(string => bool)) public isClaimConfirmed;
 
     // BlockchainID -> claimHash -> bool
     mapping(string => mapping(string => bool)) public isClaimHashed;
@@ -51,66 +51,6 @@ contract ClaimsHelper is IBridgeContractStructs {
 
             lastObserveredBlock[chainId] = _claims.blockHash;
         }
-    }
-
-    // TODO: claims might differ if inluding signature, check the claims and implement
-    // different way of comparison
-    function isAlreadyQueuedBRC(BridgingRequestClaim calldata _claim) public view returns (bool) {
-        return
-            keccak256(abi.encode(_claim)) ==
-            keccak256(abi.encode(queuedBridgingRequestsClaims[_claim.observedTransactionHash]));
-    }
-
-    function isAlreadyQueuedBEC(BatchExecutedClaim calldata _claim) public view returns (bool) {
-        return
-            _equal(
-                _claim.observedTransactionHash,
-                queuedBatchExecutedClaims[_claim.observedTransactionHash].observedTransactionHash
-            ) &&
-            _equal(_claim.chainID, queuedBatchExecutedClaims[_claim.observedTransactionHash].chainID) &&
-            _claim.batchNonceID == queuedBatchExecutedClaims[_claim.observedTransactionHash].batchNonceID &&
-            utxosManager.equalUTXOs(
-                _claim.outputUTXOs,
-                queuedBatchExecutedClaims[_claim.observedTransactionHash].outputUTXOs
-            );
-    }
-
-    function isAlreadyQueuedBEFC(BatchExecutionFailedClaim calldata _claim) public view returns (bool) {
-        return
-            _equal(
-                _claim.observedTransactionHash,
-                queuedBatchExecutionFailedClaims[_claim.observedTransactionHash].observedTransactionHash
-            ) &&
-            _equal(_claim.chainID, queuedBatchExecutionFailedClaims[_claim.observedTransactionHash].chainID) &&
-            _claim.batchNonceID == queuedBatchExecutionFailedClaims[_claim.observedTransactionHash].batchNonceID;
-    }
-
-    function isAlreadyQueuedRRC(RefundRequestClaim calldata _claim) public view returns (bool) {
-        return
-            _equal(
-                _claim.observedTransactionHash,
-                queuedRefundRequestClaims[_claim.observedTransactionHash].observedTransactionHash
-            ) &&
-            _equal(
-                _claim.previousRefundTxHash,
-                queuedRefundRequestClaims[_claim.observedTransactionHash].previousRefundTxHash
-            ) &&
-            _equal(_claim.chainID, queuedRefundRequestClaims[_claim.observedTransactionHash].chainID) &&
-            _equal(_claim.receiver, queuedRefundRequestClaims[_claim.observedTransactionHash].receiver) &&
-            utxosManager.equalUTXO(_claim.utxo, queuedRefundRequestClaims[_claim.observedTransactionHash].utxo) &&
-            _equal(_claim.rawTransaction, queuedRefundRequestClaims[_claim.observedTransactionHash].rawTransaction) &&
-            _claim.retryCounter == queuedRefundRequestClaims[_claim.observedTransactionHash].retryCounter;
-    }
-
-    function isAlreadyQueuedREC(RefundExecutedClaim calldata _claim) public view returns (bool) {
-        return
-            _equal(
-                _claim.observedTransactionHash,
-                queuedRefundExecutedClaims[_claim.observedTransactionHash].observedTransactionHash
-            ) &&
-            _equal(_claim.chainID, queuedRefundExecutedClaims[_claim.observedTransactionHash].chainID) &&
-            _equal(_claim.refundTxHash, queuedRefundExecutedClaims[_claim.observedTransactionHash].refundTxHash) &&
-            utxosManager.equalUTXO(_claim.utxo, queuedRefundExecutedClaims[_claim.observedTransactionHash].utxo);
     }
 
     function hasConsensus(string calldata _id) public view returns (bool) {
@@ -237,6 +177,10 @@ contract ClaimsHelper is IBridgeContractStructs {
         }
 
         return tokenQuantity;
+    }
+
+    function setClaimConfirmed(string calldata _chain, string calldata _observerHash) external onlyClaimsManager {
+        isClaimConfirmed[_chain][_observerHash] = true;
     }
 
     function _equal(string memory a, string memory b) internal pure returns (bool) {
