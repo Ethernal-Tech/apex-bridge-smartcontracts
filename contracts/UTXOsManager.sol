@@ -3,10 +3,12 @@ pragma solidity ^0.8.23;
 
 import "./interfaces/IBridgeContractStructs.sol";
 import "./BridgeContract.sol";
+import "./SignedBatchManager.sol";
 import "hardhat/console.sol";
 
 contract UTXOsManager is IBridgeContractStructs {
     BridgeContract private bridgeContract;
+    SignedBatchManager private signedBatchManager;
     address private claimsManagerAddress;
 
     // Blockchain ID -> UTXOs
@@ -25,10 +27,6 @@ contract UTXOsManager is IBridgeContractStructs {
         string calldata _destinationChain,
         uint256 txCost
     ) external view onlyBridgeContract returns (UTXOs memory availableUTXOs) {
-        //da prodje kroz consolidovane
-        //proveri da li je dovoljno skupio
-        //ako nije dovoljno skupio
-        //predje na main
         uint256 sum = 0;
         uint256 counterForArraySizeConsolidation;
 
@@ -60,7 +58,6 @@ contract UTXOsManager is IBridgeContractStructs {
         UTXOs memory utxos = chainUTXOs[_destinationChain];
         uint256 counterForArraySize;
 
-        //counter - other option would required using storage variable
         for (uint i = 0; i < utxos.multisigOwnedUTXOs.length; i++) {
             sum += utxos.multisigOwnedUTXOs[i].amount;
             counterForArraySize++;
@@ -87,9 +84,9 @@ contract UTXOsManager is IBridgeContractStructs {
     }
 
     function _removeUsedUTXOs(string calldata _chainID) internal {
-        uint256 _signedBatchId = bridgeContract.lastConfirmedBatch(_chainID);
+        uint256 _signedBatchId = signedBatchManager.lastConfirmedBatch(_chainID);
         UTXOs memory _utxos;
-        (, , , , , _utxos) = bridgeContract.signedBatches(_chainID, _signedBatchId, 0);
+        (, , , , , _utxos) = signedBatchManager.confirmedSignedBatches(_chainID, _signedBatchId);
 
         _removeMultisigUTXOs(_chainID, _utxos);
         _removeFeeUTXOs(_chainID, _utxos);
@@ -233,6 +230,10 @@ contract UTXOsManager is IBridgeContractStructs {
     // TODO: who will call this function?
     function setClaimsManagerAddress(address _claimsManagerAddress) external {
         claimsManagerAddress = _claimsManagerAddress;
+    }
+
+    function setSignedBatchManagerAddress(address _signedBatchManagerAddress) external {
+        signedBatchManager = SignedBatchManager(_signedBatchManagerAddress);
     }
 
     modifier onlyBridgeContract() {

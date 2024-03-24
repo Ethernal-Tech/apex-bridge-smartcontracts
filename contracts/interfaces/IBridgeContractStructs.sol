@@ -20,6 +20,14 @@ interface IBridgeContractStructs {
         UTXOs usedUTXOs;
     }
 
+    struct SignedBatchCut {
+        uint256 id;
+        string destinationChainId;
+        string rawTransaction;
+        ConfirmedTransaction[] includedTransactions;
+        UTXOs usedUTXOs;
+    }
+
     struct ConfirmedBatch {
         uint256 id;
         string rawTransaction;
@@ -141,11 +149,11 @@ interface IBridgeContractStructs {
     error NotValidator();
     error NotBridgeContract();
     error NotClaimsManager();
-    error NotClaimsSubmitter();
+    error NotClaimsHelper();
+    error NotClaimsManagerOrBridgeContract();
+    error NotSignedBatchManagerOrBridgeContract();
     error NotEnoughBridgingTokensAwailable(string _claimTransactionHash);
     error CanNotCreateBatchYet(string _blockchainID);
-    error NotValidClaimHash(string _claimTransactionHash);
-    error DoesNotMatchAreadyStoredClaim(string _claimTransactionHash);
     //TODO: remove when not needed anymore
     error RefundRequestClaimNotYetSupporter();
 
