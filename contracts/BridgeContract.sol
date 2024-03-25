@@ -23,6 +23,9 @@ contract BridgeContract is IBridgeContract {
     // Blochchain ID -> claimsCounter
     mapping(string => uint256) public lastBatchedClaim;
 
+    // Blockchain ID -> claimNumber
+    mapping(string => uint256) public lastClaimIncludedInBatch;
+
     // Blochchain ID -> blockNumber
     mapping(string => uint256) public nextTimeoutBlock;
 
@@ -144,6 +147,8 @@ contract BridgeContract is IBridgeContract {
             ? lastBatchedClaimNumber + MAX_NUMBER_OF_TRANSACTIONS
             : lastConfirmedClaim;
 
+        lastClaimIncludedInBatch[_destinationChain] = lastClaimToInclude;
+
         uint256 counterConfirmedTransactions;
 
         ConfirmedTransaction[] memory confirmedTransactions = new ConfirmedTransaction[](
@@ -217,6 +222,10 @@ contract BridgeContract is IBridgeContract {
 
     function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external onlyClaimsManager {
         nextTimeoutBlock[_chainId] = _blockNumber;
+    }
+
+    function setLastBatchedClaim(string calldata _chainId) public onlyClaimsManager {
+        lastBatchedClaim[_chainId] = lastClaimIncludedInBatch[_chainId];
     }
 
     function setClaimsHelper(address _claimsHelper) external onlyOwner {

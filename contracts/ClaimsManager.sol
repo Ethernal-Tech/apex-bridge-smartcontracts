@@ -171,6 +171,8 @@ contract ClaimsManager is IBridgeContractStructs {
 
             signedBatchManager.setCurrentBatchBlock(_claims.batchExecutedClaims[index].chainID, -1);
 
+            bridgeContract.setLastBatchedClaim(_claims.batchExecutedClaims[index].chainID);
+
             bridgeContract.setNextTimeoutBlock(
                 _claims.batchExecutedClaims[index].chainID,
                 block.number + bridgeContract.MAX_NUMBER_OF_BLOCKS()
