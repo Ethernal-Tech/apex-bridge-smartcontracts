@@ -20,7 +20,7 @@ interface IBridgeContractStructs {
         UTXOs usedUTXOs;
     }
 
-    struct SignedBatchCut {
+    struct SignedBatchWithoutSignatures {
         uint256 id;
         string destinationChainId;
         string rawTransaction;

@@ -36,84 +36,64 @@ contract ClaimsManager is IBridgeContractStructs {
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {
         for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
-            if (voted[_claims.bridgingRequestClaims[i].observedTransactionHash][_caller]) {
-                revert AlreadyProposed(_claims.bridgingRequestClaims[i].observedTransactionHash);
+            BridgingRequestClaim memory _claim = _claims.bridgingRequestClaims[i];
+            if (voted[_claim.observedTransactionHash][_caller]) {
+                revert AlreadyProposed(_claim.observedTransactionHash);
             }
 
-            if (
-                claimsHelper.isClaimConfirmed(
-                    _claims.bridgingRequestClaims[i].destinationChainID,
-                    _claims.bridgingRequestClaims[i].observedTransactionHash
-                )
-            ) {
-                revert AlreadyConfirmed(_claims.bridgingRequestClaims[i].observedTransactionHash);
+            if (claimsHelper.isClaimConfirmed(_claim.destinationChainID, _claim.observedTransactionHash)) {
+                revert AlreadyConfirmed(_claim.observedTransactionHash);
             }
 
-            if (!claimsHelper.isThereEnoughTokensToBridge(_claims.bridgingRequestClaims[i])) {
-                revert NotEnoughBridgingTokensAwailable(_claims.bridgingRequestClaims[i].observedTransactionHash);
+            if (!claimsHelper.isThereEnoughTokensToBridge(_claim)) {
+                revert NotEnoughBridgingTokensAwailable(_claim.observedTransactionHash);
             }
 
             _submitClaimsBRC(_claims, i, _caller);
         }
         for (uint i = 0; i < _claims.batchExecutedClaims.length; i++) {
-            if (voted[_claims.batchExecutedClaims[i].observedTransactionHash][_caller]) {
-                revert AlreadyProposed(_claims.batchExecutedClaims[i].observedTransactionHash);
+            BatchExecutedClaim memory _claim = _claims.batchExecutedClaims[i];
+            if (voted[_claim.observedTransactionHash][_caller]) {
+                revert AlreadyProposed(_claim.observedTransactionHash);
             }
-            if (
-                claimsHelper.isClaimConfirmed(
-                    _claims.batchExecutedClaims[i].chainID,
-                    _claims.batchExecutedClaims[i].observedTransactionHash
-                )
-            ) {
-                revert AlreadyConfirmed(_claims.batchExecutedClaims[i].observedTransactionHash);
+            if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
+                revert AlreadyConfirmed(_claim.observedTransactionHash);
             }
 
             _submitClaimsBEC(_claims, i, _caller);
         }
         for (uint i = 0; i < _claims.batchExecutionFailedClaims.length; i++) {
-            if (voted[_claims.batchExecutionFailedClaims[i].observedTransactionHash][_caller]) {
-                revert AlreadyProposed(_claims.batchExecutionFailedClaims[i].observedTransactionHash);
+            BatchExecutionFailedClaim memory _claim = _claims.batchExecutionFailedClaims[i];
+            if (voted[_claim.observedTransactionHash][_caller]) {
+                revert AlreadyProposed(_claim.observedTransactionHash);
             }
 
-            if (
-                claimsHelper.isClaimConfirmed(
-                    _claims.batchExecutionFailedClaims[i].chainID,
-                    _claims.batchExecutionFailedClaims[i].observedTransactionHash
-                )
-            ) {
-                revert AlreadyConfirmed(_claims.batchExecutionFailedClaims[i].observedTransactionHash);
+            if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
+                revert AlreadyConfirmed(_claim.observedTransactionHash);
             }
 
             _submitClaimsBEFC(_claims, i, _caller);
         }
         for (uint i = 0; i < _claims.refundRequestClaims.length; i++) {
-            if (voted[_claims.refundRequestClaims[i].observedTransactionHash][_caller]) {
-                revert AlreadyProposed(_claims.refundRequestClaims[i].observedTransactionHash);
+            RefundRequestClaim memory _claim = _claims.refundRequestClaims[i];
+            if (voted[_claim.observedTransactionHash][_caller]) {
+                revert AlreadyProposed(_claim.observedTransactionHash);
             }
 
-            if (
-                claimsHelper.isClaimConfirmed(
-                    _claims.refundRequestClaims[i].chainID,
-                    _claims.refundRequestClaims[i].observedTransactionHash
-                )
-            ) {
-                revert AlreadyConfirmed(_claims.refundRequestClaims[i].observedTransactionHash);
+            if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
+                revert AlreadyConfirmed(_claim.observedTransactionHash);
             }
 
             _submitClaimsRRC(_claims, i, _caller);
         }
         for (uint i = 0; i < _claims.refundExecutedClaims.length; i++) {
-            if (voted[_claims.refundExecutedClaims[i].observedTransactionHash][_caller]) {
-                revert AlreadyProposed(_claims.refundExecutedClaims[i].observedTransactionHash);
+            RefundExecutedClaim memory _claim = _claims.refundExecutedClaims[i];
+            if (voted[_claim.observedTransactionHash][_caller]) {
+                revert AlreadyProposed(_claim.observedTransactionHash);
             }
 
-            if (
-                claimsHelper.isClaimConfirmed(
-                    _claims.refundExecutedClaims[i].chainID,
-                    _claims.refundExecutedClaims[i].observedTransactionHash
-                )
-            ) {
-                revert AlreadyConfirmed(_claims.refundExecutedClaims[i].observedTransactionHash);
+            if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
+                revert AlreadyConfirmed(_claim.observedTransactionHash);
             }
 
             _submitClaimsREC(_claims, i, _caller);
@@ -121,132 +101,106 @@ contract ClaimsManager is IBridgeContractStructs {
     }
 
     function _submitClaimsBRC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        voted[_claims.bridgingRequestClaims[index].observedTransactionHash][_caller] = true;
-        bytes32 claimHash = keccak256(abi.encode(_claims.bridgingRequestClaims[index]));
+        BridgingRequestClaim memory _claim = _claims.bridgingRequestClaims[index];
+        voted[_claim.observedTransactionHash][_caller] = true;
+        bytes32 claimHash = keccak256(abi.encode(_claim));
         numberOfVotes[claimHash]++;
 
         if (claimsHelper.hasConsensus(claimHash)) {
-            claimsCounter[_claims.bridgingRequestClaims[index].destinationChainID]++;
+            claimsCounter[_claim.destinationChainID]++;
 
-            chainTokenQuantity[_claims.bridgingRequestClaims[index].sourceChainID] -= claimsHelper
-                .getNeededTokenQuantity(_claims.bridgingRequestClaims[index].receivers);
+            chainTokenQuantity[_claim.sourceChainID] -= claimsHelper.getNeededTokenQuantity(_claim.receivers);
 
-            claimsHelper.addToQueuedBridgingRequestsClaims(_claims.bridgingRequestClaims[index]);
+            claimsHelper.addToQueuedBridgingRequestsClaims(_claim);
 
-            queuedClaims[_claims.bridgingRequestClaims[index].destinationChainID][
-                claimsCounter[_claims.bridgingRequestClaims[index].destinationChainID]
-            ] = _claims.bridgingRequestClaims[index].observedTransactionHash;
+            queuedClaims[_claim.destinationChainID][claimsCounter[_claim.destinationChainID]] = _claim
+                .observedTransactionHash;
 
-            queuedClaimsTypes[_claims.bridgingRequestClaims[index].destinationChainID][
-                claimsCounter[_claims.bridgingRequestClaims[index].destinationChainID]
-            ] = ClaimTypes.BRIDGING_REQUEST;
+            queuedClaimsTypes[_claim.destinationChainID][claimsCounter[_claim.destinationChainID]] = ClaimTypes
+                .BRIDGING_REQUEST;
 
-            claimsHelper.setClaimConfirmed(
-                _claims.bridgingRequestClaims[index].destinationChainID,
-                _claims.bridgingRequestClaims[index].observedTransactionHash
-            );
+            claimsHelper.setClaimConfirmed(_claim.destinationChainID, _claim.observedTransactionHash);
         }
     }
 
     function _submitClaimsBEC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        voted[_claims.batchExecutedClaims[index].observedTransactionHash][_caller] = true;
-        bytes32 claimHash = keccak256(abi.encode(_claims.batchExecutedClaims[index]));
+        BatchExecutedClaim memory _claim = _claims.batchExecutedClaims[index];
+        voted[_claim.observedTransactionHash][_caller] = true;
+        bytes32 claimHash = keccak256(abi.encode(_claim));
         numberOfVotes[claimHash]++;
 
         if (claimsHelper.hasConsensus(claimHash)) {
-            chainTokenQuantity[_claims.batchExecutedClaims[index].chainID] += signedBatchManager
-                .getTokenQuantityFromSignedBatch(
-                    _claims.batchExecutedClaims[index].chainID,
-                    _claims.batchExecutedClaims[index].batchNonceID
-                );
-
-            claimsHelper.addToQueuedBatchExecutedClaims(_claims.batchExecutedClaims[index]);
-
-            claimsHelper.setClaimConfirmed(
-                _claims.batchExecutedClaims[index].chainID,
-                _claims.batchExecutedClaims[index].observedTransactionHash
+            chainTokenQuantity[_claim.chainID] += signedBatchManager.getTokenQuantityFromSignedBatch(
+                _claim.chainID,
+                _claim.batchNonceID
             );
+
+            claimsHelper.addToQueuedBatchExecutedClaims(_claim);
+
+            claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
             claimsHelper.updateLastObservedBlockIfNeeded(_claims);
 
-            signedBatchManager.setCurrentBatchBlock(_claims.batchExecutedClaims[index].chainID, -1);
+            signedBatchManager.setCurrentBatchBlock(_claim.chainID, -1);
 
-            bridgeContract.setLastBatchedClaim(_claims.batchExecutedClaims[index].chainID);
+            bridgeContract.setLastBatchedClaim(_claim.chainID);
 
-            bridgeContract.setNextTimeoutBlock(
-                _claims.batchExecutedClaims[index].chainID,
-                block.number + bridgeContract.MAX_NUMBER_OF_BLOCKS()
-            );
-            utxosManager.updateUTXOs(
-                _claims.batchExecutedClaims[index].chainID,
-                _claims.batchExecutedClaims[index].outputUTXOs
-            );
+            bridgeContract.setNextTimeoutBlock(_claim.chainID, block.number + bridgeContract.MAX_NUMBER_OF_BLOCKS());
+
+            utxosManager.updateUTXOs(_claim.chainID, _claim.outputUTXOs);
         }
     }
 
     function _submitClaimsBEFC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        voted[_claims.batchExecutionFailedClaims[index].observedTransactionHash][_caller] = true;
-        bytes32 claimHash = keccak256(abi.encode(_claims.batchExecutionFailedClaims[index]));
+        BatchExecutionFailedClaim memory _claim = _claims.batchExecutionFailedClaims[index];
+        voted[_claim.observedTransactionHash][_caller] = true;
+        bytes32 claimHash = keccak256(abi.encode(_claim));
         numberOfVotes[claimHash]++;
 
         if (claimsHelper.hasConsensus(claimHash)) {
-            claimsHelper.addToQueuedBatchExecutionFailedClaims(_claims.batchExecutionFailedClaims[index]);
+            claimsHelper.addToQueuedBatchExecutionFailedClaims(_claim);
 
-            claimsHelper.setClaimConfirmed(
-                _claims.batchExecutionFailedClaims[index].chainID,
-                _claims.batchExecutionFailedClaims[index].observedTransactionHash
-            );
+            claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
             claimsHelper.updateLastObservedBlockIfNeeded(_claims);
 
-            signedBatchManager.setCurrentBatchBlock(_claims.batchExecutionFailedClaims[index].chainID, -1);
+            signedBatchManager.setCurrentBatchBlock(_claim.chainID, -1);
 
-            bridgeContract.setNextTimeoutBlock(
-                _claims.batchExecutionFailedClaims[index].chainID,
-                block.number + bridgeContract.MAX_NUMBER_OF_BLOCKS()
-            );
+            bridgeContract.setNextTimeoutBlock(_claim.chainID, block.number + bridgeContract.MAX_NUMBER_OF_BLOCKS());
         }
     }
 
     function _submitClaimsRRC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        voted[_claims.refundRequestClaims[index].observedTransactionHash][_caller] = true;
-        bytes32 claimHash = keccak256(abi.encode(_claims.refundRequestClaims[index]));
+        RefundRequestClaim memory _claim = _claims.refundRequestClaims[index];
+        voted[_claim.observedTransactionHash][_caller] = true;
+        bytes32 claimHash = keccak256(abi.encode(_claim));
         numberOfVotes[claimHash]++;
 
         if (claimsHelper.hasConsensus(claimHash)) {
-            claimsHelper.addToQueuedRefundRequestClaims(_claims.refundRequestClaims[index]);
+            claimsHelper.addToQueuedRefundRequestClaims(_claim);
 
-            queuedClaims[_claims.refundRequestClaims[index].chainID][
-                claimsCounter[_claims.refundRequestClaims[index].chainID]
-            ] = _claims.refundRequestClaims[index].observedTransactionHash;
+            queuedClaims[_claim.chainID][claimsCounter[_claim.chainID]] = _claim.observedTransactionHash;
 
-            queuedClaimsTypes[_claims.refundRequestClaims[index].chainID][
-                claimsCounter[_claims.refundRequestClaims[index].chainID]
-            ] = ClaimTypes.REFUND_REQUEST;
+            queuedClaimsTypes[_claim.chainID][claimsCounter[_claim.chainID]] = ClaimTypes.REFUND_REQUEST;
 
-            claimsHelper.setClaimConfirmed(
-                _claims.refundRequestClaims[index].chainID,
-                _claims.refundRequestClaims[index].observedTransactionHash
-            );
+            claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
-            claimsCounter[_claims.refundRequestClaims[index].chainID]++;
+            claimsCounter[_claim.chainID]++;
 
             claimsHelper.updateLastObservedBlockIfNeeded(_claims);
         }
     }
 
     function _submitClaimsREC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        voted[_claims.refundExecutedClaims[index].observedTransactionHash][_caller] = true;
-        bytes32 claimHash = keccak256(abi.encode(_claims.refundExecutedClaims[index]));
+        RefundExecutedClaim memory _claim = _claims.refundExecutedClaims[index];
+        voted[_claim.observedTransactionHash][_caller] = true;
+        bytes32 claimHash = keccak256(abi.encode(_claim));
         numberOfVotes[claimHash]++;
 
         if (claimsHelper.hasConsensus(claimHash)) {
-            claimsHelper.addToQueuedRefundExecutedClaims(_claims.refundExecutedClaims[index]);
+            claimsHelper.addToQueuedRefundExecutedClaims(_claim);
 
-            claimsHelper.setClaimConfirmed(
-                _claims.refundExecutedClaims[index].chainID,
-                _claims.refundExecutedClaims[index].observedTransactionHash
-            );
+            claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
             claimsHelper.updateLastObservedBlockIfNeeded(_claims);
         }

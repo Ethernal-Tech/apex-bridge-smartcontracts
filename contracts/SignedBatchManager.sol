@@ -31,7 +31,7 @@ contract SignedBatchManager is IBridgeContractStructs {
     // BlockchainID -> batchID -> ConfirmedBatch
     mapping(string => mapping(uint256 => ConfirmedBatch)) public confirmedBatches;
 
-    // BlockchanID -> batchId -> -signedBatchCutHash -> SignedBatch[]
+    // BlockchanID -> batchId -> -signedBatchWithoutSignaturesHash -> SignedBatch[]
     mapping(string => mapping(uint256 => mapping(bytes32 => SignedBatch[]))) public signedBatches;
 
     // BlockchainID -> batchId -> SignedBatch
@@ -46,6 +46,7 @@ contract SignedBatchManager is IBridgeContractStructs {
 
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridgeContract {
         // TODO: call precompile to check if signedBatch is valid
+
         if (claimsManager.voted(Strings.toString(_signedBatch.id), _caller)) {
             revert AlreadyProposed(Strings.toString(_signedBatch.id));
         }
@@ -59,14 +60,15 @@ contract SignedBatchManager is IBridgeContractStructs {
 
     function _submitSignedBatch(SignedBatch calldata _signedBatch) internal {
         claimsManager.setVoted(Strings.toString(_signedBatch.id), msg.sender, true);
-        SignedBatchCut memory signedBatchCut = SignedBatchCut(
+
+        SignedBatchWithoutSignatures memory _signedBatchWithoutSignatures = SignedBatchWithoutSignatures(
             _signedBatch.id,
             _signedBatch.destinationChainId,
             _signedBatch.rawTransaction,
             _signedBatch.includedTransactions,
             _signedBatch.usedUTXOs
         );
-        bytes32 signedBatchHash = keccak256(abi.encode(signedBatchCut));
+        bytes32 signedBatchHash = keccak256(abi.encode(_signedBatchWithoutSignatures));
         claimsManager.setNumberOfVotes(signedBatchHash);
 
         signedBatches[_signedBatch.destinationChainId][_signedBatch.id][signedBatchHash].push(_signedBatch);
@@ -79,6 +81,7 @@ contract SignedBatchManager is IBridgeContractStructs {
             uint256 numberOfSignedBatches = signedBatches[_signedBatch.destinationChainId][_signedBatch.id][
                 signedBatchHash
             ].length;
+
             string[] memory multisigSignatures = new string[](numberOfSignedBatches);
             string[] memory feePayerMultisigSignatures = new string[](numberOfSignedBatches);
 
