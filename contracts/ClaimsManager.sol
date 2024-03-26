@@ -143,7 +143,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
-            claimsHelper.updateLastObservedBlockInfoIfNeeded(_claims);
+            //claimsHelper.updateLastObservedBlockInfoIfNeeded(_claims);
 
             signedBatchManager.setCurrentBatchBlock(_claim.chainID, -1);
 
@@ -166,7 +166,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
-            claimsHelper.updateLastObservedBlockInfoIfNeeded(_claims);
+            //claimsHelper.updateLastObservedBlockInfoIfNeeded(_claims);
 
             signedBatchManager.setCurrentBatchBlock(_claim.chainID, -1);
 
@@ -191,7 +191,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             claimsCounter[_claim.chainID]++;
 
-            claimsHelper.updateLastObservedBlockInfoIfNeeded(_claims);
+            //claimsHelper.updateLastObservedBlockInfoIfNeeded(_claims);
         }
     }
 
@@ -206,7 +206,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
-            claimsHelper.updateLastObservedBlockInfoIfNeeded(_claims);
+            //claimsHelper.updateLastObservedBlockInfoIfNeeded(_claims);
         }
     }
 

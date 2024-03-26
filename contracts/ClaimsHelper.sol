@@ -34,30 +34,30 @@ contract ClaimsHelper is IBridgeContractStructs {
         bridgeContract = BridgeContract(_bridgeContractAddress);
     }
 
-    function updateLastObservedBlockInfoIfNeeded(ValidatorClaims calldata _claims) external onlyClaimsManager {
-        if (_claims.blockFullyObserved) {
-            string memory chainId;
-            if (_claims.bridgingRequestClaims.length > 0) {
-                chainId = _claims.bridgingRequestClaims[0].sourceChainID;
-            } else if (_claims.batchExecutedClaims.length > 0) {
-                chainId = _claims.batchExecutedClaims[0].chainID;
-            } else if (_claims.batchExecutionFailedClaims.length > 0) {
-                chainId = _claims.batchExecutionFailedClaims[0].chainID;
-            } else if (_claims.refundRequestClaims.length > 0) {
-                chainId = _claims.refundRequestClaims[0].chainID;
-            } else if (_claims.refundExecutedClaims.length > 0) {
-                chainId = _claims.refundExecutedClaims[0].chainID;
-            }
+    // function updateLastObservedBlockInfoIfNeeded(ValidatorClaims calldata _claims) external onlyClaimsManager {
+    //     if (_claims.blockFullyObserved) {
+    //         string memory chainId;
+    //         if (_claims.bridgingRequestClaims.length > 0) {
+    //             chainId = _claims.bridgingRequestClaims[0].sourceChainID;
+    //         } else if (_claims.batchExecutedClaims.length > 0) {
+    //             chainId = _claims.batchExecutedClaims[0].chainID;
+    //         } else if (_claims.batchExecutionFailedClaims.length > 0) {
+    //             chainId = _claims.batchExecutionFailedClaims[0].chainID;
+    //         } else if (_claims.refundRequestClaims.length > 0) {
+    //             chainId = _claims.refundRequestClaims[0].chainID;
+    //         } else if (_claims.refundExecutedClaims.length > 0) {
+    //             chainId = _claims.refundExecutedClaims[0].chainID;
+    //         }
 
-            LastObservedBlockInfo memory _lastObservedBlockInfo = LastObservedBlockInfo(
-                _claims.blockHash, 
-                _claims.slot
-            );
+    //         LastObservedBlockInfo memory _lastObservedBlockInfo = LastObservedBlockInfo(
+    //             _claims.blockHash, 
+    //             _claims.slot
+    //         );
 
-            lastObservedBlockInfos[chainId] = _lastObservedBlockInfo;
+    //         lastObservedBlockInfos[chainId] = _lastObservedBlockInfo;
         
-        }
-    }
+    //     }
+    // }
 
     function hasConsensus(bytes32 _hash) public view returns (bool) {
         if (
