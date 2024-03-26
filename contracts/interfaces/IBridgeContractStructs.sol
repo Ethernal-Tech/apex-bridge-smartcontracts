@@ -151,6 +151,7 @@ interface IBridgeContractStructs {
 
     error AlreadyConfirmed(string _claimTransactionHash);
     error AlreadyProposed(string _claimTransactionHash);
+    error InvalidSlot(uint256 _slot);
     error ChainAlreadyRegistered(string _claimId);
     error NotOwner();
     error NotValidator();

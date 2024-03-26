@@ -211,9 +211,9 @@ contract ClaimsManager is IBridgeContractStructs {
     }
 
     function _submitLastObservedBlockInfo(ValidatorClaims calldata _claims, address _caller) internal {
-        // if (_claims.blockFullyObserved == false) {
-        //     return;
-        // }
+        if (_claims.blockFullyObserved == false) {
+            return;
+        }
         if (voted[LAST_OBSERVED_BLOCK_INFO_KEY][_caller]) {
             revert AlreadyProposed(LAST_OBSERVED_BLOCK_INFO_KEY);
         }
@@ -228,6 +228,10 @@ contract ClaimsManager is IBridgeContractStructs {
         numberOfVotes[sumHash]++;
 
         if (claimsHelper.hasConsensus(sumHash)) {
+            LastObservedBlockInfo memory lastObservedBlock = claimsHelper.getLastObservedBlockInfo(_claims.chainID);
+            if (_claims.slot < lastObservedBlock.slot) {
+                revert InvalidSlot(_claims.slot);
+            }
             LastObservedBlockInfo memory _lastObservedBlockInfo = LastObservedBlockInfo(
                 _claims.blockHash, 
                 _claims.slot
