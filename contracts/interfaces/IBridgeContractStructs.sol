@@ -132,7 +132,14 @@ interface IBridgeContractStructs {
         UTXOs utxos;
         string addressMultisig;
         string addressFeePayer;
+        string keyHashMultisig;
+        string keyHashFeePayer;
         uint256 tokenQuantity;
+    }
+
+    struct LastObservedBlockInfo {
+        string blockHash;
+        uint256 slot;
     }
 
     struct ValidatorCardanoData {

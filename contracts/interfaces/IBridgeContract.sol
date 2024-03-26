@@ -16,6 +16,8 @@ abstract contract IBridgeContract is IBridgeContractStructs {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
+        string calldata _keyHashMultisig,
+        string calldata _keyHashFeePayer,
         uint256 _tokenQuantity
     ) external virtual;
 
@@ -46,7 +48,7 @@ abstract contract IBridgeContract is IBridgeContractStructs {
         string calldata _destinationChain
     ) external view virtual returns (ConfirmedBatch memory batch);
 
-    function getLastObservedBlock(string calldata _sourceChain) external view virtual returns (string memory blockHash);
+    function getLastObservedBlockInfo(string calldata _sourceChain) external view virtual returns (LastObservedBlockInfo memory lastObservedBlockInfo);
 
     function getAllRegisteredChains() external view virtual returns (Chain[] memory _chains);
 

@@ -29,6 +29,8 @@ contract ClaimsManager is IBridgeContractStructs {
     // ClaimHash -> numberOfVotes
     mapping(bytes32 => uint8) public numberOfVotes;
 
+    string private constant LAST_OBSERVED_BLOCK_INFO_KEY = "LAST_OBSERVED_BLOCK_INFO";
+
     constructor(address _bridgeContract, address _claimsHelper) {
         bridgeContract = BridgeContract(_bridgeContract);
         claimsHelper = ClaimsHelper(_claimsHelper);
@@ -98,6 +100,8 @@ contract ClaimsManager is IBridgeContractStructs {
 
             _submitClaimsREC(_claims, i, _caller);
         }
+
+        _submitLastObservedBlockInfo(_claims, _caller);
     }
 
     function _submitClaimsBRC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
@@ -139,7 +143,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
-            claimsHelper.updateLastObservedBlockIfNeeded(_claims);
+            claimsHelper.updateLastObservedBlockInfoIfNeeded(_claims);
 
             signedBatchManager.setCurrentBatchBlock(_claim.chainID, -1);
 
@@ -162,7 +166,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
-            claimsHelper.updateLastObservedBlockIfNeeded(_claims);
+            claimsHelper.updateLastObservedBlockInfoIfNeeded(_claims);
 
             signedBatchManager.setCurrentBatchBlock(_claim.chainID, -1);
 
@@ -187,7 +191,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             claimsCounter[_claim.chainID]++;
 
-            claimsHelper.updateLastObservedBlockIfNeeded(_claims);
+            claimsHelper.updateLastObservedBlockInfoIfNeeded(_claims);
         }
     }
 
@@ -202,8 +206,39 @@ contract ClaimsManager is IBridgeContractStructs {
 
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
-            claimsHelper.updateLastObservedBlockIfNeeded(_claims);
+            claimsHelper.updateLastObservedBlockInfoIfNeeded(_claims);
         }
+    }
+
+    function _submitLastObservedBlockInfo(ValidatorClaims calldata _claims, address _caller) internal {
+        // if (_claims.blockFullyObserved == false) {
+        //     return;
+        // }
+        if (voted[LAST_OBSERVED_BLOCK_INFO_KEY][_caller]) {
+            revert AlreadyProposed(LAST_OBSERVED_BLOCK_INFO_KEY);
+        }
+        if (claimsHelper.isClaimConfirmed(_claims.chainID, LAST_OBSERVED_BLOCK_INFO_KEY)) {
+            revert AlreadyConfirmed(LAST_OBSERVED_BLOCK_INFO_KEY);
+        }
+
+        voted[LAST_OBSERVED_BLOCK_INFO_KEY][_caller] = true;
+        
+        bytes memory combined = abi.encodePacked(_claims.chainID, _claims.blockHash, _claims.slot);
+        bytes32 sumHash = keccak256(combined);
+        numberOfVotes[sumHash]++;
+
+        if (claimsHelper.hasConsensus(sumHash)) {
+            LastObservedBlockInfo memory _lastObservedBlockInfo = LastObservedBlockInfo(
+                _claims.blockHash, 
+                _claims.slot
+            );
+
+            claimsHelper.setLastObservedBlockInfo(_claims.chainID, _lastObservedBlockInfo);
+        
+            claimsHelper.setClaimConfirmed(_claims.chainID, LAST_OBSERVED_BLOCK_INFO_KEY);
+        
+        }
+
     }
 
     function setVoted(

@@ -27,14 +27,14 @@ contract ClaimsHelper is IBridgeContractStructs {
     mapping(string => RefundRequestClaim) public queuedRefundRequestClaims;
     mapping(string => RefundExecutedClaim) public queuedRefundExecutedClaims;
 
-    // BlockchainID -> blockHash
-    mapping(string => string) public lastObserveredBlock;
+    // BlockchainID -> LastObservedBlockInfo
+    mapping(string => LastObservedBlockInfo) public lastObservedBlockInfos;
 
     constructor(address _bridgeContractAddress) {
         bridgeContract = BridgeContract(_bridgeContractAddress);
     }
 
-    function updateLastObservedBlockIfNeeded(ValidatorClaims calldata _claims) external onlyClaimsManager {
+    function updateLastObservedBlockInfoIfNeeded(ValidatorClaims calldata _claims) external onlyClaimsManager {
         if (_claims.blockFullyObserved) {
             string memory chainId;
             if (_claims.bridgingRequestClaims.length > 0) {
@@ -49,7 +49,13 @@ contract ClaimsHelper is IBridgeContractStructs {
                 chainId = _claims.refundExecutedClaims[0].chainID;
             }
 
-            lastObserveredBlock[chainId] = _claims.blockHash;
+            LastObservedBlockInfo memory _lastObservedBlockInfo = LastObservedBlockInfo(
+                _claims.blockHash, 
+                _claims.slot
+            );
+
+            lastObservedBlockInfos[chainId] = _lastObservedBlockInfo;
+        
         }
     }
 
@@ -58,6 +64,13 @@ contract ClaimsHelper is IBridgeContractStructs {
             claimsManager.numberOfVotes(_hash) >=
             ((bridgeContract.validatorsCount() * 2) / 3 + ((bridgeContract.validatorsCount() * 2) % 3 == 0 ? 0 : 1))
         ) {
+            return true;
+        }
+        return false;
+    }
+
+    function hasChainRegistrationConsensus(bytes32 _hash) public view returns (bool) {
+        if (claimsManager.numberOfVotes(_hash) == bridgeContract.validatorsCount()) {
             return true;
         }
         return false;
@@ -112,6 +125,28 @@ contract ClaimsHelper is IBridgeContractStructs {
         string calldata _observerHash
     ) external onlySignedBatchManagerOrClaimsManager {
         isClaimConfirmed[_chain][_observerHash] = true;
+    }
+
+    function setLastObservedBlockInfo(string calldata chainID, LastObservedBlockInfo calldata lastObservedBlockInfo) public {
+        lastObservedBlockInfos[chainID] = lastObservedBlockInfo;
+    }
+
+    function getLastObservedBlockInfo(string calldata chainID) public view returns (LastObservedBlockInfo memory) {
+        return lastObservedBlockInfos[chainID];
+    }
+
+    function calculateChainHash(Chain calldata chain) public pure returns (bytes32) {
+        bytes32 utxosHash;
+        for (uint i = 0; i < chain.utxos.multisigOwnedUTXOs.length; i++) {
+            utxosHash = keccak256(abi.encodePacked(utxosHash, chain.utxos.multisigOwnedUTXOs[i].txHash, chain.utxos.multisigOwnedUTXOs[i].txIndex, chain.utxos.multisigOwnedUTXOs[i].addressUTXO, chain.utxos.multisigOwnedUTXOs[i].amount));
+        }
+        for (uint i = 0; i < chain.utxos.feePayerOwnedUTXOs.length; i++) {
+            utxosHash = keccak256(abi.encodePacked(utxosHash, chain.utxos.feePayerOwnedUTXOs[i].txHash, chain.utxos.feePayerOwnedUTXOs[i].txIndex, chain.utxos.feePayerOwnedUTXOs[i].addressUTXO, chain.utxos.feePayerOwnedUTXOs[i].amount));
+        }
+        bytes32 chainHash = keccak256(abi.encodePacked(chain.id, utxosHash, chain.addressMultisig, chain.addressFeePayer, chain.tokenQuantity));
+
+        return chainHash;
+        
     }
 
     function _equal(string memory a, string memory b) internal pure returns (bool) {
