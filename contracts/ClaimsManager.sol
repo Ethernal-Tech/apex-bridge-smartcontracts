@@ -143,8 +143,6 @@ contract ClaimsManager is IBridgeContractStructs {
 
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
-            //claimsHelper.updateLastObservedBlockInfoIfNeeded(_claims);
-
             signedBatchManager.setCurrentBatchBlock(_claim.chainID, -1);
 
             bridgeContract.setLastBatchedClaim(_claim.chainID);
@@ -165,8 +163,6 @@ contract ClaimsManager is IBridgeContractStructs {
             claimsHelper.addToQueuedBatchExecutionFailedClaims(_claim);
 
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
-
-            //claimsHelper.updateLastObservedBlockInfoIfNeeded(_claims);
 
             signedBatchManager.setCurrentBatchBlock(_claim.chainID, -1);
 
@@ -190,8 +186,6 @@ contract ClaimsManager is IBridgeContractStructs {
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
             claimsCounter[_claim.chainID]++;
-
-            //claimsHelper.updateLastObservedBlockInfoIfNeeded(_claims);
         }
     }
 
@@ -205,42 +199,6 @@ contract ClaimsManager is IBridgeContractStructs {
             claimsHelper.addToQueuedRefundExecutedClaims(_claim);
 
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
-
-            //claimsHelper.updateLastObservedBlockInfoIfNeeded(_claims);
-        }
-    }
-
-    function _submitLastObservedBlockInfo(ValidatorClaims calldata _claims, address _caller) internal {
-        if (_claims.blockFullyObserved == false) {
-            return;
-        }
-        if (voted[LAST_OBSERVED_BLOCK_INFO_KEY][_caller]) {
-            revert AlreadyProposed(LAST_OBSERVED_BLOCK_INFO_KEY);
-        }
-        if (claimsHelper.isClaimConfirmed(_claims.chainID, LAST_OBSERVED_BLOCK_INFO_KEY)) {
-            revert AlreadyConfirmed(LAST_OBSERVED_BLOCK_INFO_KEY);
-        }
-
-        voted[LAST_OBSERVED_BLOCK_INFO_KEY][_caller] = true;
-        
-        bytes memory combined = abi.encodePacked(_claims.chainID, _claims.blockHash, _claims.slot);
-        bytes32 sumHash = keccak256(combined);
-        numberOfVotes[sumHash]++;
-
-        if (claimsHelper.hasConsensus(sumHash)) {
-            LastObservedBlockInfo memory lastObservedBlock = claimsHelper.getLastObservedBlockInfo(_claims.chainID);
-            if (_claims.slot < lastObservedBlock.slot) {
-                revert InvalidSlot(_claims.slot);
-            }
-            LastObservedBlockInfo memory _lastObservedBlockInfo = LastObservedBlockInfo(
-                _claims.blockHash, 
-                _claims.slot
-            );
-
-            claimsHelper.setLastObservedBlockInfo(_claims.chainID, _lastObservedBlockInfo);
-        
-            claimsHelper.setClaimConfirmed(_claims.chainID, LAST_OBSERVED_BLOCK_INFO_KEY);
-        
         }
 
     }

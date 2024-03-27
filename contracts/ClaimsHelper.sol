@@ -11,7 +11,6 @@ import "hardhat/console.sol";
 contract ClaimsHelper is IBridgeContractStructs {
     BridgeContract private bridgeContract;
     ClaimsManager private claimsManager;
-    UTXOsManager private utxosManager;
     address private signedBatchManager;
 
     // blockchain -> claimHash -> queued
@@ -27,46 +26,12 @@ contract ClaimsHelper is IBridgeContractStructs {
     mapping(string => RefundRequestClaim) public queuedRefundRequestClaims;
     mapping(string => RefundExecutedClaim) public queuedRefundExecutedClaims;
 
-    // BlockchainID -> LastObservedBlockInfo
-    mapping(string => LastObservedBlockInfo) public lastObservedBlockInfos;
-
     constructor(address _bridgeContractAddress) {
         bridgeContract = BridgeContract(_bridgeContractAddress);
     }
 
-    // function updateLastObservedBlockInfoIfNeeded(ValidatorClaims calldata _claims) external onlyClaimsManager {
-    //     if (_claims.blockFullyObserved) {
-    //         string memory chainId;
-    //         if (_claims.bridgingRequestClaims.length > 0) {
-    //             chainId = _claims.bridgingRequestClaims[0].sourceChainID;
-    //         } else if (_claims.batchExecutedClaims.length > 0) {
-    //             chainId = _claims.batchExecutedClaims[0].chainID;
-    //         } else if (_claims.batchExecutionFailedClaims.length > 0) {
-    //             chainId = _claims.batchExecutionFailedClaims[0].chainID;
-    //         } else if (_claims.refundRequestClaims.length > 0) {
-    //             chainId = _claims.refundRequestClaims[0].chainID;
-    //         } else if (_claims.refundExecutedClaims.length > 0) {
-    //             chainId = _claims.refundExecutedClaims[0].chainID;
-    //         }
-
-    //         LastObservedBlockInfo memory _lastObservedBlockInfo = LastObservedBlockInfo(
-    //             _claims.blockHash, 
-    //             _claims.slot
-    //         );
-
-    //         lastObservedBlockInfos[chainId] = _lastObservedBlockInfo;
-        
-    //     }
-    // }
-
     function hasConsensus(bytes32 _hash) public view returns (bool) {
-        if (
-            claimsManager.numberOfVotes(_hash) >=
-            ((bridgeContract.validatorsCount() * 2) / 3 + ((bridgeContract.validatorsCount() * 2) % 3 == 0 ? 0 : 1))
-        ) {
-            return true;
-        }
-        return false;
+        return claimsManager.numberOfVotes(_hash) >= bridgeContract.getQuorumNumberOfValidators();
     }
 
     function hasChainRegistrationConsensus(bytes32 _hash) public view returns (bool) {
@@ -159,10 +124,6 @@ contract ClaimsHelper is IBridgeContractStructs {
     //TODO: think about constraint for setting this value
     function setClaimsManager(address _claimsManager) external {
         claimsManager = ClaimsManager(_claimsManager);
-    }
-
-    function setUTXOsManager(address _utxosManager) external {
-        utxosManager = UTXOsManager(_utxosManager);
     }
 
     function setSignedBatchManagerAddress(address _signedBatchManager) external {

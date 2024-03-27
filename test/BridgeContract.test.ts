@@ -24,6 +24,9 @@ describe("Bridge Contract", function () {
     const UTXOsManager = await ethers.getContractFactory("UTXOsManager");
     const uTXOsManager = await UTXOsManager.deploy(bridgeContract.target);
 
+    const SlotsManager = await ethers.getContractFactory("SlotsManager");
+    const slotsManager = await SlotsManager.deploy(bridgeContract.target);
+
     const SignedBatchManager = await ethers.getContractFactory("SignedBatchManager");
     const signedBatchManager = await SignedBatchManager.deploy(
       bridgeContract.target,
@@ -32,6 +35,7 @@ describe("Bridge Contract", function () {
       uTXOsManager.target
     );
 
+    await bridgeContract.setSlotsManager(slotsManager.target);
     await bridgeContract.setClaimsHelper(claimsHelper.target);
     await bridgeContract.setClaimsManager(claimsManager.target);
     await bridgeContract.setUTXOsManager(uTXOsManager.target);
@@ -41,7 +45,6 @@ describe("Bridge Contract", function () {
     await claimsManager.setSignedBatchManager(signedBatchManager.target);
 
     await claimsHelper.setClaimsManager(claimsManager.target);
-    await claimsHelper.setUTXOsManager(uTXOsManager.target);
     await claimsHelper.setSignedBatchManagerAddress(signedBatchManager.target);
 
     await uTXOsManager.setClaimsManagerAddress(claimsManager.target);
@@ -121,10 +124,6 @@ describe("Bridge Contract", function () {
       batchExecutionFailedClaims: [],
       refundRequestClaims: [],
       refundExecutedClaims: [],
-      chainID: "chainId",
-      blockHash: "0x123...",
-      slot: 1,
-      blockFullyObserved: true,
     };
 
     const validatorClaimsBRCerror = {
@@ -151,10 +150,6 @@ describe("Bridge Contract", function () {
       batchExecutionFailedClaims: [],
       refundRequestClaims: [],
       refundExecutedClaims: [],
-      chainID: "chainId",
-      blockHash: "0x123...",
-      slot: 1,
-      blockFullyObserved: true,
     };
 
     const validatorClaimsBEC = {
@@ -187,10 +182,6 @@ describe("Bridge Contract", function () {
       batchExecutionFailedClaims: [],
       refundRequestClaims: [],
       refundExecutedClaims: [],
-      chainID: "chainId",
-      blockHash: "0x123...",
-      slot: 1,
-      blockFullyObserved: true,
     };
 
     const validatorClaimsBECerror = {
@@ -223,10 +214,6 @@ describe("Bridge Contract", function () {
       batchExecutionFailedClaims: [],
       refundRequestClaims: [],
       refundExecutedClaims: [],
-      chainID: "chainId",
-      blockHash: "0x123...",
-      slot: 1,
-      blockFullyObserved: true,
     };
 
     const validatorClaimsBEFC = {
@@ -240,11 +227,7 @@ describe("Bridge Contract", function () {
         },
       ],
       refundRequestClaims: [],
-      refundExecutedClaims: [],
-      chainID: "chainId",
-      blockHash: "0x123...",
-      slot: 1,
-      blockFullyObserved: true,
+      refundExecutedClaims: [],      
     };
 
     const validatorClaimsBEFCerror = {
@@ -258,11 +241,7 @@ describe("Bridge Contract", function () {
         },
       ],
       refundRequestClaims: [],
-      refundExecutedClaims: [],
-      chainID: "chainId",
-      blockHash: "0x123...",
-      slot: 1,
-      blockFullyObserved: true,
+      refundExecutedClaims: [],      
     };
 
     const validatorClaimsRRC = {
@@ -287,10 +266,6 @@ describe("Bridge Contract", function () {
         },
       ],
       refundExecutedClaims: [],
-      chainID: "chainId",
-      blockHash: "0x123...",
-      slot: 1,
-      blockFullyObserved: true,
     };
 
     const validatorClaimsRRCerror = {
@@ -315,10 +290,6 @@ describe("Bridge Contract", function () {
         },
       ],
       refundExecutedClaims: [],
-      chainID: "chainId",
-      blockHash: "0x123...",
-      slot: 1,
-      blockFullyObserved: true,
     };
 
     const validatorClaimsREC = {
@@ -339,10 +310,6 @@ describe("Bridge Contract", function () {
           },
         },
       ],
-      chainID: "chainId",
-      blockHash: "0x123...",
-      slot: 1,
-      blockFullyObserved: true,
     };
 
     const validatorClaimsRECerror = {
@@ -362,11 +329,7 @@ describe("Bridge Contract", function () {
             amount: 200,
           },
         },
-      ],
-      chainID: "chainId",
-      blockHash: "0x123...",
-      slot: 1,
-      blockFullyObserved: true,
+      ],      
     };
 
     const validatorClaimsRECObserverdFalse = {
@@ -387,10 +350,6 @@ describe("Bridge Contract", function () {
           },
         },
       ],
-      chainID: "chainId",
-      blockHash: "0x123...",
-      slot: 1,
-      blockFullyObserved: false,
     };
 
     const signedBatch = {
@@ -463,11 +422,11 @@ describe("Bridge Contract", function () {
   }
 
   describe("Deployment", function () {
-    it("Should set 5 validator", async function () {
+    it("Should set 5 validator with quorum of 4", async function () {
       const { bridgeContract } = await loadFixture(deployBridgeContractFixture);
-      const numberOfValidators = await bridgeContract.getValidatorsCount();
+      const numberOfValidators = await bridgeContract.getQuorumNumberOfValidators();
 
-      expect(numberOfValidators).to.equal(5);
+      expect(numberOfValidators).to.equal(4);
     });
 
     describe("Registering new chain with Owner", function () {
@@ -952,7 +911,7 @@ describe("Bridge Contract", function () {
         ).to.equal(-1);
         expect(
           await bridgeContract.nextTimeoutBlock(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID)
-        ).to.equal(25);
+        ).to.equal(26);
       });
     });
     describe("Submit new Refund Request Claims", function () {
