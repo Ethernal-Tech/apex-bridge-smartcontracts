@@ -1108,32 +1108,43 @@ describe("Bridge Contract", function () {
 
       it("Should set proper last block hash and slot in lastObservedBlockInfo if block is fully observerd", async function () {
         const { bridgeContract, validators, validatorClaimsRRC } = await loadFixture(deployBridgeContractFixture);
+        const blockInfoBefore = await bridgeContract.getLastObservedBlockInfo(validatorClaimsRRC.chainID);
+
         await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC);
         await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsRRC);
         await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsRRC);
         await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsRRC);
 
-        const blockInfo = await bridgeContract.getLastObservedBlockInfo(validatorClaimsRRC.refundRequestClaims[0].chainID)
+        const blockInfo = await bridgeContract.getLastObservedBlockInfo(validatorClaimsRRC.chainID)
         expect(blockInfo.blockHash).to.equal(
           validatorClaimsRRC.blockHash
         );
         expect(blockInfo.slot).to.equal(
           validatorClaimsRRC.slot
         );
+
+        expect(blockInfo.blockHash).to.not.equal(
+          blockInfoBefore.blockHash
+        );
+        expect(blockInfo.slot).to.not.equal(
+          blockInfoBefore.slot
+        );
       });
 
-      it("Should not change block hash in lastObservedBlockInfo if block is not fully observed", async function () {
+      it("Should not change block hash and slot in lastObservedBlockInfo if block is not fully observed", async function () {
         const { bridgeContract, validators, validatorClaimsRECObserverdFalse } = await loadFixture(
           deployBridgeContractFixture
         );
+        const blockInfoBefore = await bridgeContract.getLastObservedBlockInfo(validatorClaimsRECObserverdFalse.chainID)
+
         await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRECObserverdFalse);
         await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsRECObserverdFalse);
         await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsRECObserverdFalse);
         await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsRECObserverdFalse);
 
-        const blockInfo = await bridgeContract.getLastObservedBlockInfo(validatorClaimsRECObserverdFalse.refundExecutedClaims[0].chainID)
-        expect(blockInfo.blockHash).to.equal("");
-        expect(blockInfo.slot).to.equal(0);
+        const blockInfo = await bridgeContract.getLastObservedBlockInfo(validatorClaimsRECObserverdFalse.chainID)
+        expect(blockInfo.blockHash).to.equal(blockInfoBefore.blockHash);
+        expect(blockInfo.slot).to.equal(blockInfoBefore.slot);
       });
     });
     describe("Batch creation", function () {

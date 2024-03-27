@@ -89,8 +89,8 @@ contract BridgeContract is IBridgeContract {
             revert AlreadyProposed(_chainId);
         }
 
-        Chain memory chain = Chain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _keyHashMultisig, _keyHashFeePayer, _tokenQuantity);
-        bytes32 chainHash = claimsHelper.calculateChainHash(chain);
+        ChainWithoutSignatures memory _chain = ChainWithoutSignatures(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
+        bytes32 chainHash = keccak256(abi.encode(_chain));
         
         claimsManager.setVoted(_chainId, msg.sender, true);
         claimsManager.setNumberOfVotes(chainHash);

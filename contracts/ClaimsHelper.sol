@@ -135,20 +135,6 @@ contract ClaimsHelper is IBridgeContractStructs {
         return lastObservedBlockInfos[chainID];
     }
 
-    function calculateChainHash(Chain calldata chain) public pure returns (bytes32) {
-        bytes32 utxosHash;
-        for (uint i = 0; i < chain.utxos.multisigOwnedUTXOs.length; i++) {
-            utxosHash = keccak256(abi.encodePacked(utxosHash, chain.utxos.multisigOwnedUTXOs[i].txHash, chain.utxos.multisigOwnedUTXOs[i].txIndex, chain.utxos.multisigOwnedUTXOs[i].addressUTXO, chain.utxos.multisigOwnedUTXOs[i].amount));
-        }
-        for (uint i = 0; i < chain.utxos.feePayerOwnedUTXOs.length; i++) {
-            utxosHash = keccak256(abi.encodePacked(utxosHash, chain.utxos.feePayerOwnedUTXOs[i].txHash, chain.utxos.feePayerOwnedUTXOs[i].txIndex, chain.utxos.feePayerOwnedUTXOs[i].addressUTXO, chain.utxos.feePayerOwnedUTXOs[i].amount));
-        }
-        bytes32 chainHash = keccak256(abi.encodePacked(chain.id, utxosHash, chain.addressMultisig, chain.addressFeePayer, chain.tokenQuantity));
-
-        return chainHash;
-        
-    }
-
     function _equal(string memory a, string memory b) internal pure returns (bool) {
         return bytes(a).length == bytes(b).length && keccak256(bytes(a)) == keccak256(bytes(b));
     }

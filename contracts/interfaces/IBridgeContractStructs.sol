@@ -137,6 +137,14 @@ interface IBridgeContractStructs {
         uint256 tokenQuantity;
     }
 
+    struct ChainWithoutSignatures {
+        string id;
+        UTXOs utxos;
+        string addressMultisig;
+        string addressFeePayer;
+        uint256 tokenQuantity;
+    }
+
     struct LastObservedBlockInfo {
         string blockHash;
         uint256 slot;
