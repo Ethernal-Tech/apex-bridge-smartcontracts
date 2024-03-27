@@ -29,6 +29,8 @@ contract ClaimsManager is IBridgeContractStructs {
     // ClaimHash -> numberOfVotes
     mapping(bytes32 => uint8) public numberOfVotes;
 
+    string private constant LAST_OBSERVED_BLOCK_INFO_KEY = "LAST_OBSERVED_BLOCK_INFO";
+
     constructor(address _bridgeContract, address _claimsHelper) {
         bridgeContract = BridgeContract(_bridgeContract);
         claimsHelper = ClaimsHelper(_claimsHelper);
@@ -98,6 +100,8 @@ contract ClaimsManager is IBridgeContractStructs {
 
             _submitClaimsREC(_claims, i, _caller);
         }
+
+        _submitLastObservedBlockInfo(_claims, _caller);
     }
 
     function _submitClaimsBRC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
@@ -196,6 +200,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
         }
+
     }
 
     function setVoted(

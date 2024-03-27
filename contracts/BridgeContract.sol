@@ -73,9 +73,11 @@ contract BridgeContract is IBridgeContract {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
+        string calldata _keyHashMultisig,
+        string calldata _keyHashFeePayer,
         uint256 _tokenQuantity
     ) public override onlyOwner {
-        _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
+        _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _keyHashMultisig, _keyHashFeePayer, _tokenQuantity);
     }
 
     function registerChainGovernance(
@@ -83,6 +85,8 @@ contract BridgeContract is IBridgeContract {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
+        string calldata _keyHashMultisig,
+        string calldata _keyHashFeePayer,
         uint256 _tokenQuantity
     ) external onlyValidator {
         if (registeredChains[_chainId]) {
@@ -92,12 +96,14 @@ contract BridgeContract is IBridgeContract {
             revert AlreadyProposed(_chainId);
         }
 
-        Chain memory chain = Chain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
-        bytes32 chainHash = keccak256(abi.encode(chain));
+        ChainWithoutSignatures memory _chain = ChainWithoutSignatures(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
+        bytes32 chainHash = keccak256(abi.encode(_chain));
+        
         claimsManager.setVoted(_chainId, msg.sender, true);
         claimsManager.setNumberOfVotes(chainHash);
-        if (claimsHelper.hasConsensus(chainHash)) {
-            _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
+        
+        if (claimsHelper.hasChainRegistrationConsensus(chainHash)) {
+            _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _keyHashMultisig, _keyHashFeePayer, _tokenQuantity);
         } else {
             emit newChainProposal(_chainId, msg.sender);
         }
@@ -108,6 +114,8 @@ contract BridgeContract is IBridgeContract {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
+        string calldata _keyHashMultisig,
+        string calldata _keyHashFeePayer,
         uint256 _tokenQuantity
     ) internal {
         registeredChains[_chainId] = true;
@@ -116,6 +124,8 @@ contract BridgeContract is IBridgeContract {
         chains[chains.length - 1].utxos = _initialUTXOs;
         chains[chains.length - 1].addressMultisig = _addressMultisig;
         chains[chains.length - 1].addressFeePayer = _addressFeePayer;
+        chains[chains.length - 1].keyHashMultisig = _keyHashMultisig;
+        chains[chains.length - 1].keyHashFeePayer = _keyHashFeePayer;
         chains[chains.length - 1].tokenQuantity = _tokenQuantity;
 
         utxosManager.pushUTXOs(_chainId, _initialUTXOs);

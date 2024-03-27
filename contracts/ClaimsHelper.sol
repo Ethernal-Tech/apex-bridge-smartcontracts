@@ -34,6 +34,13 @@ contract ClaimsHelper is IBridgeContractStructs {
         return claimsManager.numberOfVotes(_hash) >= bridgeContract.getQuorumNumberOfValidators();
     }
 
+    function hasChainRegistrationConsensus(bytes32 _hash) public view returns (bool) {
+        if (claimsManager.numberOfVotes(_hash) == bridgeContract.validatorsCount()) {
+            return true;
+        }
+        return false;
+    }
+
     function getClaimBRC(string calldata _id) external view returns (BridgingRequestClaim memory claim) {
         return queuedBridgingRequestsClaims[_id];
     }
@@ -83,6 +90,14 @@ contract ClaimsHelper is IBridgeContractStructs {
         string calldata _observerHash
     ) external onlySignedBatchManagerOrClaimsManager {
         isClaimConfirmed[_chain][_observerHash] = true;
+    }
+
+    function setLastObservedBlockInfo(string calldata chainID, LastObservedBlockInfo calldata lastObservedBlockInfo) public {
+        lastObservedBlockInfos[chainID] = lastObservedBlockInfo;
+    }
+
+    function getLastObservedBlockInfo(string calldata chainID) public view returns (LastObservedBlockInfo memory) {
+        return lastObservedBlockInfos[chainID];
     }
 
     function _equal(string memory a, string memory b) internal pure returns (bool) {

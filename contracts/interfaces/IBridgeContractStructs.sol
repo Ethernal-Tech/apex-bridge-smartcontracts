@@ -133,7 +133,22 @@ interface IBridgeContractStructs {
         UTXOs utxos;
         string addressMultisig;
         string addressFeePayer;
+        string keyHashMultisig;
+        string keyHashFeePayer;
         uint256 tokenQuantity;
+    }
+
+    struct ChainWithoutSignatures {
+        string id;
+        UTXOs utxos;
+        string addressMultisig;
+        string addressFeePayer;
+        uint256 tokenQuantity;
+    }
+
+    struct LastObservedBlockInfo {
+        string blockHash;
+        uint256 slot;
     }
 
     struct ValidatorCardanoData {
@@ -145,6 +160,7 @@ interface IBridgeContractStructs {
 
     error AlreadyConfirmed(string _claimTransactionHash);
     error AlreadyProposed(string _claimTransactionHash);
+    error InvalidSlot(uint256 _slot);
     error ChainAlreadyRegistered(string _claimId);
     error NotOwner();
     error NotValidator();

@@ -19,6 +19,8 @@ abstract contract IBridgeContract is IBridgeContractStructs {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
+        string calldata _keyHashMultisig,
+        string calldata _keyHashFeePayer,
         uint256 _tokenQuantity
     ) external virtual;
 

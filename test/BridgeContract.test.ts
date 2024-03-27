@@ -434,14 +434,14 @@ describe("Bridge Contract", function () {
         const { bridgeContract, validators, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
         await expect(
-          bridgeContract.connect(validators[0]).registerChain("chainID1", UTXOs, "0x", "0x", 100)
+          bridgeContract.connect(validators[0]).registerChain("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100)
         ).to.be.revertedWithCustomError(bridgeContract, "NotOwner");
       });
 
       it("Should add new chain if requested by owner", async function () {
         const { bridgeContract, owner, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
-        await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", 100);
+        await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
         expect(await bridgeContract.isChainRegistered("chainID1")).to.be.true;
       });
@@ -449,7 +449,7 @@ describe("Bridge Contract", function () {
       it("Should store UTXOs when new chain is registered by owner", async function () {
         const { bridgeContract, uTXOsManager, owner, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
-        await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", 100);
+        await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
         expect((await uTXOsManager.getChainUTXOs("chainID1")).multisigOwnedUTXOs[0].txHash).to.equal(
           UTXOs.multisigOwnedUTXOs[0].txHash
@@ -462,7 +462,7 @@ describe("Bridge Contract", function () {
       it("Should set correct nextTimeoutBlock when chain is registered by owner", async function () {
         const { bridgeContract, owner, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
-        await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", 100);
+        await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
         expect(await bridgeContract.nextTimeoutBlock("chainID1")).to.equal(
           (await ethers.provider.getBlockNumber()) + 5
@@ -472,7 +472,7 @@ describe("Bridge Contract", function () {
       it("Should emit new chain registered when registered by owner", async function () {
         const { bridgeContract, owner, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
-        await expect(bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", 100))
+        await expect(bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100))
           .to.emit(bridgeContract, "newChainRegistered")
           .withArgs("chainID1");
       });
@@ -482,18 +482,22 @@ describe("Bridge Contract", function () {
       it("Should reject proposal if chain is already registered with Governance", async function () {
         const { bridgeContract, validators, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
-        await bridgeContract.connect(validators[0]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100);
-        await bridgeContract.connect(validators[1]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100);
-        await bridgeContract.connect(validators[2]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100);
+        await bridgeContract.connect(validators[0]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[1]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[2]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
         expect(await bridgeContract.isChainRegistered("chainID1")).to.be.false;
 
-        await bridgeContract.connect(validators[3]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100);
+        await bridgeContract.connect(validators[3]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+
+        expect(await bridgeContract.isChainRegistered("chainID1")).to.be.false;
+
+        await bridgeContract.connect(validators[4]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
         expect(await bridgeContract.isChainRegistered("chainID1")).to.be.true;
 
         await expect(
-          bridgeContract.connect(validators[4]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100)
+          bridgeContract.connect(validators[4]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100)
         ).to.be.revertedWithCustomError(bridgeContract, "ChainAlreadyRegistered");
       });
 
@@ -501,38 +505,53 @@ describe("Bridge Contract", function () {
         const { bridgeContract, owner, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
         await expect(
-          bridgeContract.connect(owner).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100)
+          bridgeContract.connect(owner).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100)
         ).to.be.revertedWithCustomError(bridgeContract, "NotValidator");
       });
 
       it("Should revert if same validator votes twice for the same chain", async function () {
         const { bridgeContract, claimsHelper, validators, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
-        await bridgeContract.connect(validators[0]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100);
+        await bridgeContract.connect(validators[0]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
         await expect(
-          bridgeContract.connect(validators[0]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100)
+          bridgeContract.connect(validators[0]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100)
         ).to.be.revertedWithCustomError(claimsHelper, "AlreadyProposed");
       });
 
       it("Should emit new chain proposal", async function () {
         const { bridgeContract, validators, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
-        await expect(bridgeContract.connect(validators[0]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100))
+        await expect(bridgeContract.connect(validators[0]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100))
           .to.emit(bridgeContract, "newChainProposal")
           .withArgs("chainID1", validators[0].address);
       });
 
-      it("Should add new chain if there are enough votes", async function () {
+      it("Should not add new chain if there is no 100% quorum", async function () {
         const { bridgeContract, validators, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
-        await bridgeContract.connect(validators[0]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100);
-        await bridgeContract.connect(validators[1]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100);
-        await bridgeContract.connect(validators[2]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100);
+        await bridgeContract.connect(validators[0]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[1]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[2]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[3]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+
+        expect(await bridgeContract.isChainRegistered("chainID1")).to.be.false;
+      })
+
+      it("Should add new chain if there are enough votes (100% of them)", async function () {
+        const { bridgeContract, validators, UTXOs } = await loadFixture(deployBridgeContractFixture);
+
+        await bridgeContract.connect(validators[0]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[1]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[2]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
         expect(await bridgeContract.isChainRegistered("chainID1")).to.be.false;
 
-        await bridgeContract.connect(validators[3]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100);
+        await bridgeContract.connect(validators[3]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+
+        expect(await bridgeContract.isChainRegistered("chainID1")).to.be.false;
+
+        await bridgeContract.connect(validators[4]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
         expect(await bridgeContract.isChainRegistered("chainID1")).to.be.true;
       });
@@ -540,10 +559,11 @@ describe("Bridge Contract", function () {
       it("Should set correct nextTimeoutBlock when chain is registered with Governance", async function () {
         const { bridgeContract, validators, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
-        await bridgeContract.connect(validators[0]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100);
-        await bridgeContract.connect(validators[1]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100);
-        await bridgeContract.connect(validators[2]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100);
-        await bridgeContract.connect(validators[3]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100);
+        await bridgeContract.connect(validators[0]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[1]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[2]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[3]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[4]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
         expect(await bridgeContract.nextTimeoutBlock("chainID1")).to.equal(
           (await ethers.provider.getBlockNumber()) + 5
@@ -553,10 +573,11 @@ describe("Bridge Contract", function () {
       it("Should store UTXOs when new chain is registered with Governance", async function () {
         const { bridgeContract, uTXOsManager, validators, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
-        await bridgeContract.connect(validators[0]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100);
-        await bridgeContract.connect(validators[1]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100);
-        await bridgeContract.connect(validators[2]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100);
-        await bridgeContract.connect(validators[3]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100);
+        await bridgeContract.connect(validators[0]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[1]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[2]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[3]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[4]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
         expect((await uTXOsManager.getChainUTXOs("chainID1")).multisigOwnedUTXOs[0].txHash).to.equal(
           UTXOs.multisigOwnedUTXOs[0].txHash
@@ -569,13 +590,15 @@ describe("Bridge Contract", function () {
       it("Should emit new chain registered when registered by Governance", async function () {
         const { bridgeContract, validators, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
-        await bridgeContract.connect(validators[0]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100);
+        await bridgeContract.connect(validators[0]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
-        await bridgeContract.connect(validators[1]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100);
+        await bridgeContract.connect(validators[1]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
-        await bridgeContract.connect(validators[2]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100);
+        await bridgeContract.connect(validators[2]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
-        await expect(bridgeContract.connect(validators[3]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", 100))
+        await bridgeContract.connect(validators[3]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+
+        await expect(bridgeContract.connect(validators[4]).registerChainGovernance("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100))
           .to.emit(bridgeContract, "newChainRegistered")
           .withArgs("chainID1");
       });
@@ -583,15 +606,17 @@ describe("Bridge Contract", function () {
       it("Should list all registered chains", async function () {
         const { bridgeContract, UTXOs, validators } = await loadFixture(deployBridgeContractFixture);
 
-        await bridgeContract.connect(validators[0]).registerChainGovernance("chainID1 1", UTXOs, "0x", "0x", 100);
-        await bridgeContract.connect(validators[1]).registerChainGovernance("chainID1 1", UTXOs, "0x", "0x", 100);
-        await bridgeContract.connect(validators[2]).registerChainGovernance("chainID1 1", UTXOs, "0x", "0x", 100);
-        await bridgeContract.connect(validators[3]).registerChainGovernance("chainID1 1", UTXOs, "0x", "0x", 100);
+        await bridgeContract.connect(validators[0]).registerChainGovernance("chainID1 1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[1]).registerChainGovernance("chainID1 1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[2]).registerChainGovernance("chainID1 1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[3]).registerChainGovernance("chainID1 1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[4]).registerChainGovernance("chainID1 1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
-        await bridgeContract.connect(validators[0]).registerChainGovernance("chainID1 2", UTXOs, "0x", "0x", 100);
-        await bridgeContract.connect(validators[1]).registerChainGovernance("chainID1 2", UTXOs, "0x", "0x", 100);
-        await bridgeContract.connect(validators[2]).registerChainGovernance("chainID1 2", UTXOs, "0x", "0x", 100);
-        await bridgeContract.connect(validators[3]).registerChainGovernance("chainID1 2", UTXOs, "0x", "0x", 100);
+        await bridgeContract.connect(validators[0]).registerChainGovernance("chainID1 2", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[1]).registerChainGovernance("chainID1 2", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[2]).registerChainGovernance("chainID1 2", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[3]).registerChainGovernance("chainID1 2", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
+        await bridgeContract.connect(validators[4]).registerChainGovernance("chainID1 2", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
         const chains = await bridgeContract.getAllRegisteredChains();
         expect(chains.length).to.equal(2);
@@ -616,10 +641,10 @@ describe("Bridge Contract", function () {
         );
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", 10000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 10000);
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", 10000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 10000);
 
         await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
         await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -637,10 +662,10 @@ describe("Bridge Contract", function () {
         );
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", 10000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 10000);
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", 10000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 10000);
 
         await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
 
@@ -655,10 +680,10 @@ describe("Bridge Contract", function () {
         );
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", 10000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 10000);
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", 10000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 10000);
 
         await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
         await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -687,10 +712,10 @@ describe("Bridge Contract", function () {
         );
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", 10000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 10000);
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", 10000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 10000);
 
         await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
         await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -713,10 +738,10 @@ describe("Bridge Contract", function () {
         );
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", 1);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 1);
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", 1);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 1);
 
         await expect(
           bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC)
@@ -729,10 +754,10 @@ describe("Bridge Contract", function () {
         );
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", 1000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 1000);
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", 1000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 1000);
 
         await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
         await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -760,7 +785,7 @@ describe("Bridge Contract", function () {
         const { bridgeContract, claimsHelper, owner, validators, UTXOs, signedBatch, validatorClaimsBEC } =
           await loadFixture(deployBridgeContractFixture);
 
-        await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", 100);
+        await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
         await bridgeContract.connect(validators[0]).submitSignedBatch(signedBatch);
         await bridgeContract.connect(validators[1]).submitSignedBatch(signedBatch);
@@ -801,10 +826,10 @@ describe("Bridge Contract", function () {
         } = await loadFixture(deployBridgeContractFixture);
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", 1000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 1000);
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", 1000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 1000);
 
         await bridgeContract.connect(validators[0]).submitSignedBatch(signedBatch);
         await bridgeContract.connect(validators[1]).submitSignedBatch(signedBatch);
@@ -1013,6 +1038,74 @@ describe("Bridge Contract", function () {
         ).to.be.true;
       });
     });
+    describe("Submit new Last Observed Block Info", function () {
+      it("Should revert if same validator submits the same Last Observed Block Info twice", async function () {
+        const { bridgeContract, claimsHelper, validators, validatorClaimsRRC } = await loadFixture(
+          deployBridgeContractFixture
+        );
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC);
+
+        await expect(
+          bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC)
+        ).to.be.revertedWithCustomError(claimsHelper, "AlreadyProposed");
+      });
+
+      it("Should revert if Last Observed Block Info is already confirmed", async function () {
+        const { bridgeContract, validators, validatorClaimsRRC } = await loadFixture(deployBridgeContractFixture);
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC);
+
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsRRC);
+
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsRRC);
+
+        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsRRC);
+
+        await expect(
+          bridgeContract.connect(validators[4]).submitClaims(validatorClaimsRRC)
+        ).to.be.revertedWithCustomError(bridgeContract, "AlreadyConfirmed");
+      });
+
+      it("Should set proper last block hash and slot in lastObservedBlockInfo if block is fully observerd", async function () {
+        const { bridgeContract, validators, validatorClaimsRRC } = await loadFixture(deployBridgeContractFixture);
+        const blockInfoBefore = await bridgeContract.getLastObservedBlockInfo(validatorClaimsRRC.chainID);
+
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC);
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsRRC);
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsRRC);
+        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsRRC);
+
+        const blockInfo = await bridgeContract.getLastObservedBlockInfo(validatorClaimsRRC.chainID)
+        expect(blockInfo.blockHash).to.equal(
+          validatorClaimsRRC.blockHash
+        );
+        expect(blockInfo.slot).to.equal(
+          validatorClaimsRRC.slot
+        );
+
+        expect(blockInfo.blockHash).to.not.equal(
+          blockInfoBefore.blockHash
+        );
+        expect(blockInfo.slot).to.not.equal(
+          blockInfoBefore.slot
+        );
+      });
+
+      it("Should not change block hash and slot in lastObservedBlockInfo if block is not fully observed", async function () {
+        const { bridgeContract, validators, validatorClaimsRECObserverdFalse } = await loadFixture(
+          deployBridgeContractFixture
+        );
+        const blockInfoBefore = await bridgeContract.getLastObservedBlockInfo(validatorClaimsRECObserverdFalse.chainID)
+
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRECObserverdFalse);
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsRECObserverdFalse);
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsRECObserverdFalse);
+        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsRECObserverdFalse);
+
+        const blockInfo = await bridgeContract.getLastObservedBlockInfo(validatorClaimsRECObserverdFalse.chainID)
+        expect(blockInfo.blockHash).to.equal(blockInfoBefore.blockHash);
+        expect(blockInfo.slot).to.equal(blockInfoBefore.slot);
+      });
+    });
     describe("Batch creation", function () {
       it("ShouldCreateBatch should return false if there is not enough validated claims and no pending signedClaims from validator", async function () {
         const { bridgeContract, owner, validators, UTXOs, validatorClaimsBRC } = await loadFixture(
@@ -1020,12 +1113,12 @@ describe("Bridge Contract", function () {
         );
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", 10000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 10000);
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", 10000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 10000);
 
-        await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", 100);
+        await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
         await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
 
@@ -1040,10 +1133,10 @@ describe("Bridge Contract", function () {
 
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", 100);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", 100);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
         await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
         await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -1060,10 +1153,10 @@ describe("Bridge Contract", function () {
         );
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", 10000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 10000);
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", 10000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 10000);
 
         await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
         await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -1079,7 +1172,7 @@ describe("Bridge Contract", function () {
         );
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", 10000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 10000);
         //no destinatin chain registered, so currentBatchBlock for that chain is 0
 
         await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
@@ -1101,10 +1194,10 @@ describe("Bridge Contract", function () {
         );
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", 10000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 10000);
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", 10000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 10000);
 
         await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
         await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -1116,50 +1209,6 @@ describe("Bridge Contract", function () {
 
         expect(await bridgeContract.shouldCreateBatch(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID))
           .to.be.true;
-      });
-
-      it("Should set proper last block hash in lastObservedBlock if block is fully observed", async function () {
-        const { bridgeContract, validators } = await loadFixture(deployBridgeContractFixture);
-        const blocks1 = [
-          { blockHash: "0x11", blockSlot: 1 },
-          { blockHash: "0x22", blockSlot: 2 },
-        ]
-        const blocks2 = [
-          { blockHash: "0x22", blockSlot: 2 },
-          { blockHash: "0x33", blockSlot: 3 },
-        ]
-        await bridgeContract.connect(validators[0]).submitLastObservableBlocks("1", blocks1);
-        await bridgeContract.connect(validators[1]).submitLastObservableBlocks("1", blocks2);
-        await bridgeContract.connect(validators[2]).submitLastObservableBlocks("1", blocks1);
-        await bridgeContract.connect(validators[3]).submitLastObservableBlocks("1", blocks2);
-
-        const lb = await bridgeContract.getLastObservedBlock("1")
-        expect(lb.blockSlot).to.equal(2);
-        expect(lb.blockHash).to.equal("0x22");
-      });
-
-      it("Should set proper last block hash in lastObservedBlock if block is not fully observed", async function () {
-        const { bridgeContract, validators } = await loadFixture(deployBridgeContractFixture);
-        const blocks1 = [
-          { blockHash: "0x11", blockSlot: 1 },
-          { blockHash: "0x22", blockSlot: 2 },
-        ]
-        const blocks2 = [
-          { blockHash: "0x22", blockSlot: 2 },
-          { blockHash: "0x33", blockSlot: 3 },
-        ]
-        await bridgeContract.connect(validators[0]).submitLastObservableBlocks("1", blocks1);
-        await bridgeContract.connect(validators[1]).submitLastObservableBlocks("1", blocks2);
-        await bridgeContract.connect(validators[2]).submitLastObservableBlocks("1", blocks1);
-        await bridgeContract.connect(validators[3]).submitLastObservableBlocks("2", blocks2);
-
-        const lb1 = await bridgeContract.getLastObservedBlock("1")
-        expect(lb1.blockSlot).to.equal(0n);
-        expect(lb1.blockHash).to.equal('');
-
-        const lb2 = await bridgeContract.getLastObservedBlock("2")
-        expect(lb2.blockSlot).to.equal(0n);
-        expect(lb2.blockHash).to.equal('');
       });
 
       it("SignedBatch should be added to signedBatches if there is enough votes", async function () {
@@ -1247,10 +1296,10 @@ describe("Bridge Contract", function () {
         );
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", 10000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 10000);
         await bridgeContract
           .connect(owner)
-          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", 10000);
+          .registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", "0xbcd", "0xbcd", 10000);
 
         await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
         await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -1274,7 +1323,7 @@ describe("Bridge Contract", function () {
       it("Should return required amount of UTXOs", async function () {
         const { bridgeContract, owner, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
-        await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", 100);
+        await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
         const utxos = await bridgeContract.getAvailableUTXOs("chainID1", 100);
 
@@ -1285,7 +1334,7 @@ describe("Bridge Contract", function () {
       it("Should return required amount of UTXOs in multiple UTXOs if needed", async function () {
         const { bridgeContract, owner, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
-        await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", 100);
+        await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
         const utxos = await bridgeContract.getAvailableUTXOs("chainID1", 250);
 
@@ -1299,7 +1348,7 @@ describe("Bridge Contract", function () {
         const { bridgeContract, uTXOsManager, owner, validators, UTXOs, signedBatch, validatorClaimsBEC } =
           await loadFixture(deployBridgeContractFixture);
 
-        await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", 100);
+        await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
         expect((await uTXOsManager.getChainUTXOs("chainID1")).multisigOwnedUTXOs.length).to.equal(
           UTXOs.multisigOwnedUTXOs.length
