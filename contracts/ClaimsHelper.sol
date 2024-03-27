@@ -27,37 +27,50 @@ contract ClaimsHelper is IBridgeContractStructs {
     mapping(string => RefundRequestClaim) public queuedRefundRequestClaims;
     mapping(string => RefundExecutedClaim) public queuedRefundExecutedClaims;
 
-    // BlockchainID -> blockHash
-    mapping(string => string) public lastObserveredBlock;
+    // BlockchainID -> LastObservedBlockInfo
+    mapping(string => LastObservedBlockInfo) public lastObservedBlockInfos;
 
     constructor(address _bridgeContractAddress) {
         bridgeContract = BridgeContract(_bridgeContractAddress);
     }
 
-    function updateLastObservedBlockIfNeeded(ValidatorClaims calldata _claims) external onlyClaimsManager {
-        if (_claims.blockFullyObserved) {
-            string memory chainId;
-            if (_claims.bridgingRequestClaims.length > 0) {
-                chainId = _claims.bridgingRequestClaims[0].sourceChainID;
-            } else if (_claims.batchExecutedClaims.length > 0) {
-                chainId = _claims.batchExecutedClaims[0].chainID;
-            } else if (_claims.batchExecutionFailedClaims.length > 0) {
-                chainId = _claims.batchExecutionFailedClaims[0].chainID;
-            } else if (_claims.refundRequestClaims.length > 0) {
-                chainId = _claims.refundRequestClaims[0].chainID;
-            } else if (_claims.refundExecutedClaims.length > 0) {
-                chainId = _claims.refundExecutedClaims[0].chainID;
-            }
+    // function updateLastObservedBlockInfoIfNeeded(ValidatorClaims calldata _claims) external onlyClaimsManager {
+    //     if (_claims.blockFullyObserved) {
+    //         string memory chainId;
+    //         if (_claims.bridgingRequestClaims.length > 0) {
+    //             chainId = _claims.bridgingRequestClaims[0].sourceChainID;
+    //         } else if (_claims.batchExecutedClaims.length > 0) {
+    //             chainId = _claims.batchExecutedClaims[0].chainID;
+    //         } else if (_claims.batchExecutionFailedClaims.length > 0) {
+    //             chainId = _claims.batchExecutionFailedClaims[0].chainID;
+    //         } else if (_claims.refundRequestClaims.length > 0) {
+    //             chainId = _claims.refundRequestClaims[0].chainID;
+    //         } else if (_claims.refundExecutedClaims.length > 0) {
+    //             chainId = _claims.refundExecutedClaims[0].chainID;
+    //         }
 
-            lastObserveredBlock[chainId] = _claims.blockHash;
-        }
-    }
+    //         LastObservedBlockInfo memory _lastObservedBlockInfo = LastObservedBlockInfo(
+    //             _claims.blockHash, 
+    //             _claims.slot
+    //         );
+
+    //         lastObservedBlockInfos[chainId] = _lastObservedBlockInfo;
+        
+    //     }
+    // }
 
     function hasConsensus(bytes32 _hash) public view returns (bool) {
         if (
             claimsManager.numberOfVotes(_hash) >=
             ((bridgeContract.validatorsCount() * 2) / 3 + ((bridgeContract.validatorsCount() * 2) % 3 == 0 ? 0 : 1))
         ) {
+            return true;
+        }
+        return false;
+    }
+
+    function hasChainRegistrationConsensus(bytes32 _hash) public view returns (bool) {
+        if (claimsManager.numberOfVotes(_hash) == bridgeContract.validatorsCount()) {
             return true;
         }
         return false;
@@ -112,6 +125,14 @@ contract ClaimsHelper is IBridgeContractStructs {
         string calldata _observerHash
     ) external onlySignedBatchManagerOrClaimsManager {
         isClaimConfirmed[_chain][_observerHash] = true;
+    }
+
+    function setLastObservedBlockInfo(string calldata chainID, LastObservedBlockInfo calldata lastObservedBlockInfo) public {
+        lastObservedBlockInfos[chainID] = lastObservedBlockInfo;
+    }
+
+    function getLastObservedBlockInfo(string calldata chainID) public view returns (LastObservedBlockInfo memory) {
+        return lastObservedBlockInfos[chainID];
     }
 
     function _equal(string memory a, string memory b) internal pure returns (bool) {
