@@ -10,6 +10,9 @@ abstract contract IBridgeContract is IBridgeContractStructs {
     // Batches
     function submitSignedBatch(SignedBatch calldata _signedBatch) external virtual;
 
+    // Slots
+    function submitLastObservableBlocks(string calldata chainID, CardanoBlock[] calldata blocks) external virtual;
+
     // Chain registration through some kind of governance
     function registerChain(
         string calldata _chainId,
@@ -46,13 +49,13 @@ abstract contract IBridgeContract is IBridgeContractStructs {
         string calldata _destinationChain
     ) external view virtual returns (ConfirmedBatch memory batch);
 
-    function getLastObservedBlock(string calldata _sourceChain) external view virtual returns (string memory blockHash);
+    function getLastObservedBlock(string calldata _sourceChain) external view virtual returns (CardanoBlock memory cblock);
 
     function getAllRegisteredChains() external view virtual returns (Chain[] memory _chains);
 
     function isChainRegistered(string calldata _chainId) external view virtual returns (bool);
 
-    function getValidatorsCount() external view virtual returns (uint8);
+    function getQuorumNumberOfValidators() external view virtual returns (uint8);
 
     function getNumberOfVotes(bytes32 _claimHash) external view virtual returns (uint8);
 }

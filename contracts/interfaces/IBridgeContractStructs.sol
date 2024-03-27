@@ -53,16 +53,17 @@ interface IBridgeContractStructs {
         uint256 amount;
     }
 
+    struct CardanoBlock {
+        string blockHash;
+        uint64 blockSlot;
+    }
+
     struct ValidatorClaims {
         BridgingRequestClaim[] bridgingRequestClaims;
         BatchExecutedClaim[] batchExecutedClaims;
         BatchExecutionFailedClaim[] batchExecutionFailedClaims;
         RefundRequestClaim[] refundRequestClaims;
         RefundExecutedClaim[] refundExecutedClaims;
-        string chainID;
-        string blockHash;
-        uint256 slot;
-        bool blockFullyObserved;
     }
 
     struct BridgingRequestClaim {

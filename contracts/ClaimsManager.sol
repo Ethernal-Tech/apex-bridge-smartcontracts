@@ -139,8 +139,6 @@ contract ClaimsManager is IBridgeContractStructs {
 
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
-            claimsHelper.updateLastObservedBlockIfNeeded(_claims);
-
             signedBatchManager.setCurrentBatchBlock(_claim.chainID, -1);
 
             bridgeContract.setLastBatchedClaim(_claim.chainID);
@@ -161,8 +159,6 @@ contract ClaimsManager is IBridgeContractStructs {
             claimsHelper.addToQueuedBatchExecutionFailedClaims(_claim);
 
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
-
-            claimsHelper.updateLastObservedBlockIfNeeded(_claims);
 
             signedBatchManager.setCurrentBatchBlock(_claim.chainID, -1);
 
@@ -186,8 +182,6 @@ contract ClaimsManager is IBridgeContractStructs {
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
             claimsCounter[_claim.chainID]++;
-
-            claimsHelper.updateLastObservedBlockIfNeeded(_claims);
         }
     }
 
@@ -201,8 +195,6 @@ contract ClaimsManager is IBridgeContractStructs {
             claimsHelper.addToQueuedRefundExecutedClaims(_claim);
 
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
-
-            claimsHelper.updateLastObservedBlockIfNeeded(_claims);
         }
     }
 

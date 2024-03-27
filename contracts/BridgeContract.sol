@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBridgeContract.sol";
 import "./ClaimsHelper.sol";
+import "./SlotsManager.sol";
 import "./ClaimsManager.sol";
 import "./SignedBatchManager.sol";
 import "./UTXOsManager.sol";
@@ -14,6 +15,7 @@ contract BridgeContract is IBridgeContract {
     ClaimsManager private claimsManager;
     UTXOsManager private utxosManager;
     SignedBatchManager private signedBatchManager;
+    SlotsManager private slotsManager;
 
     // mapping in case they could be added/removed
     mapping(address => bool) private isValidator;
@@ -60,6 +62,11 @@ contract BridgeContract is IBridgeContract {
         signedBatchManager.submitSignedBatch(_signedBatch, msg.sender);
     }
 
+    // Slots 
+    function submitLastObservableBlocks(string calldata chainID, CardanoBlock[] calldata blocks) external override onlyValidator {
+        slotsManager.updateBlocks(chainID, blocks, msg.sender);
+    }
+    
     // Chain registration by Owner
     function registerChain(
         string calldata _chainId,
@@ -198,10 +205,8 @@ contract BridgeContract is IBridgeContract {
         return signedBatchManager.getConfirmedBatch(_destinationChain);
     }
 
-    function getLastObservedBlock(
-        string calldata _sourceChain
-    ) external view override returns (string memory blockHash) {
-        return claimsHelper.lastObserveredBlock(_sourceChain);
+    function getLastObservedBlock(string calldata _sourceChain) external view override returns (CardanoBlock memory cblock) {
+        return slotsManager.getLastObservedBlock(_sourceChain);
     }
 
     function getAllRegisteredChains() external view override returns (Chain[] memory _chains) {
@@ -212,8 +217,9 @@ contract BridgeContract is IBridgeContract {
         return registeredChains[_chainId];
     }
 
-    function getValidatorsCount() external view override returns (uint8) {
-        return validatorsCount;
+    function getQuorumNumberOfValidators() external view override returns (uint8) {
+        // return (validatorsCount * 2) / 3 + ((validatorsCount * 2) % 3 == 0 ? 0 : 1); is same as (A + B - 1) / B
+        return (validatorsCount * 2 + 2) / 3;
     }
 
     function getNumberOfVotes(bytes32 _hash) external view override returns (uint8) {
@@ -242,6 +248,10 @@ contract BridgeContract is IBridgeContract {
 
     function setUTXOsManager(address _utxosManager) external onlyOwner {
         utxosManager = UTXOsManager(_utxosManager);
+    }
+
+    function setSlotsManager(SlotsManager _slotsManager) external onlyOwner() {
+        slotsManager = SlotsManager(_slotsManager);
     }
 
     modifier onlyValidator() {
