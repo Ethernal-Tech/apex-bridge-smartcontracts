@@ -100,8 +100,6 @@ contract ClaimsManager is IBridgeContractStructs {
 
             _submitClaimsREC(_claims, i, _caller);
         }
-
-        _submitLastObservedBlockInfo(_claims, _caller);
     }
 
     function _submitClaimsBRC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
@@ -200,7 +198,6 @@ contract ClaimsManager is IBridgeContractStructs {
 
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
         }
-
     }
 
     function setVoted(
