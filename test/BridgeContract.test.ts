@@ -1430,9 +1430,64 @@ describe("Bridge Contract", function () {
         await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC_ConfirmedTransactions);
         await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC_ConfirmedTransactions);
 
-        // const thirdTimestampBlockNumber = await ethers.provider.getBlockNumber();
-        console.log("NEXT_TIMEOUT_BLOCK: ", await bridgeContract.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID));
-        console.log("CURRENT BLOCK HEIGHT: ", await ethers.provider.getBlockNumber());
+        const confirmedTxs = await bridgeContract.connect(validators[0]).getConfirmedTransactions(validatorClaimsBRC_ConfirmedTransactions.bridgingRequestClaims[0].destinationChainID)
+
+        const expectedReceiversAddress = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress;
+        const expectedReceiversAmount = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount;
+
+
+        console.log("--------------------------------------");
+        console.log(confirmedTxs[0])
+        console.log(confirmedTxs[1])
+
+        expect(confirmedTxs.length).to.equal(2);
+        expect(confirmedTxs[0].nonce).to.equal(0);
+        expect(confirmedTxs[1].blockHeight).to.equal(0);  // value doesn't exist (default value)
+        expect(confirmedTxs[0].blockHeight).to.be.lessThan(await bridgeContract.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID));
+        expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
+        expect(confirmedTxs[0].receivers[0].amount).to.equal(expectedReceiversAmount);
+      })
+
+      it("GetConfirmedTransactions should not return more transaction than MAX_NUMBER_OF_TRANSACTIONS", async function () {
+        const { bridgeContract, claimsManager, owner, UTXOs, validators, validatorClaimsBRC, validatorClaimsBRC_ConfirmedTransactions } = await loadFixture(deployBridgeContractFixture);
+        
+        await bridgeContract
+          .connect(owner)
+          .registerChain(
+            validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+            UTXOs,
+            "0x",
+            "0x",
+            "0xbcd",
+            "0xbcd",
+            1000
+          );
+        await bridgeContract
+          .connect(owner)
+          .registerChain(
+            validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+            UTXOs,
+            "0x",
+            "0x",
+            "0xbcd",
+            "0xbcd",
+            1000
+          );
+
+        const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
+        await bridgeContract.setNextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, Number(firstTimestampBlockNumber + 100));
+        
+
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC_ConfirmedTransactions);
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC_ConfirmedTransactions);
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC_ConfirmedTransactions);
+        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC_ConfirmedTransactions);
 
         const confirmedTxs = await bridgeContract.connect(validators[0]).getConfirmedTransactions(validatorClaimsBRC_ConfirmedTransactions.bridgingRequestClaims[0].destinationChainID)
 
