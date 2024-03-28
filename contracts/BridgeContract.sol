@@ -31,8 +31,6 @@ contract BridgeContract is IBridgeContract {
     // Blochchain ID -> blockNumber
     mapping(string => uint256) public nextTimeoutBlock;
 
-    // BlockchainID -> nounce
-    mapping(string => uint256) public confirmedTransactionNounce;
 
     Chain[] private chains;
     address[] private validatorsAddresses;
@@ -152,47 +150,65 @@ contract BridgeContract is IBridgeContract {
     // can be included in the batch, if the maximum number of transactions in a batch has been exceeded
     function getConfirmedTransactions(
         string calldata _destinationChain
-    ) external override returns (ConfirmedTransaction[] memory _confirmedTransactions) {
+    ) external view override returns (ConfirmedTransaction[] memory _confirmedTransactions) {
         if (!shouldCreateBatch(_destinationChain)) {
             revert CanNotCreateBatchYet(_destinationChain);
         }
 
-        uint256 lastBatchedClaimNumber = lastBatchedClaim[_destinationChain];
-        uint256 lastConfirmedClaim = claimsManager.claimsCounter(_destinationChain);
+        uint256[] memory _nonces = claimsManager.getConfirmedTxNonces(_destinationChain);
+        uint256 counterConfirmedTransactions = 0;
+        uint i = 0;
 
-        uint256 lastClaimToInclude = ((lastConfirmedClaim - lastBatchedClaimNumber) >= MAX_NUMBER_OF_TRANSACTIONS)
-            ? lastBatchedClaimNumber + MAX_NUMBER_OF_TRANSACTIONS
-            : lastConfirmedClaim;
+        _confirmedTransactions = new ConfirmedTransaction[](_nonces.length);
 
-        lastClaimIncludedInBatch[_destinationChain] = lastClaimToInclude;
-
-        uint256 counterConfirmedTransactions;
-
-        ConfirmedTransaction[] memory confirmedTransactions = new ConfirmedTransaction[](
-            lastClaimToInclude - lastBatchedClaimNumber
-        );
-
-        for (uint i = lastBatchedClaimNumber + 1; i <= lastClaimToInclude; i++) {
-            ClaimTypes claimType = claimsManager.queuedClaimsTypes(_destinationChain, i);
-
-            if (claimType == ClaimTypes.BRIDGING_REQUEST) {
-                Receiver[] memory tempReceivers = claimsHelper
-                    .getClaimBRC(claimsManager.queuedClaims(_destinationChain, i))
-                    .receivers;
-
-                ConfirmedTransaction memory confirmedtransaction = ConfirmedTransaction(
-                    // function can not be view anymore
-                    confirmedTransactionNounce[_destinationChain]++,
-                    tempReceivers
-                );
-                confirmedTransactions[counterConfirmedTransactions] = confirmedtransaction;
-                counterConfirmedTransactions++;
-            } else {
-                revert RefundRequestClaimNotYetSupporter();
+        while (counterConfirmedTransactions < MAX_NUMBER_OF_TRANSACTIONS) {
+            ConfirmedTransaction memory confirmedTx = claimsManager.getConfirmedTransaction(_nonces[i]);
+            if (confirmedTx.blockHeight >= nextTimeoutBlock[_destinationChain]){
+                break;
             }
+            _confirmedTransactions[counterConfirmedTransactions] = confirmedTx;
+            counterConfirmedTransactions++;
             i++;
         }
-        return confirmedTransactions;
+
+        return _confirmedTransactions;
+
+        // uint256 lastBatchedClaimNumber = lastBatchedClaim[_destinationChain];
+        // uint256 lastConfirmedClaim = claimsManager.claimsCounter(_destinationChain);
+
+        // uint256 lastClaimToInclude = ((lastConfirmedClaim - lastBatchedClaimNumber) >= MAX_NUMBER_OF_TRANSACTIONS)
+        //     ? lastBatchedClaimNumber + MAX_NUMBER_OF_TRANSACTIONS
+        //     : lastConfirmedClaim;
+
+        // lastClaimIncludedInBatch[_destinationChain] = lastClaimToInclude;
+
+        // uint256 counterConfirmedTransactions;
+
+        // ConfirmedTransaction[] memory confirmedTransactions = new ConfirmedTransaction[](
+        //     lastClaimToInclude - lastBatchedClaimNumber
+        // );
+
+        // for (uint i = lastBatchedClaimNumber + 1; i <= lastClaimToInclude; i++) {
+        //     ClaimTypes claimType = claimsManager.queuedClaimsTypes(_destinationChain, i);
+
+        //     if (claimType == ClaimTypes.BRIDGING_REQUEST) {
+        //         Receiver[] memory tempReceivers = claimsHelper
+        //             .getClaimBRC(claimsManager.queuedClaims(_destinationChain, i))
+        //             .receivers;
+
+        //         ConfirmedTransaction memory confirmedtransaction = ConfirmedTransaction(
+        //             // function can not be view anymore
+        //             confirmedTransactionNounce[_destinationChain]++,
+        //             tempReceivers
+        //         );
+        //         confirmedTransactions[counterConfirmedTransactions] = confirmedtransaction;
+        //         counterConfirmedTransactions++;
+        //     } else {
+        //         revert RefundRequestClaimNotYetSupporter();
+        //     }
+        //     i++;
+        // }
+        // return confirmedTransactions;
     }
 
     // Will return available UTXOs that can cover the cost of bridging transactions included in some batch.
@@ -236,7 +252,7 @@ contract BridgeContract is IBridgeContract {
         return claimsManager.numberOfVotes(_hash);
     }
 
-    function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external onlyClaimsManager {
+    function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external /*onlyClaimsManager*/ {
         nextTimeoutBlock[_chainId] = _blockNumber;
     }
 

@@ -29,6 +29,15 @@ contract ClaimsManager is IBridgeContractStructs {
     // ClaimHash -> numberOfVotes
     mapping(bytes32 => uint8) public numberOfVotes;
 
+    // BlockchainID -> nonce
+    mapping(string => uint256) public confirmedTransactionNonce;
+
+    // chainID -> nonce[]
+    mapping(string => uint256[]) public confirmedTxNonces;
+
+    // nonce -> ConfirmedTransaction
+    mapping(uint256 => ConfirmedTransaction) public confirmedTransactions;
+
     string private constant LAST_OBSERVED_BLOCK_INFO_KEY = "LAST_OBSERVED_BLOCK_INFO";
 
     constructor(address _bridgeContract, address _claimsHelper) {
@@ -121,6 +130,8 @@ contract ClaimsManager is IBridgeContractStructs {
             queuedClaimsTypes[_claim.destinationChainID][claimsCounter[_claim.destinationChainID]] = ClaimTypes
                 .BRIDGING_REQUEST;
 
+            _setConfirmedTransactions(_claim);
+
             claimsHelper.setClaimConfirmed(_claim.destinationChainID, _claim.observedTransactionHash);
         }
     }
@@ -200,6 +211,19 @@ contract ClaimsManager is IBridgeContractStructs {
         }
     }
 
+    function _setConfirmedTransactions(BridgingRequestClaim memory _claim) internal { // passed the claim with the memory keyword
+        uint256 nonce = confirmedTransactionNonce[_claim.destinationChainID];
+        confirmedTxNonces[_claim.destinationChainID].push(nonce);
+        confirmedTransactions[nonce].nonce = nonce;
+
+        for (uint i = 0; i < _claim.receivers.length; i++) {
+            confirmedTransactions[nonce].receivers.push(_claim.receivers[i]);
+        }
+
+        confirmedTransactions[nonce].blockHeight = block.number;
+        confirmedTransactionNonce[_claim.destinationChainID]++;
+    }
+
     function setVoted(
         string calldata _id,
         address _voter,
@@ -223,6 +247,14 @@ contract ClaimsManager is IBridgeContractStructs {
 
     function setSignedBatchManager(address _signedBatchManager) external {
         signedBatchManager = SignedBatchManager(_signedBatchManager);
+    }
+
+    function getConfirmedTxNonces(string calldata _destinationChain) public view returns (uint256[] memory) {
+        return confirmedTxNonces[_destinationChain];
+    }
+
+    function getConfirmedTransaction(uint256 _nonce) public view returns (ConfirmedTransaction memory) {
+        return confirmedTransactions[_nonce];
     }
 
     modifier onlyBridgeContract() {

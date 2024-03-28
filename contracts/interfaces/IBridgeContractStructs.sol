@@ -37,6 +37,7 @@ interface IBridgeContractStructs {
 
     struct ConfirmedTransaction {
         uint256 nonce;
+        uint256 blockHeight;
         //mapping(string => uint256) receivers;
         Receiver[] receivers;
     }

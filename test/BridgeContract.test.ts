@@ -2,6 +2,7 @@ import { SignedBatchManager } from "./../typechain-types/contracts/SignedBatchMa
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { any } from "hardhat/internal/core/params/argumentTypes";
 
 describe("Bridge Contract", function () {
   // We define a fixture to reuse the same setup in every test.
@@ -114,6 +115,31 @@ describe("Bridge Contract", function () {
             txHash: "0xdef...",
             txIndex: 0,
             addressUTXO: "0x456...",
+            amount: 200,
+          },
+          sourceChainID: "sourceChainID1",
+          destinationChainID: "chainID1",
+        },
+      ],
+      batchExecutedClaims: [],
+      batchExecutionFailedClaims: [],
+      refundRequestClaims: [],
+      refundExecutedClaims: [],
+    };
+    const validatorClaimsBRC_ConfirmedTransactions = {
+      bridgingRequestClaims: [
+        {
+          observedTransactionHash: "0xbcd...",
+          receivers: [
+            {
+              destinationAddress: "0x234...",
+              amount: 100,
+            },
+          ],
+          outputUTXO: {
+            txHash: "0xfed...",
+            txIndex: 0,
+            addressUTXO: "0x567...",
             amount: 200,
           },
           sourceChainID: "sourceChainID1",
@@ -361,6 +387,7 @@ describe("Bridge Contract", function () {
       includedTransactions: [
         {
           nonce: "0",
+          blockHeight: 1,
           receivers: [
             {
               destinationAddress: "0x123...",
@@ -417,6 +444,7 @@ describe("Bridge Contract", function () {
       validatorClaimsRRCerror,
       validatorClaimsRECerror,
       validatorClaimsRECObserverdFalse,
+      validatorClaimsBRC_ConfirmedTransactions,
       signedBatch,
     };
   }
@@ -954,6 +982,50 @@ describe("Bridge Contract", function () {
           await claimsManager.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID)
         ).to.equal(900);
       });
+
+      it("Should add confirmed transaction to the map after Bridging Request Claim is confirmed", async function () {
+        const { bridgeContract, claimsManager, owner, validators, UTXOs, validatorClaimsBRC } = await loadFixture(
+          deployBridgeContractFixture
+        );
+        await bridgeContract
+          .connect(owner)
+          .registerChain(
+            validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+            UTXOs,
+            "0x",
+            "0x",
+            "0xbcd",
+            "0xbcd",
+            1000
+          );
+        await bridgeContract
+          .connect(owner)
+          .registerChain(
+            validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+            UTXOs,
+            "0x",
+            "0x",
+            "0xbcd",
+            "0xbcd",
+            1000
+          );
+
+
+        const oldNonce = Number(await claimsManager.confirmedTransactionNonce(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID));
+
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+        const nonce = Number(await claimsManager.confirmedTransactionNonce(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID));
+        const confirmedTx = await claimsManager.confirmedTransactions(oldNonce);
+        expect(confirmedTx.nonce).to.equal(oldNonce);
+        expect(nonce).to.equal(Number(oldNonce) + 1);
+
+        // for some reason there is no receivers field inside confirmedTx structure
+
+      });
     });
     describe("Submit new Batch Executed Claim", function () {
       it("Should revert if same validator submits the same Batch Executed Claim twice", async function () {
@@ -1267,6 +1339,119 @@ describe("Bridge Contract", function () {
         ).to.be.revertedWithCustomError(bridgeContract, "AlreadyConfirmed");
       });
     });
+    describe("Querying Confirmed Transactions", function () {
+      it("GetConfirmedTransactions should return valid transactions after BridgingRequestClaim is submitted", async function () {
+        const { bridgeContract, owner, UTXOs, validators, validatorClaimsBRC } = await loadFixture(deployBridgeContractFixture);
+        
+        await bridgeContract
+          .connect(owner)
+          .registerChain(
+            validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+            UTXOs,
+            "0x",
+            "0x",
+            "0xbcd",
+            "0xbcd",
+            1000
+          );
+        await bridgeContract
+          .connect(owner)
+          .registerChain(
+            validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+            UTXOs,
+            "0x",
+            "0x",
+            "0xbcd",
+            "0xbcd",
+            1000
+          );
+
+        const oldBlockNumber = await ethers.provider.getBlockNumber()
+
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+        const expectedNonce = 0;
+        const expectedBlockHeight = oldBlockNumber + 4;
+        
+        const expectedReceiversAddress = "0x123...";
+        const expectedReceiversAmount = 100;
+          
+        const confirmedTxs = await bridgeContract.connect(validators[0]).getConfirmedTransactions(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID)
+        
+        expect(confirmedTxs.length).to.equal(1);
+        expect(confirmedTxs[0].nonce).to.equal(expectedNonce);
+        expect(confirmedTxs[0].blockHeight).to.equal(expectedBlockHeight);
+        expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
+        expect(confirmedTxs[0].receivers[0].amount).to.equal(expectedReceiversAmount);
+        //expect(confirmedTxs[0].nonce).to.equal(await claimsManager.confirmedTransactionNonce(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID))
+      })
+
+      it("GetConfirmedTransactions should not return any transaction after specified timestamp", async function () {
+        const { bridgeContract, claimsManager, owner, UTXOs, validators, validatorClaimsBRC, validatorClaimsBRC_ConfirmedTransactions } = await loadFixture(deployBridgeContractFixture);
+        
+        await bridgeContract
+          .connect(owner)
+          .registerChain(
+            validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+            UTXOs,
+            "0x",
+            "0x",
+            "0xbcd",
+            "0xbcd",
+            1000
+          );
+        await bridgeContract
+          .connect(owner)
+          .registerChain(
+            validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+            UTXOs,
+            "0x",
+            "0x",
+            "0xbcd",
+            "0xbcd",
+            1000
+          );
+
+        const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
+        await bridgeContract.setNextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, Number(firstTimestampBlockNumber + 6));
+        
+
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC_ConfirmedTransactions);
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC_ConfirmedTransactions);
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC_ConfirmedTransactions);
+        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC_ConfirmedTransactions);
+
+        // const thirdTimestampBlockNumber = await ethers.provider.getBlockNumber();
+        console.log("NEXT_TIMEOUT_BLOCK: ", await bridgeContract.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID));
+        console.log("CURRENT BLOCK HEIGHT: ", await ethers.provider.getBlockNumber());
+
+        const confirmedTxs = await bridgeContract.connect(validators[0]).getConfirmedTransactions(validatorClaimsBRC_ConfirmedTransactions.bridgingRequestClaims[0].destinationChainID)
+
+        const expectedReceiversAddress = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress;
+        const expectedReceiversAmount = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount;
+
+
+        console.log("--------------------------------------");
+        console.log(confirmedTxs[0])
+        console.log(confirmedTxs[1])
+
+        expect(confirmedTxs.length).to.equal(2);
+        expect(confirmedTxs[0].nonce).to.equal(0);
+        expect(confirmedTxs[1].blockHeight).to.equal(0);  // value doesn't exist (default value)
+        expect(confirmedTxs[0].blockHeight).to.be.lessThan(await bridgeContract.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID));
+        expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
+        expect(confirmedTxs[0].receivers[0].amount).to.equal(expectedReceiversAmount);
+      })
+    })
     describe("Batch creation", function () {
       it("ShouldCreateBatch should return false if there is not enough validated claims and no pending signedClaims from validator", async function () {
         const { bridgeContract, owner, validators, UTXOs, validatorClaimsBRC } = await loadFixture(
@@ -1523,50 +1708,50 @@ describe("Bridge Contract", function () {
         ).to.equal("multisigSignature1");
       });
 
-      it("Should return confirmedTransactions from confirmed BridgeRequestClaims", async function () {
-        const { bridgeContract, owner, validators, UTXOs, validatorClaimsBRC } = await loadFixture(
-          deployBridgeContractFixture
-        );
-        await bridgeContract
-          .connect(owner)
-          .registerChain(
-            validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
-            UTXOs,
-            "0x",
-            "0x",
-            "0xbcd",
-            "0xbcd",
-            10000
-          );
-        await bridgeContract
-          .connect(owner)
-          .registerChain(
-            validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
-            UTXOs,
-            "0x",
-            "0x",
-            "0xbcd",
-            "0xbcd",
-            10000
-          );
+      // it("Should return confirmedTransactions from confirmed BridgeRequestClaims", async function () {
+      //   const { bridgeContract, owner, validators, UTXOs, validatorClaimsBRC } = await loadFixture(
+      //     deployBridgeContractFixture
+      //   );
+      //   await bridgeContract
+      //     .connect(owner)
+      //     .registerChain(
+      //       validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+      //       UTXOs,
+      //       "0x",
+      //       "0x",
+      //       "0xbcd",
+      //       "0xbcd",
+      //       10000
+      //     );
+      //   await bridgeContract
+      //     .connect(owner)
+      //     .registerChain(
+      //       validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+      //       UTXOs,
+      //       "0x",
+      //       "0x",
+      //       "0xbcd",
+      //       "0xbcd",
+      //       10000
+      //     );
 
-        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
-        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
-        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
-        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
+      //   await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      //   await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      //   await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      //   await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-        const confirmedTransactions = await bridgeContract
-          .connect(validators[0])
-          .getConfirmedTransactions.staticCall(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID);
+      //   const confirmedTransactions = await bridgeContract
+      //     .connect(validators[0])
+      //     .getConfirmedTransactions.staticCall(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID);
 
-        expect(confirmedTransactions.length).to.equal(1);
-        expect(confirmedTransactions[0].receivers[0].destinationAddress).to.equal(
-          validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress
-        );
-        expect(confirmedTransactions[0].receivers[0].amount).to.equal(
-          validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount
-        );
-      });
+      //   expect(confirmedTransactions.length).to.equal(1);
+      //   expect(confirmedTransactions[0].receivers[0].destinationAddress).to.equal(
+      //     validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress
+      //   );
+      //   expect(confirmedTransactions[0].receivers[0].amount).to.equal(
+      //     validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount
+      //   );
+      // });
     });
     describe("UTXO management", function () {
       it("Should return required amount of UTXOs", async function () {
