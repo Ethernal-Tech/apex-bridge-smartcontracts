@@ -11,71 +11,17 @@ contract UTXOsManager is IBridgeContractStructs {
     SignedBatchManager private signedBatchManager;
     address private claimsManagerAddress;
 
+    uint64 private utxoNonceCounter;
+
     // Blockchain ID -> UTXOs
     mapping(string => UTXOs) private chainUTXOs;
-    mapping(string => UTXOs) private chainUTXOsForConsolidation;
-
-    // TODO: just a test value, this could be set on deployment
-    // but could make sence to make it updatable
-    uint256 private consolidationThreshold = 5;
 
     constructor(address _bridgeContractAddress) {
         bridgeContract = BridgeContract(_bridgeContractAddress);
     }
 
-    function getAvailableUTXOs(
-        string calldata _destinationChain,
-        uint256 txCost
-    ) external view onlyBridgeContract returns (UTXOs memory availableUTXOs) {
-        uint256 sum = 0;
-        uint256 counterForArraySizeConsolidation;
-
-        if (chainUTXOsForConsolidation[_destinationChain].multisigOwnedUTXOs.length > 0) {
-            for (uint i = 0; i < chainUTXOsForConsolidation[_destinationChain].multisigOwnedUTXOs.length; i++) {
-                sum += chainUTXOsForConsolidation[_destinationChain].multisigOwnedUTXOs[i].amount;
-                counterForArraySizeConsolidation++;
-                if (sum >= txCost) {
-                    break;
-                }
-            }
-            if (sum >= txCost) {
-                availableUTXOs.multisigOwnedUTXOs = new UTXO[](counterForArraySizeConsolidation);
-                availableUTXOs.feePayerOwnedUTXOs = new UTXO[](1);
-
-                for (uint i = 0; i < counterForArraySizeConsolidation; i++) {
-                    availableUTXOs.multisigOwnedUTXOs[i] = chainUTXOsForConsolidation[_destinationChain]
-                        .multisigOwnedUTXOs[i];
-                }
-
-                availableUTXOs.feePayerOwnedUTXOs[0] = chainUTXOsForConsolidation[_destinationChain].feePayerOwnedUTXOs[
-                    0
-                ];
-
-                return availableUTXOs;
-            }
-        }
-
-        UTXOs memory utxos = chainUTXOs[_destinationChain];
-        uint256 counterForArraySize;
-
-        for (uint i = 0; i < utxos.multisigOwnedUTXOs.length; i++) {
-            sum += utxos.multisigOwnedUTXOs[i].amount;
-            counterForArraySize++;
-            if (sum >= txCost) {
-                break;
-            }
-        }
-
-        availableUTXOs.multisigOwnedUTXOs = new UTXO[](counterForArraySize);
-        availableUTXOs.feePayerOwnedUTXOs = new UTXO[](1);
-
-        for (uint i = 0; i < counterForArraySize; i++) {
-            availableUTXOs.multisigOwnedUTXOs[i] = utxos.multisigOwnedUTXOs[i];
-        }
-
-        availableUTXOs.feePayerOwnedUTXOs[0] = utxos.feePayerOwnedUTXOs[0];
-
-        return availableUTXOs;
+    function getChainUTXOs(string memory _chainID) external view returns (UTXOs memory) {
+        return chainUTXOs[_chainID];
     }
 
     function updateUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external onlyClaimsManager {
@@ -93,138 +39,75 @@ contract UTXOsManager is IBridgeContractStructs {
     }
 
     function _removeMultisigUTXOs(string calldata _chainID, UTXOs memory utxos) internal {
-        uint[] memory indices = new uint[](utxos.multisigOwnedUTXOs.length);
-
-        // TODO: refactoring needed
-        if (chainUTXOsForConsolidation[_chainID].multisigOwnedUTXOs.length > 0) {
-            //remove from consolidation
-            for (uint i = 0; i < utxos.multisigOwnedUTXOs.length; i++) {
-                for (uint j = 0; j < chainUTXOsForConsolidation[_chainID].multisigOwnedUTXOs.length; j++) {
-                    if (
-                        equalUTXO(
-                            utxos.multisigOwnedUTXOs[i],
-                            chainUTXOsForConsolidation[_chainID].multisigOwnedUTXOs[j]
-                        )
-                    ) {
-                        indices[i] = j;
-                        break;
-                    }
-                }
-            }
-
-            //cleanup
-            for (uint i = 0; i < indices.length; i++) {
-                chainUTXOsForConsolidation[_chainID].multisigOwnedUTXOs[indices[i]] = chainUTXOsForConsolidation[
-                    _chainID
-                ].multisigOwnedUTXOs[chainUTXOs[_chainID].multisigOwnedUTXOs.length - i - 1];
-            }
-
-            for (uint i = 0; i < indices.length; i++) {
-                chainUTXOsForConsolidation[_chainID].multisigOwnedUTXOs.pop();
-            }
-        }
-
-        //remove from main
-        for (uint i = 0; i < utxos.multisigOwnedUTXOs.length; i++) {
-            for (uint j = 0; j < chainUTXOs[_chainID].multisigOwnedUTXOs.length; j++) {
-                if (equalUTXO(utxos.multisigOwnedUTXOs[i], chainUTXOs[_chainID].multisigOwnedUTXOs[j])) {
-                    indices[i] = j;
+        uint i = 0;
+        uint lenu = chainUTXOs[_chainID].multisigOwnedUTXOs.length;
+        for (;i < lenu;) {
+            bool shouldDelete = false;
+            for (uint j = 0; j < utxos.multisigOwnedUTXOs.length; j++) {
+                if (equalUTXO(utxos.multisigOwnedUTXOs[j], chainUTXOs[_chainID].multisigOwnedUTXOs[i])) {
+                    shouldDelete = true;
                     break;
                 }
             }
-        }
 
-        //cleanup
-        for (uint i = 0; i < indices.length; i++) {
-            chainUTXOs[_chainID].multisigOwnedUTXOs[indices[i]] = chainUTXOs[_chainID].multisigOwnedUTXOs[
-                chainUTXOs[_chainID].multisigOwnedUTXOs.length - i - 1
-            ];
-        }
-
-        for (uint i = 0; i < indices.length; i++) {
-            chainUTXOs[_chainID].multisigOwnedUTXOs.pop();
+            if (shouldDelete) {
+                // move last element to current and then remove pop last element from array
+                lenu--;
+                chainUTXOs[_chainID].multisigOwnedUTXOs[i] = chainUTXOs[_chainID].multisigOwnedUTXOs[lenu];
+                chainUTXOs[_chainID].multisigOwnedUTXOs.pop();
+            } else {
+                i++;
+            }
         }
     }
 
     function _removeFeeUTXOs(string calldata _chainID, UTXOs memory utxos) internal {
-        uint[] memory indices = new uint[](utxos.feePayerOwnedUTXOs.length);
-
-        for (uint i = 0; i < utxos.feePayerOwnedUTXOs.length; i++) {
-            for (uint j = 0; j < chainUTXOs[_chainID].feePayerOwnedUTXOs.length; j++) {
-                if (equalUTXO(utxos.feePayerOwnedUTXOs[i], chainUTXOs[_chainID].feePayerOwnedUTXOs[j])) {
-                    indices[i] = j;
+        uint lenu = chainUTXOs[_chainID].feePayerOwnedUTXOs.length;
+        uint i = 0;
+        for (;i < lenu;) {
+            bool shouldDelete = false;
+            for (uint j = 0; j < utxos.feePayerOwnedUTXOs.length; j++) {
+                if (equalUTXO(utxos.feePayerOwnedUTXOs[j], chainUTXOs[_chainID].feePayerOwnedUTXOs[i])) {
+                    shouldDelete = true;
                     break;
                 }
             }
-        }
 
-        // //cleanup
-        for (uint i = 0; i < indices.length; i++) {
-            chainUTXOs[_chainID].feePayerOwnedUTXOs[indices[i]] = chainUTXOs[_chainID].feePayerOwnedUTXOs[
-                chainUTXOs[_chainID].feePayerOwnedUTXOs.length - i - 1
-            ];
-        }
-
-        for (uint i = 0; i < indices.length; i++) {
-            chainUTXOs[_chainID].feePayerOwnedUTXOs.pop();
-        }
-    }
-
-    function _addNewUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) internal {
-        for (uint i = 0; i < _outputUTXOs.multisigOwnedUTXOs.length; i++) {
-            if (_outputUTXOs.multisigOwnedUTXOs[i].amount >= consolidationThreshold) {
-                chainUTXOs[_chainID].multisigOwnedUTXOs.push(_outputUTXOs.multisigOwnedUTXOs[i]);
+            if (shouldDelete) {
+                // move last element to current and then remove pop last element from array
+                lenu--;
+                chainUTXOs[_chainID].feePayerOwnedUTXOs[i] = chainUTXOs[_chainID].feePayerOwnedUTXOs[lenu];
+                chainUTXOs[_chainID].feePayerOwnedUTXOs.pop();
             } else {
-                chainUTXOsForConsolidation[_chainID].multisigOwnedUTXOs.push(_outputUTXOs.multisigOwnedUTXOs[i]);
-            }
-        }
-
-        for (uint i = 0; i < _outputUTXOs.feePayerOwnedUTXOs.length; i++) {
-            chainUTXOs[_chainID].feePayerOwnedUTXOs.push(_outputUTXOs.feePayerOwnedUTXOs[i]);
+                i++;
+            }            
         }
     }
 
-    function pushUTXOs(string calldata _chainID, UTXOs calldata _UTXOs) external onlyBridgeContract {
-        for (uint i = 0; i < _UTXOs.multisigOwnedUTXOs.length; i++) {
-            chainUTXOs[_chainID].multisigOwnedUTXOs.push(_UTXOs.multisigOwnedUTXOs[i]);
+    function _addNewUTXOs(string calldata _chainID, UTXOs calldata utxos) internal {
+        for (uint i = 0; i < utxos.multisigOwnedUTXOs.length; i++) {
+            UTXO memory dt = utxos.multisigOwnedUTXOs[i];
+            dt.nonce = ++utxoNonceCounter;
+            chainUTXOs[_chainID].multisigOwnedUTXOs.push(dt);
         }
-        for (uint i = 0; i < _UTXOs.feePayerOwnedUTXOs.length; i++) {
-            chainUTXOs[_chainID].feePayerOwnedUTXOs.push(_UTXOs.feePayerOwnedUTXOs[i]);
+
+        for (uint i = 0; i < utxos.feePayerOwnedUTXOs.length; i++) {
+            UTXO memory dt = utxos.feePayerOwnedUTXOs[i];
+            dt.nonce = ++utxoNonceCounter;
+            chainUTXOs[_chainID].feePayerOwnedUTXOs.push(dt);
         }
     }
 
-    function getChainUTXOs(string memory _chainID) external view returns (UTXOs memory) {
-        return chainUTXOs[_chainID];
+    function setInitialUTxOs(string calldata _chainID, UTXOs calldata _UTXOs) external onlyBridgeContract {
+        _addNewUTXOs(_chainID, _UTXOs);
     }
 
     function equalUTXO(UTXO memory a, UTXO memory b) public pure returns (bool) {
+        // for UTXO comparing only tx hash and index is important!
         return
             bytes(a.txHash).length == bytes(b.txHash).length &&
             keccak256(bytes(a.txHash)) == keccak256(bytes(b.txHash)) &&
-            a.txIndex == b.txIndex &&
-            a.amount == b.amount;
-    }
-
-    function equalUTXOs(UTXOs memory a, UTXOs memory b) public pure returns (bool) {
-        if (
-            a.multisigOwnedUTXOs.length != b.multisigOwnedUTXOs.length ||
-            a.feePayerOwnedUTXOs.length != b.feePayerOwnedUTXOs.length
-        ) {
-            return false;
-        }
-
-        for (uint256 i = 0; i < a.multisigOwnedUTXOs.length; i++) {
-            if (!equalUTXO(a.multisigOwnedUTXOs[i], b.multisigOwnedUTXOs[i])) {
-                return false;
-            }
-        }
-        for (uint256 i = 0; i < a.feePayerOwnedUTXOs.length; i++) {
-            if (!equalUTXO(a.feePayerOwnedUTXOs[i], b.feePayerOwnedUTXOs[i])) {
-                return false;
-            }
-        }
-
-        return true;
+            a.txIndex == b.txIndex;
     }
 
     // TODO: who will call this function?

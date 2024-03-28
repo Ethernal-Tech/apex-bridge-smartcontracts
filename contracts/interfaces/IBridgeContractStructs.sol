@@ -47,9 +47,9 @@ interface IBridgeContractStructs {
     }
 
     struct UTXO {
+        uint64 nonce; // this is set by smart contract - order of confirmed UTXOs
         string txHash;
         uint256 txIndex;
-        string addressUTXO; // TODO: do we need this? I think we do
         uint256 amount;
     }
 
