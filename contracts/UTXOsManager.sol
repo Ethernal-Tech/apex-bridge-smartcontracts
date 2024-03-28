@@ -34,17 +34,17 @@ contract UTXOsManager is IBridgeContractStructs {
         UTXOs memory _utxos;
         (, , , , , _utxos) = signedBatchManager.confirmedSignedBatches(_chainID, _signedBatchId);
 
-        _removeMultisigUTXOs(_chainID, _utxos);
-        _removeFeeUTXOs(_chainID, _utxos);
+        _removeMultisigUTXOs(_chainID, _utxos.multisigOwnedUTXOs);
+        _removeFeeUTXOs(_chainID, _utxos.feePayerOwnedUTXOs);
     }
 
-    function _removeMultisigUTXOs(string calldata _chainID, UTXOs memory utxos) internal {
+    function _removeMultisigUTXOs(string calldata _chainID, UTXO[] memory utxos) internal {
         uint i = 0;
         uint lenu = chainUTXOs[_chainID].multisigOwnedUTXOs.length;
         for (;i < lenu;) {
             bool shouldDelete = false;
-            for (uint j = 0; j < utxos.multisigOwnedUTXOs.length; j++) {
-                if (equalUTXO(utxos.multisigOwnedUTXOs[j], chainUTXOs[_chainID].multisigOwnedUTXOs[i])) {
+            for (uint j = 0; j < utxos.length; j++) {
+                if (equalUTXO(utxos[j], chainUTXOs[_chainID].multisigOwnedUTXOs[i])) {
                     shouldDelete = true;
                     break;
                 }
@@ -61,13 +61,13 @@ contract UTXOsManager is IBridgeContractStructs {
         }
     }
 
-    function _removeFeeUTXOs(string calldata _chainID, UTXOs memory utxos) internal {
+    function _removeFeeUTXOs(string calldata _chainID, UTXO[] memory utxos) internal {
         uint lenu = chainUTXOs[_chainID].feePayerOwnedUTXOs.length;
         uint i = 0;
         for (;i < lenu;) {
             bool shouldDelete = false;
-            for (uint j = 0; j < utxos.feePayerOwnedUTXOs.length; j++) {
-                if (equalUTXO(utxos.feePayerOwnedUTXOs[j], chainUTXOs[_chainID].feePayerOwnedUTXOs[i])) {
+            for (uint j = 0; j < utxos.length; j++) {
+                if (equalUTXO(utxos[j], chainUTXOs[_chainID].feePayerOwnedUTXOs[i])) {
                     shouldDelete = true;
                     break;
                 }
