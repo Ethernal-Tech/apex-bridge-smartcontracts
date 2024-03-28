@@ -103,11 +103,12 @@ contract UTXOsManager is IBridgeContractStructs {
     }
 
     function equalUTXO(UTXO memory a, UTXO memory b) public pure returns (bool) {
-        // for UTXO comparing only tx hash and index is important!
+        // for UTXO comparing nonce is not important
         return
             bytes(a.txHash).length == bytes(b.txHash).length &&
             keccak256(bytes(a.txHash)) == keccak256(bytes(b.txHash)) &&
-            a.txIndex == b.txIndex;
+            a.txIndex == b.txIndex &&
+            a.amount == a.amount;
     }
 
     // TODO: who will call this function?
