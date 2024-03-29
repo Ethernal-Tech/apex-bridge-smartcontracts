@@ -182,7 +182,7 @@ describe("Bridge Contract", function () {
       bridgingRequestClaims: [],
       batchExecutedClaims: [
         {
-          observedTransactionHash: "0xabc...",
+          observedTransactionHash: "0xbac...",
           chainID: "chainID1",
           batchNonceID: 1,
           outputUTXOs: {
@@ -379,22 +379,23 @@ describe("Bridge Contract", function () {
     };
 
     const signedBatch = {
-      id: "1",
+      id: 1,
       destinationChainId: "chainID1",
       rawTransaction: "rawTransaction1",
       multisigSignature: "multisigSignature1",
       feePayerMultisigSignature: "feePayerMultisigSignature1",
       includedTransactions: [
-        {
-          nonce: "0",
-          blockHeight: 1,
-          receivers: [
-            {
-              destinationAddress: "0x123...",
-              amount: 100,
-            },
-          ],
-        },
+        0
+        // {
+        //   nonce: "0",
+        //   blockHeight: 1,
+        //   receivers: [
+        //     {
+        //       destinationAddress: "0x123...",
+        //       amount: 100,
+        //     },
+        //   ],
+        // },
       ],
       usedUTXOs: {
         multisigOwnedUTXOs: [
@@ -1011,15 +1012,15 @@ describe("Bridge Contract", function () {
           );
 
 
-        const oldNonce = Number(await claimsManager.confirmedTransactionNonce(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID));
+        const oldNonce = Number(await claimsManager.getLastConfirmedTxNonce(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID));
 
         await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
         await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
         await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
         await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-        const nonce = Number(await claimsManager.confirmedTransactionNonce(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID));
-        const confirmedTx = await claimsManager.confirmedTransactions(oldNonce);
+        const nonce = Number(await claimsManager.getLastConfirmedTxNonce(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID));
+        const confirmedTx = await claimsManager.getConfirmedTransaction(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, oldNonce);
         expect(confirmedTx.nonce).to.equal(oldNonce);
         expect(nonce).to.equal(Number(oldNonce) + 1);
 
@@ -1104,6 +1105,11 @@ describe("Bridge Contract", function () {
             "0xbcd",
             1000
           );
+
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
         await bridgeContract.connect(validators[0]).submitSignedBatch(signedBatch);
         await bridgeContract.connect(validators[1]).submitSignedBatch(signedBatch);
@@ -1437,12 +1443,10 @@ describe("Bridge Contract", function () {
 
 
         console.log("--------------------------------------");
-        console.log(confirmedTxs[0])
-        console.log(confirmedTxs[1])
+        console.log(confirmedTxs.length)
 
-        expect(confirmedTxs.length).to.equal(2);
+        expect(confirmedTxs.length).to.equal(1);
         expect(confirmedTxs[0].nonce).to.equal(0);
-        expect(confirmedTxs[1].blockHeight).to.equal(0);  // value doesn't exist (default value)
         expect(confirmedTxs[0].blockHeight).to.be.lessThan(await bridgeContract.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID));
         expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
         expect(confirmedTxs[0].receivers[0].amount).to.equal(expectedReceiversAmount);
@@ -1496,12 +1500,10 @@ describe("Bridge Contract", function () {
 
 
         console.log("--------------------------------------");
-        console.log(confirmedTxs[0])
-        console.log(confirmedTxs[1])
+        console.log(confirmedTxs.length)
 
-        expect(confirmedTxs.length).to.equal(2);
+        expect(confirmedTxs.length).to.equal(1);
         expect(confirmedTxs[0].nonce).to.equal(0);
-        expect(confirmedTxs[1].blockHeight).to.equal(0);  // value doesn't exist (default value)
         expect(confirmedTxs[0].blockHeight).to.be.lessThan(await bridgeContract.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID));
         expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
         expect(confirmedTxs[0].receivers[0].amount).to.equal(expectedReceiversAmount);

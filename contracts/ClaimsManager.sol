@@ -30,13 +30,16 @@ contract ClaimsManager is IBridgeContractStructs {
     mapping(bytes32 => uint8) public numberOfVotes;
 
     // BlockchainID -> nonce
-    mapping(string => uint256) public confirmedTransactionNonce;
+    //mapping(string => uint256) public nextConfirmedTransactionNonce;
 
-    // chainID -> nonce[]
-    mapping(string => uint256[]) public confirmedTxNonces;
+    // chainID -> nonce -> ConfirmedTransaction
+    mapping(string => mapping(uint256 => ConfirmedTransaction)) private confirmedTransactions;
 
-    // nonce -> ConfirmedTransaction
-    mapping(uint256 => ConfirmedTransaction) public confirmedTransactions;
+    // chainID -> nonce (nonce of the last confirmed transaction)
+    mapping(string => uint256) private lastConfirmedTxNonce;
+
+    // chainID -> nonce (nonce of the last transaction from the executed batch)
+    mapping(string => uint256) private lastBatchedTxNonce;
 
     string private constant LAST_OBSERVED_BLOCK_INFO_KEY = "LAST_OBSERVED_BLOCK_INFO";
 
@@ -156,6 +159,10 @@ contract ClaimsManager is IBridgeContractStructs {
 
             bridgeContract.setLastBatchedClaim(_claim.chainID);
 
+            SignedBatch memory confirmedSignedBatch = signedBatchManager.getConfirmedSignedBatch(_claim.chainID, _claim.batchNonceID);
+            uint256 txLength = confirmedSignedBatch.includedTransactions.length;
+            lastBatchedTxNonce[_claim.chainID] = confirmedSignedBatch.includedTransactions[txLength - 1];
+
             bridgeContract.setNextTimeoutBlock(_claim.chainID, block.number + bridgeContract.MAX_NUMBER_OF_BLOCKS());
 
             utxosManager.updateUTXOs(_claim.chainID, _claim.outputUTXOs);
@@ -210,18 +217,19 @@ contract ClaimsManager is IBridgeContractStructs {
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
         }
     }
-
+    // chainID -> mapping(nonce -> tx)
     function _setConfirmedTransactions(BridgingRequestClaim memory _claim) internal { // passed the claim with the memory keyword
-        uint256 nonce = confirmedTransactionNonce[_claim.destinationChainID];
-        confirmedTxNonces[_claim.destinationChainID].push(nonce);
-        confirmedTransactions[nonce].nonce = nonce;
+    // TODO: Add chainID as a key to confirmedTransactions
+    // TODO: Store only last nonce
+        uint256 nextNonce = lastConfirmedTxNonce[_claim.destinationChainID]++;
+        confirmedTransactions[_claim.destinationChainID][nextNonce].nonce = nextNonce;
 
         for (uint i = 0; i < _claim.receivers.length; i++) {
-            confirmedTransactions[nonce].receivers.push(_claim.receivers[i]);
+            confirmedTransactions[_claim.destinationChainID][nextNonce].receivers.push(_claim.receivers[i]);
         }
 
-        confirmedTransactions[nonce].blockHeight = block.number;
-        confirmedTransactionNonce[_claim.destinationChainID]++;
+        confirmedTransactions[_claim.destinationChainID][nextNonce].blockHeight = block.number;
+
     }
 
     function setVoted(
@@ -249,12 +257,24 @@ contract ClaimsManager is IBridgeContractStructs {
         signedBatchManager = SignedBatchManager(_signedBatchManager);
     }
 
-    function getConfirmedTxNonces(string calldata _destinationChain) public view returns (uint256[] memory) {
-        return confirmedTxNonces[_destinationChain];
+    function getLastConfirmedTxNonce(string calldata _destinationChain) public view returns (uint256) {
+        return lastConfirmedTxNonce[_destinationChain];
     }
 
-    function getConfirmedTransaction(uint256 _nonce) public view returns (ConfirmedTransaction memory) {
-        return confirmedTransactions[_nonce];
+    function getConfirmedTransaction(string calldata _destinationChain, uint256 _nonce) public view returns (ConfirmedTransaction memory) {
+        return confirmedTransactions[_destinationChain][_nonce];
+    }
+
+    // function getConfirmedTransactionsForNonces(string calldata _chainID, uint256[] calldata _nonces) public view returns (ConfirmedTransaction[] memory _confirmedTransactions) {
+    //     _confirmedTransactions = new ConfirmedTransaction[](_nonces.length);
+    //     for (uint i = 0; i < _nonces.length; i++) {
+    //         _confirmedTransactions[i] = (confirmedTransactions[_chainID][_nonces[i]]);
+    //     }
+    //     return _confirmedTransactions;
+    // }
+
+    function getLastBatchedTxNonce(string calldata _destinationChain) public view returns (uint256) {
+        return lastBatchedTxNonce[_destinationChain];
     }
 
     modifier onlyBridgeContract() {

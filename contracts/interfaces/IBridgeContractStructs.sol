@@ -16,7 +16,7 @@ interface IBridgeContractStructs {
         string rawTransaction;
         string multisigSignature;
         string feePayerMultisigSignature;
-        ConfirmedTransaction[] includedTransactions;
+        uint256[] includedTransactions;
         UTXOs usedUTXOs;
     }
 
@@ -24,7 +24,7 @@ interface IBridgeContractStructs {
         uint256 id;
         string destinationChainId;
         string rawTransaction;
-        ConfirmedTransaction[] includedTransactions;
+        uint256[] includedTransactions;
         UTXOs usedUTXOs;
     }
 
@@ -38,7 +38,6 @@ interface IBridgeContractStructs {
     struct ConfirmedTransaction {
         uint256 nonce;
         uint256 blockHeight;
-        //mapping(string => uint256) receivers;
         Receiver[] receivers;
     }
 

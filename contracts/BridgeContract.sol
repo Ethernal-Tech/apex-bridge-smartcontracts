@@ -155,14 +155,24 @@ contract BridgeContract is IBridgeContract {
             revert CanNotCreateBatchYet(_destinationChain);
         }
 
-        uint256[] memory _nonces = claimsManager.getConfirmedTxNonces(_destinationChain);
+        //uint256[] memory _nonces = claimsManager.getConfirmedTxNonces(_destinationChain);
+        uint256 lastConfirmedTxNonce = claimsManager.getLastConfirmedTxNonce(_destinationChain);
+        // TODO: get the nonce of the last transaction that is executed when batch is executed 
+        uint256 lastBatchedTxNonce = claimsManager.getLastBatchedTxNonce(_destinationChain);
+
+        uint256 txsToProcess = ((lastConfirmedTxNonce - lastBatchedTxNonce) >= MAX_NUMBER_OF_TRANSACTIONS)
+            ? MAX_NUMBER_OF_TRANSACTIONS
+            : (lastConfirmedTxNonce - lastBatchedTxNonce) - 1;
+
+
+
         uint256 counterConfirmedTransactions = 0;
         uint i = 0;
 
-        _confirmedTransactions = new ConfirmedTransaction[](_nonces.length);
+        _confirmedTransactions = new ConfirmedTransaction[](txsToProcess);
 
-        while (counterConfirmedTransactions < MAX_NUMBER_OF_TRANSACTIONS) {
-            ConfirmedTransaction memory confirmedTx = claimsManager.getConfirmedTransaction(_nonces[i]);
+        while (counterConfirmedTransactions < txsToProcess) {
+            ConfirmedTransaction memory confirmedTx = claimsManager.getConfirmedTransaction(_destinationChain, lastBatchedTxNonce + i);
             if (confirmedTx.blockHeight >= nextTimeoutBlock[_destinationChain]){
                 break;
             }
