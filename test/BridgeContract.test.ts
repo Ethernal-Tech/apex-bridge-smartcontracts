@@ -1,4 +1,3 @@
-import { SignedBatchManager } from "./../typechain-types/contracts/SignedBatchManager";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
@@ -55,19 +54,19 @@ describe("Bridge Contract", function () {
         {
           txHash: "0xdef...",
           txIndex: 0,
-          addressUTXO: "0x456...",
+          nonce: 0,
           amount: 200,
         },
         {
           txHash: "0xdef...",
           txIndex: 1,
-          addressUTXO: "0x456...",
+          nonce: 0,
           amount: 100,
         },
         {
           txHash: "0xdef...",
           txIndex: 2,
-          addressUTXO: "0x456...",
+          nonce: 0,
           amount: 50,
         },
       ],
@@ -75,19 +74,19 @@ describe("Bridge Contract", function () {
         {
           txHash: "0xdef...",
           txIndex: 0,
-          addressUTXO: "0x456...",
+          nonce: 0,
           amount: 100,
         },
         {
           txHash: "0xdef...",
           txIndex: 1,
-          addressUTXO: "0x456...",
+          nonce: 0,
           amount: 50,
         },
         {
           txHash: "0xdef...",
           txIndex: 2,
-          addressUTXO: "0x456...",
+          nonce: 0,
           amount: 25,
         },
       ],
@@ -111,10 +110,10 @@ describe("Bridge Contract", function () {
             },
           ],
           outputUTXO: {
-            txHash: "0xdef...",
-            txIndex: 0,
-            addressUTXO: "0x456...",
-            amount: 200,
+            txHash: "0xef1...",
+            txIndex: 1,
+            nonce: 0,
+            amount: 400,
           },
           sourceChainID: "sourceChainID1",
           destinationChainID: "chainID1",
@@ -139,7 +138,7 @@ describe("Bridge Contract", function () {
           outputUTXO: {
             txHash: "0xdef...",
             txIndex: 0,
-            addressUTXO: "0x456...",
+            nonce: 0,
             amount: 200,
           },
           sourceChainID: "sourceChainID1",
@@ -164,7 +163,7 @@ describe("Bridge Contract", function () {
               {
                 txHash: "0xdef...",
                 txIndex: 0,
-                addressUTXO: "0x456...",
+                nonce: 0,
                 amount: 201,
               },
             ],
@@ -172,7 +171,7 @@ describe("Bridge Contract", function () {
               {
                 txHash: "0xdef...",
                 txIndex: 2,
-                addressUTXO: "0x456...",
+                nonce: 0,
                 amount: 51,
               },
             ],
@@ -196,7 +195,7 @@ describe("Bridge Contract", function () {
               {
                 txHash: "0xdef...",
                 txIndex: 0,
-                addressUTXO: "0x456...",
+                nonce: 0,
                 amount: 201,
               },
             ],
@@ -204,7 +203,7 @@ describe("Bridge Contract", function () {
               {
                 txHash: "0xdef...",
                 txIndex: 2,
-                addressUTXO: "0x456...",
+                nonce: 0,
                 amount: 51,
               },
             ],
@@ -257,7 +256,7 @@ describe("Bridge Contract", function () {
           utxo: {
             txHash: "0xdef...",
             txIndex: 0,
-            addressUTXO: "0x456...",
+            nonce: 0,
             amount: 200,
           },
           rawTransaction: "rawTransaction1",
@@ -281,7 +280,7 @@ describe("Bridge Contract", function () {
           utxo: {
             txHash: "0xdef...",
             txIndex: 0,
-            addressUTXO: "0x456...",
+            nonce: 0,
             amount: 200,
           },
           rawTransaction: "rawTransaction1",
@@ -305,7 +304,7 @@ describe("Bridge Contract", function () {
           utxo: {
             txHash: "0xdef...",
             txIndex: 0,
-            addressUTXO: "0x456...",
+            nonce: 0,
             amount: 200,
           },
         },
@@ -325,7 +324,7 @@ describe("Bridge Contract", function () {
           utxo: {
             txHash: "0xdef...",
             txIndex: 0,
-            addressUTXO: "0x456...",
+            nonce: 0,
             amount: 200,
           },
         },
@@ -345,7 +344,7 @@ describe("Bridge Contract", function () {
           utxo: {
             txHash: "0xdef...",
             txIndex: 0,
-            addressUTXO: "0x456...",
+            nonce: 0,
             amount: 200,
           },
         },
@@ -374,21 +373,21 @@ describe("Bridge Contract", function () {
           {
             txHash: "0xdef...",
             txIndex: 0,
-            addressUTXO: "0x456...",
+            nonce: 0,
             amount: 200,
           },
           {
             txHash: "0xdef...",
-            txIndex: 1,
-            addressUTXO: "0x456...",
+            txIndex: 2,
+            nonce: 0,
             amount: 100,
           },
         ],
         feePayerOwnedUTXOs: [
           {
             txHash: "0xdef...",
-            txIndex: 2,
-            addressUTXO: "0x456...",
+            txIndex: 1,
+            nonce: 0,
             amount: 50,
           },
         ],
@@ -1569,42 +1568,38 @@ describe("Bridge Contract", function () {
       });
     });
     describe("UTXO management", function () {
-      it("Should return required amount of UTXOs", async function () {
+      it("Should return required all utxos", async function () {
         const { bridgeContract, owner, UTXOs } = await loadFixture(deployBridgeContractFixture);
 
         await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
-        const utxos = await bridgeContract.getAvailableUTXOs("chainID1", 100);
+        const utxos = await bridgeContract.getAvailableUTXOs("chainID1");
 
-        expect(utxos.multisigOwnedUTXOs[0].txIndex).to.equal(UTXOs.multisigOwnedUTXOs[0].txIndex);
-        expect(utxos.feePayerOwnedUTXOs[0].txIndex).to.equal(UTXOs.feePayerOwnedUTXOs[0].txIndex);
-      });
-
-      it("Should return required amount of UTXOs in multiple UTXOs if needed", async function () {
-        const { bridgeContract, owner, UTXOs } = await loadFixture(deployBridgeContractFixture);
-
-        await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
-
-        const utxos = await bridgeContract.getAvailableUTXOs("chainID1", 250);
-
-        expect(utxos.multisigOwnedUTXOs.length).to.equal(2);
-        expect(utxos.multisigOwnedUTXOs[0].txIndex).to.equal(UTXOs.multisigOwnedUTXOs[0].txIndex);
-        expect(utxos.multisigOwnedUTXOs[1].txIndex).to.equal(UTXOs.multisigOwnedUTXOs[1].txIndex);
-        expect(utxos.feePayerOwnedUTXOs[0].txIndex).to.equal(UTXOs.feePayerOwnedUTXOs[0].txIndex);
+        expect(utxos.multisigOwnedUTXOs.length).to.equal(UTXOs.multisigOwnedUTXOs.length);
+        expect(utxos.feePayerOwnedUTXOs.length).to.equal(UTXOs.feePayerOwnedUTXOs.length);
+        for (let i = 0; i < UTXOs.multisigOwnedUTXOs.length; i++) {
+          expect(utxos.multisigOwnedUTXOs[i].nonce).to.equal(i + 1);
+          expect(utxos.multisigOwnedUTXOs[i].amount).to.equal(UTXOs.multisigOwnedUTXOs[i].amount);
+          expect(utxos.multisigOwnedUTXOs[i].txHash).to.equal(UTXOs.multisigOwnedUTXOs[i].txHash);
+          expect(utxos.multisigOwnedUTXOs[i].txIndex).to.equal(UTXOs.multisigOwnedUTXOs[i].txIndex);
+        }
+        for (let i = 0; i < UTXOs.feePayerOwnedUTXOs.length; i++) {
+          expect(utxos.feePayerOwnedUTXOs[i].nonce).to.equal(i + UTXOs.multisigOwnedUTXOs.length + 1);
+          expect(utxos.feePayerOwnedUTXOs[i].amount).to.equal(UTXOs.feePayerOwnedUTXOs[i].amount);
+          expect(utxos.feePayerOwnedUTXOs[i].txHash).to.equal(UTXOs.feePayerOwnedUTXOs[i].txHash);
+          expect(utxos.feePayerOwnedUTXOs[i].txIndex).to.equal(UTXOs.feePayerOwnedUTXOs[i].txIndex);
+        }
       });
 
       it("Should remove used UTXOs and add out new UTXOs when Bridge Execution Claim is confirmed", async function () {
-        const { bridgeContract, uTXOsManager, owner, validators, UTXOs, signedBatch, validatorClaimsBEC } =
-          await loadFixture(deployBridgeContractFixture);
+       const { bridgeContract, uTXOsManager, owner, validators, UTXOs, signedBatch, validatorClaimsBEC } =
+        await loadFixture(deployBridgeContractFixture);
 
         await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", "0xbcd", "0xbcd", 100);
 
-        expect((await uTXOsManager.getChainUTXOs("chainID1")).multisigOwnedUTXOs.length).to.equal(
-          UTXOs.multisigOwnedUTXOs.length
-        );
-        expect((await uTXOsManager.getChainUTXOs("chainID1")).feePayerOwnedUTXOs.length).to.equal(
-          UTXOs.feePayerOwnedUTXOs.length
-        );
+        const initialResult = await uTXOsManager.getChainUTXOs("chainID1");
+        expect(initialResult.multisigOwnedUTXOs.length).to.equal(UTXOs.multisigOwnedUTXOs.length);
+        expect(initialResult.feePayerOwnedUTXOs.length).to.equal(UTXOs.feePayerOwnedUTXOs.length);
 
         await bridgeContract.connect(validators[0]).submitSignedBatch(signedBatch);
         await bridgeContract.connect(validators[1]).submitSignedBatch(signedBatch);
@@ -1616,13 +1611,30 @@ describe("Bridge Contract", function () {
         await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEC);
         await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
-        expect((await uTXOsManager.getChainUTXOs("chainID1")).multisigOwnedUTXOs.length).to.equal(2);
-        expect((await uTXOsManager.getChainUTXOs("chainID1")).feePayerOwnedUTXOs.length).to.equal(3);
+        const result = await uTXOsManager.getChainUTXOs("chainID1");
 
-        // remaining not used UTXOs
-        expect((await uTXOsManager.getChainUTXOs("chainID1")).multisigOwnedUTXOs[0].amount).to.equal(50);
-        // newly added UTXOs
-        expect((await uTXOsManager.getChainUTXOs("chainID1")).multisigOwnedUTXOs[1].amount).to.equal(201);
+        expect(result.multisigOwnedUTXOs.length).to.equal(2);
+        expect(result.multisigOwnedUTXOs[0].nonce).to.equal(2);
+        expect(result.multisigOwnedUTXOs[0].txHash).to.equal(UTXOs.multisigOwnedUTXOs[1].txHash);
+        expect(result.multisigOwnedUTXOs[0].txIndex).to.equal(UTXOs.multisigOwnedUTXOs[1].txIndex);
+        expect(result.multisigOwnedUTXOs[1].nonce).to.equal(7);
+        expect(result.multisigOwnedUTXOs[1].txHash).to.equal(
+          validatorClaimsBEC.batchExecutedClaims[0].outputUTXOs.multisigOwnedUTXOs[0].txHash);
+        expect(result.multisigOwnedUTXOs[1].txIndex).to.equal(
+            validatorClaimsBEC.batchExecutedClaims[0].outputUTXOs.multisigOwnedUTXOs[0].txIndex);
+
+        expect(result.feePayerOwnedUTXOs.length).to.equal(3);
+        expect(result.feePayerOwnedUTXOs[0].nonce).to.equal(4);
+        expect(result.feePayerOwnedUTXOs[0].txHash).to.equal(UTXOs.feePayerOwnedUTXOs[0].txHash);
+        expect(result.feePayerOwnedUTXOs[0].txIndex).to.equal(UTXOs.feePayerOwnedUTXOs[0].txIndex);
+        expect(result.feePayerOwnedUTXOs[1].nonce).to.equal(6);
+        expect(result.feePayerOwnedUTXOs[1].txHash).to.equal(UTXOs.feePayerOwnedUTXOs[2].txHash);
+        expect(result.feePayerOwnedUTXOs[1].txIndex).to.equal(UTXOs.feePayerOwnedUTXOs[2].txIndex);
+        expect(result.feePayerOwnedUTXOs[2].nonce).to.equal(8);
+        expect(result.feePayerOwnedUTXOs[2].txHash).to.equal(
+          validatorClaimsBEC.batchExecutedClaims[0].outputUTXOs.feePayerOwnedUTXOs[0].txHash);
+          expect(result.feePayerOwnedUTXOs[2].txIndex).to.equal(
+            validatorClaimsBEC.batchExecutedClaims[0].outputUTXOs.feePayerOwnedUTXOs[0].txIndex);
       });
     });
   });

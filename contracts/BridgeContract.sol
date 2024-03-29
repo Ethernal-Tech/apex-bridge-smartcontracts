@@ -128,7 +128,7 @@ contract BridgeContract is IBridgeContract {
         chains[chains.length - 1].keyHashFeePayer = _keyHashFeePayer;
         chains[chains.length - 1].tokenQuantity = _tokenQuantity;
 
-        utxosManager.pushUTXOs(_chainId, _initialUTXOs);
+        utxosManager.setInitialUTxOs(_chainId, _initialUTXOs);
 
         claimsManager.setTokenQuantity(_chainId, _tokenQuantity);
 
@@ -195,17 +195,8 @@ contract BridgeContract is IBridgeContract {
         return confirmedTransactions;
     }
 
-    // Will return available UTXOs that can cover the cost of bridging transactions included in some batch.
-    // Each Batcher will first call the GetConfirmedTransactions() and then calculate (off-chain) how many tokens
-    // should be transfered to users and send this info through the 'txCost' parameter. Based on this input and
-    // number of UTXOs that need to be consolidated, the smart contract will return UTXOs belonging to the multisig address
-    // that can cover the expenses. Additionaly, this method will return available UTXOs belonging to fee payer
-    // multisig address that will cover the network fees (see chapter "2.2.2.3 Batcher" for more details)
-    function getAvailableUTXOs(
-        string calldata _destinationChain,
-        uint256 txCost
-    ) external view override returns (UTXOs memory availableUTXOs) {
-        return utxosManager.getAvailableUTXOs(_destinationChain, txCost);
+    function getAvailableUTXOs(string calldata _destinationChain) external view override returns (UTXOs memory availableUTXOs) {
+        return utxosManager.getChainUTXOs(_destinationChain);
     }
 
     function getConfirmedBatch(
