@@ -19,8 +19,16 @@ abstract contract IBridgeContract is IBridgeContractStructs {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
-        string calldata _keyHashMultisig,
-        string calldata _keyHashFeePayer,
+        ValidatorAddressCardanoData[] calldata validatorData,
+        uint256 _tokenQuantity
+    ) external virtual;
+
+    function registerChainGovernance(
+        string calldata _chainId,
+        UTXOs calldata _initialUTXOs,
+        string calldata _addressMultisig,
+        string calldata _addressFeePayer,
+        ValidatorCardanoData calldata validatorData,
         uint256 _tokenQuantity
     ) external virtual;
 
@@ -44,6 +52,8 @@ abstract contract IBridgeContract is IBridgeContractStructs {
     function getConfirmedBatch(
         string calldata _destinationChain
     ) external view virtual returns (ConfirmedBatch memory batch);
+
+    function getValidatorsCardanoData(string calldata _chainId) external view virtual returns (ValidatorCardanoData[] memory validators);
 
     function getLastObservedBlock(string calldata _sourceChain) external view virtual returns (CardanoBlock memory cblock);
 

@@ -133,8 +133,6 @@ interface IBridgeContractStructs {
         UTXOs utxos;
         string addressMultisig;
         string addressFeePayer;
-        string keyHashMultisig;
-        string keyHashFeePayer;
         uint256 tokenQuantity;
     }
 
@@ -151,11 +149,16 @@ interface IBridgeContractStructs {
         uint256 slot;
     }
 
+    struct ValidatorAddressCardanoData {
+        address addr;
+        ValidatorCardanoData data;
+    }
+
     struct ValidatorCardanoData {
         string keyHash;
         string keyHashFee;
-        bytes verifyingKey;
-        bytes verifyingKeyFee;
+        string verifyingKey;
+        string verifyingKeyFee;
     }
 
     error AlreadyConfirmed(string _claimTransactionHash);
@@ -171,6 +174,7 @@ interface IBridgeContractStructs {
     error NotSignedBatchManagerOrBridgeContract();
     error NotEnoughBridgingTokensAwailable(string _claimTransactionHash);
     error CanNotCreateBatchYet(string _blockchainID);
+    error InvalidData(string data);
     //TODO: remove when not needed anymore
     error RefundRequestClaimNotYetSupporter();
 
