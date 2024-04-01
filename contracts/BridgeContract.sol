@@ -36,6 +36,11 @@ contract BridgeContract is IBridgeContract {
 
     Chain[] private chains;
     address[] private validatorsAddresses;
+    
+    // BlockchainID -> validator address -> ValidatorCardanoData
+    mapping(string => mapping(address => ValidatorCardanoData)) private validatorsCardanoDataPerAddress;
+    // BlockchainID -> ValidatorCardanoData[]
+    mapping(string => ValidatorCardanoData[]) private validatorsCardanoData;
 
     address private owner;
     //TODO: set during initialization
@@ -73,11 +78,20 @@ contract BridgeContract is IBridgeContract {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
-        string calldata _keyHashMultisig,
-        string calldata _keyHashFeePayer,
+        ValidatorAddressCardanoData[] calldata validators,
         uint256 _tokenQuantity
     ) public override onlyOwner {
-        _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _keyHashMultisig, _keyHashFeePayer, _tokenQuantity);
+        if (validatorsAddresses.length != validators.length) {
+            revert InvalidData("validators count");
+        }
+        // set validator cardano data for each validator
+        for (uint i = 0; i < validators.length; i++) {
+            ValidatorAddressCardanoData memory dt = validators[i];
+            validatorsCardanoDataPerAddress[_chainId][dt.addr] = dt.data;
+            validatorsCardanoData[_chainId].push(dt.data);
+        }
+
+        _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
     }
 
     function registerChainGovernance(
@@ -85,10 +99,9 @@ contract BridgeContract is IBridgeContract {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
-        string calldata _keyHashMultisig,
-        string calldata _keyHashFeePayer,
+        ValidatorCardanoData calldata validator,
         uint256 _tokenQuantity
-    ) external onlyValidator {
+    ) external override onlyValidator {
         if (registeredChains[_chainId]) {
             revert ChainAlreadyRegistered(_chainId);
         }
@@ -101,9 +114,12 @@ contract BridgeContract is IBridgeContract {
         
         claimsManager.setVoted(_chainId, msg.sender, true);
         claimsManager.setNumberOfVotes(chainHash);
+        // set validator cardano data
+        validatorsCardanoDataPerAddress[_chainId][msg.sender] = validator;
+        validatorsCardanoData[_chainId].push(validator);
         
         if (claimsHelper.hasChainRegistrationConsensus(chainHash)) {
-            _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _keyHashMultisig, _keyHashFeePayer, _tokenQuantity);
+            _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
         } else {
             emit newChainProposal(_chainId, msg.sender);
         }
@@ -114,8 +130,6 @@ contract BridgeContract is IBridgeContract {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
-        string calldata _keyHashMultisig,
-        string calldata _keyHashFeePayer,
         uint256 _tokenQuantity
     ) internal {
         registeredChains[_chainId] = true;
@@ -124,8 +138,6 @@ contract BridgeContract is IBridgeContract {
         chains[chains.length - 1].utxos = _initialUTXOs;
         chains[chains.length - 1].addressMultisig = _addressMultisig;
         chains[chains.length - 1].addressFeePayer = _addressFeePayer;
-        chains[chains.length - 1].keyHashMultisig = _keyHashMultisig;
-        chains[chains.length - 1].keyHashFeePayer = _keyHashFeePayer;
         chains[chains.length - 1].tokenQuantity = _tokenQuantity;
 
         utxosManager.setInitialUTxOs(_chainId, _initialUTXOs);
@@ -204,6 +216,10 @@ contract BridgeContract is IBridgeContract {
     ) external view override returns (ConfirmedBatch memory batch) {
         //return confirmedBatches[_destinationChain][lastConfirmedBatch[_destinationChain]];
         return signedBatchManager.getConfirmedBatch(_destinationChain);
+    }
+
+    function getValidatorsCardanoData(string calldata _chainId) external view override returns (ValidatorCardanoData[] memory validators) {
+        return validatorsCardanoData[_chainId];
     }
 
     function getLastObservedBlock(string calldata _sourceChain) external view override returns (CardanoBlock memory cblock) {
