@@ -138,32 +138,7 @@ describe("Bridge Contract", function () {
           outputUTXO: {
             txHash: "0xfed...",
             txIndex: 0,
-            addressUTXO: "0x567...",
-            amount: 200,
-          },
-          sourceChainID: "sourceChainID1",
-          destinationChainID: "chainID1",
-        },
-      ],
-      batchExecutedClaims: [],
-      batchExecutionFailedClaims: [],
-      refundRequestClaims: [],
-      refundExecutedClaims: [],
-    };
-    const validatorClaimsBRC_ConfirmedTransactions = {
-      bridgingRequestClaims: [
-        {
-          observedTransactionHash: "0xbcd...",
-          receivers: [
-            {
-              destinationAddress: "0x234...",
-              amount: 100,
-            },
-          ],
-          outputUTXO: {
-            txHash: "0xfed...",
-            txIndex: 0,
-            addressUTXO: "0x567...",
+            nonce: 0,
             amount: 200,
           },
           sourceChainID: "sourceChainID1",
@@ -409,17 +384,7 @@ describe("Bridge Contract", function () {
       multisigSignature: "multisigSignature1",
       feePayerMultisigSignature: "feePayerMultisigSignature1",
       includedTransactions: [
-        0
-        // {
-        //   nonce: "0",
-        //   blockHeight: 1,
-        //   receivers: [
-        //     {
-        //       destinationAddress: "0x123...",
-        //       amount: 100,
-        //     },
-        //   ],
-        // },
+        1
       ],
       usedUTXOs: {
         multisigOwnedUTXOs: [
@@ -1030,7 +995,7 @@ describe("Bridge Contract", function () {
       });
 
       it("Should add confirmed transaction to the map after Bridging Request Claim is confirmed", async function () {
-        const { bridgeContract, claimsManager, owner, validators, UTXOs, validatorClaimsBRC } = await loadFixture(
+        const { bridgeContract, claimsManager, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } = await loadFixture(
           deployBridgeContractFixture
         );
         await bridgeContract
@@ -1072,7 +1037,7 @@ describe("Bridge Contract", function () {
       });
 
       it("Should add confirmed transaction to the map after Bridging Request Claim is confirmed", async function () {
-        const { bridgeContract, claimsManager, owner, validators, UTXOs, validatorClaimsBRC } = await loadFixture(
+        const { bridgeContract, claimsManager, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } = await loadFixture(
           deployBridgeContractFixture
         );
         await bridgeContract
@@ -1082,8 +1047,7 @@ describe("Bridge Contract", function () {
             UTXOs,
             "0x",
             "0x",
-            "0xbcd",
-            "0xbcd",
+            validatorsCardanoData,
             1000
           );
         await bridgeContract
@@ -1093,8 +1057,7 @@ describe("Bridge Contract", function () {
             UTXOs,
             "0x",
             "0x",
-            "0xbcd",
-            "0xbcd",
+            validatorsCardanoData,
             1000
           );
 
@@ -1431,9 +1394,9 @@ describe("Bridge Contract", function () {
         ).to.be.revertedWithCustomError(bridgeContract, "AlreadyConfirmed");
       });
     });
-    describe("Batch creation", function () {
-      it("ShouldCreateBatch should return false if there is not enough validated claims and no pending signedClaims from validator", async function () {
-        const { bridgeContract, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } = await loadFixture(
+    describe("Transaction Confirmation", function () {
+      it("GetConfirmedTransaction should should be retrieved after submitting", async function () {
+        const { bridgeContract, owner, validators, UTXOs, validatorClaimsBRC, validatorClaimsBRC_ConfirmedTransactions, validatorsCardanoData } = await loadFixture(
           deployBridgeContractFixture
         );
         await bridgeContract
@@ -1477,19 +1440,15 @@ describe("Bridge Contract", function () {
         const expectedReceiversAddress = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress;
         const expectedReceiversAmount = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount;
 
-
-        console.log("--------------------------------------");
-        console.log(confirmedTxs.length)
-
         expect(confirmedTxs.length).to.equal(1);
-        expect(confirmedTxs[0].nonce).to.equal(0);
+        expect(confirmedTxs[0].nonce).to.equal(1);
         expect(confirmedTxs[0].blockHeight).to.be.lessThan(await bridgeContract.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID));
         expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
         expect(confirmedTxs[0].receivers[0].amount).to.equal(expectedReceiversAmount);
       })
 
       it("GetConfirmedTransactions should not return more transaction than MAX_NUMBER_OF_TRANSACTIONS", async function () {
-        const { bridgeContract, claimsManager, owner, UTXOs, validators, validatorClaimsBRC, validatorClaimsBRC_ConfirmedTransactions } = await loadFixture(deployBridgeContractFixture);
+        const { bridgeContract, claimsManager, owner, UTXOs, validators, validatorClaimsBRC, validatorClaimsBRC_ConfirmedTransactions, validatorsCardanoData } = await loadFixture(deployBridgeContractFixture);
         
         await bridgeContract
           .connect(owner)
@@ -1498,8 +1457,7 @@ describe("Bridge Contract", function () {
             UTXOs,
             "0x",
             "0x",
-            "0xbcd",
-            "0xbcd",
+            validatorsCardanoData,
             1000
           );
         await bridgeContract
@@ -1509,8 +1467,7 @@ describe("Bridge Contract", function () {
             UTXOs,
             "0x",
             "0x",
-            "0xbcd",
-            "0xbcd",
+            validatorsCardanoData,
             1000
           );
 
@@ -1535,11 +1492,8 @@ describe("Bridge Contract", function () {
         const expectedReceiversAmount = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount;
 
 
-        console.log("--------------------------------------");
-        console.log(confirmedTxs.length)
-
         expect(confirmedTxs.length).to.equal(1);
-        expect(confirmedTxs[0].nonce).to.equal(0);
+        expect(confirmedTxs[0].nonce).to.equal(1);
         expect(confirmedTxs[0].blockHeight).to.be.lessThan(await bridgeContract.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID));
         expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
         expect(confirmedTxs[0].receivers[0].amount).to.equal(expectedReceiversAmount);

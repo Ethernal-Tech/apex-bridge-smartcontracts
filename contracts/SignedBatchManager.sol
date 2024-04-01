@@ -152,6 +152,7 @@ contract SignedBatchManager is IBridgeContractStructs {
             }
             i++;
         }
+
         return bridgedAmount;
     }
 

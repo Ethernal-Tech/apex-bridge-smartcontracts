@@ -173,19 +173,21 @@ contract BridgeContract is IBridgeContract {
 
         uint256 txsToProcess = ((lastConfirmedTxNonce - lastBatchedTxNonce) >= MAX_NUMBER_OF_TRANSACTIONS)
             ? MAX_NUMBER_OF_TRANSACTIONS
-            : (lastConfirmedTxNonce - lastBatchedTxNonce) - 1;
+            : (lastConfirmedTxNonce - lastBatchedTxNonce);
 
         uint256 counterConfirmedTransactions = 0;
-
-        _confirmedTransactions = new ConfirmedTransaction[](txsToProcess);
-
+        
         while (counterConfirmedTransactions < txsToProcess) {
-            ConfirmedTransaction memory confirmedTx = claimsManager.getConfirmedTransaction(_destinationChain, lastBatchedTxNonce + counterConfirmedTransactions);
+            ConfirmedTransaction memory confirmedTx = claimsManager.getConfirmedTransaction(_destinationChain, lastBatchedTxNonce + counterConfirmedTransactions + 1);
             if (confirmedTx.blockHeight >= nextTimeoutBlock[_destinationChain]){
                 break;
             }
-            _confirmedTransactions[counterConfirmedTransactions] = confirmedTx;
             counterConfirmedTransactions++;
+        }
+        _confirmedTransactions = new ConfirmedTransaction[](counterConfirmedTransactions);
+
+        for (uint i = 0; i < counterConfirmedTransactions; i++) {
+            _confirmedTransactions[i] = claimsManager.getConfirmedTransaction(_destinationChain, lastBatchedTxNonce + i + 1);
         }
 
         return _confirmedTransactions;
