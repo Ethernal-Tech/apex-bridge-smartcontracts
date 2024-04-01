@@ -155,16 +155,13 @@ contract BridgeContract is IBridgeContract {
             revert CanNotCreateBatchYet(_destinationChain);
         }
 
-        //uint256[] memory _nonces = claimsManager.getConfirmedTxNonces(_destinationChain);
         uint256 lastConfirmedTxNonce = claimsManager.getLastConfirmedTxNonce(_destinationChain);
-        // TODO: get the nonce of the last transaction that is executed when batch is executed 
+        
         uint256 lastBatchedTxNonce = claimsManager.getLastBatchedTxNonce(_destinationChain);
 
         uint256 txsToProcess = ((lastConfirmedTxNonce - lastBatchedTxNonce) >= MAX_NUMBER_OF_TRANSACTIONS)
             ? MAX_NUMBER_OF_TRANSACTIONS
             : (lastConfirmedTxNonce - lastBatchedTxNonce) - 1;
-
-
 
         uint256 counterConfirmedTransactions = 0;
         uint i = 0;
@@ -182,43 +179,6 @@ contract BridgeContract is IBridgeContract {
         }
 
         return _confirmedTransactions;
-
-        // uint256 lastBatchedClaimNumber = lastBatchedClaim[_destinationChain];
-        // uint256 lastConfirmedClaim = claimsManager.claimsCounter(_destinationChain);
-
-        // uint256 lastClaimToInclude = ((lastConfirmedClaim - lastBatchedClaimNumber) >= MAX_NUMBER_OF_TRANSACTIONS)
-        //     ? lastBatchedClaimNumber + MAX_NUMBER_OF_TRANSACTIONS
-        //     : lastConfirmedClaim;
-
-        // lastClaimIncludedInBatch[_destinationChain] = lastClaimToInclude;
-
-        // uint256 counterConfirmedTransactions;
-
-        // ConfirmedTransaction[] memory confirmedTransactions = new ConfirmedTransaction[](
-        //     lastClaimToInclude - lastBatchedClaimNumber
-        // );
-
-        // for (uint i = lastBatchedClaimNumber + 1; i <= lastClaimToInclude; i++) {
-        //     ClaimTypes claimType = claimsManager.queuedClaimsTypes(_destinationChain, i);
-
-        //     if (claimType == ClaimTypes.BRIDGING_REQUEST) {
-        //         Receiver[] memory tempReceivers = claimsHelper
-        //             .getClaimBRC(claimsManager.queuedClaims(_destinationChain, i))
-        //             .receivers;
-
-        //         ConfirmedTransaction memory confirmedtransaction = ConfirmedTransaction(
-        //             // function can not be view anymore
-        //             confirmedTransactionNounce[_destinationChain]++,
-        //             tempReceivers
-        //         );
-        //         confirmedTransactions[counterConfirmedTransactions] = confirmedtransaction;
-        //         counterConfirmedTransactions++;
-        //     } else {
-        //         revert RefundRequestClaimNotYetSupporter();
-        //     }
-        //     i++;
-        // }
-        // return confirmedTransactions;
     }
 
     // Will return available UTXOs that can cover the cost of bridging transactions included in some batch.

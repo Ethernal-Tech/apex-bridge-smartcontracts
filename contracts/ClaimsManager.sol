@@ -29,9 +29,6 @@ contract ClaimsManager is IBridgeContractStructs {
     // ClaimHash -> numberOfVotes
     mapping(bytes32 => uint8) public numberOfVotes;
 
-    // BlockchainID -> nonce
-    //mapping(string => uint256) public nextConfirmedTransactionNonce;
-
     // chainID -> nonce -> ConfirmedTransaction
     mapping(string => mapping(uint256 => ConfirmedTransaction)) private confirmedTransactions;
 
@@ -217,10 +214,8 @@ contract ClaimsManager is IBridgeContractStructs {
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
         }
     }
-    // chainID -> mapping(nonce -> tx)
+    
     function _setConfirmedTransactions(BridgingRequestClaim memory _claim) internal { // passed the claim with the memory keyword
-    // TODO: Add chainID as a key to confirmedTransactions
-    // TODO: Store only last nonce
         uint256 nextNonce = lastConfirmedTxNonce[_claim.destinationChainID]++;
         confirmedTransactions[_claim.destinationChainID][nextNonce].nonce = nextNonce;
 
@@ -264,14 +259,6 @@ contract ClaimsManager is IBridgeContractStructs {
     function getConfirmedTransaction(string calldata _destinationChain, uint256 _nonce) public view returns (ConfirmedTransaction memory) {
         return confirmedTransactions[_destinationChain][_nonce];
     }
-
-    // function getConfirmedTransactionsForNonces(string calldata _chainID, uint256[] calldata _nonces) public view returns (ConfirmedTransaction[] memory _confirmedTransactions) {
-    //     _confirmedTransactions = new ConfirmedTransaction[](_nonces.length);
-    //     for (uint i = 0; i < _nonces.length; i++) {
-    //         _confirmedTransactions[i] = (confirmedTransactions[_chainID][_nonces[i]]);
-    //     }
-    //     return _confirmedTransactions;
-    // }
 
     function getLastBatchedTxNonce(string calldata _destinationChain) public view returns (uint256) {
         return lastBatchedTxNonce[_destinationChain];
