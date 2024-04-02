@@ -2,6 +2,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { any } from "hardhat/internal/core/params/argumentTypes";
+import { isRevertResult } from "hardhat/internal/hardhat-network/stack-traces/message-trace";
 
 describe("Bridge Contract", function () {
   // We define a fixture to reuse the same setup in every test.
@@ -1395,7 +1396,7 @@ describe("Bridge Contract", function () {
       });
     });
     describe("Transaction Confirmation", function () {
-      it("GetConfirmedTransaction should should be retrieved after submitting", async function () {
+      it("GetConfirmedTransaction should not return transaction that occured after the timeout", async function () {
         const { bridgeContract, owner, validators, UTXOs, validatorClaimsBRC, validatorClaimsBRC_ConfirmedTransactions, validatorsCardanoData } = await loadFixture(
           deployBridgeContractFixture
         );
@@ -1744,6 +1745,75 @@ describe("Bridge Contract", function () {
           (await bridgeContract.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId))
             .multisigSignatures[3]
         ).to.equal("multisigSignature1");
+      });
+
+      it("Should create and execute batch after transactions are confirmed", async function () {
+        const { bridgeContract, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData, signedBatchManager, signedBatch, validatorClaimsBEC } = await loadFixture(
+          deployBridgeContractFixture
+        );
+        await bridgeContract
+        .connect(owner)
+        .registerChain(
+          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+          UTXOs,
+          "0x",
+          "0x",
+          validatorsCardanoData,
+          10000
+        );
+      await bridgeContract
+        .connect(owner)
+        .registerChain(
+          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+          UTXOs,
+          "0x",
+          "0x",
+          validatorsCardanoData,
+          10000
+        );
+
+        const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID;
+
+        await expect(bridgeContract.connect(validators[0]).getConfirmedTransactions(_destinationChain)).to.be.revertedWithCustomError(bridgeContract, "CanNotCreateBatchYet");
+
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+        const confirmedTxs = await bridgeContract.connect(validators[0]).getConfirmedTransactions(_destinationChain)
+        expect(confirmedTxs.length).to.equal(1);
+
+        //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
+        // await ethers.provider.send("evm_mine");
+        // await ethers.provider.send("evm_mine");
+
+        expect(await bridgeContract.shouldCreateBatch(_destinationChain))
+          .to.be.true;
+
+
+        await bridgeContract.connect(validators[0]).submitSignedBatch(signedBatch);
+        await bridgeContract.connect(validators[1]).submitSignedBatch(signedBatch);
+        await bridgeContract.connect(validators[2]).submitSignedBatch(signedBatch);
+        await bridgeContract.connect(validators[3]).submitSignedBatch(signedBatch);
+
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEC);
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEC);
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEC);
+        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEC);
+
+
+        
+        const currentBatchBlock = await signedBatchManager.currentBatchBlock(_destinationChain);
+        const currentBlock = await ethers.provider.getBlockNumber();
+        const nextTimeoutBlock = await bridgeContract.nextTimeoutBlock(_destinationChain);
+        console.log("CurrentBlock: ", currentBlock);
+        console.log("CurrentBatchBlock: ", currentBatchBlock);
+        console.log("NextTimeoutBlock: ", nextTimeoutBlock);
+        
+        const confirmedTxs3 = await bridgeContract.connect(validators[0]).getConfirmedTransactions(_destinationChain)
+        console.log("CONFIRMED_TXS_LEN: ", confirmedTxs3);
+        expect(confirmedTxs3.length).to.equal(0);
       });
 
       // it("Should return confirmedTransactions from confirmed BridgeRequestClaims", async function () {
