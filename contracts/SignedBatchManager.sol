@@ -42,6 +42,10 @@ contract SignedBatchManager is IBridgeContractStructs {
     }
 
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridgeContract {
+        if (!bridgeContract.isChainRegistered(_signedBatch.destinationChainId)) {
+            revert ChainIsNotRegistered(_signedBatch.destinationChainId);
+        }
+
         // TODO: call precompile to check if signedBatch is valid
 
         if (claimsManager.voted(Strings.toString(_signedBatch.id), _caller)) {
@@ -145,6 +149,10 @@ contract SignedBatchManager is IBridgeContractStructs {
         uint256 _nonce
     ) public view returns (SignedBatch memory signedBatch) {
         return confirmedSignedBatches[_destinationChain][_nonce];
+    }
+
+    function getRawTransactionFromLastBatch(string calldata _destinationChain) external view returns (string memory) {
+        return confirmedBatches[_destinationChain][lastConfirmedBatch[_destinationChain]].rawTransaction;
     }
 
     function setCurrentBatchBlock(
