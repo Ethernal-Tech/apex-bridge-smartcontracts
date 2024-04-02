@@ -166,24 +166,10 @@ contract BridgeContract is IBridgeContract {
         if (!shouldCreateBatch(_destinationChain)) {
             revert CanNotCreateBatchYet(_destinationChain);
         }
-
-        uint256 lastConfirmedTxNonce = claimsManager.getLastConfirmedTxNonce(_destinationChain);
         
         uint256 lastBatchedTxNonce = claimsManager.getLastBatchedTxNonce(_destinationChain);
 
-        uint256 txsToProcess = ((lastConfirmedTxNonce - lastBatchedTxNonce) >= MAX_NUMBER_OF_TRANSACTIONS)
-            ? MAX_NUMBER_OF_TRANSACTIONS
-            : (lastConfirmedTxNonce - lastBatchedTxNonce);
-
-        uint256 counterConfirmedTransactions = 0;
-        
-        while (counterConfirmedTransactions < txsToProcess) {
-            ConfirmedTransaction memory confirmedTx = claimsManager.getConfirmedTransaction(_destinationChain, lastBatchedTxNonce + counterConfirmedTransactions + 1);
-            if (confirmedTx.blockHeight >= nextTimeoutBlock[_destinationChain]){
-                break;
-            }
-            counterConfirmedTransactions++;
-        }
+        uint256 counterConfirmedTransactions = getBatchingTxsCount(_destinationChain);
         _confirmedTransactions = new ConfirmedTransaction[](counterConfirmedTransactions);
 
         for (uint i = 0; i < counterConfirmedTransactions; i++) {
@@ -191,6 +177,25 @@ contract BridgeContract is IBridgeContract {
         }
 
         return _confirmedTransactions;
+    }
+
+    function getBatchingTxsCount(string calldata _chainId) internal view returns (uint256 counterConfirmedTransactions) {
+        uint256 lastConfirmedTxNonce = claimsManager.getLastConfirmedTxNonce(_chainId);
+        uint256 lastBatchedTxNonce = claimsManager.getLastBatchedTxNonce(_chainId);
+
+        uint256 txsToProcess = ((lastConfirmedTxNonce - lastBatchedTxNonce) >= MAX_NUMBER_OF_TRANSACTIONS)
+            ? MAX_NUMBER_OF_TRANSACTIONS
+            : (lastConfirmedTxNonce - lastBatchedTxNonce);
+        
+        counterConfirmedTransactions = 0;
+        
+        while (counterConfirmedTransactions < txsToProcess) {
+            ConfirmedTransaction memory confirmedTx = claimsManager.getConfirmedTransaction(_chainId, lastBatchedTxNonce + counterConfirmedTransactions + 1);
+            if (confirmedTx.blockHeight >= nextTimeoutBlock[_chainId]){
+                break;
+            }
+            counterConfirmedTransactions++;
+        }
     }
 
     function getAvailableUTXOs(string calldata _destinationChain) external view override returns (UTXOs memory availableUTXOs) {
