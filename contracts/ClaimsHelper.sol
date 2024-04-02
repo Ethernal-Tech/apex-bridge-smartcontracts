@@ -35,10 +35,7 @@ contract ClaimsHelper is IBridgeContractStructs {
     }
 
     function hasChainRegistrationConsensus(bytes32 _hash) public view returns (bool) {
-        if (claimsManager.numberOfVotes(_hash) == bridgeContract.validatorsCount()) {
-            return true;
-        }
-        return false;
+        return claimsManager.numberOfVotes(_hash) == bridgeContract.validatorsCount();
     }
 
     function getClaimBRC(string calldata _id) external view returns (BridgingRequestClaim memory claim) {
@@ -68,11 +65,7 @@ contract ClaimsHelper is IBridgeContractStructs {
     }
 
     function isThereEnoughTokensToBridge(BridgingRequestClaim calldata _claim) external view returns (bool) {
-        if (claimsManager.chainTokenQuantity(_claim.sourceChainID) < getNeededTokenQuantity(_claim.receivers)) {
-            revert NotEnoughBridgingTokensAwailable(_claim.observedTransactionHash);
-        }
-
-        return true;
+        return claimsManager.chainTokenQuantity(_claim.sourceChainID) >= getNeededTokenQuantity(_claim.receivers);
     }
 
     function getNeededTokenQuantity(Receiver[] calldata _receivers) public pure returns (uint256) {
@@ -109,10 +102,7 @@ contract ClaimsHelper is IBridgeContractStructs {
         }
 
         for (uint256 i = 0; i < a.length; i++) {
-            if (!_equal(a[i].destinationAddress, b[i].destinationAddress)) {
-                return false;
-            }
-            if (a[i].amount != b[i].amount) {
+            if (a[i].amount != b[i].amount || !_equal(a[i].destinationAddress, b[i].destinationAddress)) {
                 return false;
             }
         }

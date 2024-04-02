@@ -47,9 +47,9 @@ interface IBridgeContractStructs {
     }
 
     struct UTXO {
+        uint64 nonce; // this is set by smart contract - order of confirmed UTXOs
         string txHash;
         uint256 txIndex;
-        string addressUTXO; // TODO: do we need this? I think we do
         uint256 amount;
     }
 
@@ -133,8 +133,6 @@ interface IBridgeContractStructs {
         UTXOs utxos;
         string addressMultisig;
         string addressFeePayer;
-        string keyHashMultisig;
-        string keyHashFeePayer;
         uint256 tokenQuantity;
     }
 
@@ -151,11 +149,16 @@ interface IBridgeContractStructs {
         uint256 slot;
     }
 
+    struct ValidatorAddressCardanoData {
+        address addr;
+        ValidatorCardanoData data;
+    }
+
     struct ValidatorCardanoData {
         string keyHash;
         string keyHashFee;
-        bytes verifyingKey;
-        bytes verifyingKeyFee;
+        string verifyingKey;
+        string verifyingKeyFee;
     }
 
     error AlreadyConfirmed(string _claimTransactionHash);
@@ -171,6 +174,7 @@ interface IBridgeContractStructs {
     error NotSignedBatchManagerOrBridgeContract();
     error NotEnoughBridgingTokensAwailable(string _claimTransactionHash);
     error CanNotCreateBatchYet(string _blockchainID);
+    error InvalidData(string data);
     //TODO: remove when not needed anymore
     error RefundRequestClaimNotYetSupporter();
 

@@ -22,18 +22,17 @@ contract BridgeContract is IBridgeContract {
 
     mapping(string => bool) private registeredChains;
 
-    // Blochchain ID -> claimsCounter
-    mapping(string => uint256) public lastBatchedClaim;
-
-    // Blockchain ID -> claimNumber
-    mapping(string => uint256) public lastClaimIncludedInBatch;
-
     // Blochchain ID -> blockNumber
     mapping(string => uint256) public nextTimeoutBlock;
 
 
     Chain[] private chains;
     address[] private validatorsAddresses;
+    
+    // BlockchainID -> validator address -> ValidatorCardanoData
+    mapping(string => mapping(address => ValidatorCardanoData)) private validatorsCardanoDataPerAddress;
+    // BlockchainID -> ValidatorCardanoData[]
+    mapping(string => ValidatorCardanoData[]) private validatorsCardanoData;
 
     address private owner;
     //TODO: set during initialization
@@ -71,11 +70,20 @@ contract BridgeContract is IBridgeContract {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
-        string calldata _keyHashMultisig,
-        string calldata _keyHashFeePayer,
+        ValidatorAddressCardanoData[] calldata validators,
         uint256 _tokenQuantity
     ) public override onlyOwner {
-        _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _keyHashMultisig, _keyHashFeePayer, _tokenQuantity);
+        if (validatorsAddresses.length != validators.length) {
+            revert InvalidData("validators count");
+        }
+        // set validator cardano data for each validator
+        for (uint i = 0; i < validators.length; i++) {
+            ValidatorAddressCardanoData memory dt = validators[i];
+            validatorsCardanoDataPerAddress[_chainId][dt.addr] = dt.data;
+            validatorsCardanoData[_chainId].push(dt.data);
+        }
+
+        _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
     }
 
     function registerChainGovernance(
@@ -83,10 +91,9 @@ contract BridgeContract is IBridgeContract {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
-        string calldata _keyHashMultisig,
-        string calldata _keyHashFeePayer,
+        ValidatorCardanoData calldata validator,
         uint256 _tokenQuantity
-    ) external onlyValidator {
+    ) external override onlyValidator {
         if (registeredChains[_chainId]) {
             revert ChainAlreadyRegistered(_chainId);
         }
@@ -99,9 +106,12 @@ contract BridgeContract is IBridgeContract {
         
         claimsManager.setVoted(_chainId, msg.sender, true);
         claimsManager.setNumberOfVotes(chainHash);
+        // set validator cardano data
+        validatorsCardanoDataPerAddress[_chainId][msg.sender] = validator;
+        validatorsCardanoData[_chainId].push(validator);
         
         if (claimsHelper.hasChainRegistrationConsensus(chainHash)) {
-            _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _keyHashMultisig, _keyHashFeePayer, _tokenQuantity);
+            _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
         } else {
             emit newChainProposal(_chainId, msg.sender);
         }
@@ -112,8 +122,6 @@ contract BridgeContract is IBridgeContract {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
-        string calldata _keyHashMultisig,
-        string calldata _keyHashFeePayer,
         uint256 _tokenQuantity
     ) internal {
         registeredChains[_chainId] = true;
@@ -122,11 +130,9 @@ contract BridgeContract is IBridgeContract {
         chains[chains.length - 1].utxos = _initialUTXOs;
         chains[chains.length - 1].addressMultisig = _addressMultisig;
         chains[chains.length - 1].addressFeePayer = _addressFeePayer;
-        chains[chains.length - 1].keyHashMultisig = _keyHashMultisig;
-        chains[chains.length - 1].keyHashFeePayer = _keyHashFeePayer;
         chains[chains.length - 1].tokenQuantity = _tokenQuantity;
 
-        utxosManager.pushUTXOs(_chainId, _initialUTXOs);
+        utxosManager.setInitialUTxOs(_chainId, _initialUTXOs);
 
         claimsManager.setTokenQuantity(_chainId, _tokenQuantity);
 
@@ -154,44 +160,40 @@ contract BridgeContract is IBridgeContract {
         if (!shouldCreateBatch(_destinationChain)) {
             revert CanNotCreateBatchYet(_destinationChain);
         }
-
-        uint256 lastConfirmedTxNonce = claimsManager.getLastConfirmedTxNonce(_destinationChain);
         
-        uint256 lastBatchedTxNonce = claimsManager.getLastBatchedTxNonce(_destinationChain);
+        uint256 firstTxNonce = claimsManager.getLastBatchedTxNonce(_destinationChain) + 1;
 
-        uint256 txsToProcess = ((lastConfirmedTxNonce - lastBatchedTxNonce) >= MAX_NUMBER_OF_TRANSACTIONS)
-            ? MAX_NUMBER_OF_TRANSACTIONS
-            : (lastConfirmedTxNonce - lastBatchedTxNonce) - 1;
+        uint256 counterConfirmedTransactions = getBatchingTxsCount(_destinationChain);
+        _confirmedTransactions = new ConfirmedTransaction[](counterConfirmedTransactions);
 
-        uint256 counterConfirmedTransactions = 0;
-        uint i = 0;
-
-        _confirmedTransactions = new ConfirmedTransaction[](txsToProcess);
-
-        while (counterConfirmedTransactions < txsToProcess) {
-            ConfirmedTransaction memory confirmedTx = claimsManager.getConfirmedTransaction(_destinationChain, lastBatchedTxNonce + i);
-            if (confirmedTx.blockHeight >= nextTimeoutBlock[_destinationChain]){
-                break;
-            }
-            _confirmedTransactions[counterConfirmedTransactions] = confirmedTx;
-            counterConfirmedTransactions++;
-            i++;
+        for (uint i = 0; i < counterConfirmedTransactions; i++) {
+            _confirmedTransactions[i] = claimsManager.getConfirmedTransaction(_destinationChain, firstTxNonce + i);
         }
 
         return _confirmedTransactions;
     }
 
-    // Will return available UTXOs that can cover the cost of bridging transactions included in some batch.
-    // Each Batcher will first call the GetConfirmedTransactions() and then calculate (off-chain) how many tokens
-    // should be transfered to users and send this info through the 'txCost' parameter. Based on this input and
-    // number of UTXOs that need to be consolidated, the smart contract will return UTXOs belonging to the multisig address
-    // that can cover the expenses. Additionaly, this method will return available UTXOs belonging to fee payer
-    // multisig address that will cover the network fees (see chapter "2.2.2.3 Batcher" for more details)
-    function getAvailableUTXOs(
-        string calldata _destinationChain,
-        uint256 txCost
-    ) external view override returns (UTXOs memory availableUTXOs) {
-        return utxosManager.getAvailableUTXOs(_destinationChain, txCost);
+    function getBatchingTxsCount(string calldata _chainId) public view returns (uint256 counterConfirmedTransactions) {
+        uint256 lastConfirmedTxNonce = claimsManager.getLastConfirmedTxNonce(_chainId);
+        uint256 lastBatchedTxNonce = claimsManager.getLastBatchedTxNonce(_chainId);
+
+        uint256 txsToProcess = ((lastConfirmedTxNonce - lastBatchedTxNonce) >= MAX_NUMBER_OF_TRANSACTIONS)
+            ? MAX_NUMBER_OF_TRANSACTIONS
+            : (lastConfirmedTxNonce - lastBatchedTxNonce);
+        
+        counterConfirmedTransactions = 0;
+        
+        while (counterConfirmedTransactions < txsToProcess) {
+            ConfirmedTransaction memory confirmedTx = claimsManager.getConfirmedTransaction(_chainId, lastBatchedTxNonce + counterConfirmedTransactions + 1);
+            if (confirmedTx.blockHeight >= nextTimeoutBlock[_chainId]){
+                break;
+            }
+            counterConfirmedTransactions++;
+        }
+    }
+
+    function getAvailableUTXOs(string calldata _destinationChain) external view override returns (UTXOs memory availableUTXOs) {
+        return utxosManager.getChainUTXOs(_destinationChain);
     }
 
     function getConfirmedBatch(
@@ -199,6 +201,10 @@ contract BridgeContract is IBridgeContract {
     ) external view override returns (ConfirmedBatch memory batch) {
         //return confirmedBatches[_destinationChain][lastConfirmedBatch[_destinationChain]];
         return signedBatchManager.getConfirmedBatch(_destinationChain);
+    }
+
+    function getValidatorsCardanoData(string calldata _chainId) external view override returns (ValidatorCardanoData[] memory validators) {
+        return validatorsCardanoData[_chainId];
     }
 
     function getLastObservedBlock(string calldata _sourceChain) external view override returns (CardanoBlock memory cblock) {
@@ -224,10 +230,6 @@ contract BridgeContract is IBridgeContract {
 
     function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external /*onlyClaimsManager*/ {
         nextTimeoutBlock[_chainId] = _blockNumber;
-    }
-
-    function setLastBatchedClaim(string calldata _chainId) public onlyClaimsManager {
-        lastBatchedClaim[_chainId] = lastClaimIncludedInBatch[_chainId];
     }
 
     function setClaimsHelper(address _claimsHelper) external onlyOwner {

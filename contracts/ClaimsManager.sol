@@ -134,7 +134,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             claimsHelper.setClaimConfirmed(_claim.destinationChainID, _claim.observedTransactionHash);
             int256 currentBatchBlock = signedBatchManager.currentBatchBlock(_claim.destinationChainID);
-            uint256 confirmedTxCount = claimsHelper.getConfirmedTransactionCount(_claim.destinationChainID);
+            uint256 confirmedTxCount = bridgeContract.getBatchingTxsCount(_claim.destinationChainID);
             if ((currentBatchBlock != -1) &&   // check if there is no batch in progress
                 (confirmedTxCount == 0) &&  // check if there is no other confirmed transactions
                 (block.number > bridgeContract.nextTimeoutBlock(_claim.destinationChainID)))    // check if the current block number is greater than the NEXT_BATCH_TIMEOUT_BLOCK
@@ -162,8 +162,6 @@ contract ClaimsManager is IBridgeContractStructs {
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
             signedBatchManager.setCurrentBatchBlock(_claim.chainID, -1);
-
-            bridgeContract.setLastBatchedClaim(_claim.chainID);
 
             SignedBatch memory confirmedSignedBatch = signedBatchManager.getConfirmedSignedBatch(_claim.chainID, _claim.batchNonceID);
             uint256 txLength = confirmedSignedBatch.includedTransactions.length;
@@ -225,7 +223,7 @@ contract ClaimsManager is IBridgeContractStructs {
     }
     
     function _setConfirmedTransactions(BridgingRequestClaim memory _claim) internal { // passed the claim with the memory keyword
-        uint256 nextNonce = lastConfirmedTxNonce[_claim.destinationChainID]++;
+        uint256 nextNonce = ++lastConfirmedTxNonce[_claim.destinationChainID];
         confirmedTransactions[_claim.destinationChainID][nextNonce].nonce = nextNonce;
 
         for (uint i = 0; i < _claim.receivers.length; i++) {

@@ -19,8 +19,16 @@ abstract contract IBridgeContract is IBridgeContractStructs {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
-        string calldata _keyHashMultisig,
-        string calldata _keyHashFeePayer,
+        ValidatorAddressCardanoData[] calldata validatorData,
+        uint256 _tokenQuantity
+    ) external virtual;
+
+    function registerChainGovernance(
+        string calldata _chainId,
+        UTXOs calldata _initialUTXOs,
+        string calldata _addressMultisig,
+        string calldata _addressFeePayer,
+        ValidatorCardanoData calldata validatorData,
         uint256 _tokenQuantity
     ) external virtual;
 
@@ -34,7 +42,7 @@ abstract contract IBridgeContract is IBridgeContractStructs {
     // can be included in the batch, if the maximum number of transactions in a batch has been exceeded
     function getConfirmedTransactions(
         string calldata _destinationChain
-    ) external virtual returns (ConfirmedTransaction[] memory confirmedTransactions);
+    ) external view virtual returns (ConfirmedTransaction[] memory confirmedTransactions);
 
     // Will return available UTXOs that can cover the cost of bridging transactions included in some batch.
     // Each Batcher will first call the GetConfirmedTransactions() and then calculate (off-chain) how many tokens
@@ -43,13 +51,14 @@ abstract contract IBridgeContract is IBridgeContractStructs {
     // that can cover the expenses. Additionaly, this method will return available UTXOs belonging to fee payer
     // multisig address that will cover the network fees (see chapter "2.2.2.3 Batcher" for more details)
     function getAvailableUTXOs(
-        string calldata _destinationChain,
-        uint256 txCost
+        string calldata _destinationChain
     ) external view virtual returns (UTXOs memory availableUTXOs);
 
     function getConfirmedBatch(
         string calldata _destinationChain
     ) external view virtual returns (ConfirmedBatch memory batch);
+
+    function getValidatorsCardanoData(string calldata _chainId) external view virtual returns (ValidatorCardanoData[] memory validators);
 
     function getLastObservedBlock(string calldata _sourceChain) external view virtual returns (CardanoBlock memory cblock);
 
