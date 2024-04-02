@@ -36,7 +36,7 @@ contract BridgeContract is IBridgeContract {
 
     address private owner;
     //TODO: set during initialization
-    uint16 public constant MAX_NUMBER_OF_TRANSACTIONS = 1; //intentially set low for testing
+    uint16 public constant MAX_NUMBER_OF_TRANSACTIONS = 2; //intentially set low for testing
     uint8 public constant MAX_NUMBER_OF_BLOCKS = 5;
     uint8 public validatorsCount;
 
@@ -242,7 +242,7 @@ contract BridgeContract is IBridgeContract {
     }
 
     function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external /*onlyClaimsManager*/ {
-        nextTimeoutBlock[_chainId] = _blockNumber;
+        nextTimeoutBlock[_chainId] = _blockNumber + MAX_NUMBER_OF_TRANSACTIONS;
     }
 
     function setClaimsHelper(address _claimsHelper) external onlyOwner {
