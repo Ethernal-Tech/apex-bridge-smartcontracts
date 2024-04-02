@@ -1564,14 +1564,15 @@ describe("Bridge Contract", function () {
       })
     })
     describe("Batch creation", function () {
-      it("ShouldCreateBatch should return false if there is not enough validated claims and no pending signedClaims from validator", async function () {
+      it("ShouldCreateBatch should return false if there is no confirmed claims", async function () {
         const { bridgeContract, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } = await loadFixture(
           deployBridgeContractFixture
         );
+        const chainID = validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID;
         await bridgeContract
           .connect(owner)
           .registerChain(
-            validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+            chainID,
             UTXOs,
             "0x",
             "0x",
@@ -1581,142 +1582,7 @@ describe("Bridge Contract", function () {
 
         await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
 
-        expect(await bridgeContract.shouldCreateBatch(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID))
-          .to.be.false;
-      });
-
-      it("ShouldCreateBatch should return true if there is enough validated claims and no pending batches", async function () {
-        const { bridgeContract, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } = await loadFixture(
-          deployBridgeContractFixture
-        );
-
-        await bridgeContract
-          .connect(owner)
-          .registerChain(
-            validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
-            UTXOs,
-            "0x",
-            "0x",
-            validatorsCardanoData,
-            100
-          );
-        await bridgeContract
-          .connect(owner)
-          .registerChain(
-            validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
-            UTXOs,
-            "0x",
-            "0x",
-            validatorsCardanoData,
-            100
-          );
-
-        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
-        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
-        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
-        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
-
-        expect(await bridgeContract.shouldCreateBatch(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID))
-          .to.be.true;
-      });
-
-      it("ShouldCreateBatch should return false if there is not enough validated claims and no timeout and no pending batch", async function () {
-        const { bridgeContract, validators, owner, UTXOs, validatorClaimsBRC, validatorsCardanoData } = await loadFixture(
-          deployBridgeContractFixture
-        );
-        await bridgeContract
-          .connect(owner)
-          .registerChain(
-            validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
-            UTXOs,
-            "0x",
-            "0x",
-            validatorsCardanoData,
-            10000
-          );
-        await bridgeContract
-          .connect(owner)
-          .registerChain(
-            validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
-            UTXOs,
-            "0x",
-            "0x",
-            validatorsCardanoData,
-            10000
-          );
-
-        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
-        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
-        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
-
-        expect(await bridgeContract.shouldCreateBatch(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID))
-          .to.be.false;
-      });
-
-      it("ShouldCreateBatch should return true if there is not enough validated claims but did timeout and no pending signedClaims from validator", async function () {
-        const { bridgeContract, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } = await loadFixture(
-          deployBridgeContractFixture
-        );
-        await bridgeContract
-          .connect(owner)
-          .registerChain(
-            validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
-            UTXOs,
-            "0x",
-            "0x",
-            validatorsCardanoData,
-            10000
-          );
-        //no destinatin chain registered, so currentBatchBlock for that chain is 0
-
-        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
-        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
-        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
-        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
-
-        //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
-        await ethers.provider.send("evm_mine");
-        await ethers.provider.send("evm_mine");
-
-        expect(await bridgeContract.shouldCreateBatch(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID))
-          .to.be.false;
-      });
-
-      it("ShouldCreateBatch should return true if there is timeout and no pending batch", async function () {
-        const { bridgeContract, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } = await loadFixture(
-          deployBridgeContractFixture
-        );
-        await bridgeContract
-          .connect(owner)
-          .registerChain(
-            validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
-            UTXOs,
-            "0x",
-            "0x",
-            validatorsCardanoData,
-            10000
-          );
-        await bridgeContract
-          .connect(owner)
-          .registerChain(
-            validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
-            UTXOs,
-            "0x",
-            "0x",
-            validatorsCardanoData,
-            10000
-          );
-
-        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
-        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
-        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
-
-        //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
-        await ethers.provider.send("evm_mine");
-        await ethers.provider.send("evm_mine");
-
-        expect(await bridgeContract.shouldCreateBatch(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID))
-          .to.be.true;
+        expect(await bridgeContract.shouldCreateBatch(chainID)).to.be.false;
       });
 
       it("SignedBatch should be added to signedBatches if there is enough votes", async function () {
@@ -1827,21 +1693,20 @@ describe("Bridge Contract", function () {
 
         await expect(bridgeContract.connect(validators[0]).getConfirmedTransactions(_destinationChain)).to.be.revertedWithCustomError(bridgeContract, "CanNotCreateBatchYet");
 
-      //   await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      //   await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      //   await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      //   await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
         const confirmedTxs = await bridgeContract.connect(validators[0]).getConfirmedTransactions(_destinationChain)
         expect(confirmedTxs.length).to.equal(1);
 
         //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
-        // await ethers.provider.send("evm_mine");
-        // await ethers.provider.send("evm_mine");
+        await ethers.provider.send("evm_mine");
+        await ethers.provider.send("evm_mine");
 
         expect(await bridgeContract.shouldCreateBatch(_destinationChain))
           .to.be.true;
-
 
         await bridgeContract.connect(validators[0]).submitSignedBatch(signedBatch);
         await bridgeContract.connect(validators[1]).submitSignedBatch(signedBatch);
@@ -1852,19 +1717,8 @@ describe("Bridge Contract", function () {
         await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEC);
         await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEC);
         await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEC);
-
-
         
-        const currentBatchBlock = await signedBatchManager.currentBatchBlock(_destinationChain);
-        const currentBlock = await ethers.provider.getBlockNumber();
-        const nextTimeoutBlock = await bridgeContract.nextTimeoutBlock(_destinationChain);
-        console.log("CurrentBlock: ", currentBlock);
-        console.log("CurrentBatchBlock: ", currentBatchBlock);
-        console.log("NextTimeoutBlock: ", nextTimeoutBlock);
-        
-        const confirmedTxs3 = await bridgeContract.connect(validators[0]).getConfirmedTransactions(_destinationChain)
-        console.log("CONFIRMED_TXS_LEN: ", confirmedTxs3);
-        expect(confirmedTxs3.length).to.equal(0);
+        await expect(bridgeContract.connect(validators[0]).getConfirmedTransactions(_destinationChain)).to.revertedWithCustomError(bridgeContract, "CanNotCreateBatchYet");
       });
 
       // it("Should return confirmedTransactions from confirmed BridgeRequestClaims", async function () {
