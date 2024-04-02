@@ -85,6 +85,13 @@ contract ClaimsHelper is IBridgeContractStructs {
         isClaimConfirmed[_chain][_observerHash] = true;
     }
 
+    function getConfirmedTransactionCount(string calldata _chainId) public view returns (uint256) {
+        uint256 lastConfirmedTxNonce = claimsManager.getLastConfirmedTxNonce(_chainId);
+        uint256 lastBatchedTxNonce = claimsManager.getLastBatchedTxNonce(_chainId);
+
+        return lastConfirmedTxNonce - lastBatchedTxNonce;
+    }
+
     function _equal(string memory a, string memory b) internal pure returns (bool) {
         return bytes(a).length == bytes(b).length && keccak256(bytes(a)) == keccak256(bytes(b));
     }

@@ -133,6 +133,15 @@ contract ClaimsManager is IBridgeContractStructs {
             _setConfirmedTransactions(_claim);
 
             claimsHelper.setClaimConfirmed(_claim.destinationChainID, _claim.observedTransactionHash);
+            int256 currentBatchBlock = signedBatchManager.currentBatchBlock(_claim.destinationChainID);
+            uint256 confirmedTxCount = bridgeContract.getBatchingTxsCount(_claim.destinationChainID);
+            if ((currentBatchBlock != -1) &&   // check if there is no batch in progress
+                (confirmedTxCount == 0) &&  // check if there is no other confirmed transactions
+                (block.number > bridgeContract.nextTimeoutBlock(_claim.destinationChainID)))    // check if the current block number is greater than the NEXT_BATCH_TIMEOUT_BLOCK
+            {
+                bridgeContract.setNextTimeoutBlock(_claim.destinationChainID, block.number + bridgeContract.MAX_NUMBER_OF_BLOCKS());
+            }
+
         }
     }
 

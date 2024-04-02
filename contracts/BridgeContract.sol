@@ -173,7 +173,7 @@ contract BridgeContract is IBridgeContract {
         return _confirmedTransactions;
     }
 
-    function getBatchingTxsCount(string calldata _chainId) internal view returns (uint256 counterConfirmedTransactions) {
+    function getBatchingTxsCount(string calldata _chainId) public view returns (uint256 counterConfirmedTransactions) {
         uint256 lastConfirmedTxNonce = claimsManager.getLastConfirmedTxNonce(_chainId);
         uint256 lastBatchedTxNonce = claimsManager.getLastBatchedTxNonce(_chainId);
 
