@@ -22,12 +22,6 @@ contract BridgeContract is IBridgeContract {
 
     mapping(string => bool) private registeredChains;
 
-    // Blochchain ID -> claimsCounter
-    mapping(string => uint256) public lastBatchedClaim;
-
-    // Blockchain ID -> claimNumber
-    mapping(string => uint256) public lastClaimIncludedInBatch;
-
     // Blochchain ID -> blockNumber
     mapping(string => uint256) public nextTimeoutBlock;
 
@@ -167,13 +161,13 @@ contract BridgeContract is IBridgeContract {
             revert CanNotCreateBatchYet(_destinationChain);
         }
         
-        uint256 lastBatchedTxNonce = claimsManager.getLastBatchedTxNonce(_destinationChain);
+        uint256 firstTxNonce = claimsManager.getLastBatchedTxNonce(_destinationChain) + 1;
 
         uint256 counterConfirmedTransactions = getBatchingTxsCount(_destinationChain);
         _confirmedTransactions = new ConfirmedTransaction[](counterConfirmedTransactions);
 
         for (uint i = 0; i < counterConfirmedTransactions; i++) {
-            _confirmedTransactions[i] = claimsManager.getConfirmedTransaction(_destinationChain, lastBatchedTxNonce + i + 1);
+            _confirmedTransactions[i] = claimsManager.getConfirmedTransaction(_destinationChain, firstTxNonce + i);
         }
 
         return _confirmedTransactions;
@@ -236,10 +230,6 @@ contract BridgeContract is IBridgeContract {
 
     function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external /*onlyClaimsManager*/ {
         nextTimeoutBlock[_chainId] = _blockNumber;
-    }
-
-    function setLastBatchedClaim(string calldata _chainId) public onlyClaimsManager {
-        lastBatchedClaim[_chainId] = lastClaimIncludedInBatch[_chainId];
     }
 
     function setClaimsHelper(address _claimsHelper) external onlyOwner {

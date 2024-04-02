@@ -154,8 +154,6 @@ contract ClaimsManager is IBridgeContractStructs {
 
             signedBatchManager.setCurrentBatchBlock(_claim.chainID, -1);
 
-            bridgeContract.setLastBatchedClaim(_claim.chainID);
-
             SignedBatch memory confirmedSignedBatch = signedBatchManager.getConfirmedSignedBatch(_claim.chainID, _claim.batchNonceID);
             uint256 txLength = confirmedSignedBatch.includedTransactions.length;
             lastBatchedTxNonce[_claim.chainID] = confirmedSignedBatch.includedTransactions[txLength - 1];
