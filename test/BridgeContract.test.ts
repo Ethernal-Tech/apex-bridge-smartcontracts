@@ -1125,6 +1125,70 @@ describe("Bridge Contract", function () {
           1100
         );
       });
+      it("Should update NEXT_BATCH_TIMEOUT_BLOCK on transaction confirmation if there is no batch in progress, there are no other confirmed transactions, and the current block number is greater than the NEXT_BATCH_TIMEOUT_BLOCK", async function () {
+        const {
+          bridgeContract,
+          claimsManager,
+          signedBatchManager,
+          owner,
+          validators,
+          UTXOs,
+          validatorClaimsBRC,
+          validatorClaimsBEC,
+          signedBatch,
+        } = await loadFixture(deployBridgeContractFixture);
+        await bridgeContract
+          .connect(owner)
+          .registerChain(
+            validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+            UTXOs,
+            "0x",
+            "0x",
+            "0xbcd",
+            "0xbcd",
+            1000
+          );
+        await bridgeContract
+          .connect(owner)
+          .registerChain(
+            validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+            UTXOs,
+            "0x",
+            "0x",
+            "0xbcd",
+            "0xbcd",
+            1000
+          );
+
+        const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID;
+
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+        await bridgeContract.connect(validators[0]).submitSignedBatch(signedBatch);
+        await bridgeContract.connect(validators[1]).submitSignedBatch(signedBatch);
+        await bridgeContract.connect(validators[2]).submitSignedBatch(signedBatch);
+        await bridgeContract.connect(validators[3]).submitSignedBatch(signedBatch);
+
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEC);
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBEC);
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBEC);
+        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBEC);
+
+        const lastConfirmedTxNonce = await claimsManager.getLastConfirmedTxNonce(_destinationChain);
+        const lastBatchedTxNonce = await claimsManager.getLastBatchedTxNonce(_destinationChain);
+        const nextBatchBlock = await bridgeContract.nextTimeoutBlock(_destinationChain);
+        const currentBlock = await ethers.provider.getBlockNumber();
+
+        expect(await claimsManager.chainTokenQuantity(validatorClaimsBEC.batchExecutedClaims[0].chainID)).to.equal(
+          1100
+        );
+        expect(nextBatchBlock).to.equal(currentBlock + 5)
+        expect(await signedBatchManager.currentBatchBlock(_destinationChain)).to.equal(-1);
+        expect(lastConfirmedTxNonce - lastBatchedTxNonce).to.be.lessThanOrEqual(1);
+      });
     });
     describe("Submit new Batch Execution Failed Claims", function () {
       it("Should revert if Batch Execution Failed Claims is already confirmed", async function () {
@@ -1421,15 +1485,14 @@ describe("Bridge Contract", function () {
             1000
           );
 
+
         const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
         await bridgeContract.setNextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, Number(firstTimestampBlockNumber + 6));
-        
 
         await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
         await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
         await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
         await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
-
 
         await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC_ConfirmedTransactions);
         await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC_ConfirmedTransactions);
@@ -1440,10 +1503,6 @@ describe("Bridge Contract", function () {
 
         const expectedReceiversAddress = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress;
         const expectedReceiversAmount = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount;
-
-
-        console.log("--------------------------------------");
-        console.log(confirmedTxs.length)
 
         expect(confirmedTxs.length).to.equal(1);
         expect(confirmedTxs[0].nonce).to.equal(0);
@@ -1498,9 +1557,6 @@ describe("Bridge Contract", function () {
         const expectedReceiversAddress = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress;
         const expectedReceiversAmount = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount;
 
-
-        console.log("--------------------------------------");
-        console.log(confirmedTxs.length)
 
         expect(confirmedTxs.length).to.equal(1);
         expect(confirmedTxs[0].nonce).to.equal(0);
