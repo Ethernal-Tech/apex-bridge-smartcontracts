@@ -146,10 +146,23 @@ contract BridgeContract is IBridgeContract {
     // Queries
 
     // Will determine if enough transactions are confirmed, or the timeout between two batches is exceeded.
-    // TODO:
     // It will also check if the given validator already submitted a signed batch and return the response accordingly.
     function shouldCreateBatch(string calldata _destinationChain) public view override returns (bool batch) {
-        return signedBatchManager.shouldCreateBatch(_destinationChain);
+        if (signedBatchManager.isBatchCreated(_destinationChain) ||
+            signedBatchManager.isBatchAlreadySubmittedBy(_destinationChain, msg.sender)) {
+            return false;
+        }
+        
+        uint256 cnt = getBatchingTxsCount(_destinationChain);
+        return cnt >= MAX_NUMBER_OF_TRANSACTIONS || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
+    }
+
+    function getNextBatchId(string calldata _destinationChain) external view override returns (uint256 result) {
+        if (!shouldCreateBatch(_destinationChain)) {
+            return 0;
+        }
+
+        return signedBatchManager.getNextBatchId(_destinationChain);
     }
 
     // Will return confirmed transactions until NEXT_BATCH_TIMEOUT_BLOCK or maximum number of transactions that

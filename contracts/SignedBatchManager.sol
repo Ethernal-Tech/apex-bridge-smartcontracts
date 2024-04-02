@@ -92,7 +92,7 @@ contract SignedBatchManager is IBridgeContractStructs {
             }
 
             ConfirmedBatch memory _confirmedBatch = ConfirmedBatch(
-                confirmedBatchNounce[_signedBatch.destinationChainId]++,
+                ++confirmedBatchNounce[_signedBatch.destinationChainId],
                 _signedBatch.rawTransaction,
                 multisigSignatures,
                 feePayerMultisigSignatures
@@ -108,8 +108,16 @@ contract SignedBatchManager is IBridgeContractStructs {
         }
     }
 
-    function shouldCreateBatch(string calldata _destinationChain) public view onlyBridgeContract returns (bool batch) {
-        return true;
+    function isBatchCreated(string calldata _destinationChain) public view onlyBridgeContract returns (bool batch) {
+        return currentBatchBlock[_destinationChain] != int(-1);
+    }
+
+    function isBatchAlreadySubmittedBy(string calldata _destinationChain, address addr) public view onlyBridgeContract returns (bool ok) {
+         return claimsManager.voted(Strings.toString(confirmedBatchNounce[_destinationChain] + 1), addr);
+    }
+
+    function getNextBatchId(string calldata _destinationChain) public view onlyBridgeContract returns (uint256 v) {
+        return confirmedBatchNounce[_destinationChain] + 1;
     }
 
     function getTokenQuantityFromSignedBatch(

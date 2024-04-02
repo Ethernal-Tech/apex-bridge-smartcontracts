@@ -1578,18 +1578,6 @@ describe("Bridge Contract", function () {
             validatorsCardanoData,
             10000
           );
-        await bridgeContract
-          .connect(owner)
-          .registerChain(
-            validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
-            UTXOs,
-            "0x",
-            "0x",
-            validatorsCardanoData,
-            10000
-          );
-
-        await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", validatorsCardanoData, 100);
 
         await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
 
