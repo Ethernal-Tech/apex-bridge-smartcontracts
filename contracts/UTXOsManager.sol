@@ -24,6 +24,12 @@ contract UTXOsManager is IBridgeContractStructs {
         return chainUTXOs[_chainID];
     }
 
+    function _addNewBridgingUTXO(string calldata _chainID, UTXO calldata _utxo) public onlyClaimsManager {
+        UTXO memory tempUtxo = _utxo;
+        tempUtxo.nonce = ++utxoNonceCounter;
+        chainUTXOs[_chainID].multisigOwnedUTXOs.push(tempUtxo);
+    }
+
     function updateUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external onlyClaimsManager {
         _removeUsedUTXOs(_chainID);
         _addNewUTXOs(_chainID, _outputUTXOs);
