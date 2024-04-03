@@ -41,7 +41,7 @@ contract UTXOsManager is IBridgeContractStructs {
     function _removeMultisigUTXOs(string calldata _chainID, UTXO[] memory utxos) internal {
         uint i = 0;
         uint lenu = chainUTXOs[_chainID].multisigOwnedUTXOs.length;
-        for (;i < lenu;) {
+        while (i < lenu) {
             bool shouldDelete = false;
             for (uint j = 0; j < utxos.length; j++) {
                 if (equalUTXO(utxos[j], chainUTXOs[_chainID].multisigOwnedUTXOs[i])) {
@@ -64,7 +64,7 @@ contract UTXOsManager is IBridgeContractStructs {
     function _removeFeeUTXOs(string calldata _chainID, UTXO[] memory utxos) internal {
         uint lenu = chainUTXOs[_chainID].feePayerOwnedUTXOs.length;
         uint i = 0;
-        for (;i < lenu;) {
+        while (i < lenu) {
             bool shouldDelete = false;
             for (uint j = 0; j < utxos.length; j++) {
                 if (equalUTXO(utxos[j], chainUTXOs[_chainID].feePayerOwnedUTXOs[i])) {
