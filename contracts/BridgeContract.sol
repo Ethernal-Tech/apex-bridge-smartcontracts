@@ -17,6 +17,8 @@ contract BridgeContract is IBridgeContract {
     SignedBatchManager private signedBatchManager;
     SlotsManager private slotsManager;
 
+    // keep validatorsAddresses because maybe 
+    address[] private validatorsAddresses;
     // mapping in case they could be added/removed
     mapping(address => bool) private isValidator;
 
@@ -24,7 +26,6 @@ contract BridgeContract is IBridgeContract {
 
     // Blochchain ID -> blockNumber
     mapping(string => uint256) public nextTimeoutBlock;
-
 
     Chain[] private chains;
     
@@ -41,6 +42,7 @@ contract BridgeContract is IBridgeContract {
     constructor(address[] memory _validators, uint16 _maxNumberOfTransactions, uint8 _timeoutBlocksNumber) {
         for (uint i = 0; i < _validators.length; i++) {
             isValidator[_validators[i]] = true;
+            validatorsAddresses.push(_validators[i]);
         }
         owner = msg.sender;
         validatorsCount = uint8(_validators.length);
