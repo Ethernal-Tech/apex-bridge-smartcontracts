@@ -250,6 +250,7 @@ contract BridgeContract is IBridgeContract {
     }
 
     function getQuorumNumberOfValidators() external view override returns (uint8) {
+        // return (validatorsCount * 2) / 3 + ((validatorsCount * 2) % 3 == 0 ? 0 : 1); is same as (A + B - 1) / B
         return (validatorsCount * 2 + 2) / 3;
     }
 
