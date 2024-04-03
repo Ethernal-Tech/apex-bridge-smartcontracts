@@ -136,7 +136,6 @@ contract SignedBatchManager is IBridgeContractStructs {
                 bridgedAmount += _includedTransactions[i].receivers[j].amount;
                 j++;
             }
-            i++;
         }
 
         return bridgedAmount;
