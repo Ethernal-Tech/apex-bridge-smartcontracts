@@ -166,10 +166,7 @@ contract ClaimsManager is IBridgeContractStructs {
                 (block.number > bridgeContract.nextTimeoutBlock(_claim.destinationChainID))
             ) // check if the current block number is greater than the NEXT_BATCH_TIMEOUT_BLOCK
             {
-                bridgeContract.setNextTimeoutBlock(
-                    _claim.destinationChainID,
-                    block.number + bridgeContract.MAX_NUMBER_OF_BLOCKS()
-                );
+                bridgeContract.setNextTimeoutBlock(_claim.destinationChainID, block.number);
             }
         }
     }
@@ -197,9 +194,11 @@ contract ClaimsManager is IBridgeContractStructs {
                 _claim.batchNonceID
             );
             uint256 txLength = confirmedSignedBatch.includedTransactions.length;
-            lastBatchedTxNonce[_claim.chainID] = confirmedSignedBatch.includedTransactions[txLength - 1];
+            if (txLength > 0) {
+                lastBatchedTxNonce[_claim.chainID] = confirmedSignedBatch.includedTransactions[txLength - 1];
+            }
 
-            bridgeContract.setNextTimeoutBlock(_claim.chainID, block.number + bridgeContract.MAX_NUMBER_OF_BLOCKS());
+            bridgeContract.setNextTimeoutBlock(_claim.chainID, block.number);
 
             utxosManager.updateUTXOs(_claim.chainID, _claim.outputUTXOs);
         }
@@ -218,7 +217,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             signedBatchManager.setCurrentBatchBlock(_claim.chainID, -1);
 
-            bridgeContract.setNextTimeoutBlock(_claim.chainID, block.number + bridgeContract.MAX_NUMBER_OF_BLOCKS());
+            bridgeContract.setNextTimeoutBlock(_claim.chainID, block.number);
         }
     }
 
