@@ -245,7 +245,7 @@ contract BridgeContract is IBridgeContract {
         return slotsManager.getLastObservedBlock(_sourceChain);
     }
 
-    function getAllisChainRegistered() external view override returns (Chain[] memory _chains) {
+    function getAllRegisteredChains() external view override returns (Chain[] memory _chains) {
         return chains;
     }
 
@@ -256,6 +256,10 @@ contract BridgeContract is IBridgeContract {
 
     function getNumberOfVotes(bytes32 _hash) external view override returns (uint8) {
         return claimsManager.numberOfVotes(_hash);
+    }
+
+    function getRawTransactionFromLastBatch(string calldata _destinationChain) external view returns (string memory) {
+        return signedBatchManager.getRawTransactionFromLastBatch(_destinationChain);
     }
 
     function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external /*onlyClaimsManager*/ {

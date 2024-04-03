@@ -765,7 +765,7 @@ describe("Bridge Contract", function () {
           .connect(validators[4])
           .registerChainGovernance("chainID1 2", UTXOs, "0x", "0x", validatorsCardanoData[4].data, 100);
 
-        const chains = await bridgeContract.getAllisChainRegistered();
+        const chains = await bridgeContract.getAllRegisteredChains();
         expect(chains.length).to.equal(2);
         expect(chains[0].id).to.equal("chainID1 1");
         expect(chains[1].id).to.equal("chainID1 2");
