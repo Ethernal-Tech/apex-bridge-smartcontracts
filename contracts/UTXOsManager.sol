@@ -7,8 +7,7 @@ import "./SignedBatchManager.sol";
 import "hardhat/console.sol";
 
 contract UTXOsManager is IBridgeContractStructs {
-    BridgeContract private bridgeContract;
-    SignedBatchManager private signedBatchManager;
+    address private bridgeContractAddress;
     address private claimsManagerAddress;
 
     uint64 private utxoNonceCounter;
@@ -17,7 +16,7 @@ contract UTXOsManager is IBridgeContractStructs {
     mapping(string => UTXOs) private chainUTXOs;
 
     constructor(address _bridgeContractAddress) {
-        bridgeContract = BridgeContract(_bridgeContractAddress);
+        bridgeContractAddress = _bridgeContractAddress;
     }
 
     function getChainUTXOs(string memory _chainID) external view returns (UTXOs memory) {
@@ -30,16 +29,11 @@ contract UTXOsManager is IBridgeContractStructs {
         chainUTXOs[_chainID].multisigOwnedUTXOs.push(tempUtxo);
     }
 
-    function updateUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external onlyClaimsManager {
-        _removeUsedUTXOs(_chainID);
+    function addUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external onlyClaimsManager {
         _addNewUTXOs(_chainID, _outputUTXOs);
     }
 
-    function _removeUsedUTXOs(string calldata _chainID) internal {
-        uint256 _signedBatchId = signedBatchManager.getConfirmedBatch(_chainID).id;
-        UTXOs memory _utxos;
-        (, , , , , _utxos) = signedBatchManager.confirmedSignedBatches(_chainID, _signedBatchId);
-
+    function removeUsedUTXOs(string calldata _chainID, UTXOs calldata _utxos) external onlyClaimsManager {
         _removeMultisigUTXOs(_chainID, _utxos.multisigOwnedUTXOs);
         _removeFeeUTXOs(_chainID, _utxos.feePayerOwnedUTXOs);
     }
@@ -47,7 +41,7 @@ contract UTXOsManager is IBridgeContractStructs {
     function _removeMultisigUTXOs(string calldata _chainID, UTXO[] memory utxos) internal {
         uint i = 0;
         uint lenu = chainUTXOs[_chainID].multisigOwnedUTXOs.length;
-        for (;i < lenu;) {
+        while (i < lenu) {
             bool shouldDelete = false;
             for (uint j = 0; j < utxos.length; j++) {
                 if (equalUTXO(utxos[j], chainUTXOs[_chainID].multisigOwnedUTXOs[i])) {
@@ -70,7 +64,7 @@ contract UTXOsManager is IBridgeContractStructs {
     function _removeFeeUTXOs(string calldata _chainID, UTXO[] memory utxos) internal {
         uint lenu = chainUTXOs[_chainID].feePayerOwnedUTXOs.length;
         uint i = 0;
-        for (;i < lenu;) {
+        while (i < lenu) {
             bool shouldDelete = false;
             for (uint j = 0; j < utxos.length; j++) {
                 if (equalUTXO(utxos[j], chainUTXOs[_chainID].feePayerOwnedUTXOs[i])) {
@@ -114,7 +108,7 @@ contract UTXOsManager is IBridgeContractStructs {
             bytes(a.txHash).length == bytes(b.txHash).length &&
             keccak256(bytes(a.txHash)) == keccak256(bytes(b.txHash)) &&
             a.txIndex == b.txIndex &&
-            a.amount == a.amount;
+            a.amount == b.amount;
     }
 
     // TODO: who will call this function?
@@ -122,12 +116,8 @@ contract UTXOsManager is IBridgeContractStructs {
         claimsManagerAddress = _claimsManagerAddress;
     }
 
-    function setSignedBatchManagerAddress(address _signedBatchManagerAddress) external {
-        signedBatchManager = SignedBatchManager(_signedBatchManagerAddress);
-    }
-
     modifier onlyBridgeContract() {
-        if (msg.sender != address(bridgeContract)) revert NotBridgeContract();
+        if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
         _;
     }
 
