@@ -49,7 +49,6 @@ describe("Bridge Contract", function () {
     await claimsHelper.setSignedBatchManagerAddress(signedBatchManager.target);
 
     await uTXOsManager.setClaimsManagerAddress(claimsManager.target);
-    await uTXOsManager.setSignedBatchManagerAddress(signedBatchManager.target);
 
     const UTXOs = {
       multisigOwnedUTXOs: [
@@ -399,7 +398,7 @@ describe("Bridge Contract", function () {
             txHash: "0xdef...",
             txIndex: 2,
             nonce: 0,
-            amount: 100,
+            amount: 50,
           },
         ],
         feePayerOwnedUTXOs: [
@@ -2003,27 +2002,34 @@ describe("Bridge Contract", function () {
 
         const result = await uTXOsManager.getChainUTXOs("chainID1");
 
-        expect(result.multisigOwnedUTXOs.length).to.equal(2);
-        expect(result.multisigOwnedUTXOs[0].nonce).to.equal(2);
-        expect(result.multisigOwnedUTXOs[0].txHash).to.equal(UTXOs.multisigOwnedUTXOs[1].txHash);
-        expect(result.multisigOwnedUTXOs[0].txIndex).to.equal(UTXOs.multisigOwnedUTXOs[1].txIndex);
-        expect(result.multisigOwnedUTXOs[1].nonce).to.equal(7);
-        expect(result.multisigOwnedUTXOs[1].txHash).to.equal(
+        const { multiSig, feePayer } = {
+          multiSig: [...result.multisigOwnedUTXOs],
+          feePayer: [...result.feePayerOwnedUTXOs],
+        };
+        multiSig.sort(function (a, b) { return Number(a.nonce - b.nonce); });
+        feePayer.sort(function (a, b) { return Number(a.nonce - b.nonce); });
+
+        expect(multiSig.length).to.equal(2);
+        expect(multiSig[0].nonce).to.equal(2);
+        expect(multiSig[0].txHash).to.equal(UTXOs.multisigOwnedUTXOs[1].txHash);
+        expect(multiSig[0].txIndex).to.equal(UTXOs.multisigOwnedUTXOs[1].txIndex);
+        expect(multiSig[1].nonce).to.equal(7);
+        expect(multiSig[1].txHash).to.equal(
           validatorClaimsBEC.batchExecutedClaims[0].outputUTXOs.multisigOwnedUTXOs[0].txHash);
-        expect(result.multisigOwnedUTXOs[1].txIndex).to.equal(
+        expect(multiSig[1].txIndex).to.equal(
             validatorClaimsBEC.batchExecutedClaims[0].outputUTXOs.multisigOwnedUTXOs[0].txIndex);
 
-        expect(result.feePayerOwnedUTXOs.length).to.equal(3);
-        expect(result.feePayerOwnedUTXOs[0].nonce).to.equal(4);
-        expect(result.feePayerOwnedUTXOs[0].txHash).to.equal(UTXOs.feePayerOwnedUTXOs[0].txHash);
-        expect(result.feePayerOwnedUTXOs[0].txIndex).to.equal(UTXOs.feePayerOwnedUTXOs[0].txIndex);
-        expect(result.feePayerOwnedUTXOs[1].nonce).to.equal(6);
-        expect(result.feePayerOwnedUTXOs[1].txHash).to.equal(UTXOs.feePayerOwnedUTXOs[2].txHash);
-        expect(result.feePayerOwnedUTXOs[1].txIndex).to.equal(UTXOs.feePayerOwnedUTXOs[2].txIndex);
-        expect(result.feePayerOwnedUTXOs[2].nonce).to.equal(8);
-        expect(result.feePayerOwnedUTXOs[2].txHash).to.equal(
+        expect(feePayer.length).to.equal(3);
+        expect(feePayer[0].nonce).to.equal(4);
+        expect(feePayer[0].txHash).to.equal(UTXOs.feePayerOwnedUTXOs[0].txHash);
+        expect(feePayer[0].txIndex).to.equal(UTXOs.feePayerOwnedUTXOs[0].txIndex);
+        expect(feePayer[1].nonce).to.equal(6);
+        expect(feePayer[1].txHash).to.equal(UTXOs.feePayerOwnedUTXOs[2].txHash);
+        expect(feePayer[1].txIndex).to.equal(UTXOs.feePayerOwnedUTXOs[2].txIndex);
+        expect(feePayer[2].nonce).to.equal(8);
+        expect(feePayer[2].txHash).to.equal(
           validatorClaimsBEC.batchExecutedClaims[0].outputUTXOs.feePayerOwnedUTXOs[0].txHash);
-          expect(result.feePayerOwnedUTXOs[2].txIndex).to.equal(
+        expect(feePayer[2].txIndex).to.equal(
             validatorClaimsBEC.batchExecutedClaims[0].outputUTXOs.feePayerOwnedUTXOs[0].txIndex);
       });
     });

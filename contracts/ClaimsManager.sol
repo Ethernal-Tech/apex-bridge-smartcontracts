@@ -173,7 +173,8 @@ contract ClaimsManager is IBridgeContractStructs {
 
             bridgeContract.setNextTimeoutBlock(_claim.chainID, block.number);
 
-            utxosManager.updateUTXOs(_claim.chainID, _claim.outputUTXOs);
+            utxosManager.addUTXOs(_claim.chainID, _claim.outputUTXOs);
+            utxosManager.removeUsedUTXOs(_claim.chainID, confirmedSignedBatch.usedUTXOs);
         }
     }
 
