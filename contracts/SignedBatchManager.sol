@@ -145,6 +145,10 @@ contract SignedBatchManager is IBridgeContractStructs {
         return confirmedSignedBatches[_destinationChain][_nonce];
     }
 
+    function getRawTransactionFromLastBatch(string calldata _destinationChain) external view returns (string memory) {
+        return lastConfirmedBatch[_destinationChain].rawTransaction;
+    }
+
     function resetCurrentBatchBlock(string calldata _chainId) external onlyClaimsManagerOrBridgeContract {
         currentBatchBlock[_chainId] = int(-1);
     }
