@@ -17,7 +17,7 @@ describe("Bridge Contract", function () {
     const bridgeContract = await BridgeContract.deploy(validators, 2, 5);
 
     const ClaimsHelper = await ethers.getContractFactory("ClaimsHelper");
-    const claimsHelper = await ClaimsHelper.deploy(bridgeContract.target);
+    const claimsHelper = await ClaimsHelper.deploy();
 
     const ClaimsManager = await ethers.getContractFactory("ClaimsManager");
     const claimsManager = await ClaimsManager.deploy(bridgeContract.target, claimsHelper.target);

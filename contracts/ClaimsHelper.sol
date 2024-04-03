@@ -9,8 +9,7 @@ import "./UTXOsManager.sol";
 import "hardhat/console.sol";
 
 contract ClaimsHelper is IBridgeContractStructs {
-    BridgeContract private bridgeContract;
-    ClaimsManager private claimsManager;
+    address private claimsManager;
     address private signedBatchManager;
 
     // blockchain -> claimHash -> queued
@@ -23,16 +22,7 @@ contract ClaimsHelper is IBridgeContractStructs {
     mapping(string => RefundRequestClaim) public queuedRefundRequestClaims;
     mapping(string => RefundExecutedClaim) public queuedRefundExecutedClaims;
 
-    constructor(address _bridgeContractAddress) {
-        bridgeContract = BridgeContract(_bridgeContractAddress);
-    }
-
-    function hasConsensus(bytes32 _hash) public view returns (bool) {
-        return claimsManager.numberOfVotes(_hash) >= bridgeContract.getQuorumNumberOfValidators();
-    }
-
-    function hasChainRegistrationConsensus(bytes32 _hash) public view returns (bool) {
-        return claimsManager.numberOfVotes(_hash) == bridgeContract.validatorsCount();
+    constructor() {
     }
 
     function getClaimBRC(string calldata _id) external view returns (BridgingRequestClaim memory claim) {
@@ -61,10 +51,6 @@ contract ClaimsHelper is IBridgeContractStructs {
         queuedBatchExecutionFailedClaims[_claim.observedTransactionHash] = _claim;
     }
 
-    function isThereEnoughTokensToBridge(BridgingRequestClaim calldata _claim) external view returns (bool) {
-        return claimsManager.chainTokenQuantity(_claim.sourceChainID) >= getNeededTokenQuantity(_claim.receivers);
-    }
-
     function getNeededTokenQuantity(Receiver[] calldata _receivers) public pure returns (uint256) {
         uint256 tokenQuantity;
 
@@ -80,13 +66,6 @@ contract ClaimsHelper is IBridgeContractStructs {
         string calldata _observerHash
     ) external onlySignedBatchManagerOrClaimsManager {
         isClaimConfirmed[_chain][_observerHash] = true;
-    }
-
-    function getConfirmedTransactionCount(string calldata _chainId) public view returns (uint256) {
-        uint256 lastConfirmedTxNonce = claimsManager.getLastConfirmedTxNonce(_chainId);
-        uint256 lastBatchedTxNonce = claimsManager.getLastBatchedTxNonce(_chainId);
-
-        return lastConfirmedTxNonce - lastBatchedTxNonce;
     }
 
     function _equal(string memory a, string memory b) internal pure returns (bool) {
@@ -109,16 +88,11 @@ contract ClaimsHelper is IBridgeContractStructs {
 
     //TODO: think about constraint for setting this value
     function setClaimsManager(address _claimsManager) external {
-        claimsManager = ClaimsManager(_claimsManager);
+        claimsManager = _claimsManager;
     }
 
     function setSignedBatchManagerAddress(address _signedBatchManager) external {
         signedBatchManager = _signedBatchManager;
-    }
-
-    modifier onlyBridgeContract() {
-        if (msg.sender != address(bridgeContract)) revert NotBridgeContract();
-        _;
     }
 
     modifier onlyClaimsManager() {
