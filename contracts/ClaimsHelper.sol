@@ -19,9 +19,6 @@ contract ClaimsHelper is IBridgeContractStructs {
     mapping(string => RefundRequestClaim) public queuedRefundRequestClaims;
     mapping(string => RefundExecutedClaim) public queuedRefundExecutedClaims;
 
-    constructor() {
-    }
-
     function getClaimBRC(string calldata _id) external view returns (BridgingRequestClaim memory claim) {
         return queuedBridgingRequestsClaims[_id];
     }
