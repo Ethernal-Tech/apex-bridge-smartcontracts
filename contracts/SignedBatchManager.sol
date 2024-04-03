@@ -36,22 +36,25 @@ contract SignedBatchManager is IBridgeContractStructs {
     }
 
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridgeContract {
-        if (!bridgeContract.isChainRegistered(_signedBatch.destinationChainId)) {
-            revert ChainIsNotRegistered(_signedBatch.destinationChainId);
+        string memory _destinationChainId = _signedBatch.destinationChainId;
+        uint256 _batchId = _signedBatch.id;
+
+        if (!bridgeContract.isChainRegistered(_destinationChainId)) {
+            revert ChainIsNotRegistered(_destinationChainId);
         }
 
-        if (_signedBatch.id != lastConfirmedBatchNounce[_signedBatch.destinationChainId] + 1) {
-            revert WrongBatchNonce(_signedBatch.destinationChainId, _signedBatch.id);
+        if (_batchId != lastConfirmedBatch[_destinationChainId].id + 1) {
+            revert WrongBatchNonce(_destinationChainId, _batchId);
         }
 
         // TODO: call precompile to check if signedBatch is valid
 
-        if (claimsManager.voted(Strings.toString(_signedBatch.id), _caller)) {
-            revert AlreadyProposed(Strings.toString(_signedBatch.id));
+        if (claimsManager.voted(Strings.toString(_batchId), _caller)) {
+            revert AlreadyProposed(Strings.toString(_batchId));
         }
 
-        if (claimsHelper.isClaimConfirmed(_signedBatch.destinationChainId, Strings.toString(_signedBatch.id))) {
-            revert AlreadyConfirmed(Strings.toString(_signedBatch.id));
+        if (claimsHelper.isClaimConfirmed(_destinationChainId, Strings.toString(_batchId))) {
+            revert AlreadyConfirmed(Strings.toString(_batchId));
         }
 
         _submitSignedBatch(_signedBatch);
