@@ -30,7 +30,7 @@ contract UTXOsManager is IBridgeContractStructs {
     }
 
     function _removeUsedUTXOs(string calldata _chainID) internal {
-        uint256 _signedBatchId = signedBatchManager.lastConfirmedBatch(_chainID);
+        uint256 _signedBatchId = signedBatchManager.getConfirmedBatch(_chainID).id;
         UTXOs memory _utxos;
         (, , , , , _utxos) = signedBatchManager.confirmedSignedBatches(_chainID, _signedBatchId);
 
