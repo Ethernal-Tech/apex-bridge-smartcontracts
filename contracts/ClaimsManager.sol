@@ -48,6 +48,10 @@ contract ClaimsManager is IBridgeContractStructs {
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {
         for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
             BridgingRequestClaim memory _claim = _claims.bridgingRequestClaims[i];
+            if (!bridgeContract.isChainRegistered(_claim.sourceChainID)) {
+                revert ChainIsNotRegistered(_claim.sourceChainID);
+            }
+
             if (voted[_claim.observedTransactionHash][_caller]) {
                 revert AlreadyProposed(_claim.observedTransactionHash);
             }
@@ -64,9 +68,14 @@ contract ClaimsManager is IBridgeContractStructs {
         }
         for (uint i = 0; i < _claims.batchExecutedClaims.length; i++) {
             BatchExecutedClaim memory _claim = _claims.batchExecutedClaims[i];
+            if (!bridgeContract.isChainRegistered(_claim.chainID)) {
+                revert ChainIsNotRegistered(_claim.chainID);
+            }
+
             if (voted[_claim.observedTransactionHash][_caller]) {
                 revert AlreadyProposed(_claim.observedTransactionHash);
             }
+
             if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
                 revert AlreadyConfirmed(_claim.observedTransactionHash);
             }
@@ -75,6 +84,10 @@ contract ClaimsManager is IBridgeContractStructs {
         }
         for (uint i = 0; i < _claims.batchExecutionFailedClaims.length; i++) {
             BatchExecutionFailedClaim memory _claim = _claims.batchExecutionFailedClaims[i];
+            if (!bridgeContract.isChainRegistered(_claim.chainID)) {
+                revert ChainIsNotRegistered(_claim.chainID);
+            }
+
             if (voted[_claim.observedTransactionHash][_caller]) {
                 revert AlreadyProposed(_claim.observedTransactionHash);
             }
@@ -87,6 +100,10 @@ contract ClaimsManager is IBridgeContractStructs {
         }
         for (uint i = 0; i < _claims.refundRequestClaims.length; i++) {
             RefundRequestClaim memory _claim = _claims.refundRequestClaims[i];
+            if (!bridgeContract.isChainRegistered(_claim.chainID)) {
+                revert ChainIsNotRegistered(_claim.chainID);
+            }
+
             if (voted[_claim.observedTransactionHash][_caller]) {
                 revert AlreadyProposed(_claim.observedTransactionHash);
             }
@@ -99,6 +116,10 @@ contract ClaimsManager is IBridgeContractStructs {
         }
         for (uint i = 0; i < _claims.refundExecutedClaims.length; i++) {
             RefundExecutedClaim memory _claim = _claims.refundExecutedClaims[i];
+            if (!bridgeContract.isChainRegistered(_claim.chainID)) {
+                revert ChainIsNotRegistered(_claim.chainID);
+            }
+
             if (voted[_claim.observedTransactionHash][_caller]) {
                 revert AlreadyProposed(_claim.observedTransactionHash);
             }
@@ -129,7 +150,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             queuedClaimsTypes[_claim.destinationChainID][claimsCounter[_claim.destinationChainID]] = ClaimTypes
                 .BRIDGING_REQUEST;
-            
+
             utxosManager.addNewBridgingUTXO(_claim.destinationChainID, _claim.outputUTXO);
 
             _setConfirmedTransactions(_claim);
@@ -137,13 +158,14 @@ contract ClaimsManager is IBridgeContractStructs {
             claimsHelper.setClaimConfirmed(_claim.destinationChainID, _claim.observedTransactionHash);
             int256 currentBatchBlock = signedBatchManager.currentBatchBlock(_claim.destinationChainID);
             uint256 confirmedTxCount = bridgeContract.getBatchingTxsCount(_claim.destinationChainID);
-            if ((currentBatchBlock != -1) &&   // check if there is no batch in progress
-                (confirmedTxCount == 0) &&  // check if there is no other confirmed transactions
-                (block.number > bridgeContract.nextTimeoutBlock(_claim.destinationChainID)))    // check if the current block number is greater than the NEXT_BATCH_TIMEOUT_BLOCK
+            if (
+                (currentBatchBlock != -1) && // check if there is no batch in progress
+                (confirmedTxCount == 0) && // check if there is no other confirmed transactions
+                (block.number > bridgeContract.nextTimeoutBlock(_claim.destinationChainID))
+            ) // check if the current block number is greater than the NEXT_BATCH_TIMEOUT_BLOCK
             {
                 bridgeContract.setNextTimeoutBlock(_claim.destinationChainID, block.number);
             }
-
         }
     }
 
@@ -165,7 +187,10 @@ contract ClaimsManager is IBridgeContractStructs {
 
             signedBatchManager.resetCurrentBatchBlock(_claim.chainID);
 
-            SignedBatch memory confirmedSignedBatch = signedBatchManager.getConfirmedSignedBatch(_claim.chainID, _claim.batchNonceID);
+            SignedBatch memory confirmedSignedBatch = signedBatchManager.getConfirmedSignedBatch(
+                _claim.chainID,
+                _claim.batchNonceID
+            );
             uint256 txLength = confirmedSignedBatch.includedTransactions.length;
             if (txLength > 0) {
                 lastBatchedTxNonce[_claim.chainID] = confirmedSignedBatch.includedTransactions[txLength - 1];
@@ -226,8 +251,9 @@ contract ClaimsManager is IBridgeContractStructs {
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
         }
     }
-    
-    function _setConfirmedTransactions(BridgingRequestClaim memory _claim) internal { // passed the claim with the memory keyword
+
+    function _setConfirmedTransactions(BridgingRequestClaim memory _claim) internal {
+        // passed the claim with the memory keyword
         uint256 nextNonce = ++lastConfirmedTxNonce[_claim.destinationChainID];
         confirmedTransactions[_claim.destinationChainID][nextNonce].nonce = nextNonce;
 
@@ -267,11 +293,17 @@ contract ClaimsManager is IBridgeContractStructs {
         return lastConfirmedTxNonce[_destinationChain];
     }
 
-    function getConfirmedTransaction(string calldata _destinationChain, uint256 _nonce) public view returns (ConfirmedTransaction memory) {
+    function getConfirmedTransaction(
+        string calldata _destinationChain,
+        uint256 _nonce
+    ) public view returns (ConfirmedTransaction memory) {
         return confirmedTransactions[_destinationChain][_nonce];
     }
 
-    function getConfirmedTransactionAmount(string calldata _destinationChain, uint256 _nonce) public view returns (uint256 result) {
+    function getConfirmedTransactionAmount(
+        string calldata _destinationChain,
+        uint256 _nonce
+    ) public view returns (uint256 result) {
         ConfirmedTransaction memory ctx = confirmedTransactions[_destinationChain][_nonce];
         for (uint256 j = 0; j < ctx.receivers.length; j++) {
             result += ctx.receivers[j].amount;

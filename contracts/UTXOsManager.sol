@@ -80,7 +80,7 @@ contract UTXOsManager is IBridgeContractStructs {
                 chainUTXOs[_chainID].feePayerOwnedUTXOs.pop();
             } else {
                 i++;
-            }            
+            }
         }
     }
 

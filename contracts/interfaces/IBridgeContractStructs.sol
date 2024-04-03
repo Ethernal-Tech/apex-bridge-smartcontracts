@@ -175,6 +175,8 @@ interface IBridgeContractStructs {
     error NotEnoughBridgingTokensAwailable(string _claimTransactionHash);
     error CanNotCreateBatchYet(string _blockchainID);
     error InvalidData(string data);
+    error ChainIsNotRegistered(string _chainId);
+    error WrongBatchNonce(string _chainId, uint256 _nonce);
     //TODO: remove when not needed anymore
     error RefundRequestClaimNotYetSupporter();
 

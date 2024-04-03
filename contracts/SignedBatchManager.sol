@@ -3,13 +3,14 @@ pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBridgeContractStructs.sol";
+import "./BridgeContract.sol";
 import "./ClaimsHelper.sol";
 import "./ClaimsManager.sol";
 
 import "hardhat/console.sol";
 
 contract SignedBatchManager is IBridgeContractStructs {
-    address private bridgeContractAddress;
+    BridgeContract private bridgeContract;
     ClaimsHelper private claimsHelper;
     ClaimsManager private claimsManager;
 
@@ -25,21 +26,32 @@ contract SignedBatchManager is IBridgeContractStructs {
     // BlockchainID -> batchId -> SignedBatch
     mapping(string => mapping(uint256 => SignedBatch)) public confirmedSignedBatches;
 
-    constructor(address _bridgeContractAddress, address _claimsManager, address _claimsHelper) {
-        bridgeContractAddress = _bridgeContractAddress;
+    constructor(address _bridgeContract, address _claimsManager, address _claimsHelper) {
+        bridgeContract = BridgeContract(_bridgeContract);
         claimsManager = ClaimsManager(_claimsManager);
         claimsHelper = ClaimsHelper(_claimsHelper);
     }
 
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridgeContract {
-        // TODO: call precompile to check if signedBatch is valid
+        string memory _destinationChainId = _signedBatch.destinationChainId;
+        uint256 _batchId = _signedBatch.id;
 
-        if (claimsManager.voted(Strings.toString(_signedBatch.id), _caller)) {
-            revert AlreadyProposed(Strings.toString(_signedBatch.id));
+        if (!bridgeContract.isChainRegistered(_destinationChainId)) {
+            revert ChainIsNotRegistered(_destinationChainId);
         }
 
-        if (claimsHelper.isClaimConfirmed(_signedBatch.destinationChainId, Strings.toString(_signedBatch.id))) {
-            revert AlreadyConfirmed(Strings.toString(_signedBatch.id));
+        if (_batchId != lastConfirmedBatch[_destinationChainId].id + 1) {
+            revert WrongBatchNonce(_destinationChainId, _batchId);
+        }
+
+        // TODO: call precompile to check if signedBatch is valid
+
+        if (claimsManager.voted(Strings.toString(_batchId), _caller)) {
+            revert AlreadyProposed(Strings.toString(_batchId));
+        }
+
+        if (claimsHelper.isClaimConfirmed(_destinationChainId, Strings.toString(_batchId))) {
+            revert AlreadyConfirmed(Strings.toString(_batchId));
         }
 
         _submitSignedBatch(_signedBatch);
@@ -96,8 +108,11 @@ contract SignedBatchManager is IBridgeContractStructs {
         return currentBatchBlock[_destinationChain] != int(-1);
     }
 
-    function isBatchAlreadySubmittedBy(string calldata _destinationChain, address addr) public view onlyBridgeContract returns (bool ok) {
-         return claimsManager.voted(Strings.toString(lastConfirmedBatch[_destinationChain].id + 1), addr);
+    function isBatchAlreadySubmittedBy(
+        string calldata _destinationChain,
+        address addr
+    ) public view onlyBridgeContract returns (bool ok) {
+        return claimsManager.voted(Strings.toString(lastConfirmedBatch[_destinationChain].id + 1), addr);
     }
 
     function getNewBatchId(string calldata _destinationChain) public view onlyBridgeContract returns (uint256 v) {
@@ -108,7 +123,7 @@ contract SignedBatchManager is IBridgeContractStructs {
         string calldata _chainId,
         uint256 _batchNonceID
     ) external view returns (uint256 bridgedAmount) {
-        uint256[] memory _signedBatchTxNonces = confirmedSignedBatches[_chainId][_batchNonceID].includedTransactions;        
+        uint256[] memory _signedBatchTxNonces = confirmedSignedBatches[_chainId][_batchNonceID].includedTransactions;
         for (uint256 i = 0; i < _signedBatchTxNonces.length; i++) {
             bridgedAmount += claimsManager.getConfirmedTransactionAmount(_chainId, _signedBatchTxNonces[i]);
         }
@@ -116,9 +131,7 @@ contract SignedBatchManager is IBridgeContractStructs {
         return bridgedAmount;
     }
 
-    function getConfirmedBatch(
-        string calldata _destinationChain
-    ) external view returns (ConfirmedBatch memory batch) {
+    function getConfirmedBatch(string calldata _destinationChain) external view returns (ConfirmedBatch memory batch) {
         return lastConfirmedBatch[_destinationChain];
     }
 
@@ -129,19 +142,21 @@ contract SignedBatchManager is IBridgeContractStructs {
         return confirmedSignedBatches[_destinationChain][_nonce];
     }
 
-    function resetCurrentBatchBlock(
-        string calldata _chainId
-    ) external onlyClaimsManagerOrBridgeContract {
+    function getRawTransactionFromLastBatch(string calldata _destinationChain) external view returns (string memory) {
+        return lastConfirmedBatch[_destinationChain].rawTransaction;
+    }
+
+    function resetCurrentBatchBlock(string calldata _chainId) external onlyClaimsManagerOrBridgeContract {
         currentBatchBlock[_chainId] = int(-1);
     }
 
     modifier onlyBridgeContract() {
-        if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
+        if (msg.sender != address(bridgeContract)) revert NotBridgeContract();
         _;
     }
 
     modifier onlyClaimsManagerOrBridgeContract() {
-        if (msg.sender != address(claimsManager) && msg.sender != bridgeContractAddress)
+        if (msg.sender != address(claimsManager) && msg.sender != address(bridgeContract))
             revert NotClaimsManagerOrBridgeContract();
         _;
     }
