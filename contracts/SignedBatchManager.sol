@@ -3,13 +3,14 @@ pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBridgeContractStructs.sol";
+import "./BridgeContract.sol";
 import "./ClaimsHelper.sol";
 import "./ClaimsManager.sol";
 
 import "hardhat/console.sol";
 
 contract SignedBatchManager is IBridgeContractStructs {
-    address private bridgeContractAddress;
+    BridgeContract private bridgeContract;
     ClaimsHelper private claimsHelper;
     ClaimsManager private claimsManager;
 
@@ -25,8 +26,8 @@ contract SignedBatchManager is IBridgeContractStructs {
     // BlockchainID -> batchId -> SignedBatch
     mapping(string => mapping(uint256 => SignedBatch)) public confirmedSignedBatches;
 
-    constructor(address _bridgeContractAddress, address _claimsManager, address _claimsHelper) {
-        bridgeContractAddress = _bridgeContractAddress;
+    constructor(address _bridgeContract, address _claimsManager, address _claimsHelper) {
+        bridgeContract = BridgeContract(_bridgeContract);
         claimsManager = ClaimsManager(_claimsManager);
         claimsHelper = ClaimsHelper(_claimsHelper);
     }
@@ -150,12 +151,12 @@ contract SignedBatchManager is IBridgeContractStructs {
     }
 
     modifier onlyBridgeContract() {
-        if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
+        if (msg.sender != address(bridgeContract)) revert NotBridgeContract();
         _;
     }
 
     modifier onlyClaimsManagerOrBridgeContract() {
-        if (msg.sender != address(claimsManager) && msg.sender != bridgeContractAddress)
+        if (msg.sender != address(claimsManager) && msg.sender != address(bridgeContract))
             revert NotClaimsManagerOrBridgeContract();
         _;
     }
