@@ -117,7 +117,7 @@ contract UTXOsManager is IBridgeContractStructs {
     }
 
     modifier onlyBridgeContract() {
-        if (msg.sender != address(bridgeContractAddress)) revert NotBridgeContract();
+        if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
         _;
     }
 
