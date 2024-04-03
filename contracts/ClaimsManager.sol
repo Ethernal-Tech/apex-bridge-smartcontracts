@@ -187,7 +187,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
-            signedBatchManager.setCurrentBatchBlock(_claim.chainID, -1);
+            signedBatchManager.resetCurrentBatchBlock(_claim.chainID);
 
             SignedBatch memory confirmedSignedBatch = signedBatchManager.getConfirmedSignedBatch(
                 _claim.chainID,
@@ -215,7 +215,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
-            signedBatchManager.setCurrentBatchBlock(_claim.chainID, -1);
+            signedBatchManager.resetCurrentBatchBlock(_claim.chainID);
 
             bridgeContract.setNextTimeoutBlock(_claim.chainID, block.number);
         }
@@ -299,6 +299,14 @@ contract ClaimsManager is IBridgeContractStructs {
         uint256 _nonce
     ) public view returns (ConfirmedTransaction memory) {
         return confirmedTransactions[_destinationChain][_nonce];
+    }
+
+    function getConfirmedTransactionAmount(string calldata _destinationChain, uint256 _nonce) public view returns (uint256 result) {
+        ConfirmedTransaction memory ctx = confirmedTransactions[_destinationChain][_nonce];
+        for (uint256 j = 0; j < ctx.receivers.length; j++) {
+            result += ctx.receivers[j].amount;
+        }
+        return result;
     }
 
     function getLastBatchedTxNonce(string calldata _destinationChain) public view returns (uint256) {

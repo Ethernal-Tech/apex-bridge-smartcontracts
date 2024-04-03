@@ -147,7 +147,7 @@ contract BridgeContract is IBridgeContract {
 
         claimsManager.setTokenQuantity(_chainId, _tokenQuantity);
 
-        signedBatchManager.setCurrentBatchBlock(_chainId, int(-1));
+        signedBatchManager.resetCurrentBatchBlock(_chainId);
 
         nextTimeoutBlock[_chainId] = block.number + timeoutBlocksNumber;
 
