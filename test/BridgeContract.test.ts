@@ -13,14 +13,14 @@ describe("Bridge Contract", function () {
     const [owner, validator1, validator2, validator3, validator4, validator5, validator6] = await ethers.getSigners();
     const validators = [validator1, validator2, validator3, validator4, validator5];
 
-    const ValidatorsContract = await ethers.getContractFactory("ValidatorsContract");
-    const validatorsContract = await ValidatorsContract.deploy(validators);
-
     const BridgeContract = await ethers.getContractFactory("BridgeContract");
     const bridgeContract = await BridgeContract.deploy(2, 5);
 
     const ClaimsHelper = await ethers.getContractFactory("ClaimsHelper");
     const claimsHelper = await ClaimsHelper.deploy();
+
+    const ValidatorsContract = await ethers.getContractFactory("ValidatorsContract");
+    const validatorsContract = await ValidatorsContract.deploy(validators, bridgeContract.target);
 
     const ClaimsManager = await ethers.getContractFactory("ClaimsManager");
     const claimsManager = await ClaimsManager.deploy(bridgeContract.target, claimsHelper.target, validatorsContract.target);

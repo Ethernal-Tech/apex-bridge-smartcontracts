@@ -2,37 +2,39 @@
 pragma solidity ^0.8.23;
 
 import "./interfaces/IBridgeContractStructs.sol";
-import "./BridgeContract.sol";
-import "./SignedBatchManager.sol";
-import "hardhat/console.sol";
 
 contract ValidatorsContract is IBridgeContractStructs {
+    address private bridgeContractAddress;
     // BlockchainID -> validator address -> ValidatorCardanoData
     mapping(string => mapping(address => ValidatorCardanoData)) private validatorsCardanoDataPerAddress;
     // BlockchainID -> ValidatorCardanoData[]
     mapping(string => ValidatorCardanoData[]) private validatorsCardanoData;
 
-    // keep validatorsAddresses because maybe 
+    // keep validatorsAddresses because maybe
     address[] private validatorsAddresses;
     // mapping in case they could be added/removed
     mapping(address => bool) private isAddressValidator;
 
     uint8 public validatorsCount;
 
-    constructor(address[] memory _validators) {
+    constructor(address[] memory _validators, address _bridgeContractAddress) {
         for (uint i = 0; i < _validators.length; i++) {
             isAddressValidator[_validators[i]] = true;
             validatorsAddresses.push(_validators[i]);
         }
         validatorsCount = uint8(_validators.length);
+        bridgeContractAddress = _bridgeContractAddress;
     }
 
     function isValidator(address addr) public view returns (bool) {
         return isAddressValidator[addr];
     }
 
-     function setValidatorsCardanoData(string calldata _chainId, ValidatorAddressCardanoData[] calldata validators) external {
-         if (validatorsCount != validators.length) {
+    function setValidatorsCardanoData(
+        string calldata _chainId,
+        ValidatorAddressCardanoData[] calldata validators
+    ) external onlyBridgeContract {
+        if (validatorsCount != validators.length) {
             revert InvalidData("validators count");
         }
         // set validator cardano data for each validator
@@ -43,12 +45,16 @@ contract ValidatorsContract is IBridgeContractStructs {
         _updateValidatorCardanoData(_chainId);
     }
 
-    function setCardanoData(string calldata _chainId, address addr, ValidatorCardanoData calldata data) external {
+    function setCardanoData(
+        string calldata _chainId,
+        address addr,
+        ValidatorCardanoData calldata data
+    ) external onlyBridgeContract {
         validatorsCardanoDataPerAddress[_chainId][addr] = data;
         _updateValidatorCardanoData(_chainId);
     }
 
-    function getValidatorsCardanoData(string calldata _chainId) external view returns(ValidatorCardanoData[] memory) {
+    function getValidatorsCardanoData(string calldata _chainId) external view returns (ValidatorCardanoData[] memory) {
         return validatorsCardanoData[_chainId];
     }
 
@@ -78,5 +84,10 @@ contract ValidatorsContract is IBridgeContractStructs {
         for (uint i = 0; i < validatorsAddresses.length; i++) {
             validatorsCardanoData[_chainId].push(validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]]);
         }
+    }
+
+    modifier onlyBridgeContract() {
+        if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
+        _;
     }
 }
