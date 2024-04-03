@@ -995,6 +995,76 @@ describe("Bridge Contract", function () {
         ).to.equal(900);
       });
 
+      it("Should not add any UTXO to the source chain if Bridging Request Claim quorum is not reached", async function () {
+        const { bridgeContract, claimsManager, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } = await loadFixture(
+          deployBridgeContractFixture
+        );
+        await bridgeContract
+          .connect(owner)
+          .registerChain(
+            validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+            UTXOs,
+            "0x",
+            "0x",
+            validatorsCardanoData,
+            1000
+          );
+        await bridgeContract
+          .connect(owner)
+          .registerChain(
+            validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+            UTXOs,
+            "0x",
+            "0x",
+            validatorsCardanoData,
+            1000
+          );
+
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
+
+        const sourceChainUtxos = await bridgeContract.connect(validators[0]).getAvailableUTXOs(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID);
+        expect(sourceChainUtxos.multisigOwnedUTXOs.length).to.equal(3);
+      });
+
+      it("Should add requred amount of UTXO to the source chain when Bridging Request Claim is confirmed", async function () {
+        const { bridgeContract, claimsManager, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } = await loadFixture(
+          deployBridgeContractFixture
+        );
+        await bridgeContract
+          .connect(owner)
+          .registerChain(
+            validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+            UTXOs,
+            "0x",
+            "0x",
+            validatorsCardanoData,
+            1000
+          );
+        await bridgeContract
+          .connect(owner)
+          .registerChain(
+            validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+            UTXOs,
+            "0x",
+            "0x",
+            validatorsCardanoData,
+            1000
+          );
+
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+        const sourceChainUtxos = await bridgeContract.connect(validators[0]).getAvailableUTXOs(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID);
+        expect(sourceChainUtxos.multisigOwnedUTXOs.length).to.equal(4);
+        expect(sourceChainUtxos.multisigOwnedUTXOs[3].txHash).to.equal(validatorClaimsBRC.bridgingRequestClaims[0].outputUTXO.txHash)
+        expect(sourceChainUtxos.multisigOwnedUTXOs[3].txIndex).to.equal(validatorClaimsBRC.bridgingRequestClaims[0].outputUTXO.txIndex)
+        expect(sourceChainUtxos.multisigOwnedUTXOs[3].amount).to.equal(validatorClaimsBRC.bridgingRequestClaims[0].outputUTXO.amount)
+      });
+
       it("Should add confirmed transaction to the map after Bridging Request Claim is confirmed", async function () {
         const { bridgeContract, claimsManager, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } = await loadFixture(
           deployBridgeContractFixture

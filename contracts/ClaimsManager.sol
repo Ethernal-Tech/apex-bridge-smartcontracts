@@ -129,6 +129,8 @@ contract ClaimsManager is IBridgeContractStructs {
 
             queuedClaimsTypes[_claim.destinationChainID][claimsCounter[_claim.destinationChainID]] = ClaimTypes
                 .BRIDGING_REQUEST;
+            
+            utxosManager._addNewBridgingUTXO(_claim.destinationChainID, _claim.outputUTXO);
 
             _setConfirmedTransactions(_claim);
 
