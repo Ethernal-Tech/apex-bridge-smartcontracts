@@ -16,9 +16,6 @@ contract ClaimsHelper is IBridgeContractStructs {
     // blockchain -> claimHash -> queued
     mapping(string => mapping(string => bool)) public isClaimConfirmed;
 
-    // BlockchainID -> claimHash -> bool
-    mapping(string => mapping(string => bool)) public isClaimHashed;
-
     // claimHash -> claim
     mapping(string => BridgingRequestClaim) public queuedBridgingRequestsClaims;
     mapping(string => BatchExecutedClaim) public queuedBatchExecutedClaims;
