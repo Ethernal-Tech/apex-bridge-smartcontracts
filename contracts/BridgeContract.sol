@@ -163,7 +163,7 @@ contract BridgeContract is IBridgeContract {
             return 0;
         }
 
-        return signedBatchManager.getNextBatchId(_destinationChain);
+        return signedBatchManager.getNewBatchId(_destinationChain);
     }
 
     // Will return confirmed transactions until NEXT_BATCH_TIMEOUT_BLOCK or maximum number of transactions that

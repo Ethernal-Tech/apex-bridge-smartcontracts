@@ -116,7 +116,7 @@ contract SignedBatchManager is IBridgeContractStructs {
          return claimsManager.voted(Strings.toString(confirmedBatchNounce[_destinationChain] + 1), addr);
     }
 
-    function getNextBatchId(string calldata _destinationChain) public view onlyBridgeContract returns (uint256 v) {
+    function getNewBatchId(string calldata _destinationChain) public view onlyBridgeContract returns (uint256 v) {
         return confirmedBatchNounce[_destinationChain] + 1;
     }
 
