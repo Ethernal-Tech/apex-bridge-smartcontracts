@@ -14,7 +14,7 @@ describe("Bridge Contract", function () {
     const validators = [validator1, validator2, validator3, validator4, validator5];
 
     const BridgeContract = await ethers.getContractFactory("BridgeContract");
-    const bridgeContract = await BridgeContract.deploy(validators);
+    const bridgeContract = await BridgeContract.deploy(validators, 2, 5);
 
     const ClaimsHelper = await ethers.getContractFactory("ClaimsHelper");
     const claimsHelper = await ClaimsHelper.deploy(bridgeContract.target);
