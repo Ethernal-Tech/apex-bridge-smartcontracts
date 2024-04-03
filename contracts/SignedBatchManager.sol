@@ -19,14 +19,8 @@ contract SignedBatchManager is IBridgeContractStructs {
     // Blochchain ID -> blockNumber
     mapping(string => int256) public currentBatchBlock;
 
-    // blockchainID -> nounce
-    mapping(string => uint256) public confirmedBatchNounce;
-
-    // BlockchainID -> batchId
-    mapping(string => uint256) public lastConfirmedBatch;
-
-    // BlockchainID -> batchID -> ConfirmedBatch
-    mapping(string => mapping(uint256 => ConfirmedBatch)) public confirmedBatches;
+    // BlockchainID -> ConfirmedBatch
+    mapping(string => ConfirmedBatch) public lastConfirmedBatch;
 
     // BlockchanID -> batchId -> -signedBatchWithoutSignaturesHash -> SignedBatch[]
     mapping(string => mapping(uint256 => mapping(bytes32 => SignedBatch[]))) public signedBatches;
@@ -91,18 +85,12 @@ contract SignedBatchManager is IBridgeContractStructs {
                 ][i].feePayerMultisigSignature;
             }
 
-            ConfirmedBatch memory _confirmedBatch = ConfirmedBatch(
-                ++confirmedBatchNounce[_signedBatch.destinationChainId],
+            lastConfirmedBatch[_signedBatch.destinationChainId] = ConfirmedBatch(
+                lastConfirmedBatch[_signedBatch.destinationChainId].id + 1,
                 _signedBatch.rawTransaction,
                 multisigSignatures,
                 feePayerMultisigSignatures
             );
-
-            confirmedBatches[_signedBatch.destinationChainId][
-                confirmedBatchNounce[_signedBatch.destinationChainId]
-            ] = _confirmedBatch;
-
-            lastConfirmedBatch[_signedBatch.destinationChainId] = confirmedBatchNounce[_signedBatch.destinationChainId];
 
             currentBatchBlock[_signedBatch.destinationChainId] = int256(block.number);
         }
@@ -113,29 +101,20 @@ contract SignedBatchManager is IBridgeContractStructs {
     }
 
     function isBatchAlreadySubmittedBy(string calldata _destinationChain, address addr) public view onlyBridgeContract returns (bool ok) {
-         return claimsManager.voted(Strings.toString(confirmedBatchNounce[_destinationChain] + 1), addr);
+         return claimsManager.voted(Strings.toString(lastConfirmedBatch[_destinationChain].id + 1), addr);
     }
 
     function getNewBatchId(string calldata _destinationChain) public view onlyBridgeContract returns (uint256 v) {
-        return confirmedBatchNounce[_destinationChain] + 1;
+        return lastConfirmedBatch[_destinationChain].id + 1;
     }
 
     function getTokenQuantityFromSignedBatch(
         string calldata _chainId,
         uint256 _batchNonceID
-    ) external view returns (uint256) {
-        uint256[] memory _signedBatchTxNonces = confirmedSignedBatches[_chainId][_batchNonceID].includedTransactions;
-        ConfirmedTransaction[] memory _includedTransactions = new ConfirmedTransaction[](_signedBatchTxNonces.length);
-        for (uint i = 0; i < _signedBatchTxNonces.length; i++) {
-            _includedTransactions[i] = claimsManager.getConfirmedTransaction(_chainId, _signedBatchTxNonces[i]);
-        }
-        uint256 bridgedAmount;
-
-        for (uint256 i = 0; i < _includedTransactions.length; i++) {
-            for (uint256 j = 0; j < _includedTransactions[i].receivers.length; j++) {
-                bridgedAmount += _includedTransactions[i].receivers[j].amount;
-                j++;
-            }
+    ) external view returns (uint256 bridgedAmount) {
+        uint256[] memory _signedBatchTxNonces = confirmedSignedBatches[_chainId][_batchNonceID].includedTransactions;        
+        for (uint256 i = 0; i < _signedBatchTxNonces.length; i++) {
+            bridgedAmount += claimsManager.getConfirmedTransactionAmount(_chainId, _signedBatchTxNonces[i]);
         }
 
         return bridgedAmount;
@@ -143,8 +122,8 @@ contract SignedBatchManager is IBridgeContractStructs {
 
     function getConfirmedBatch(
         string calldata _destinationChain
-    ) external view onlyBridgeContract returns (ConfirmedBatch memory batch) {
-        return confirmedBatches[_destinationChain][lastConfirmedBatch[_destinationChain]];
+    ) external view returns (ConfirmedBatch memory batch) {
+        return lastConfirmedBatch[_destinationChain];
     }
 
     function getConfirmedSignedBatch(
@@ -154,11 +133,10 @@ contract SignedBatchManager is IBridgeContractStructs {
         return confirmedSignedBatches[_destinationChain][_nonce];
     }
 
-    function setCurrentBatchBlock(
-        string calldata _chainId,
-        int256 _blockNumber
+    function resetCurrentBatchBlock(
+        string calldata _chainId
     ) external onlyClaimsManagerOrBridgeContract {
-        currentBatchBlock[_chainId] = int(_blockNumber);
+        currentBatchBlock[_chainId] = int(-1);
     }
 
     modifier onlyBridgeContract() {
