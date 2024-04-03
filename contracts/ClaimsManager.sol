@@ -48,7 +48,7 @@ contract ClaimsManager is IBridgeContractStructs {
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {
         for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
             BridgingRequestClaim memory _claim = _claims.bridgingRequestClaims[i];
-            if (!bridgeContract.registeredChains(_claim.sourceChainID)) {
+            if (!bridgeContract.isChainRegistered(_claim.sourceChainID)) {
                 revert ChainIsNotRegistered(_claim.sourceChainID);
             }
 
@@ -68,7 +68,7 @@ contract ClaimsManager is IBridgeContractStructs {
         }
         for (uint i = 0; i < _claims.batchExecutedClaims.length; i++) {
             BatchExecutedClaim memory _claim = _claims.batchExecutedClaims[i];
-            if (!bridgeContract.registeredChains(_claim.chainID)) {
+            if (!bridgeContract.isChainRegistered(_claim.chainID)) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
@@ -84,7 +84,7 @@ contract ClaimsManager is IBridgeContractStructs {
         }
         for (uint i = 0; i < _claims.batchExecutionFailedClaims.length; i++) {
             BatchExecutionFailedClaim memory _claim = _claims.batchExecutionFailedClaims[i];
-            if (!bridgeContract.registeredChains(_claim.chainID)) {
+            if (!bridgeContract.isChainRegistered(_claim.chainID)) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
@@ -100,7 +100,7 @@ contract ClaimsManager is IBridgeContractStructs {
         }
         for (uint i = 0; i < _claims.refundRequestClaims.length; i++) {
             RefundRequestClaim memory _claim = _claims.refundRequestClaims[i];
-            if (!bridgeContract.registeredChains(_claim.chainID)) {
+            if (!bridgeContract.isChainRegistered(_claim.chainID)) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
@@ -116,7 +116,7 @@ contract ClaimsManager is IBridgeContractStructs {
         }
         for (uint i = 0; i < _claims.refundExecutedClaims.length; i++) {
             RefundExecutedClaim memory _claim = _claims.refundExecutedClaims[i];
-            if (!bridgeContract.registeredChains(_claim.chainID)) {
+            if (!bridgeContract.isChainRegistered(_claim.chainID)) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 

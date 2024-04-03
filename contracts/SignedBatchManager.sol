@@ -36,7 +36,7 @@ contract SignedBatchManager is IBridgeContractStructs {
         string memory _destinationChainId = _signedBatch.destinationChainId;
         uint256 _batchId = _signedBatch.id;
 
-        if (!bridgeContract.registeredChains(_destinationChainId)) {
+        if (!bridgeContract.isChainRegistered(_destinationChainId)) {
             revert ChainIsNotRegistered(_destinationChainId);
         }
 
