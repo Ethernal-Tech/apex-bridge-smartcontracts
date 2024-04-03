@@ -13,20 +13,23 @@ describe("Bridge Contract", function () {
     const [owner, validator1, validator2, validator3, validator4, validator5, validator6] = await ethers.getSigners();
     const validators = [validator1, validator2, validator3, validator4, validator5];
 
+    const ValidatorsContract = await ethers.getContractFactory("ValidatorsContract");
+    const validatorsContract = await ValidatorsContract.deploy(validators);
+
     const BridgeContract = await ethers.getContractFactory("BridgeContract");
-    const bridgeContract = await BridgeContract.deploy(validators, 2, 5);
+    const bridgeContract = await BridgeContract.deploy(2, 5);
 
     const ClaimsHelper = await ethers.getContractFactory("ClaimsHelper");
     const claimsHelper = await ClaimsHelper.deploy();
 
     const ClaimsManager = await ethers.getContractFactory("ClaimsManager");
-    const claimsManager = await ClaimsManager.deploy(bridgeContract.target, claimsHelper.target);
+    const claimsManager = await ClaimsManager.deploy(bridgeContract.target, claimsHelper.target, validatorsContract.target);
 
     const UTXOsManager = await ethers.getContractFactory("UTXOsManager");
     const uTXOsManager = await UTXOsManager.deploy(bridgeContract.target);
 
     const SlotsManager = await ethers.getContractFactory("SlotsManager");
-    const slotsManager = await SlotsManager.deploy(bridgeContract.target);
+    const slotsManager = await SlotsManager.deploy(bridgeContract.target, validatorsContract.target);
 
     const SignedBatchManager = await ethers.getContractFactory("SignedBatchManager");
     const signedBatchManager = await SignedBatchManager.deploy(
@@ -40,6 +43,7 @@ describe("Bridge Contract", function () {
     await bridgeContract.setClaimsManager(claimsManager.target);
     await bridgeContract.setUTXOsManager(uTXOsManager.target);
     await bridgeContract.setSignedBatchManager(signedBatchManager.target);
+    await bridgeContract.setValidatorsContract(validatorsContract.target);
 
     await claimsManager.setUTXOsManager(uTXOsManager.target);
     await claimsManager.setSignedBatchManager(signedBatchManager.target);
@@ -449,13 +453,14 @@ describe("Bridge Contract", function () {
       validatorClaimsBRC_ConfirmedTransactions,
       signedBatch,
       validatorsCardanoData,
+      validatorsContract,
     };
   }
 
   describe("Deployment", function () {
     it("Should set 5 validator with quorum of 4", async function () {
-      const { bridgeContract } = await loadFixture(deployBridgeContractFixture);
-      const numberOfValidators = await bridgeContract.getQuorumNumberOfValidators();
+      const { bridgeContract, validatorsContract } = await loadFixture(deployBridgeContractFixture);
+      const numberOfValidators = await validatorsContract.getQuorumNumberOfValidators();
 
       expect(numberOfValidators).to.equal(4);
     });

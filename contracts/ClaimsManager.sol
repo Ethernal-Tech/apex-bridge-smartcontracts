@@ -4,11 +4,13 @@ pragma solidity ^0.8.23;
 import "./interfaces/IBridgeContractStructs.sol";
 import "./BridgeContract.sol";
 import "./ClaimsHelper.sol";
+import "./ValidatorsContract.sol";
 import "./SignedBatchManager.sol";
 import "./UTXOsManager.sol";
 import "hardhat/console.sol";
 
 contract ClaimsManager is IBridgeContractStructs {
+    ValidatorsContract private validatorsContract;
     BridgeContract private bridgeContract;
     ClaimsHelper private claimsHelper;
     SignedBatchManager private signedBatchManager;
@@ -40,9 +42,10 @@ contract ClaimsManager is IBridgeContractStructs {
 
     string private constant LAST_OBSERVED_BLOCK_INFO_KEY = "LAST_OBSERVED_BLOCK_INFO";
 
-    constructor(address _bridgeContract, address _claimsHelper) {
+    constructor(address _bridgeContract, address _claimsHelper, address _validatorsContract) {
         bridgeContract = BridgeContract(_bridgeContract);
         claimsHelper = ClaimsHelper(_claimsHelper);
+        validatorsContract = ValidatorsContract(_validatorsContract);
     }
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {
@@ -316,7 +319,7 @@ contract ClaimsManager is IBridgeContractStructs {
     }
 
     function hasConsensus(bytes32 _hash) public view returns (bool) {
-        return numberOfVotes[_hash] >= bridgeContract.getQuorumNumberOfValidators();
+        return numberOfVotes[_hash] >= validatorsContract.getQuorumNumberOfValidators();
     }
 
     modifier onlyBridgeContract() {
