@@ -121,7 +121,7 @@ contract BridgeContract is IBridgeContract {
         validatorsCardanoDataPerAddress[_chainId][msg.sender] = validator;
         validatorsCardanoData[_chainId].push(validator);
 
-        if (claimsHelper.hasChainRegistrationConsensus(chainHash)) {
+        if (claimsManager.numberOfVotes(chainHash) == validatorsCount) {
             _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
         } else {
             emit newChainProposal(_chainId, msg.sender);
