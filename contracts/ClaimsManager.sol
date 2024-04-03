@@ -48,12 +48,8 @@ contract ClaimsManager is IBridgeContractStructs {
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {
         for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
             BridgingRequestClaim memory _claim = _claims.bridgingRequestClaims[i];
-            if (!bridgeContract.isChainRegistered(_claim.sourceChainID)) {
+            if (!bridgeContract.registeredChains(_claim.sourceChainID)) {
                 revert ChainIsNotRegistered(_claim.sourceChainID);
-            }
-
-            if (!bridgeContract.isChainRegistered(_claim.destinationChainID)) {
-                revert ChainIsNotRegistered(_claim.destinationChainID);
             }
 
             if (voted[_claim.observedTransactionHash][_caller]) {
@@ -72,7 +68,7 @@ contract ClaimsManager is IBridgeContractStructs {
         }
         for (uint i = 0; i < _claims.batchExecutedClaims.length; i++) {
             BatchExecutedClaim memory _claim = _claims.batchExecutedClaims[i];
-            if (!bridgeContract.isChainRegistered(_claim.chainID)) {
+            if (!bridgeContract.registeredChains(_claim.chainID)) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
@@ -88,7 +84,7 @@ contract ClaimsManager is IBridgeContractStructs {
         }
         for (uint i = 0; i < _claims.batchExecutionFailedClaims.length; i++) {
             BatchExecutionFailedClaim memory _claim = _claims.batchExecutionFailedClaims[i];
-            if (!bridgeContract.isChainRegistered(_claim.chainID)) {
+            if (!bridgeContract.registeredChains(_claim.chainID)) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
@@ -104,7 +100,7 @@ contract ClaimsManager is IBridgeContractStructs {
         }
         for (uint i = 0; i < _claims.refundRequestClaims.length; i++) {
             RefundRequestClaim memory _claim = _claims.refundRequestClaims[i];
-            if (!bridgeContract.isChainRegistered(_claim.chainID)) {
+            if (!bridgeContract.registeredChains(_claim.chainID)) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
@@ -120,7 +116,7 @@ contract ClaimsManager is IBridgeContractStructs {
         }
         for (uint i = 0; i < _claims.refundExecutedClaims.length; i++) {
             RefundExecutedClaim memory _claim = _claims.refundExecutedClaims[i];
-            if (!bridgeContract.isChainRegistered(_claim.chainID)) {
+            if (!bridgeContract.registeredChains(_claim.chainID)) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
@@ -154,7 +150,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             queuedClaimsTypes[_claim.destinationChainID][claimsCounter[_claim.destinationChainID]] = ClaimTypes
                 .BRIDGING_REQUEST;
-            
+
             utxosManager.addNewBridgingUTXO(_claim.destinationChainID, _claim.outputUTXO);
 
             _setConfirmedTransactions(_claim);
@@ -303,7 +299,10 @@ contract ClaimsManager is IBridgeContractStructs {
         return confirmedTransactions[_destinationChain][_nonce];
     }
 
-    function getConfirmedTransactionAmount(string calldata _destinationChain, uint256 _nonce) public view returns (uint256 result) {
+    function getConfirmedTransactionAmount(
+        string calldata _destinationChain,
+        uint256 _nonce
+    ) public view returns (uint256 result) {
         ConfirmedTransaction memory ctx = confirmedTransactions[_destinationChain][_nonce];
         for (uint256 j = 0; j < ctx.receivers.length; j++) {
             result += ctx.receivers[j].amount;

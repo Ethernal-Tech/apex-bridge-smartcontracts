@@ -39,7 +39,7 @@ abstract contract IBridgeContract is IBridgeContractStructs {
     function shouldCreateBatch(string calldata _destinationChain) external view virtual returns (bool);
 
     // Calls shouldCreateBatch and returns next batch id if batch should be created of 0 if not
-    function getNextBatchId(string calldata _destinationChain) external view virtual returns (uint256);    
+    function getNextBatchId(string calldata _destinationChain) external view virtual returns (uint256);
 
     // Will return confirmed transactions until NEXT_BATCH_TIMEOUT_BLOCK or maximum number of transactions that
     // can be included in the batch, if the maximum number of transactions in a batch has been exceeded
@@ -70,8 +70,6 @@ abstract contract IBridgeContract is IBridgeContractStructs {
     ) external view virtual returns (CardanoBlock memory cblock);
 
     function getAllRegisteredChains() external view virtual returns (Chain[] memory _chains);
-
-    function isChainRegistered(string calldata _chainId) external view virtual returns (bool);
 
     function getQuorumNumberOfValidators() external view virtual returns (uint8);
 

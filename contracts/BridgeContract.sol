@@ -23,7 +23,7 @@ contract BridgeContract is IBridgeContract {
     mapping(address => bool) private isValidator;
 
     // BlockchainID -> bool
-    mapping(string => bool) private registeredChains;
+    mapping(string => bool) public registeredChains;
 
     // Blochchain ID -> blockNumber
     mapping(string => uint256) public nextTimeoutBlock;
@@ -247,12 +247,6 @@ contract BridgeContract is IBridgeContract {
 
     function getAllRegisteredChains() external view override returns (Chain[] memory _chains) {
         return chains;
-    }
-
-    // TODO: this should be removed from the interface and from there to save on contract size
-    // and default getter from public variable should be used
-    function isChainRegistered(string calldata _chainId) external view override returns (bool) {
-        return registeredChains[_chainId];
     }
 
     function getQuorumNumberOfValidators() external view override returns (uint8) {

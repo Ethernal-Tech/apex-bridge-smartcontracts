@@ -478,7 +478,7 @@ describe("Bridge Contract", function () {
 
         await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", validatorsCardanoData, 100);
 
-        expect(await bridgeContract.isChainRegistered("chainID1")).to.be.true;
+        expect(await bridgeContract.registeredChains("chainID1")).to.be.true;
       });
 
       it("Should store UTXOs when new chain is registered by owner", async function () {
@@ -533,19 +533,19 @@ describe("Bridge Contract", function () {
           .connect(validators[2])
           .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[2].data, 100);
 
-        expect(await bridgeContract.isChainRegistered("chainID1")).to.be.false;
+        expect(await bridgeContract.registeredChains("chainID1")).to.be.false;
 
         await bridgeContract
           .connect(validators[3])
           .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[3].data, 100);
 
-        expect(await bridgeContract.isChainRegistered("chainID1")).to.be.false;
+        expect(await bridgeContract.registeredChains("chainID1")).to.be.false;
 
         await bridgeContract
           .connect(validators[4])
           .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[4].data, 100);
 
-        expect(await bridgeContract.isChainRegistered("chainID1")).to.be.true;
+        expect(await bridgeContract.registeredChains("chainID1")).to.be.true;
 
         await expect(
           bridgeContract
@@ -612,7 +612,7 @@ describe("Bridge Contract", function () {
           .connect(validators[3])
           .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[3].data, 100);
 
-        expect(await bridgeContract.isChainRegistered("chainID1")).to.be.false;
+        expect(await bridgeContract.registeredChains("chainID1")).to.be.false;
       });
 
       it("Should add new chain if there are enough votes (100% of them)", async function () {
@@ -630,19 +630,19 @@ describe("Bridge Contract", function () {
           .connect(validators[2])
           .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[2].data, 100);
 
-        expect(await bridgeContract.isChainRegistered("chainID1")).to.be.false;
+        expect(await bridgeContract.registeredChains("chainID1")).to.be.false;
 
         await bridgeContract
           .connect(validators[3])
           .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[3].data, 100);
 
-        expect(await bridgeContract.isChainRegistered("chainID1")).to.be.false;
+        expect(await bridgeContract.registeredChains("chainID1")).to.be.false;
 
         await bridgeContract
           .connect(validators[4])
           .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[4].data, 100);
 
-        expect(await bridgeContract.isChainRegistered("chainID1")).to.be.true;
+        expect(await bridgeContract.registeredChains("chainID1")).to.be.true;
       });
 
       it("Should set correct nextTimeoutBlock when chain is registered with Governance", async function () {
@@ -799,6 +799,14 @@ describe("Bridge Contract", function () {
           bridgeContract,
           "NotValidator"
         );
+      });
+
+      it("Should reject if either source and destination chains are not registered", async function () {
+        const { bridgeContract, validators, validatorClaimsBRC } = await loadFixture(deployBridgeContractFixture);
+
+        await expect(
+          bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC)
+        ).to.be.revertedWithCustomError(bridgeContract, "ChainIsNotRegistered");
       });
 
       it("Should revert if Bridging Request Claim is already confirmed", async function () {
@@ -1184,6 +1192,15 @@ describe("Bridge Contract", function () {
       });
     });
     describe("Submit new Batch Executed Claim", function () {
+      it("Should revertif chain is not registered", async function () {
+        const { bridgeContract, claimsHelper, owner, validators, UTXOs, validatorsCardanoData, validatorClaimsBEC } =
+          await loadFixture(deployBridgeContractFixture);
+
+        await expect(
+          bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEC)
+        ).to.be.revertedWithCustomError(claimsHelper, "ChainIsNotRegistered");
+      });
+
       it("Should revert if same validator submits the same Batch Executed Claim twice", async function () {
         const { bridgeContract, claimsHelper, owner, validators, UTXOs, validatorsCardanoData, validatorClaimsBEC } =
           await loadFixture(deployBridgeContractFixture);
@@ -1354,6 +1371,15 @@ describe("Bridge Contract", function () {
       });
     });
     describe("Submit new Batch Execution Failed Claims", function () {
+      it("Should revert if chain is not registered", async function () {
+        const { bridgeContract, owner, validators, UTXOs, validatorsCardanoData, validatorClaimsBEFC } =
+          await loadFixture(deployBridgeContractFixture);
+
+        await expect(
+          bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEFC)
+        ).to.be.revertedWithCustomError(bridgeContract, "ChainIsNotRegistered");
+      });
+
       it("Should revert if Batch Execution Failed Claims is already confirmed", async function () {
         const { bridgeContract, owner, validators, UTXOs, validatorsCardanoData, validatorClaimsBEFC } =
           await loadFixture(deployBridgeContractFixture);
@@ -1440,6 +1466,15 @@ describe("Bridge Contract", function () {
       });
     });
     describe("Submit new Refund Request Claims", function () {
+      it("Should revert if chain is not registered", async function () {
+        const { bridgeContract, owner, validators, UTXOs, validatorClaimsRRC, validatorsCardanoData } =
+          await loadFixture(deployBridgeContractFixture);
+
+        await expect(
+          bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC)
+        ).to.be.revertedWithCustomError(bridgeContract, "ChainIsNotRegistered");
+      });
+
       it("Should revert if Refund Request Claims is already confirmed", async function () {
         const { bridgeContract, owner, validators, UTXOs, validatorClaimsRRC, validatorsCardanoData } =
           await loadFixture(deployBridgeContractFixture);
@@ -1516,6 +1551,15 @@ describe("Bridge Contract", function () {
       });
     });
     describe("Submit new Refund Executed Claim", function () {
+      it("Should revert if chain is not registered", async function () {
+        const { bridgeContract, owner, validators, UTXOs, validatorsCardanoData, validatorClaimsRRC } =
+          await loadFixture(deployBridgeContractFixture);
+
+        await expect(
+          bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC)
+        ).to.be.revertedWithCustomError(bridgeContract, "ChainIsNotRegistered");
+      });
+
       it("Should revert if Refund Executed Claim is already confirmed", async function () {
         const { bridgeContract, owner, validators, UTXOs, validatorsCardanoData, validatorClaimsRRC } =
           await loadFixture(deployBridgeContractFixture);
@@ -1885,6 +1929,39 @@ describe("Bridge Contract", function () {
         expect(
           await bridgeContract.getNextBatchId(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID)
         ).to.equal(1);
+      });
+
+      it("SignedBatch submition should be reverted if chain is not registered", async function () {
+        const { bridgeContract, validators, signedBatch } = await loadFixture(deployBridgeContractFixture);
+
+        await expect(
+          bridgeContract.connect(validators[0]).submitSignedBatch(signedBatch)
+        ).to.be.revertedWithCustomError(bridgeContract, "ChainIsNotRegistered");
+      });
+
+      it("SignedBatch submition should be reverted if batch nounce is not correct", async function () {
+        const { bridgeContract, owner, validators, UTXOs, validatorsCardanoData } = await loadFixture(
+          deployBridgeContractFixture
+        );
+
+        await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", validatorsCardanoData, 100);
+
+        const signedBatch = {
+          id: 2,
+          destinationChainId: "chainID1",
+          rawTransaction: "rawTransaction1",
+          multisigSignature: "multisigSignature1",
+          feePayerMultisigSignature: "feePayerMultisigSignature1",
+          includedTransactions: [1],
+          usedUTXOs: {
+            multisigOwnedUTXOs: [],
+            feePayerOwnedUTXOs: [],
+          },
+        };
+
+        await expect(
+          bridgeContract.connect(validators[0]).submitSignedBatch(signedBatch)
+        ).to.be.revertedWithCustomError(bridgeContract, "WrongBatchNonce");
       });
 
       it("SignedBatch should be added to signedBatches if there is enough votes", async function () {
