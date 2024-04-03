@@ -86,7 +86,6 @@ contract ClaimsHelper is IBridgeContractStructs {
         return true;
     }
 
-    //TODO: think about constraint for setting this value
     function setClaimsManager(address _claimsManager) external {
         claimsManager = _claimsManager;
     }
