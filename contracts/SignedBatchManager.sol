@@ -3,18 +3,15 @@ pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBridgeContractStructs.sol";
-import "./BridgeContract.sol";
 import "./ClaimsHelper.sol";
 import "./ClaimsManager.sol";
-import "./UTXOsManager.sol";
 
 import "hardhat/console.sol";
 
 contract SignedBatchManager is IBridgeContractStructs {
-    BridgeContract private bridgeContract;
+    address private bridgeContractAddress;
     ClaimsHelper private claimsHelper;
     ClaimsManager private claimsManager;
-    UTXOsManager private utxosManager;
 
     // Blochchain ID -> blockNumber
     mapping(string => int256) public currentBatchBlock;
@@ -28,11 +25,10 @@ contract SignedBatchManager is IBridgeContractStructs {
     // BlockchainID -> batchId -> SignedBatch
     mapping(string => mapping(uint256 => SignedBatch)) public confirmedSignedBatches;
 
-    constructor(address _bridgeContract, address _claimsManager, address _claimsHelper, address _utxosManager) {
-        bridgeContract = BridgeContract(_bridgeContract);
+    constructor(address _bridgeContractAddress, address _claimsManager, address _claimsHelper) {
+        bridgeContractAddress = _bridgeContractAddress;
         claimsManager = ClaimsManager(_claimsManager);
         claimsHelper = ClaimsHelper(_claimsHelper);
-        utxosManager = UTXOsManager(_utxosManager);
     }
 
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridgeContract {
@@ -140,22 +136,12 @@ contract SignedBatchManager is IBridgeContractStructs {
     }
 
     modifier onlyBridgeContract() {
-        if (msg.sender != address(bridgeContract)) revert NotBridgeContract();
-        _;
-    }
-
-    modifier onlyClaimsManager() {
-        if (msg.sender != address(claimsManager)) revert NotClaimsManager();
-        _;
-    }
-
-    modifier onlyClaimsHelper() {
-        if (msg.sender != address(claimsHelper)) revert NotClaimsHelper();
+        if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
         _;
     }
 
     modifier onlyClaimsManagerOrBridgeContract() {
-        if (msg.sender != address(claimsManager) && msg.sender != address(bridgeContract))
+        if (msg.sender != address(claimsManager) && msg.sender != bridgeContractAddress)
             revert NotClaimsManagerOrBridgeContract();
         _;
     }

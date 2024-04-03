@@ -33,7 +33,6 @@ describe("Bridge Contract", function () {
       bridgeContract.target,
       claimsManager.target,
       claimsHelper.target,
-      uTXOsManager.target
     );
 
     await bridgeContract.setSlotsManager(slotsManager.target);

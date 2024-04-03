@@ -3,9 +3,6 @@ pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBridgeContractStructs.sol";
-import "./BridgeContract.sol";
-import "./ClaimsManager.sol";
-import "./UTXOsManager.sol";
 import "hardhat/console.sol";
 
 contract ClaimsHelper is IBridgeContractStructs {
