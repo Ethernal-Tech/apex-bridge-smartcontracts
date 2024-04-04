@@ -280,15 +280,6 @@ contract ClaimsManager is IBridgeContractStructs {
         chainTokenQuantity[_chainID] = _tokenQuantity;
     }
 
-    // TODO: who will set this value?
-    function setUTXOsManager(address _utxosManager) external {
-        utxosManager = UTXOsManager(_utxosManager);
-    }
-
-    function setSignedBatchManager(address _signedBatchManager) external {
-        signedBatchManager = SignedBatchManager(_signedBatchManager);
-    }
-
     function getLastConfirmedTxNonce(string calldata _destinationChain) public view returns (uint256) {
         return lastConfirmedTxNonce[_destinationChain];
     }
@@ -332,6 +323,15 @@ contract ClaimsManager is IBridgeContractStructs {
         }
 
         return tokenQuantity;
+    }
+
+    // TODO: who will set this value?
+    function setUTXOsManager(address _utxosManager) external {
+        utxosManager = UTXOsManager(_utxosManager);
+    }
+
+    function setSignedBatchManager(address _signedBatchManager) external {
+        signedBatchManager = SignedBatchManager(_signedBatchManager);
     }
 
     function setClaimsHelper(address _claimsHelper) external /*onlyClaimsManager*/ {
