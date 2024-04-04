@@ -334,6 +334,10 @@ contract ClaimsManager is IBridgeContractStructs {
         return tokenQuantity;
     }
 
+    function setClaimsHelper(address _claimsHelper) external /*onlyClaimsManager*/ {
+        claimsHelper = ClaimsHelper(_claimsHelper);
+    }
+
     modifier onlyBridgeContract() {
         if (msg.sender != address(bridgeContract)) revert NotBridgeContract();
         _;

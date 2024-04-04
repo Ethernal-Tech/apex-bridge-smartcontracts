@@ -1,8 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { any } from "hardhat/internal/core/params/argumentTypes";
-import { isRevertResult } from "hardhat/internal/hardhat-network/stack-traces/message-trace";
 
 describe("Bridge Contract", function () {
   // We define a fixture to reuse the same setup in every test.
@@ -12,6 +10,8 @@ describe("Bridge Contract", function () {
     // Contracts are deployed using the first signer/account by default
     const [owner, validator1, validator2, validator3, validator4, validator5, validator6] = await ethers.getSigners();
     const validators = [validator1, validator2, validator3, validator4, validator5];
+
+    const hre = require("hardhat");
 
     const BridgeContract = await ethers.getContractFactory("BridgeContract");
     const bridgeContract = await BridgeContract.deploy(2, 5);
@@ -39,12 +39,12 @@ describe("Bridge Contract", function () {
     );
 
     await bridgeContract.setSlotsManager(slotsManager.target);
-    await bridgeContract.setClaimsHelper(claimsHelper.target);
     await bridgeContract.setClaimsManager(claimsManager.target);
     await bridgeContract.setUTXOsManager(uTXOsManager.target);
     await bridgeContract.setSignedBatchManager(signedBatchManager.target);
     await bridgeContract.setValidatorsContract(validatorsContract.target);
 
+    await claimsManager.setClaimsHelper(claimsHelper.target);
     await claimsManager.setUTXOsManager(uTXOsManager.target);
     await claimsManager.setSignedBatchManager(signedBatchManager.target);
 
@@ -429,6 +429,7 @@ describe("Bridge Contract", function () {
     }
 
     return {
+      hre,
       bridgeContract,
       claimsHelper,
       claimsManager,
@@ -791,6 +792,42 @@ describe("Bridge Contract", function () {
           expect(valids2[i][2]).to.equal(validatorsCardanoData[i].data.verifyingKey);
           expect(valids2[i][3]).to.equal(validatorsCardanoData[i].data.verifyingKeyFee);
         }
+      });
+
+      it("Should not update Validators Cardano Data until all validators submit their data", async function () {
+        const { bridgeContract, validators, UTXOs, validatorsCardanoData, validatorsContract, hre, owner } = await loadFixture(
+          deployBridgeContractFixture
+        );
+
+        const bridgeContractAddress = await bridgeContract.getAddress();
+
+        await hre.network.provider.request({
+          method: "hardhat_impersonateAccount",
+          params: [bridgeContractAddress],
+        });
+        
+        const signer = await ethers.getSigner(bridgeContractAddress);
+
+        // minting 100000000000000000000 tokens to sender
+        await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+
+        await validatorsContract.connect(signer).addValidatorCardanoData("chainID1 1", validatorsCardanoData[0].addr, validatorsCardanoData[0].data);
+        await validatorsContract.connect(signer).addValidatorCardanoData("chainID1 1", validatorsCardanoData[1].addr, validatorsCardanoData[1].data);
+        await validatorsContract.connect(signer).addValidatorCardanoData("chainID1 1", validatorsCardanoData[2].addr, validatorsCardanoData[2].data);
+        await validatorsContract.connect(signer).addValidatorCardanoData("chainID1 1", validatorsCardanoData[3].addr, validatorsCardanoData[3].data);
+
+        const data = await validatorsContract.connect(validators[0]).getValidatorsCardanoData("chainID1 1");
+        expect(data.length).to.equal(0);
+
+        await validatorsContract.connect(signer).addValidatorCardanoData("chainID1 1", validatorsCardanoData[4].addr, validatorsCardanoData[4].data);
+
+        const data2 = await validatorsContract.connect(validators[0]).getValidatorsCardanoData("chainID1 1");
+        expect(data2.length).to.equal(await validatorsContract.validatorsCount());
+
+        await hre.network.provider.request({
+          method: "hardhat_stopImpersonatingAccount",
+          params: [bridgeContractAddress],
+        });
       });
     });
 

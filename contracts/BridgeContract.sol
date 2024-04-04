@@ -93,7 +93,7 @@ contract BridgeContract is IBridgeContract {
 
         claimsManager.setVoted(_chainId, msg.sender, true);
         claimsManager.setNumberOfVotes(chainHash);
-        validatorsContract.setCardanoData(_chainId, msg.sender, validator);
+        validatorsContract.addValidatorCardanoData(_chainId, msg.sender, validator);
 
         if (claimsManager.numberOfVotes(chainHash) == validatorsContract.getValidatorsCount()) {
             _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);

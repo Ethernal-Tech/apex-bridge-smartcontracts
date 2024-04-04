@@ -45,7 +45,7 @@ contract ValidatorsContract is IBridgeContractStructs {
         _updateValidatorCardanoData(_chainId);
     }
 
-    function setCardanoData(
+    function addValidatorCardanoData(
         string calldata _chainId,
         address addr,
         ValidatorCardanoData calldata data
