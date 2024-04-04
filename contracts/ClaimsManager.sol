@@ -324,7 +324,7 @@ contract ClaimsManager is IBridgeContractStructs {
         return numberOfVotes[_hash] >= validatorsContract.getQuorumNumberOfValidators();
     }
 
-    function getNeededTokenQuantity(Receiver[] memory _receivers) public pure returns (uint256) {
+    function getNeededTokenQuantity(Receiver[] memory _receivers) internal pure returns (uint256) {
         uint256 tokenQuantity;
 
         for (uint256 i = 0; i < _receivers.length; i++) {

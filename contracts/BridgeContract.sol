@@ -13,7 +13,6 @@ import "hardhat/console.sol";
 
 contract BridgeContract is IBridgeContract {
     ValidatorsContract private validatorsContract;
-    ClaimsHelper private claimsHelper;
     ClaimsManager private claimsManager;
     UTXOsManager private utxosManager;
     SignedBatchManager private signedBatchManager;
@@ -232,10 +231,6 @@ contract BridgeContract is IBridgeContract {
         nextTimeoutBlock[_chainId] = _blockNumber + maxNumberOfTransactions;
     }
 
-    function setClaimsHelper(address _claimsHelper) external onlyOwner {
-        claimsHelper = ClaimsHelper(_claimsHelper);
-    }
-
     function setClaimsManager(address _claimsManager) external onlyOwner {
         claimsManager = ClaimsManager(_claimsManager);
     }
@@ -268,11 +263,6 @@ contract BridgeContract is IBridgeContract {
 
     modifier onlyClaimsManager() {
         if (msg.sender != address(claimsManager)) revert NotClaimsManager();
-        _;
-    }
-
-    modifier onlyClaimsHelper() {
-        if (msg.sender != address(claimsHelper)) revert NotClaimsHelper();
         _;
     }
 }
