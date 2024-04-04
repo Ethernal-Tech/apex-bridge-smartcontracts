@@ -306,11 +306,11 @@ contract ClaimsManager is IBridgeContractStructs {
     ) public view returns (uint256) {
         uint256 bridgedAmount;
 
-        uint256[] memory nonces = signedBatchManager
+        uint256[] memory _nonces = signedBatchManager
             .getConfirmedSignedBatch(_destinationChain, _nonce)
             .includedTransactions;
-        for (uint i = 0; i < nonces.length; i++) {
-            bridgedAmount += getNeededTokenQuantity(confirmedTransactions[_destinationChain][_nonce].receivers);
+        for (uint i = 0; i < _nonces.length; i++) {
+            bridgedAmount += getNeededTokenQuantity(confirmedTransactions[_destinationChain][_nonces[i]].receivers);
         }
 
         return bridgedAmount;
