@@ -119,18 +119,6 @@ contract SignedBatchManager is IBridgeContractStructs {
         return lastConfirmedBatch[_destinationChain].id + 1;
     }
 
-    function getTokenQuantityFromSignedBatch(
-        string calldata _chainId,
-        uint256 _batchNonceID
-    ) external view returns (uint256 bridgedAmount) {
-        uint256[] memory _signedBatchTxNonces = confirmedSignedBatches[_chainId][_batchNonceID].includedTransactions;
-        for (uint256 i = 0; i < _signedBatchTxNonces.length; i++) {
-            bridgedAmount += claimsManager.getConfirmedTransactionAmount(_chainId, _signedBatchTxNonces[i]);
-        }
-
-        return bridgedAmount;
-    }
-
     function getConfirmedBatch(string calldata _destinationChain) external view returns (ConfirmedBatch memory batch) {
         return lastConfirmedBatch[_destinationChain];
     }

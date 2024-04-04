@@ -19,9 +19,6 @@ contract ClaimsHelper is IBridgeContractStructs {
     mapping(string => RefundRequestClaim) public queuedRefundRequestClaims;
     mapping(string => RefundExecutedClaim) public queuedRefundExecutedClaims;
 
-    constructor() {
-    }
-
     function getClaimBRC(string calldata _id) external view returns (BridgingRequestClaim memory claim) {
         return queuedBridgingRequestsClaims[_id];
     }
@@ -46,16 +43,6 @@ contract ClaimsHelper is IBridgeContractStructs {
         BatchExecutionFailedClaim calldata _claim
     ) external onlyClaimsManager {
         queuedBatchExecutionFailedClaims[_claim.observedTransactionHash] = _claim;
-    }
-
-    function getNeededTokenQuantity(Receiver[] calldata _receivers) public pure returns (uint256) {
-        uint256 tokenQuantity;
-
-        for (uint256 i = 0; i < _receivers.length; i++) {
-            tokenQuantity += _receivers[i].amount;
-        }
-
-        return tokenQuantity;
     }
 
     function setClaimConfirmed(
