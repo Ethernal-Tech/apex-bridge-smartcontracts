@@ -548,32 +548,32 @@ describe("Bridge Contract", function () {
 
         await bridgeContract
           .connect(validators[0])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[1])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[1].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[1].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[2])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[2].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[2].data, "hello_world", 100);
 
         expect(await bridgeContract.isChainRegistered("chainID1")).to.be.false;
 
         await bridgeContract
           .connect(validators[3])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[3].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[3].data, "hello_world", 100);
 
         expect(await bridgeContract.isChainRegistered("chainID1")).to.be.false;
 
         await bridgeContract
           .connect(validators[4])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[4].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[4].data, "hello_world", 100);
 
         expect(await bridgeContract.isChainRegistered("chainID1")).to.be.true;
 
         await expect(
           bridgeContract
             .connect(validators[4])
-            .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[4].data, 100)
+            .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[4].data, "hello_world", 100)
         ).to.be.revertedWithCustomError(bridgeContract, "ChainAlreadyRegistered");
       });
 
@@ -583,7 +583,7 @@ describe("Bridge Contract", function () {
         await expect(
           bridgeContract
             .connect(owner)
-            .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, 100)
+            .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, "hello_world", 100)
         ).to.be.revertedWithCustomError(bridgeContract, "NotValidator");
       });
 
@@ -594,12 +594,12 @@ describe("Bridge Contract", function () {
 
         await bridgeContract
           .connect(validators[0])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, "hello_world", 100);
 
         await expect(
           bridgeContract
             .connect(validators[0])
-            .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, 100)
+            .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, "hello_world", 100)
         ).to.be.revertedWithCustomError(claimsHelper, "AlreadyProposed");
       });
 
@@ -611,7 +611,7 @@ describe("Bridge Contract", function () {
         await expect(
           bridgeContract
             .connect(validators[0])
-            .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, 100)
+            .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, "hello_world", 100)
         )
           .to.emit(bridgeContract, "newChainProposal")
           .withArgs("chainID1", validators[0].address);
@@ -624,16 +624,16 @@ describe("Bridge Contract", function () {
 
         await bridgeContract
           .connect(validators[0])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[1])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[1].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[1].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[2])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[2].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[2].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[3])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[3].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[3].data, "hello_world", 100);
 
         expect(await bridgeContract.isChainRegistered("chainID1")).to.be.false;
       });
@@ -645,25 +645,25 @@ describe("Bridge Contract", function () {
 
         await bridgeContract
           .connect(validators[0])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[1])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[1].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[1].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[2])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[2].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[2].data, "hello_world", 100);
 
         expect(await bridgeContract.isChainRegistered("chainID1")).to.be.false;
 
         await bridgeContract
           .connect(validators[3])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[3].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[3].data, "hello_world", 100);
 
         expect(await bridgeContract.isChainRegistered("chainID1")).to.be.false;
 
         await bridgeContract
           .connect(validators[4])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[4].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[4].data, "hello_world", 100);
 
         expect(await bridgeContract.isChainRegistered("chainID1")).to.be.true;
       });
@@ -675,19 +675,19 @@ describe("Bridge Contract", function () {
 
         await bridgeContract
           .connect(validators[0])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[1])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[1].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[1].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[2])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[2].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[2].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[3])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[3].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[3].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[4])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[4].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[4].data, "hello_world", 100);
 
         expect(await bridgeContract.nextTimeoutBlock("chainID1")).to.equal(
           (await ethers.provider.getBlockNumber()) + 5
@@ -701,19 +701,19 @@ describe("Bridge Contract", function () {
 
         await bridgeContract
           .connect(validators[0])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[1])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[1].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[1].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[2])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[2].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[2].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[3])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[3].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[3].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[4])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[4].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[4].data, "hello_world", 100);
 
         expect((await uTXOsManager.getChainUTXOs("chainID1")).multisigOwnedUTXOs[0].txHash).to.equal(
           UTXOs.multisigOwnedUTXOs[0].txHash
@@ -730,24 +730,24 @@ describe("Bridge Contract", function () {
 
         await bridgeContract
           .connect(validators[0])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, "hello_world", 100);
 
         await bridgeContract
           .connect(validators[1])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[1].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[1].data, "hello_world", 100);
 
         await bridgeContract
           .connect(validators[2])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[2].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[2].data, "hello_world", 100);
 
         await bridgeContract
           .connect(validators[3])
-          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[3].data, 100);
+          .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[3].data, "hello_world", 100);
 
         await expect(
           bridgeContract
             .connect(validators[4])
-            .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[4].data, 100)
+            .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[4].data, "hello_world", 100)
         )
           .to.emit(bridgeContract, "newChainRegistered")
           .withArgs("chainID1");
@@ -760,35 +760,35 @@ describe("Bridge Contract", function () {
 
         await bridgeContract
           .connect(validators[0])
-          .registerChainGovernance("chainID1 1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, 100);
+          .registerChainGovernance("chainID1 1", UTXOs, "0x", "0x", validatorsCardanoData[0].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[1])
-          .registerChainGovernance("chainID1 1", UTXOs, "0x", "0x", validatorsCardanoData[1].data, 100);
+          .registerChainGovernance("chainID1 1", UTXOs, "0x", "0x", validatorsCardanoData[1].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[2])
-          .registerChainGovernance("chainID1 1", UTXOs, "0x", "0x", validatorsCardanoData[2].data, 100);
+          .registerChainGovernance("chainID1 1", UTXOs, "0x", "0x", validatorsCardanoData[2].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[3])
-          .registerChainGovernance("chainID1 1", UTXOs, "0x", "0x", validatorsCardanoData[3].data, 100);
+          .registerChainGovernance("chainID1 1", UTXOs, "0x", "0x", validatorsCardanoData[3].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[4])
-          .registerChainGovernance("chainID1 1", UTXOs, "0x", "0x", validatorsCardanoData[4].data, 100);
+          .registerChainGovernance("chainID1 1", UTXOs, "0x", "0x", validatorsCardanoData[4].data, "hello_world", 100);
 
         await bridgeContract
           .connect(validators[0])
-          .registerChainGovernance("chainID1 2", UTXOs, "0x", "0x", validatorsCardanoData[0].data, 100);
+          .registerChainGovernance("chainID1 2", UTXOs, "0x", "0x", validatorsCardanoData[0].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[1])
-          .registerChainGovernance("chainID1 2", UTXOs, "0x", "0x", validatorsCardanoData[1].data, 100);
+          .registerChainGovernance("chainID1 2", UTXOs, "0x", "0x", validatorsCardanoData[1].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[2])
-          .registerChainGovernance("chainID1 2", UTXOs, "0x", "0x", validatorsCardanoData[2].data, 100);
+          .registerChainGovernance("chainID1 2", UTXOs, "0x", "0x", validatorsCardanoData[2].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[3])
-          .registerChainGovernance("chainID1 2", UTXOs, "0x", "0x", validatorsCardanoData[3].data, 100);
+          .registerChainGovernance("chainID1 2", UTXOs, "0x", "0x", validatorsCardanoData[3].data, "hello_world", 100);
         await bridgeContract
           .connect(validators[4])
-          .registerChainGovernance("chainID1 2", UTXOs, "0x", "0x", validatorsCardanoData[4].data, 100);
+          .registerChainGovernance("chainID1 2", UTXOs, "0x", "0x", validatorsCardanoData[4].data, "hello_world", 100);
 
         const chains = await bridgeContract.getAllRegisteredChains();
         expect(chains.length).to.equal(2);

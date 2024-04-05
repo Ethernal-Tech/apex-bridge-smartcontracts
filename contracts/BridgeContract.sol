@@ -75,7 +75,8 @@ contract BridgeContract is IBridgeContract {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
-        ValidatorCardanoData calldata validator,
+        ValidatorCardanoData calldata _validator,
+        string calldata _validationSignature,
         uint256 _tokenQuantity
     ) external override onlyValidator {
         if (isChainRegistered[_chainId]) {
@@ -96,7 +97,7 @@ contract BridgeContract is IBridgeContract {
 
         claimsManager.setVoted(_chainId, msg.sender, true);
         claimsManager.setNumberOfVotes(chainHash);
-        validatorsContract.addValidatorCardanoData(_chainId, msg.sender, validator);
+        validatorsContract.addValidatorCardanoData(_chainId, msg.sender, _validator);
 
         if (claimsManager.numberOfVotes(chainHash) == validatorsContract.getValidatorsCount()) {
             _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
