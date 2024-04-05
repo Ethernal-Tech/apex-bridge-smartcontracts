@@ -795,7 +795,7 @@ describe("Bridge Contract", function () {
       });
 
       it("Should not update Validators Cardano Data until all validators submit their data", async function () {
-        const { bridgeContract, validators, UTXOs, validatorsCardanoData, validatorsContract, hre, owner } = await loadFixture(
+        const { bridgeContract, validators, UTXOs, validatorsCardanoData, validatorsContract, hre, validator6 } = await loadFixture(
           deployBridgeContractFixture
         );
 
@@ -808,7 +808,7 @@ describe("Bridge Contract", function () {
         
         const signer = await ethers.getSigner(bridgeContractAddress);
 
-        // minting 100000000000000000000 tokens to sender
+        // minting 100000000000000000000 tokens to signer
         await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
 
         await validatorsContract.connect(signer).addValidatorCardanoData("chainID1 1", validatorsCardanoData[0].addr, validatorsCardanoData[0].data);
@@ -823,6 +823,55 @@ describe("Bridge Contract", function () {
 
         const data2 = await validatorsContract.connect(validators[0]).getValidatorsCardanoData("chainID1 1");
         expect(data2.length).to.equal(await validatorsContract.validatorsCount());
+
+        await validatorsContract.connect(signer).addValidatorCardanoData("chainID1 1", validator6, validatorsCardanoData[4].data);
+
+        const data3 = await validatorsContract.connect(validators[0]).getValidatorsCardanoData("chainID1 1");
+        expect(data3.length).to.equal(await validatorsContract.validatorsCount());
+
+        await hre.network.provider.request({
+          method: "hardhat_stopImpersonatingAccount",
+          params: [bridgeContractAddress],
+        });
+      });
+
+      it("Should not update Validators Cardano Data until length of the list with the new data doesn't match the number of validators", async function () {
+        const { bridgeContract, validators, UTXOs, validatorsCardanoData, validatorsContract, hre, validator6 } = await loadFixture(
+          deployBridgeContractFixture
+        );
+
+        const bridgeContractAddress = await bridgeContract.getAddress();
+
+        await hre.network.provider.request({
+          method: "hardhat_impersonateAccount",
+          params: [bridgeContractAddress],
+        });
+        
+        const signer = await ethers.getSigner(bridgeContractAddress);
+
+        // minting 100000000000000000000 tokens to signer
+        await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+
+        validatorsCardanoData.push({
+          addr: validator6.address,
+          data: {
+            keyHash: 5 + "",
+            keyHashFee: 5 + "a",
+            verifyingKey: "0x" + 5,
+            verifyingKeyFee: "0x" + 5 + "a",
+          },
+        });
+
+        await expect(validatorsContract.connect(signer).setValidatorsCardanoData("chainID1 1", validatorsCardanoData)).to.revertedWithCustomError(validatorsContract, "InvalidData");
+
+
+        const data3 = await validatorsContract.connect(validators[0]).getValidatorsCardanoData("chainID1 1");
+        expect(validatorsCardanoData.length).to.be.greaterThan(validators.length);
+        expect(data3.length).to.equal(0);
+
+        validatorsCardanoData.pop();
+
+        expect(validatorsCardanoData.length).to.equal(validators.length);
 
         await hre.network.provider.request({
           method: "hardhat_stopImpersonatingAccount",
