@@ -334,8 +334,13 @@ contract ClaimsManager is IBridgeContractStructs {
         signedBatchManager = SignedBatchManager(_signedBatchManager);
     }
 
-    function setClaimsHelper(address _claimsHelper) external /*onlyClaimsManager*/ {
+    function setClaimsHelper(address _claimsHelper) external onlyClaimsManager {
         claimsHelper = ClaimsHelper(_claimsHelper);
+    }
+
+    modifier onlyClaimsManager() {
+        if (msg.sender != address(this)) revert NotClaimsManager();
+        _;
     }
 
     modifier onlyBridgeContract() {

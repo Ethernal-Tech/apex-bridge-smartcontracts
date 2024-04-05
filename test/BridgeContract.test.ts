@@ -44,7 +44,26 @@ describe("Bridge Contract", function () {
     await bridgeContract.setSignedBatchManager(signedBatchManager.target);
     await bridgeContract.setValidatorsContract(validatorsContract.target);
 
-    await claimsManager.setClaimsHelper(claimsHelper.target);
+
+    const claimManagerAddress = await (await claimsManager.getAddress()).toLowerCase();
+
+    // impersonate as a claimManager to set ClaimHelper contract
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [claimManagerAddress],
+    });
+
+    const signer = await ethers.getSigner(claimManagerAddress);
+    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+
+    await claimsManager.connect(signer).setClaimsHelper(claimsHelper.target);
+
+    await hre.network.provider.request({
+      method: "hardhat_stopImpersonatingAccount",
+      params: [claimManagerAddress],
+    });
+
+
     await claimsManager.setUTXOsManager(uTXOsManager.target);
     await claimsManager.setSignedBatchManager(signedBatchManager.target);
 
@@ -1763,6 +1782,8 @@ describe("Bridge Contract", function () {
           validatorClaimsBRC,
           validatorClaimsBRC_ConfirmedTransactions,
           validatorsCardanoData,
+          hre,
+          claimsManager
         } = await loadFixture(deployBridgeContractFixture);
         await bridgeContract
           .connect(owner)
@@ -1786,10 +1807,31 @@ describe("Bridge Contract", function () {
           );
 
         const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
-        await bridgeContract.setNextTimeoutBlock(
+
+        // Impersonate as ClaimsManager in order to set Next Timeout Block value
+        const claimManagerAddress = await (await claimsManager.getAddress()).toLowerCase();
+
+        await hre.network.provider.request({
+          method: "hardhat_impersonateAccount",
+          params: [claimManagerAddress],
+        });
+
+        const signer = await ethers.getSigner(claimManagerAddress);
+        await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+
+
+        await bridgeContract.connect(signer).setNextTimeoutBlock(
           validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
           Number(firstTimestampBlockNumber + 6)
         );
+
+
+        await hre.network.provider.request({
+          method: "hardhat_stopImpersonatingAccount",
+          params: [claimManagerAddress],
+        });
+
+
 
         await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
         await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -1820,7 +1862,7 @@ describe("Bridge Contract", function () {
       });
 
       it("GetConfirmedTransactions should not return more transaction than MAX_NUMBER_OF_TRANSACTIONS", async function () {
-        const { bridgeContract, owner, UTXOs, validators, validatorClaimsBRC, validatorsCardanoData } =
+        const { bridgeContract, owner, UTXOs, validators, validatorClaimsBRC, validatorsCardanoData, claimsManager, hre } =
           await loadFixture(deployBridgeContractFixture);
 
         await bridgeContract
@@ -1845,10 +1887,30 @@ describe("Bridge Contract", function () {
           );
 
         const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
-        await bridgeContract.setNextTimeoutBlock(
+        // Impersonate as ClaimsManager in order to set Next Timeout Block value
+
+        // impersonate as a claimManager to set ClaimHelper contract
+        const claimManagerAddress = await (await claimsManager.getAddress()).toLowerCase();
+
+        await hre.network.provider.request({
+          method: "hardhat_impersonateAccount",
+          params: [claimManagerAddress],
+        });
+
+        const signer = await ethers.getSigner(claimManagerAddress);
+        await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+
+
+        await bridgeContract.connect(signer).setNextTimeoutBlock(
           validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
           Number(firstTimestampBlockNumber + 100)
         );
+
+
+        await hre.network.provider.request({
+          method: "hardhat_stopImpersonatingAccount",
+          params: [claimManagerAddress],
+        });
 
         const validatorClaimsBRC2 = {
           ...validatorClaimsBRC,

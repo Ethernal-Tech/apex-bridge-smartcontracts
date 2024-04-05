@@ -230,7 +230,7 @@ contract BridgeContract is IBridgeContract {
         return signedBatchManager.getRawTransactionFromLastBatch(_destinationChain);
     }
 
-    function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external /*onlyClaimsManager*/ {
+    function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external onlyClaimsManager {
         nextTimeoutBlock[_chainId] = _blockNumber + maxNumberOfTransactions;
     }
 
