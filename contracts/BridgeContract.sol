@@ -43,6 +43,9 @@ contract BridgeContract is IBridgeContract {
 
     // Batches
     function submitSignedBatch(SignedBatch calldata _signedBatch) external override onlyValidator {
+        if (!shouldCreateBatch(_signedBatch.destinationChainId)) {
+            revert CanNotCreateBatchYet(_signedBatch.destinationChainId);
+        }
         signedBatchManager.submitSignedBatch(_signedBatch, msg.sender);
     }
 
