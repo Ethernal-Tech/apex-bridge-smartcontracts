@@ -1887,9 +1887,9 @@ describe("Bridge Contract", function () {
           );
 
         const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
-        // Impersonate as ClaimsManager in order to set Next Timeout Block value
 
-        // impersonate as a claimManager to set ClaimHelper contract
+
+        // Impersonate as ClaimsManager in order to set Next Timeout Block value
         const claimManagerAddress = await (await claimsManager.getAddress()).toLowerCase();
 
         await hre.network.provider.request({
@@ -2358,6 +2358,39 @@ describe("Bridge Contract", function () {
         await expect(
           bridgeContract.connect(validators[0]).getConfirmedTransactions(_destinationChain)
         ).to.revertedWithCustomError(bridgeContract, "CanNotCreateBatchYet");
+      });
+
+      it("Should return appropriate token amount for signed batch", async function () {
+        const { bridgeContract, owner, validators, UTXOs, signedBatch, validatorsCardanoData, validatorClaimsBRC, claimsManager } =
+          await loadFixture(deployBridgeContractFixture);
+
+          await bridgeContract.connect(owner).registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", validatorsCardanoData, 100);
+          await bridgeContract.connect(owner).registerChain(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID, UTXOs, "0x", "0x", validatorsCardanoData, 100);
+  
+          await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
+          await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
+          await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
+          await bridgeContract.connect(validators[4]).submitClaims(validatorClaimsBRC);
+          
+          // wait for next timeout
+          for (let i = 0; i < 3; i++) {
+            await ethers.provider.send("evm_mine");
+          }
+
+        await bridgeContract.connect(validators[0]).submitSignedBatch(signedBatch);
+        await bridgeContract.connect(validators[1]).submitSignedBatch(signedBatch);
+        await bridgeContract.connect(validators[2]).submitSignedBatch(signedBatch);
+        await bridgeContract.connect(validators[3]).submitSignedBatch(signedBatch);
+
+        const tokenAmount = await claimsManager.getTokenAmountFromSignedBatch(signedBatch.destinationChainId, signedBatch.id);
+
+        let sumAmounts = 0;
+        for (let i = 0; i < validatorClaimsBRC.bridgingRequestClaims[0].receivers.length; i++) {
+          sumAmounts += validatorClaimsBRC.bridgingRequestClaims[0].receivers[i].amount;
+        }
+
+        expect(tokenAmount).to.equal(sumAmounts);
+
       });
 
       // it("Should return confirmedTransactions from confirmed BridgeRequestClaims", async function () {
