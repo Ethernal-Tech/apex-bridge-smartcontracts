@@ -8,19 +8,15 @@ import "./SlotsManager.sol";
 import "./ClaimsManager.sol";
 import "./SignedBatchManager.sol";
 import "./UTXOsManager.sol";
+import "./ValidatorsContract.sol";
 import "hardhat/console.sol";
 
 contract BridgeContract is IBridgeContract {
-    ClaimsHelper private claimsHelper;
+    ValidatorsContract private validatorsContract;
     ClaimsManager private claimsManager;
     UTXOsManager private utxosManager;
     SignedBatchManager private signedBatchManager;
     SlotsManager private slotsManager;
-
-    // keep validatorsAddresses because maybe
-    address[] private validatorsAddresses;
-    // mapping in case they could be added/removed
-    mapping(address => bool) private isValidator;
 
     // BlockchainID -> bool
     mapping(string => bool) public isChainRegistered;
@@ -30,23 +26,12 @@ contract BridgeContract is IBridgeContract {
 
     Chain[] private chains;
 
-    // BlockchainID -> validator address -> ValidatorCardanoData
-    mapping(string => mapping(address => ValidatorCardanoData)) private validatorsCardanoDataPerAddress;
-    // BlockchainID -> ValidatorCardanoData[]
-    mapping(string => ValidatorCardanoData[]) private validatorsCardanoData;
-
     address private owner;
     uint16 private maxNumberOfTransactions;
     uint8 private timeoutBlocksNumber;
-    uint8 public validatorsCount;
-
-    constructor(address[] memory _validators, uint16 _maxNumberOfTransactions, uint8 _timeoutBlocksNumber) {
-        for (uint i = 0; i < _validators.length; i++) {
-            isValidator[_validators[i]] = true;
-            validatorsAddresses.push(_validators[i]);
-        }
+    
+    constructor(uint16 _maxNumberOfTransactions, uint8 _timeoutBlocksNumber) {
         owner = msg.sender;
-        validatorsCount = uint8(_validators.length);
         maxNumberOfTransactions = _maxNumberOfTransactions;
         timeoutBlocksNumber = _timeoutBlocksNumber;
     }
@@ -58,6 +43,10 @@ contract BridgeContract is IBridgeContract {
 
     // Batches
     function submitSignedBatch(SignedBatch calldata _signedBatch) external override onlyValidator {
+        if (!shouldCreateBatch(_signedBatch.destinationChainId)) {
+            // it will revert also if chain is not registered
+            revert CanNotCreateBatchYet(_signedBatch.destinationChainId);
+        }
         signedBatchManager.submitSignedBatch(_signedBatch, msg.sender);
     }
 
@@ -78,16 +67,7 @@ contract BridgeContract is IBridgeContract {
         ValidatorAddressCardanoData[] calldata validators,
         uint256 _tokenQuantity
     ) public override onlyOwner {
-        if (validatorsCount != validators.length) {
-            revert InvalidData("validators count");
-        }
-        // set validator cardano data for each validator
-        for (uint i = 0; i < validators.length; i++) {
-            ValidatorAddressCardanoData memory dt = validators[i];
-            validatorsCardanoDataPerAddress[_chainId][dt.addr] = dt.data;
-            validatorsCardanoData[_chainId].push(dt.data);
-        }
-
+        validatorsContract.setValidatorsCardanoData(_chainId, validators);
         _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
     }
 
@@ -96,7 +76,8 @@ contract BridgeContract is IBridgeContract {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
-        ValidatorCardanoData calldata validator,
+        ValidatorCardanoData calldata _validator,
+        string calldata _validationSignature,
         uint256 _tokenQuantity
     ) external override onlyValidator {
         if (isChainRegistered[_chainId]) {
@@ -117,11 +98,9 @@ contract BridgeContract is IBridgeContract {
 
         claimsManager.setVoted(_chainId, msg.sender, true);
         claimsManager.setNumberOfVotes(chainHash);
-        // set validator cardano data
-        validatorsCardanoDataPerAddress[_chainId][msg.sender] = validator;
-        validatorsCardanoData[_chainId].push(validator);
+        validatorsContract.addValidatorCardanoData(_chainId, msg.sender, _validator);
 
-        if (claimsManager.numberOfVotes(chainHash) == validatorsCount) {
+        if (claimsManager.numberOfVotes(chainHash) == validatorsContract.getValidatorsCount()) {
             _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
         } else {
             emit newChainProposal(_chainId, msg.sender);
@@ -236,7 +215,7 @@ contract BridgeContract is IBridgeContract {
     function getValidatorsCardanoData(
         string calldata _chainId
     ) external view override returns (ValidatorCardanoData[] memory validators) {
-        return validatorsCardanoData[_chainId];
+        return validatorsContract.getValidatorsCardanoData(_chainId);
     }
 
     function getLastObservedBlock(
@@ -249,25 +228,12 @@ contract BridgeContract is IBridgeContract {
         return chains;
     }
 
-    function getQuorumNumberOfValidators() external view override returns (uint8) {
-        // return (validatorsCount * 2) / 3 + ((validatorsCount * 2) % 3 == 0 ? 0 : 1); is same as (A + B - 1) / B
-        return (validatorsCount * 2 + 2) / 3;
-    }
-
-    function getNumberOfVotes(bytes32 _hash) external view override returns (uint8) {
-        return claimsManager.numberOfVotes(_hash);
-    }
-
     function getRawTransactionFromLastBatch(string calldata _destinationChain) external view returns (string memory) {
         return signedBatchManager.getRawTransactionFromLastBatch(_destinationChain);
     }
 
-    function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external /*onlyClaimsManager*/ {
+    function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external onlyClaimsManager {
         nextTimeoutBlock[_chainId] = _blockNumber + maxNumberOfTransactions;
-    }
-
-    function setClaimsHelper(address _claimsHelper) external onlyOwner {
-        claimsHelper = ClaimsHelper(_claimsHelper);
     }
 
     function setClaimsManager(address _claimsManager) external onlyOwner {
@@ -286,8 +252,12 @@ contract BridgeContract is IBridgeContract {
         slotsManager = SlotsManager(_slotsManager);
     }
 
+    function setValidatorsContract(ValidatorsContract _validatorsContract) external onlyOwner {
+        validatorsContract = ValidatorsContract(_validatorsContract);
+    }
+
     modifier onlyValidator() {
-        if (!isValidator[msg.sender]) revert NotValidator();
+        if (!validatorsContract.isValidator(msg.sender)) revert NotValidator();
         _;
     }
 
@@ -298,11 +268,6 @@ contract BridgeContract is IBridgeContract {
 
     modifier onlyClaimsManager() {
         if (msg.sender != address(claimsManager)) revert NotClaimsManager();
-        _;
-    }
-
-    modifier onlyClaimsHelper() {
-        if (msg.sender != address(claimsHelper)) revert NotClaimsHelper();
         _;
     }
 }

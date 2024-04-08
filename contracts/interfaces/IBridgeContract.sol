@@ -19,7 +19,7 @@ abstract contract IBridgeContract is IBridgeContractStructs {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
-        ValidatorAddressCardanoData[] calldata validatorData,
+        ValidatorAddressCardanoData[] calldata _validatorData,
         uint256 _tokenQuantity
     ) external virtual;
 
@@ -28,7 +28,8 @@ abstract contract IBridgeContract is IBridgeContractStructs {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
-        ValidatorCardanoData calldata validatorData,
+        ValidatorCardanoData calldata _validatorData,
+        string calldata _validationSignature,
         uint256 _tokenQuantity
     ) external virtual;
 
@@ -70,8 +71,4 @@ abstract contract IBridgeContract is IBridgeContractStructs {
     ) external view virtual returns (CardanoBlock memory cblock);
 
     function getAllRegisteredChains() external view virtual returns (Chain[] memory _chains);
-
-    function getQuorumNumberOfValidators() external view virtual returns (uint8);
-
-    function getNumberOfVotes(bytes32 _claimHash) external view virtual returns (uint8);
 }

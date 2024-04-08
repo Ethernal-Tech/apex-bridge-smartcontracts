@@ -4,10 +4,12 @@ pragma solidity ^0.8.23;
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBridgeContractStructs.sol";
 import "hardhat/console.sol";
+import "./SlotsManager.sol";
 
 contract ClaimsHelper is IBridgeContractStructs {
     address private claimsManager;
     address private signedBatchManager;
+    address private owner;
 
     // blockchain -> claimHash -> queued
     mapping(string => mapping(string => bool)) public isClaimConfirmed;
@@ -19,7 +21,9 @@ contract ClaimsHelper is IBridgeContractStructs {
     mapping(string => RefundRequestClaim) public queuedRefundRequestClaims;
     mapping(string => RefundExecutedClaim) public queuedRefundExecutedClaims;
 
-    constructor() {
+    constructor(address _signedBatchManager) {
+        owner = msg.sender;
+        signedBatchManager = _signedBatchManager;
     }
 
     function getClaimBRC(string calldata _id) external view returns (BridgingRequestClaim memory claim) {
@@ -48,16 +52,6 @@ contract ClaimsHelper is IBridgeContractStructs {
         queuedBatchExecutionFailedClaims[_claim.observedTransactionHash] = _claim;
     }
 
-    function getNeededTokenQuantity(Receiver[] calldata _receivers) public pure returns (uint256) {
-        uint256 tokenQuantity;
-
-        for (uint256 i = 0; i < _receivers.length; i++) {
-            tokenQuantity += _receivers[i].amount;
-        }
-
-        return tokenQuantity;
-    }
-
     function setClaimConfirmed(
         string calldata _chain,
         string calldata _observerHash
@@ -83,16 +77,17 @@ contract ClaimsHelper is IBridgeContractStructs {
         return true;
     }
 
-    function setClaimsManager(address _claimsManager) external {
+    function setClaimsManager(address _claimsManager) external onlyOwner {
         claimsManager = _claimsManager;
     }
-
-    function setSignedBatchManagerAddress(address _signedBatchManager) external {
-        signedBatchManager = _signedBatchManager;
-    }
-
+    
     modifier onlyClaimsManager() {
         if (msg.sender != address(claimsManager)) revert NotClaimsManager();
+        _;
+    }
+
+    modifier onlyOwner() {
+        if (msg.sender != address(owner)) revert NotOwner();
         _;
     }
 

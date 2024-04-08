@@ -4,15 +4,18 @@ pragma solidity ^0.8.23;
 import "./interfaces/IBridgeContractStructs.sol";
 import "./BridgeContract.sol";
 import "./ClaimsHelper.sol";
+import "./ValidatorsContract.sol";
 import "./SignedBatchManager.sol";
 import "./UTXOsManager.sol";
 import "hardhat/console.sol";
 
 contract ClaimsManager is IBridgeContractStructs {
+    ValidatorsContract private validatorsContract;
     BridgeContract private bridgeContract;
     ClaimsHelper private claimsHelper;
     SignedBatchManager private signedBatchManager;
     UTXOsManager private utxosManager;
+    address private owner;
 
     // BlockchainID -> claimsCounter
     mapping(string => uint256) public claimsCounter;
@@ -40,9 +43,12 @@ contract ClaimsManager is IBridgeContractStructs {
 
     string private constant LAST_OBSERVED_BLOCK_INFO_KEY = "LAST_OBSERVED_BLOCK_INFO";
 
-    constructor(address _bridgeContract, address _claimsHelper) {
+    constructor(address _bridgeContract, address _claimsHelper, address _validatorsContract, address _signedBatchManager) {
+        owner = msg.sender;
         bridgeContract = BridgeContract(_bridgeContract);
         claimsHelper = ClaimsHelper(_claimsHelper);
+        validatorsContract = ValidatorsContract(_validatorsContract);
+        signedBatchManager = SignedBatchManager(_signedBatchManager);
     }
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {
@@ -60,7 +66,7 @@ contract ClaimsManager is IBridgeContractStructs {
                 revert AlreadyConfirmed(_claim.observedTransactionHash);
             }
 
-            if (chainTokenQuantity[_claim.sourceChainID] < claimsHelper.getNeededTokenQuantity(_claim.receivers)) {
+            if (chainTokenQuantity[_claim.sourceChainID] < getNeededTokenQuantity(_claim.receivers)) {
                 revert NotEnoughBridgingTokensAwailable(_claim.observedTransactionHash);
             }
 
@@ -141,7 +147,7 @@ contract ClaimsManager is IBridgeContractStructs {
         if (hasConsensus(claimHash)) {
             claimsCounter[_claim.destinationChainID]++;
 
-            chainTokenQuantity[_claim.sourceChainID] -= claimsHelper.getNeededTokenQuantity(_claim.receivers);
+            chainTokenQuantity[_claim.sourceChainID] -= getNeededTokenQuantity(_claim.receivers);
 
             claimsHelper.addToQueuedBridgingRequestsClaims(_claim);
 
@@ -151,7 +157,7 @@ contract ClaimsManager is IBridgeContractStructs {
             queuedClaimsTypes[_claim.destinationChainID][claimsCounter[_claim.destinationChainID]] = ClaimTypes
                 .BRIDGING_REQUEST;
 
-            utxosManager.addNewBridgingUTXO(_claim.destinationChainID, _claim.outputUTXO);
+            utxosManager.addNewBridgingUTXO(_claim.sourceChainID, _claim.outputUTXO);
 
             _setConfirmedTransactions(_claim);
 
@@ -176,10 +182,7 @@ contract ClaimsManager is IBridgeContractStructs {
         numberOfVotes[claimHash]++;
 
         if (hasConsensus(claimHash)) {
-            chainTokenQuantity[_claim.chainID] += signedBatchManager.getTokenQuantityFromSignedBatch(
-                _claim.chainID,
-                _claim.batchNonceID
-            );
+            chainTokenQuantity[_claim.chainID] += getTokenAmountFromSignedBatch(_claim.chainID, _claim.batchNonceID);
 
             claimsHelper.addToQueuedBatchExecutedClaims(_claim);
 
@@ -280,15 +283,6 @@ contract ClaimsManager is IBridgeContractStructs {
         chainTokenQuantity[_chainID] = _tokenQuantity;
     }
 
-    // TODO: who will set this value?
-    function setUTXOsManager(address _utxosManager) external {
-        utxosManager = UTXOsManager(_utxosManager);
-    }
-
-    function setSignedBatchManager(address _signedBatchManager) external {
-        signedBatchManager = SignedBatchManager(_signedBatchManager);
-    }
-
     function getLastConfirmedTxNonce(string calldata _destinationChain) public view returns (uint256) {
         return lastConfirmedTxNonce[_destinationChain];
     }
@@ -300,15 +294,20 @@ contract ClaimsManager is IBridgeContractStructs {
         return confirmedTransactions[_destinationChain][_nonce];
     }
 
-    function getConfirmedTransactionAmount(
-        string calldata _destinationChain,
+    function getTokenAmountFromSignedBatch(
+        string memory _destinationChain,
         uint256 _nonce
-    ) public view returns (uint256 result) {
-        ConfirmedTransaction memory ctx = confirmedTransactions[_destinationChain][_nonce];
-        for (uint256 j = 0; j < ctx.receivers.length; j++) {
-            result += ctx.receivers[j].amount;
+    ) public view returns (uint256) {
+        uint256 bridgedAmount;
+
+        uint256[] memory _nonces = signedBatchManager
+            .getConfirmedSignedBatch(_destinationChain, _nonce)
+            .includedTransactions;
+        for (uint i = 0; i < _nonces.length; i++) {
+            bridgedAmount += getNeededTokenQuantity(confirmedTransactions[_destinationChain][_nonces[i]].receivers);
         }
-        return result;
+
+        return bridgedAmount;
     }
 
     function getLastBatchedTxNonce(string calldata _destinationChain) public view returns (uint256) {
@@ -316,7 +315,32 @@ contract ClaimsManager is IBridgeContractStructs {
     }
 
     function hasConsensus(bytes32 _hash) public view returns (bool) {
-        return numberOfVotes[_hash] >= bridgeContract.getQuorumNumberOfValidators();
+        return numberOfVotes[_hash] >= validatorsContract.getQuorumNumberOfValidators();
+    }
+
+    function getNeededTokenQuantity(Receiver[] memory _receivers) internal pure returns (uint256) {
+        uint256 tokenQuantity;
+
+        for (uint256 i = 0; i < _receivers.length; i++) {
+            tokenQuantity += _receivers[i].amount;
+        }
+
+        return tokenQuantity;
+    }
+
+    // TODO: who will set this value?
+    function setUTXOsManager(address _utxosManager) external onlyOwner {
+        utxosManager = UTXOsManager(_utxosManager);
+    }
+
+    modifier onlyOwner() {
+        if (msg.sender != address(owner)) revert NotOwner();
+        _;
+    }
+
+    modifier onlyClaimsManager() {
+        if (msg.sender != address(this)) revert NotClaimsManager();
+        _;
     }
 
     modifier onlyBridgeContract() {

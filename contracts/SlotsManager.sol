@@ -3,10 +3,12 @@ pragma solidity ^0.8.23;
 
 import "./interfaces/IBridgeContractStructs.sol";
 import "./BridgeContract.sol";
+import "./ValidatorsContract.sol";
 import "hardhat/console.sol";
 
 contract SlotsManager is IBridgeContractStructs {
-    BridgeContract private bridgeContract;
+    ValidatorsContract private validatorsContract;
+    address private bridgeContractAddress;
     
     // BlockChainID -> CardanoBlock
     mapping(string => CardanoBlock) private lastObservedBlock;
@@ -17,8 +19,9 @@ contract SlotsManager is IBridgeContractStructs {
     // BlockchanID -> hash(slot, hash) -> bool - validator voted already or not
     mapping(string => mapping(bytes32 => mapping(address => bool))) private slotValidatorVotedPerChain;
 
-    constructor(address _bridgeContract) {
-        bridgeContract = BridgeContract(_bridgeContract);
+    constructor(address _bridgeContractAddress, address _validatorsContract) {
+        bridgeContractAddress = _bridgeContractAddress;
+        validatorsContract = ValidatorsContract(_validatorsContract);
     }
 
     function updateBlocks(string calldata chainID, CardanoBlock[] calldata blocks, address _caller) external onlyBridgeContract {
@@ -31,7 +34,7 @@ contract SlotsManager is IBridgeContractStructs {
             }
             slotValidatorVotedPerChain[chainID][chash][_caller] = true;
             slotVotesPerChain[chainID][chash]++;
-            if (slotVotesPerChain[chainID][chash] >= bridgeContract.getQuorumNumberOfValidators() &&
+            if (slotVotesPerChain[chainID][chash] >= validatorsContract.getQuorumNumberOfValidators() &&
                 cblock.blockSlot > lastObservedBlock[chainID].blockSlot) {
                 lastObservedBlock[chainID] = cblock;
             }
@@ -43,7 +46,7 @@ contract SlotsManager is IBridgeContractStructs {
     }
 
     modifier onlyBridgeContract() {
-        if (msg.sender != address(bridgeContract)) revert NotBridgeContract();
+        if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
         _;
     }
 }
