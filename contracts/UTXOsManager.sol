@@ -15,8 +15,9 @@ contract UTXOsManager is IBridgeContractStructs {
     // Blockchain ID -> UTXOs
     mapping(string => UTXOs) private chainUTXOs;
 
-    constructor(address _bridgeContractAddress) {
+    constructor(address _bridgeContractAddress, address _claimsManagerAddress) {
         bridgeContractAddress = _bridgeContractAddress;
+        claimsManagerAddress = _claimsManagerAddress;
     }
 
     function getChainUTXOs(string memory _chainID) external view returns (UTXOs memory) {

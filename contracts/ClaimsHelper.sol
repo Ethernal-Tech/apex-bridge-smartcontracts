@@ -4,10 +4,12 @@ pragma solidity ^0.8.23;
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBridgeContractStructs.sol";
 import "hardhat/console.sol";
+import "./SlotsManager.sol";
 
 contract ClaimsHelper is IBridgeContractStructs {
     address private claimsManager;
     address private signedBatchManager;
+    address private owner;
 
     // blockchain -> claimHash -> queued
     mapping(string => mapping(string => bool)) public isClaimConfirmed;
@@ -18,6 +20,11 @@ contract ClaimsHelper is IBridgeContractStructs {
     mapping(string => BatchExecutionFailedClaim) public queuedBatchExecutionFailedClaims;
     mapping(string => RefundRequestClaim) public queuedRefundRequestClaims;
     mapping(string => RefundExecutedClaim) public queuedRefundExecutedClaims;
+
+    constructor(address _signedBatchManager) {
+        owner = msg.sender;
+        signedBatchManager = _signedBatchManager;
+    }
 
     function getClaimBRC(string calldata _id) external view returns (BridgingRequestClaim memory claim) {
         return queuedBridgingRequestsClaims[_id];
@@ -70,16 +77,17 @@ contract ClaimsHelper is IBridgeContractStructs {
         return true;
     }
 
-    function setClaimsManager(address _claimsManager) external {
+    function setClaimsManager(address _claimsManager) external onlyOwner {
         claimsManager = _claimsManager;
     }
-
-    function setSignedBatchManagerAddress(address _signedBatchManager) external {
-        signedBatchManager = _signedBatchManager;
-    }
-
+    
     modifier onlyClaimsManager() {
         if (msg.sender != address(claimsManager)) revert NotClaimsManager();
+        _;
+    }
+
+    modifier onlyOwner() {
+        if (msg.sender != address(owner)) revert NotOwner();
         _;
     }
 
