@@ -13,9 +13,9 @@ interface IBridgeContractStructs {
     struct SignedBatch {
         uint256 id;
         string destinationChainId;
-        string rawTransaction;
-        string multisigSignature;
-        string feePayerMultisigSignature;
+        bytes rawTransaction;
+        bytes multisigSignature;
+        bytes feePayerMultisigSignature;
         uint256[] includedTransactions;
         UTXOs usedUTXOs;
     }
@@ -23,16 +23,16 @@ interface IBridgeContractStructs {
     struct SignedBatchWithoutSignatures {
         uint256 id;
         string destinationChainId;
-        string rawTransaction;
+        bytes rawTransaction;
         uint256[] includedTransactions;
         UTXOs usedUTXOs;
     }
 
     struct ConfirmedBatch {
         uint256 id;
-        string rawTransaction;
-        string[] multisigSignatures;
-        string[] feePayerMultisigSignatures;
+        bytes rawTransaction;
+        bytes[] multisigSignatures;
+        bytes[] feePayerMultisigSignatures;
     }
 
     struct ConfirmedTransaction {
@@ -48,7 +48,7 @@ interface IBridgeContractStructs {
 
     struct UTXO {
         uint64 nonce; // this is set by smart contract - order of confirmed UTXOs
-        string txHash;
+        bytes txHash;
         uint256 txIndex;
         uint256 amount;
     }
@@ -104,10 +104,10 @@ interface IBridgeContractStructs {
         // UTXO that multisig received in invalid transaction
         UTXO utxo;
         // the refund transaction itself
-        string rawTransaction;
+        bytes rawTransaction;
         // validators signature over raw transaction
         // note: only multisig signs refund txs
-        string multisigSignature;
+        bytes multisigSignature;
         // retry attempt counter
         uint256 retryCounter;
     }
@@ -136,14 +136,6 @@ interface IBridgeContractStructs {
         uint256 tokenQuantity;
     }
 
-    struct ChainWithoutSignatures {
-        string id;
-        UTXOs utxos;
-        string addressMultisig;
-        string addressFeePayer;
-        uint256 tokenQuantity;
-    }
-
     struct LastObservedBlockInfo {
         string blockHash;
         uint256 slot;
@@ -157,8 +149,8 @@ interface IBridgeContractStructs {
     struct ValidatorCardanoData {
         string keyHash;
         string keyHashFee;
-        string verifyingKey;
-        string verifyingKeyFee;
+        bytes verifyingKey;
+        bytes verifyingKeyFee;
     }
 
     error AlreadyConfirmed(string _claimTransactionHash);

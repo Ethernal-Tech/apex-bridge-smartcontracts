@@ -76,7 +76,7 @@ contract BridgeContract is IBridgeContract {
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
         ValidatorCardanoData calldata _validator,
-        string calldata _validationSignature,
+        bytes calldata _validationSignature,
         uint256 _tokenQuantity
     ) external override onlyValidator {
         if (isChainRegistered[_chainId]) {
@@ -86,7 +86,7 @@ contract BridgeContract is IBridgeContract {
             revert AlreadyProposed(_chainId);
         }
 
-        ChainWithoutSignatures memory _chain = ChainWithoutSignatures(
+        Chain memory _chain = Chain(
             _chainId,
             _initialUTXOs,
             _addressMultisig,
@@ -227,7 +227,7 @@ contract BridgeContract is IBridgeContract {
         return chains;
     }
 
-    function getRawTransactionFromLastBatch(string calldata _destinationChain) external view returns (string memory) {
+    function getRawTransactionFromLastBatch(string calldata _destinationChain) external view returns (bytes memory) {
         return signedBatchManager.getRawTransactionFromLastBatch(_destinationChain);
     }
 

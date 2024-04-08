@@ -81,8 +81,8 @@ contract SignedBatchManager is IBridgeContractStructs {
                 signedBatchHash
             ].length;
 
-            string[] memory multisigSignatures = new string[](numberOfSignedBatches);
-            string[] memory feePayerMultisigSignatures = new string[](numberOfSignedBatches);
+            bytes[] memory multisigSignatures = new bytes[](numberOfSignedBatches);
+            bytes[] memory feePayerMultisigSignatures = new bytes[](numberOfSignedBatches);
 
             for (uint i = 0; i < numberOfSignedBatches; i++) {
                 multisigSignatures[i] = signedBatches[_signedBatch.destinationChainId][_signedBatch.id][
@@ -130,7 +130,7 @@ contract SignedBatchManager is IBridgeContractStructs {
         return confirmedSignedBatches[_destinationChain][_nonce];
     }
 
-    function getRawTransactionFromLastBatch(string calldata _destinationChain) external view returns (string memory) {
+    function getRawTransactionFromLastBatch(string calldata _destinationChain) external view returns (bytes memory) {
         return lastConfirmedBatch[_destinationChain].rawTransaction;
     }
 
