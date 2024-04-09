@@ -29,7 +29,7 @@ contract BridgeContract is IBridgeContract {
     address private owner;
     uint16 private maxNumberOfTransactions;
     uint8 private timeoutBlocksNumber;
-    
+
     constructor(uint16 _maxNumberOfTransactions, uint8 _timeoutBlocksNumber) {
         owner = msg.sender;
         maxNumberOfTransactions = _maxNumberOfTransactions;
@@ -46,6 +46,17 @@ contract BridgeContract is IBridgeContract {
         if (!shouldCreateBatch(_signedBatch.destinationChainId)) {
             // it will revert also if chain is not registered
             revert CanNotCreateBatchYet(_signedBatch.destinationChainId);
+        }
+        if (
+            !validatorsContract.isSignatureValid(
+                _signedBatch.destinationChainId,
+                _signedBatch.rawTransaction,
+                _signedBatch.multisigSignature,
+                _signedBatch.feePayerMultisigSignature,
+                msg.sender
+            )
+        ) {
+            revert InvalidSignature();
         }
         signedBatchManager.submitSignedBatch(_signedBatch, msg.sender);
     }
@@ -77,7 +88,6 @@ contract BridgeContract is IBridgeContract {
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
         ValidatorCardanoData calldata _validator,
-        string calldata _validationSignature,
         uint256 _tokenQuantity
     ) external override onlyValidator {
         if (isChainRegistered[_chainId]) {
