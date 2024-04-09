@@ -40,8 +40,6 @@ contract SignedBatchManager is IBridgeContractStructs {
             revert WrongBatchNonce(_destinationChainId, _batchId);
         }
 
-        // TODO: call precompile to check if signedBatch is valid
-
         if (claimsManager.voted(Strings.toString(_batchId), _caller)) {
             revert AlreadyProposed(Strings.toString(_batchId));
         }

@@ -155,8 +155,6 @@ interface IBridgeContractStructs {
     }
 
     struct ValidatorCardanoData {
-        string keyHash;
-        string keyHashFee;
         string verifyingKey;
         string verifyingKeyFee;
     }
@@ -177,9 +175,10 @@ interface IBridgeContractStructs {
     error InvalidData(string data);
     error ChainIsNotRegistered(string _chainId);
     error WrongBatchNonce(string _chainId, uint256 _nonce);
+    error InvalidSignature();
     //TODO: remove when not needed anymore
     error RefundRequestClaimNotYetSupporter();
-
+    
     event newChainProposal(string indexed chainId, address indexed sender);
     event newChainRegistered(string indexed chainId);
 }

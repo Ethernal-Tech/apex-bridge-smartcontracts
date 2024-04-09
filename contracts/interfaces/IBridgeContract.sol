@@ -29,7 +29,6 @@ abstract contract IBridgeContract is IBridgeContractStructs {
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
         ValidatorCardanoData calldata _validatorData,
-        string calldata _validationSignature,
         uint256 _tokenQuantity
     ) external virtual;
 
