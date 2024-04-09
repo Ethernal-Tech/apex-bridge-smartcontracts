@@ -15,6 +15,7 @@ contract ClaimsManager is IBridgeContractStructs {
     ClaimsHelper private claimsHelper;
     SignedBatchManager private signedBatchManager;
     UTXOsManager private utxosManager;
+    address private owner;
 
     // BlockchainID -> claimsCounter
     mapping(string => uint256) public claimsCounter;
@@ -42,10 +43,12 @@ contract ClaimsManager is IBridgeContractStructs {
 
     string private constant LAST_OBSERVED_BLOCK_INFO_KEY = "LAST_OBSERVED_BLOCK_INFO";
 
-    constructor(address _bridgeContract, address _claimsHelper, address _validatorsContract) {
+    constructor(address _bridgeContract, address _claimsHelper, address _validatorsContract, address _signedBatchManager) {
+        owner = msg.sender;
         bridgeContract = BridgeContract(_bridgeContract);
         claimsHelper = ClaimsHelper(_claimsHelper);
         validatorsContract = ValidatorsContract(_validatorsContract);
+        signedBatchManager = SignedBatchManager(_signedBatchManager);
     }
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {
@@ -326,16 +329,13 @@ contract ClaimsManager is IBridgeContractStructs {
     }
 
     // TODO: who will set this value?
-    function setUTXOsManager(address _utxosManager) external {
+    function setUTXOsManager(address _utxosManager) external onlyOwner {
         utxosManager = UTXOsManager(_utxosManager);
     }
 
-    function setSignedBatchManager(address _signedBatchManager) external {
-        signedBatchManager = SignedBatchManager(_signedBatchManager);
-    }
-
-    function setClaimsHelper(address _claimsHelper) external onlyClaimsManager {
-        claimsHelper = ClaimsHelper(_claimsHelper);
+    modifier onlyOwner() {
+        if (msg.sender != address(owner)) revert NotOwner();
+        _;
     }
 
     modifier onlyClaimsManager() {

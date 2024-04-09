@@ -3,6 +3,22 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 describe("Bridge Contract", function () {
+
+  async function impersonateAsContractAndMintFunds(contractAddress: string) {
+    const hre = require("hardhat");
+    const address = await contractAddress.toLowerCase();
+    // impersonate as an contract on specified address
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [address],
+    });
+
+    const signer = await ethers.getSigner(address);
+    // minting 100000000000000000000 tokens to signer
+    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+
+    return signer;
+  }
   // We define a fixture to reuse the same setup in every test.
   // We use loadFixture to run this setup once, snapshot that state,
   // and reset Hardhat Network to that snapshot in every test.
@@ -16,61 +32,48 @@ describe("Bridge Contract", function () {
     const BridgeContract = await ethers.getContractFactory("BridgeContract");
     const bridgeContract = await BridgeContract.deploy(2, 5);
 
-    const ClaimsHelper = await ethers.getContractFactory("ClaimsHelper");
-    const claimsHelper = await ClaimsHelper.deploy();
-
     const ValidatorsContract = await ethers.getContractFactory("ValidatorsContract");
     const validatorsContract = await ValidatorsContract.deploy(validators, bridgeContract.target);
-
-    const ClaimsManager = await ethers.getContractFactory("ClaimsManager");
-    const claimsManager = await ClaimsManager.deploy(bridgeContract.target, claimsHelper.target, validatorsContract.target);
-
-    const UTXOsManager = await ethers.getContractFactory("UTXOsManager");
-    const uTXOsManager = await UTXOsManager.deploy(bridgeContract.target);
 
     const SlotsManager = await ethers.getContractFactory("SlotsManager");
     const slotsManager = await SlotsManager.deploy(bridgeContract.target, validatorsContract.target);
 
     const SignedBatchManager = await ethers.getContractFactory("SignedBatchManager");
-    const signedBatchManager = await SignedBatchManager.deploy(
-      bridgeContract.target,
-      claimsManager.target,
-      claimsHelper.target
-    );
+    const signedBatchManager = await SignedBatchManager.deploy(bridgeContract.target);
 
+    const ClaimsHelper = await ethers.getContractFactory("ClaimsHelper");
+    const claimsHelper = await ClaimsHelper.deploy(signedBatchManager.target);
+
+    const ClaimsManager = await ethers.getContractFactory("ClaimsManager");
+    const claimsManager = await ClaimsManager.deploy(bridgeContract.target, claimsHelper.target, validatorsContract.target, signedBatchManager.target);
+
+    const UTXOsManager = await ethers.getContractFactory("UTXOsManager");
+    const uTXOsManager = await UTXOsManager.deploy(bridgeContract.target, claimsManager.target);
+
+    await bridgeContract.setValidatorsContract(validatorsContract.target);
     await bridgeContract.setSlotsManager(slotsManager.target);
+    await bridgeContract.setSignedBatchManager(signedBatchManager.target);
     await bridgeContract.setClaimsManager(claimsManager.target);
     await bridgeContract.setUTXOsManager(uTXOsManager.target);
-    await bridgeContract.setSignedBatchManager(signedBatchManager.target);
-    await bridgeContract.setValidatorsContract(validatorsContract.target);
+
+    //await claimsHelper.setSignedBatchManagerAddress(signedBatchManager.target);
+
+    await uTXOsManager.setClaimsManagerAddress(claimsManager.target);
 
 
-    const claimManagerAddress = await (await claimsManager.getAddress()).toLowerCase();
+    // impersonate as an owner to set contract dependencies
+    var signer = await impersonateAsContractAndMintFunds(owner.address);
 
-    // impersonate as a claimManager to set ClaimHelper contract
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [claimManagerAddress],
-    });
-
-    const signer = await ethers.getSigner(claimManagerAddress);
-    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
-
-    await claimsManager.connect(signer).setClaimsHelper(claimsHelper.target);
+    await signedBatchManager.connect(signer).setClaimsHelper(claimsHelper.target);
+    await signedBatchManager.connect(signer).setClaimsManager(claimsManager.target);
+    await claimsHelper.connect(signer).setClaimsManager(claimsManager.target);
+    await claimsManager.connect(signer).setUTXOsManager(uTXOsManager.target);
 
     await hre.network.provider.request({
       method: "hardhat_stopImpersonatingAccount",
-      params: [claimManagerAddress],
+      params: [owner.address],
     });
 
-
-    await claimsManager.setUTXOsManager(uTXOsManager.target);
-    await claimsManager.setSignedBatchManager(signedBatchManager.target);
-
-    await claimsHelper.setClaimsManager(claimsManager.target);
-    await claimsHelper.setSignedBatchManagerAddress(signedBatchManager.target);
-
-    await uTXOsManager.setClaimsManagerAddress(claimsManager.target);
 
     const UTXOs = {
       multisigOwnedUTXOs: [
@@ -558,7 +561,6 @@ describe("Bridge Contract", function () {
           .connect(validators[2])
           .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[2].data, valSignature, 100);
 
-
         expect(await bridgeContract.isChainRegistered("chainID1")).to.be.false;
 
         await bridgeContract
@@ -837,15 +839,7 @@ describe("Bridge Contract", function () {
 
         const bridgeContractAddress = await bridgeContract.getAddress();
 
-        await hre.network.provider.request({
-          method: "hardhat_impersonateAccount",
-          params: [bridgeContractAddress],
-        });
-        
-        const signer = await ethers.getSigner(bridgeContractAddress);
-
-        // minting 100000000000000000000 tokens to signer
-        await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+        var signer = await impersonateAsContractAndMintFunds(bridgeContractAddress);
 
         await validatorsContract.connect(signer).addValidatorCardanoData("chainID1 1", validatorsCardanoData[0].addr, validatorsCardanoData[0].data);
         await validatorsContract.connect(signer).addValidatorCardanoData("chainID1 1", validatorsCardanoData[1].addr, validatorsCardanoData[1].data);
@@ -878,15 +872,7 @@ describe("Bridge Contract", function () {
 
         const bridgeContractAddress = await bridgeContract.getAddress();
 
-        await hre.network.provider.request({
-          method: "hardhat_impersonateAccount",
-          params: [bridgeContractAddress],
-        });
-        
-        const signer = await ethers.getSigner(bridgeContractAddress);
-
-        // minting 100000000000000000000 tokens to signer
-        await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+        var signer = await impersonateAsContractAndMintFunds(bridgeContractAddress);
 
         validatorsCardanoData.push({
           addr: validator6.address,
@@ -1826,15 +1812,9 @@ describe("Bridge Contract", function () {
         const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
 
         // Impersonate as ClaimsManager in order to set Next Timeout Block value
-        const claimManagerAddress = await (await claimsManager.getAddress()).toLowerCase();
+        const claimManagerAddress = await claimsManager.getAddress();
 
-        await hre.network.provider.request({
-          method: "hardhat_impersonateAccount",
-          params: [claimManagerAddress],
-        });
-
-        const signer = await ethers.getSigner(claimManagerAddress);
-        await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+        var signer = await impersonateAsContractAndMintFunds(claimManagerAddress);
 
 
         await bridgeContract.connect(signer).setNextTimeoutBlock(
@@ -1907,15 +1887,9 @@ describe("Bridge Contract", function () {
 
 
         // Impersonate as ClaimsManager in order to set Next Timeout Block value
-        const claimManagerAddress = await (await claimsManager.getAddress()).toLowerCase();
+        const claimManagerAddress = await claimsManager.getAddress();
 
-        await hre.network.provider.request({
-          method: "hardhat_impersonateAccount",
-          params: [claimManagerAddress],
-        });
-
-        const signer = await ethers.getSigner(claimManagerAddress);
-        await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+        var signer = await impersonateAsContractAndMintFunds(claimManagerAddress);
 
 
         await bridgeContract.connect(signer).setNextTimeoutBlock(
@@ -2411,51 +2385,6 @@ describe("Bridge Contract", function () {
         expect(tokenAmount).to.equal(sumAmounts);
 
       });
-
-      // it("Should return confirmedTransactions from confirmed BridgeRequestClaims", async function () {
-      //   const { bridgeContract, owner, validators, UTXOs, validatorClaimsBRC } = await loadFixture(
-      //     deployBridgeContractFixture
-      //   );
-      //   await bridgeContract
-      //     .connect(owner)
-      //     .registerChain(
-      //       validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
-      //       UTXOs,
-      //       "0x",
-      //       "0x",
-      //       "0xbcd",
-      //       "0xbcd",
-      //       10000
-      //     );
-      //   await bridgeContract
-      //     .connect(owner)
-      //     .registerChain(
-      //       validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
-      //       UTXOs,
-      //       "0x",
-      //       "0x",
-      //       "0xbcd",
-      //       "0xbcd",
-      //       10000
-      //     );
-
-      //   await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      //   await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      //   await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      //   await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
-
-      //   const confirmedTransactions = await bridgeContract
-      //     .connect(validators[0])
-      //     .getConfirmedTransactions.staticCall(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID);
-
-      //   expect(confirmedTransactions.length).to.equal(1);
-      //   expect(confirmedTransactions[0].receivers[0].destinationAddress).to.equal(
-      //     validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress
-      //   );
-      //   expect(confirmedTransactions[0].receivers[0].amount).to.equal(
-      //     validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount
-      //   );
-      // });
     });
     describe("UTXO management", function () {
       it("Should return required all utxos", async function () {

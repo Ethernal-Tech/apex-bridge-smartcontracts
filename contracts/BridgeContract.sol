@@ -44,6 +44,7 @@ contract BridgeContract is IBridgeContract {
     // Batches
     function submitSignedBatch(SignedBatch calldata _signedBatch) external override onlyValidator {
         if (!shouldCreateBatch(_signedBatch.destinationChainId)) {
+            // it will revert also if chain is not registered
             revert CanNotCreateBatchYet(_signedBatch.destinationChainId);
         }
         signedBatchManager.submitSignedBatch(_signedBatch, msg.sender);
@@ -76,7 +77,7 @@ contract BridgeContract is IBridgeContract {
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
         ValidatorCardanoData calldata _validator,
-        bytes calldata _validationSignature,
+        string calldata _validationSignature,
         uint256 _tokenQuantity
     ) external override onlyValidator {
         if (isChainRegistered[_chainId]) {
