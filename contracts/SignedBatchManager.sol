@@ -10,7 +10,7 @@ import "./ClaimsManager.sol";
 import "hardhat/console.sol";
 
 contract SignedBatchManager is IBridgeContractStructs {
-    BridgeContract private bridgeContract;
+    address private bridgeContract;
     ClaimsHelper private claimsHelper;
     ClaimsManager private claimsManager;
     address private owner;
@@ -29,7 +29,7 @@ contract SignedBatchManager is IBridgeContractStructs {
 
     constructor(address _bridgeContract) {
         owner = msg.sender;
-        bridgeContract = BridgeContract(_bridgeContract);
+        bridgeContract = _bridgeContract;
     }
 
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridgeContract {
@@ -146,12 +146,12 @@ contract SignedBatchManager is IBridgeContractStructs {
     }
 
     modifier onlyBridgeContract() {
-        if (msg.sender != address(bridgeContract)) revert NotBridgeContract();
+        if (msg.sender != bridgeContract) revert NotBridgeContract();
         _;
     }
 
     modifier onlyClaimsManagerOrBridgeContract() {
-        if (msg.sender != address(claimsManager) && msg.sender != address(bridgeContract))
+        if (msg.sender != address(claimsManager) && msg.sender != bridgeContract)
             revert NotClaimsManagerOrBridgeContract();
         _;
     }
