@@ -2,6 +2,9 @@
 pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "./interfaces/IBridgeContract.sol";
 import "./ClaimsHelper.sol";
 import "./SlotsManager.sol";
@@ -11,7 +14,7 @@ import "./UTXOsManager.sol";
 import "./ValidatorsContract.sol";
 import "hardhat/console.sol";
 
-contract BridgeContract is IBridgeContract {
+contract BridgeContract is IBridgeContract, UUPSUpgradeable, OwnableUpgradeable {
     ValidatorsContract private validatorsContract;
     ClaimsManager private claimsManager;
     UTXOsManager private utxosManager;
@@ -26,12 +29,12 @@ contract BridgeContract is IBridgeContract {
 
     Chain[] private chains;
 
-    address private owner;
     uint16 private maxNumberOfTransactions;
     uint8 private timeoutBlocksNumber;
-    
-    constructor(uint16 _maxNumberOfTransactions, uint8 _timeoutBlocksNumber) {
-        owner = msg.sender;
+
+    function initialize(uint16 _maxNumberOfTransactions, uint8 _timeoutBlocksNumber) public initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
         maxNumberOfTransactions = _maxNumberOfTransactions;
         timeoutBlocksNumber = _timeoutBlocksNumber;
     }
@@ -256,13 +259,10 @@ contract BridgeContract is IBridgeContract {
         validatorsContract = ValidatorsContract(_validatorsContract);
     }
 
+    function _authorizeUpgrade(address) internal override onlyOwner {}
+
     modifier onlyValidator() {
         if (!validatorsContract.isValidator(msg.sender)) revert NotValidator();
-        _;
-    }
-
-    modifier onlyOwner() {
-        if (msg.sender != owner) revert NotOwner();
         _;
     }
 
