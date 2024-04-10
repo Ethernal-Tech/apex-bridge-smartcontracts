@@ -18,9 +18,6 @@ contract BridgeContract is IBridgeContract {
     SignedBatchManager private signedBatchManager;
     SlotsManager private slotsManager;
 
-    // BlockchainID -> bool
-    mapping(string => bool) public isChainRegistered;
-
     // Blochchain ID -> blockNumber
     mapping(string => uint256) public nextTimeoutBlock;
 
@@ -90,7 +87,7 @@ contract BridgeContract is IBridgeContract {
         ValidatorCardanoData calldata _validator,
         uint256 _tokenQuantity
     ) external override onlyValidator {
-        if (isChainRegistered[_chainId]) {
+        if (claimsManager.isChainRegistered(_chainId)) {
             revert ChainAlreadyRegistered(_chainId);
         }
         if (claimsManager.voted(_chainId, msg.sender)) {
@@ -124,7 +121,7 @@ contract BridgeContract is IBridgeContract {
         string calldata _addressFeePayer,
         uint256 _tokenQuantity
     ) internal {
-        isChainRegistered[_chainId] = true;
+        claimsManager.setChainRegistered(_chainId);
         chains.push();
         chains[chains.length - 1].id = _chainId;
         chains[chains.length - 1].utxos = _initialUTXOs;
@@ -238,7 +235,9 @@ contract BridgeContract is IBridgeContract {
         return chains;
     }
 
-    function getRawTransactionFromLastBatch(string calldata _destinationChain) external view returns (string memory) {
+    function getRawTransactionFromLastBatch(
+        string calldata _destinationChain
+    ) external view override returns (string memory) {
         return signedBatchManager.getRawTransactionFromLastBatch(_destinationChain);
     }
 

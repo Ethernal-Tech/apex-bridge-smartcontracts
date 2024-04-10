@@ -17,6 +17,9 @@ contract ClaimsManager is IBridgeContractStructs {
     UTXOsManager private utxosManager;
     address private owner;
 
+    // BlockchainID -> bool
+    mapping(string => bool) public isChainRegistered;
+
     // BlockchainID -> claimsCounter
     mapping(string => uint256) public claimsCounter;
     // BlockchainID -> claimCounter -> claimHash
@@ -43,7 +46,12 @@ contract ClaimsManager is IBridgeContractStructs {
 
     string private constant LAST_OBSERVED_BLOCK_INFO_KEY = "LAST_OBSERVED_BLOCK_INFO";
 
-    constructor(address _bridgeContract, address _claimsHelper, address _validatorsContract, address _signedBatchManager) {
+    constructor(
+        address _bridgeContract,
+        address _claimsHelper,
+        address _validatorsContract,
+        address _signedBatchManager
+    ) {
         owner = msg.sender;
         bridgeContract = BridgeContract(_bridgeContract);
         claimsHelper = ClaimsHelper(_claimsHelper);
@@ -54,7 +62,7 @@ contract ClaimsManager is IBridgeContractStructs {
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {
         for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
             BridgingRequestClaim memory _claim = _claims.bridgingRequestClaims[i];
-            if (!bridgeContract.isChainRegistered(_claim.sourceChainID)) {
+            if (isChainRegistered[_claim.sourceChainID]) {
                 revert ChainIsNotRegistered(_claim.sourceChainID);
             }
 
@@ -74,7 +82,7 @@ contract ClaimsManager is IBridgeContractStructs {
         }
         for (uint i = 0; i < _claims.batchExecutedClaims.length; i++) {
             BatchExecutedClaim memory _claim = _claims.batchExecutedClaims[i];
-            if (!bridgeContract.isChainRegistered(_claim.chainID)) {
+            if (isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
@@ -90,7 +98,7 @@ contract ClaimsManager is IBridgeContractStructs {
         }
         for (uint i = 0; i < _claims.batchExecutionFailedClaims.length; i++) {
             BatchExecutionFailedClaim memory _claim = _claims.batchExecutionFailedClaims[i];
-            if (!bridgeContract.isChainRegistered(_claim.chainID)) {
+            if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
@@ -106,7 +114,7 @@ contract ClaimsManager is IBridgeContractStructs {
         }
         for (uint i = 0; i < _claims.refundRequestClaims.length; i++) {
             RefundRequestClaim memory _claim = _claims.refundRequestClaims[i];
-            if (!bridgeContract.isChainRegistered(_claim.chainID)) {
+            if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
@@ -122,7 +130,7 @@ contract ClaimsManager is IBridgeContractStructs {
         }
         for (uint i = 0; i < _claims.refundExecutedClaims.length; i++) {
             RefundExecutedClaim memory _claim = _claims.refundExecutedClaims[i];
-            if (!bridgeContract.isChainRegistered(_claim.chainID)) {
+            if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
@@ -326,6 +334,10 @@ contract ClaimsManager is IBridgeContractStructs {
         }
 
         return tokenQuantity;
+    }
+
+    function setChainRegistered(string calldata _chainId) external onlyBridgeContract {
+        isChainRegistered[_chainId] = true;
     }
 
     // TODO: who will set this value?
