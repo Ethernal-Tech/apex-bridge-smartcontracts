@@ -21,11 +21,9 @@ contract BridgeContract is IBridgeContract {
     Chain[] private chains;
 
     address private owner;
-    uint8 private timeoutBlocksNumber;
 
-    constructor(uint8 _timeoutBlocksNumber) {
+    constructor() {
         owner = msg.sender;
-        timeoutBlocksNumber = _timeoutBlocksNumber;
     }
 
     // Claims

@@ -22,7 +22,9 @@ contract ClaimsManager is IBridgeContractStructs {
 
     // Blochchain ID -> blockNumber
     mapping(string => uint256) public nextTimeoutBlock;
+
     uint16 public maxNumberOfTransactions;
+    uint8 private timeoutBlocksNumber;
 
     // BlockchainID -> claimsCounter
     mapping(string => uint256) public claimsCounter;
@@ -55,6 +57,7 @@ contract ClaimsManager is IBridgeContractStructs {
         address _claimsHelper,
         address _validatorsContract,
         address _signedBatchManager,
+        uint8 _timeoutBlocksNumber,
         uint16 _maxNumberOfTransactions
     ) {
         owner = msg.sender;
@@ -62,6 +65,7 @@ contract ClaimsManager is IBridgeContractStructs {
         claimsHelper = ClaimsHelper(_claimsHelper);
         validatorsContract = ValidatorsContract(_validatorsContract);
         signedBatchManager = SignedBatchManager(_signedBatchManager);
+        timeoutBlocksNumber = _timeoutBlocksNumber;
         maxNumberOfTransactions = _maxNumberOfTransactions;
     }
 
@@ -361,7 +365,7 @@ contract ClaimsManager is IBridgeContractStructs {
     }
 
     function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external onlyBridgeContract {
-        nextTimeoutBlock[_chainId] = _blockNumber + maxNumberOfTransactions;
+        nextTimeoutBlock[_chainId] = _blockNumber + timeoutBlocksNumber;
     }
 
     // TODO: who will set this value?

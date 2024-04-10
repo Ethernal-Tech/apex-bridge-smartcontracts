@@ -34,7 +34,7 @@ describe("Bridge Contract", function () {
     const hre = require("hardhat");
 
     const BridgeContract = await ethers.getContractFactory("BridgeContract");
-    const bridgeContract = await BridgeContract.deploy(2);
+    const bridgeContract = await BridgeContract.deploy();
 
     const ValidatorsContract = await ethers.getContractFactory("ValidatorsContract");
     const validatorsContract = await ValidatorsContract.deploy(validators, bridgeContract.target);
@@ -54,6 +54,7 @@ describe("Bridge Contract", function () {
       claimsHelper.target,
       validatorsContract.target,
       signedBatchManager.target,
+      2,
       5
     );
 
