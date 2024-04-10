@@ -1871,6 +1871,7 @@ describe("Bridge Contract", function () {
 
         expect(confirmedTxs.length).to.equal(1);
         expect(confirmedTxs[0].nonce).to.equal(1);
+        expect(confirmedTxs[0].observedTransactionHash).to.equal(validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash);
         expect(confirmedTxs[0].blockHeight).to.be.lessThan(
           await bridgeContract.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID)
         );
