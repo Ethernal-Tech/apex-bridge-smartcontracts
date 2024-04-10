@@ -18,18 +18,13 @@ contract BridgeContract is IBridgeContract {
     SignedBatchManager private signedBatchManager;
     SlotsManager private slotsManager;
 
-    // Blochchain ID -> blockNumber
-    mapping(string => uint256) public nextTimeoutBlock;
-
     Chain[] private chains;
 
     address private owner;
-    uint16 private maxNumberOfTransactions;
     uint8 private timeoutBlocksNumber;
 
-    constructor(uint16 _maxNumberOfTransactions, uint8 _timeoutBlocksNumber) {
+    constructor(uint8 _timeoutBlocksNumber) {
         owner = msg.sender;
-        maxNumberOfTransactions = _maxNumberOfTransactions;
         timeoutBlocksNumber = _timeoutBlocksNumber;
     }
 
@@ -135,7 +130,7 @@ contract BridgeContract is IBridgeContract {
 
         signedBatchManager.resetCurrentBatchBlock(_chainId);
 
-        nextTimeoutBlock[_chainId] = block.number + timeoutBlocksNumber;
+        claimsManager.setNextTimeoutBlock(_chainId, block.number);
 
         emit newChainRegistered(_chainId);
     }
@@ -152,8 +147,10 @@ contract BridgeContract is IBridgeContract {
             return false;
         }
 
-        uint256 cnt = getBatchingTxsCount(_destinationChain);
-        return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
+        uint256 cnt = claimsManager.getBatchingTxsCount(_destinationChain);
+        return
+            cnt >= claimsManager.maxNumberOfTransactions() ||
+            (cnt > 0 && block.number >= claimsManager.nextTimeoutBlock(_destinationChain));
     }
 
     function getNextBatchId(string calldata _destinationChain) external view override returns (uint256 result) {
@@ -175,7 +172,7 @@ contract BridgeContract is IBridgeContract {
 
         uint256 firstTxNonce = claimsManager.getLastBatchedTxNonce(_destinationChain) + 1;
 
-        uint256 counterConfirmedTransactions = getBatchingTxsCount(_destinationChain);
+        uint256 counterConfirmedTransactions = claimsManager.getBatchingTxsCount(_destinationChain);
         _confirmedTransactions = new ConfirmedTransaction[](counterConfirmedTransactions);
 
         for (uint i = 0; i < counterConfirmedTransactions; i++) {
@@ -183,28 +180,6 @@ contract BridgeContract is IBridgeContract {
         }
 
         return _confirmedTransactions;
-    }
-
-    function getBatchingTxsCount(string calldata _chainId) public view returns (uint256 counterConfirmedTransactions) {
-        uint256 lastConfirmedTxNonce = claimsManager.getLastConfirmedTxNonce(_chainId);
-        uint256 lastBatchedTxNonce = claimsManager.getLastBatchedTxNonce(_chainId);
-
-        uint256 txsToProcess = ((lastConfirmedTxNonce - lastBatchedTxNonce) >= maxNumberOfTransactions)
-            ? maxNumberOfTransactions
-            : (lastConfirmedTxNonce - lastBatchedTxNonce);
-
-        counterConfirmedTransactions = 0;
-
-        while (counterConfirmedTransactions < txsToProcess) {
-            ConfirmedTransaction memory confirmedTx = claimsManager.getConfirmedTransaction(
-                _chainId,
-                lastBatchedTxNonce + counterConfirmedTransactions + 1
-            );
-            if (confirmedTx.blockHeight >= nextTimeoutBlock[_chainId]) {
-                break;
-            }
-            counterConfirmedTransactions++;
-        }
     }
 
     function getAvailableUTXOs(
@@ -239,10 +214,6 @@ contract BridgeContract is IBridgeContract {
         string calldata _destinationChain
     ) external view override returns (string memory) {
         return signedBatchManager.getRawTransactionFromLastBatch(_destinationChain);
-    }
-
-    function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external onlyClaimsManager {
-        nextTimeoutBlock[_chainId] = _blockNumber + maxNumberOfTransactions;
     }
 
     function setClaimsManager(address _claimsManager) external onlyOwner {

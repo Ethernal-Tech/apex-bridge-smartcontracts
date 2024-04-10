@@ -20,6 +20,10 @@ contract ClaimsManager is IBridgeContractStructs {
     // BlockchainID -> bool
     mapping(string => bool) public isChainRegistered;
 
+    // Blochchain ID -> blockNumber
+    mapping(string => uint256) public nextTimeoutBlock;
+    uint16 public maxNumberOfTransactions;
+
     // BlockchainID -> claimsCounter
     mapping(string => uint256) public claimsCounter;
     // BlockchainID -> claimCounter -> claimHash
@@ -50,13 +54,15 @@ contract ClaimsManager is IBridgeContractStructs {
         address _bridgeContract,
         address _claimsHelper,
         address _validatorsContract,
-        address _signedBatchManager
+        address _signedBatchManager,
+        uint16 _maxNumberOfTransactions
     ) {
         owner = msg.sender;
         bridgeContract = BridgeContract(_bridgeContract);
         claimsHelper = ClaimsHelper(_claimsHelper);
         validatorsContract = ValidatorsContract(_validatorsContract);
         signedBatchManager = SignedBatchManager(_signedBatchManager);
+        maxNumberOfTransactions = _maxNumberOfTransactions;
     }
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {
@@ -171,14 +177,14 @@ contract ClaimsManager is IBridgeContractStructs {
 
             claimsHelper.setClaimConfirmed(_claim.destinationChainID, _claim.observedTransactionHash);
             int256 currentBatchBlock = signedBatchManager.currentBatchBlock(_claim.destinationChainID);
-            uint256 confirmedTxCount = bridgeContract.getBatchingTxsCount(_claim.destinationChainID);
+            uint256 confirmedTxCount = getBatchingTxsCount(_claim.destinationChainID);
             if (
                 (currentBatchBlock != -1) && // check if there is no batch in progress
                 (confirmedTxCount == 0) && // check if there is no other confirmed transactions
-                (block.number > bridgeContract.nextTimeoutBlock(_claim.destinationChainID))
+                (block.number > nextTimeoutBlock[_claim.destinationChainID])
             ) // check if the current block number is greater than the NEXT_BATCH_TIMEOUT_BLOCK
             {
-                bridgeContract.setNextTimeoutBlock(_claim.destinationChainID, block.number);
+                nextTimeoutBlock[_claim.destinationChainID] = block.number + maxNumberOfTransactions;
             }
         }
     }
@@ -207,7 +213,7 @@ contract ClaimsManager is IBridgeContractStructs {
                 lastBatchedTxNonce[_claim.chainID] = confirmedSignedBatch.includedTransactions[txLength - 1];
             }
 
-            bridgeContract.setNextTimeoutBlock(_claim.chainID, block.number);
+            nextTimeoutBlock[_claim.chainID] = block.number + maxNumberOfTransactions;
 
             utxosManager.addUTXOs(_claim.chainID, _claim.outputUTXOs);
             utxosManager.removeUsedUTXOs(_claim.chainID, confirmedSignedBatch.usedUTXOs);
@@ -227,7 +233,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             signedBatchManager.resetCurrentBatchBlock(_claim.chainID);
 
-            bridgeContract.setNextTimeoutBlock(_claim.chainID, block.number);
+            nextTimeoutBlock[_claim.chainID] = block.number + maxNumberOfTransactions;
         }
     }
 
@@ -291,15 +297,33 @@ contract ClaimsManager is IBridgeContractStructs {
         chainTokenQuantity[_chainID] = _tokenQuantity;
     }
 
-    function getLastConfirmedTxNonce(string calldata _destinationChain) public view returns (uint256) {
-        return lastConfirmedTxNonce[_destinationChain];
-    }
-
     function getConfirmedTransaction(
-        string calldata _destinationChain,
+        string memory _destinationChain,
         uint256 _nonce
     ) public view returns (ConfirmedTransaction memory) {
         return confirmedTransactions[_destinationChain][_nonce];
+    }
+
+    function getBatchingTxsCount(string memory _chainId) public view returns (uint256 counterConfirmedTransactions) {
+        uint256 lastConfirmedTxNonceChain = lastConfirmedTxNonce[_chainId];
+        uint256 lastBatchedTxNonceChain = lastBatchedTxNonce[_chainId];
+
+        uint256 txsToProcess = ((lastConfirmedTxNonceChain - lastBatchedTxNonceChain) >= maxNumberOfTransactions)
+            ? maxNumberOfTransactions
+            : (lastConfirmedTxNonceChain - lastBatchedTxNonceChain);
+
+        counterConfirmedTransactions = 0;
+
+        while (counterConfirmedTransactions < txsToProcess) {
+            ConfirmedTransaction memory confirmedTx = getConfirmedTransaction(
+                _chainId,
+                lastBatchedTxNonceChain + counterConfirmedTransactions + 1
+            );
+            if (confirmedTx.blockHeight >= nextTimeoutBlock[_chainId]) {
+                break;
+            }
+            counterConfirmedTransactions++;
+        }
     }
 
     function getTokenAmountFromSignedBatch(
@@ -338,6 +362,10 @@ contract ClaimsManager is IBridgeContractStructs {
 
     function setChainRegistered(string calldata _chainId) external onlyBridgeContract {
         isChainRegistered[_chainId] = true;
+    }
+
+    function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external onlyClaimsManager {
+        nextTimeoutBlock[_chainId] = _blockNumber + maxNumberOfTransactions;
     }
 
     // TODO: who will set this value?
