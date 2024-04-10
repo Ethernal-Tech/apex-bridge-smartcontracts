@@ -43,10 +43,10 @@ contract ClaimsManager is IBridgeContractStructs {
     mapping(string => mapping(uint256 => ConfirmedTransaction)) private confirmedTransactions;
 
     // chainID -> nonce (nonce of the last confirmed transaction)
-    mapping(string => uint256) private lastConfirmedTxNonce;
+    mapping(string => uint256) public lastConfirmedTxNonce;
 
     // chainID -> nonce (nonce of the last transaction from the executed batch)
-    mapping(string => uint256) private lastBatchedTxNonce;
+    mapping(string => uint256) public lastBatchedTxNonce;
 
     string private constant LAST_OBSERVED_BLOCK_INFO_KEY = "LAST_OBSERVED_BLOCK_INFO";
 
@@ -68,7 +68,7 @@ contract ClaimsManager is IBridgeContractStructs {
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {
         for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
             BridgingRequestClaim memory _claim = _claims.bridgingRequestClaims[i];
-            if (isChainRegistered[_claim.sourceChainID]) {
+            if (!isChainRegistered[_claim.sourceChainID]) {
                 revert ChainIsNotRegistered(_claim.sourceChainID);
             }
 
@@ -88,7 +88,7 @@ contract ClaimsManager is IBridgeContractStructs {
         }
         for (uint i = 0; i < _claims.batchExecutedClaims.length; i++) {
             BatchExecutedClaim memory _claim = _claims.batchExecutedClaims[i];
-            if (isChainRegistered[_claim.chainID]) {
+            if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
@@ -305,19 +305,19 @@ contract ClaimsManager is IBridgeContractStructs {
     }
 
     function getBatchingTxsCount(string memory _chainId) public view returns (uint256 counterConfirmedTransactions) {
-        uint256 lastConfirmedTxNonceChain = lastConfirmedTxNonce[_chainId];
-        uint256 lastBatchedTxNonceChain = lastBatchedTxNonce[_chainId];
+        uint256 lastConfirmedTxNonceForChain = lastConfirmedTxNonce[_chainId];
+        uint256 lastBatchedTxNonceForChain = lastBatchedTxNonce[_chainId];
 
-        uint256 txsToProcess = ((lastConfirmedTxNonceChain - lastBatchedTxNonceChain) >= maxNumberOfTransactions)
+        uint256 txsToProcess = ((lastConfirmedTxNonceForChain - lastBatchedTxNonceForChain) >= maxNumberOfTransactions)
             ? maxNumberOfTransactions
-            : (lastConfirmedTxNonceChain - lastBatchedTxNonceChain);
+            : (lastConfirmedTxNonceForChain - lastBatchedTxNonceForChain);
 
         counterConfirmedTransactions = 0;
 
         while (counterConfirmedTransactions < txsToProcess) {
             ConfirmedTransaction memory confirmedTx = getConfirmedTransaction(
                 _chainId,
-                lastBatchedTxNonceChain + counterConfirmedTransactions + 1
+                lastBatchedTxNonceForChain + counterConfirmedTransactions + 1
             );
             if (confirmedTx.blockHeight >= nextTimeoutBlock[_chainId]) {
                 break;
@@ -342,10 +342,6 @@ contract ClaimsManager is IBridgeContractStructs {
         return bridgedAmount;
     }
 
-    function getLastBatchedTxNonce(string calldata _destinationChain) public view returns (uint256) {
-        return lastBatchedTxNonce[_destinationChain];
-    }
-
     function hasConsensus(bytes32 _hash) public view returns (bool) {
         return numberOfVotes[_hash] >= validatorsContract.getQuorumNumberOfValidators();
     }
@@ -364,7 +360,7 @@ contract ClaimsManager is IBridgeContractStructs {
         isChainRegistered[_chainId] = true;
     }
 
-    function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external onlyClaimsManager {
+    function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external onlyBridgeContract {
         nextTimeoutBlock[_chainId] = _blockNumber + maxNumberOfTransactions;
     }
 
