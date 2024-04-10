@@ -70,4 +70,8 @@ abstract contract IBridgeContract is IBridgeContractStructs {
     ) external view virtual returns (CardanoBlock memory cblock);
 
     function getAllRegisteredChains() external view virtual returns (Chain[] memory _chains);
+
+    function getRawTransactionFromLastBatch(
+        string calldata _destinationChain
+    ) external view virtual returns (string memory);
 }
