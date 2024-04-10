@@ -9,12 +9,21 @@ async function main() {
 
   console.log(`BridgeContract deployed to ${bridgeContract.target}`);
 
-  //web3.utils.sha3('initialize()').substring(0,10) -> 0x6e05c269
+  //_data for ERC1967Proxy constructor
+  // function selector + arguments
+  // web3.utils.sha3('initialize(uint16,uint8)').substring(0, 10)
+  // or through remix
+  // or through solidity
+  // function getSelector(string calldata _func) public pure returns (bytes4) {
+  //   return bytes4(keccak256(bytes(_func)));
+  // }
+  // 1 - 0000000000000000000000000000000000000000000000000000000000000001
 
   const ProxyBridgeContract = await ethers.getContractFactory("ERC1967Proxy");
-  console.log("prosao");
-  const proxyBridgeContract = await ProxyBridgeContract.deploy(bridgeContract.target, "0xd9dee844");
-  console.log("prosao");
+  const proxyBridgeContract = await ProxyBridgeContract.deploy(
+    bridgeContract.target,
+    "0xd9dee84400000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001"
+  );
 
   console.log(`ProxyBridgeContract deployed to ${proxyBridgeContract.target}`);
 }
