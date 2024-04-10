@@ -15,17 +15,9 @@ contract SignedBatchManager is IBridgeContractStructs {
     ClaimsManager private claimsManager;
     address private owner;
 
-    // Blochchain ID -> blockNumber
-    mapping(string => int256) public currentBatchBlock;
-
-    // BlockchainID -> ConfirmedBatch
-    mapping(string => ConfirmedBatch) public lastConfirmedBatch;
 
     // BlockchanID -> batchId -> -signedBatchWithoutSignaturesHash -> SignedBatch[]
     mapping(string => mapping(uint256 => mapping(bytes32 => SignedBatch[]))) public signedBatches;
-
-    // BlockchainID -> batchId -> SignedBatch
-    mapping(string => mapping(uint256 => SignedBatch)) public confirmedSignedBatches;
 
     constructor(address _bridgeContract) {
         owner = msg.sender;
@@ -36,7 +28,7 @@ contract SignedBatchManager is IBridgeContractStructs {
         string memory _destinationChainId = _signedBatch.destinationChainId;
         uint256 _batchId = _signedBatch.id;
 
-        if (_batchId != lastConfirmedBatch[_destinationChainId].id + 1) {
+        if (_batchId != claimsManager.getLastConfirmedBatch(_signedBatch.destinationChainId).id + 1) {
             revert WrongBatchNonce(_destinationChainId, _batchId);
         }
 
@@ -67,7 +59,7 @@ contract SignedBatchManager is IBridgeContractStructs {
         signedBatches[_signedBatch.destinationChainId][_signedBatch.id][signedBatchHash].push(_signedBatch);
 
         if (claimsManager.hasConsensus(signedBatchHash)) {
-            confirmedSignedBatches[_signedBatch.destinationChainId][_signedBatch.id] = _signedBatch;
+            claimsManager.setConfirmedSignedBatches(_signedBatch.destinationChainId, _signedBatch.id,_signedBatch);
 
             claimsHelper.setClaimConfirmed(_signedBatch.destinationChainId, Strings.toString(_signedBatch.id));
 
@@ -87,49 +79,15 @@ contract SignedBatchManager is IBridgeContractStructs {
                 ][i].feePayerMultisigSignature;
             }
 
-            lastConfirmedBatch[_signedBatch.destinationChainId] = ConfirmedBatch(
-                lastConfirmedBatch[_signedBatch.destinationChainId].id + 1,
+            claimsManager.setLastConfirmedBatch(_signedBatch.destinationChainId, ConfirmedBatch(
+                claimsManager.getLastConfirmedBatch(_signedBatch.destinationChainId).id + 1,
                 _signedBatch.rawTransaction,
                 multisigSignatures,
                 feePayerMultisigSignatures
-            );
+            ));
 
-            currentBatchBlock[_signedBatch.destinationChainId] = int256(block.number);
+            claimsManager.setCurrentBatchBlock(_signedBatch.destinationChainId, int256(block.number));
         }
-    }
-
-    function isBatchCreated(string calldata _destinationChain) public view onlyBridgeContract returns (bool batch) {
-        return currentBatchBlock[_destinationChain] != int(-1);
-    }
-
-    function isBatchAlreadySubmittedBy(
-        string calldata _destinationChain,
-        address addr
-    ) public view onlyBridgeContract returns (bool ok) {
-        return claimsManager.voted(Strings.toString(lastConfirmedBatch[_destinationChain].id + 1), addr);
-    }
-
-    function getNewBatchId(string calldata _destinationChain) public view onlyBridgeContract returns (uint256 v) {
-        return lastConfirmedBatch[_destinationChain].id + 1;
-    }
-
-    function getConfirmedBatch(string calldata _destinationChain) external view returns (ConfirmedBatch memory batch) {
-        return lastConfirmedBatch[_destinationChain];
-    }
-
-    function getConfirmedSignedBatch(
-        string calldata _destinationChain,
-        uint256 _nonce
-    ) public view returns (SignedBatch memory signedBatch) {
-        return confirmedSignedBatches[_destinationChain][_nonce];
-    }
-
-    function getRawTransactionFromLastBatch(string calldata _destinationChain) external view returns (string memory) {
-        return lastConfirmedBatch[_destinationChain].rawTransaction;
-    }
-
-    function resetCurrentBatchBlock(string calldata _chainId) external onlyClaimsManagerOrBridgeContract {
-        currentBatchBlock[_chainId] = int(-1);
     }
 
     function setClaimsManager(address _claimsManager) external onlyOwner {

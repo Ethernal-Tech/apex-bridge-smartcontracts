@@ -1509,7 +1509,7 @@ describe("Bridge Contract", function () {
           1100
         );
         expect(nextBatchBlock).to.greaterThan(currentBlock + 1);
-        expect(await signedBatchManager.currentBatchBlock(_destinationChain)).to.equal(-1);
+        expect(await claimsManager.currentBatchBlock(_destinationChain)).to.equal(-1);
         expect(lastConfirmedTxNonce - lastBatchedTxNonce).to.be.lessThanOrEqual(1);
       });
     });
@@ -1581,7 +1581,7 @@ describe("Bridge Contract", function () {
       it("Should reset current batch block and next timeout batch block when Batch Execution Failed Claims if confirmed", async function () {
         const {
           bridgeContract,
-          signedBatchManager,
+          claimsManager,
           owner,
           validators,
           UTXOs,
@@ -1602,7 +1602,7 @@ describe("Bridge Contract", function () {
         const currentBlock = await ethers.provider.getBlockNumber();
 
         expect(
-          await signedBatchManager.currentBatchBlock(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID)
+          await claimsManager.currentBatchBlock(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID)
         ).to.equal(-1);
         expect(nextBatchBlock).to.greaterThan(currentBlock + 1);
       });
@@ -2196,7 +2196,7 @@ describe("Bridge Contract", function () {
       });
 
       it("SignedBatch should be added to signedBatches if there are enough votes", async function () {
-        const { bridgeContract, signedBatchManager, owner, validators, UTXOs, signedBatch, validatorsCardanoData, validatorClaimsBRC } =
+        const { bridgeContract, signedBatchManager, claimsManager, owner, validators, UTXOs, signedBatch, validatorsCardanoData, validatorClaimsBRC } =
           await loadFixture(deployBridgeContractFixture);
 
           await bridgeContract.connect(owner).registerChain(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID, UTXOs, "0x", "0x", validatorsCardanoData, 100);
@@ -2219,7 +2219,7 @@ describe("Bridge Contract", function () {
 
         expect(
           (
-            await signedBatchManager
+            await claimsManager
               .connect(validators[0])
               .confirmedSignedBatches(signedBatch.destinationChainId, signedBatch.id)
           ).id
@@ -2227,7 +2227,7 @@ describe("Bridge Contract", function () {
 
         expect(
           (
-            await signedBatchManager
+            await claimsManager
               .connect(validators[0])
               .confirmedSignedBatches(signedBatch.destinationChainId, signedBatch.id)
           ).rawTransaction
@@ -2235,7 +2235,7 @@ describe("Bridge Contract", function () {
 
         expect(
           (
-            await signedBatchManager
+            await claimsManager
               .connect(validators[0])
               .confirmedSignedBatches(signedBatch.destinationChainId, signedBatch.id)
           ).multisigSignature
@@ -2243,7 +2243,7 @@ describe("Bridge Contract", function () {
 
         expect(
           (
-            await signedBatchManager
+            await claimsManager
               .connect(validators[0])
               .confirmedSignedBatches(signedBatch.destinationChainId, signedBatch.id)
           ).feePayerMultisigSignature

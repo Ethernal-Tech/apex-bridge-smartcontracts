@@ -136,7 +136,7 @@ contract BridgeContract is IBridgeContract {
 
         claimsManager.setTokenQuantity(_chainId, _tokenQuantity);
 
-        signedBatchManager.resetCurrentBatchBlock(_chainId);
+        claimsManager.resetCurrentBatchBlock(_chainId);
 
         nextTimeoutBlock[_chainId] = block.number + timeoutBlocksNumber;
 
@@ -149,8 +149,8 @@ contract BridgeContract is IBridgeContract {
     // It will also check if the given validator already submitted a signed batch and return the response accordingly.
     function shouldCreateBatch(string calldata _destinationChain) public view override returns (bool batch) {
         if (
-            signedBatchManager.isBatchCreated(_destinationChain) ||
-            signedBatchManager.isBatchAlreadySubmittedBy(_destinationChain, msg.sender)
+            claimsManager.isBatchCreated(_destinationChain) ||
+            claimsManager.isBatchAlreadySubmittedBy(_destinationChain, msg.sender)
         ) {
             return false;
         }
@@ -164,7 +164,7 @@ contract BridgeContract is IBridgeContract {
             return 0;
         }
 
-        return signedBatchManager.getNewBatchId(_destinationChain);
+        return claimsManager.getNewBatchId(_destinationChain);
     }
 
     // Will return confirmed transactions until NEXT_BATCH_TIMEOUT_BLOCK or maximum number of transactions that
@@ -219,7 +219,7 @@ contract BridgeContract is IBridgeContract {
     function getConfirmedBatch(
         string calldata _destinationChain
     ) external view override returns (ConfirmedBatch memory batch) {
-        return signedBatchManager.getConfirmedBatch(_destinationChain);
+        return claimsManager.getConfirmedBatch(_destinationChain);
     }
 
     function getValidatorsCardanoData(
@@ -239,7 +239,7 @@ contract BridgeContract is IBridgeContract {
     }
 
     function getRawTransactionFromLastBatch(string calldata _destinationChain) external view override returns (string memory) {
-        return signedBatchManager.getRawTransactionFromLastBatch(_destinationChain);
+        return claimsManager.getRawTransactionFromLastBatch(_destinationChain);
     }
 
     function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external onlyClaimsManager {
