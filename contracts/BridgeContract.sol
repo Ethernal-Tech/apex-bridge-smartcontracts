@@ -238,7 +238,7 @@ contract BridgeContract is IBridgeContract {
         return chains;
     }
 
-    function getRawTransactionFromLastBatch(string calldata _destinationChain) external view returns (string memory) {
+    function getRawTransactionFromLastBatch(string calldata _destinationChain) external view override returns (string memory) {
         return signedBatchManager.getRawTransactionFromLastBatch(_destinationChain);
     }
 

@@ -258,6 +258,7 @@ contract ClaimsManager is IBridgeContractStructs {
     function _setConfirmedTransactions(BridgingRequestClaim memory _claim) internal {
         // passed the claim with the memory keyword
         uint256 nextNonce = ++lastConfirmedTxNonce[_claim.destinationChainID];
+        confirmedTransactions[_claim.destinationChainID][nextNonce].observedTransactionHash = _claim.observedTransactionHash;
         confirmedTransactions[_claim.destinationChainID][nextNonce].nonce = nextNonce;
 
         for (uint i = 0; i < _claim.receivers.length; i++) {
