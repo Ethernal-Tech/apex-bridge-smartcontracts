@@ -36,6 +36,7 @@ interface IBridgeContractStructs {
     }
 
     struct ConfirmedTransaction {
+        string  observedTransactionHash;
         uint256 nonce;
         uint256 blockHeight;
         Receiver[] receivers;
