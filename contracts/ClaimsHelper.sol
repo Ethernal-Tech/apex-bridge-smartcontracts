@@ -7,8 +7,8 @@ import "hardhat/console.sol";
 import "./SlotsManager.sol";
 
 contract ClaimsHelper is IBridgeContractStructs {
-    address private claimsManager;
-    address private signedBatchManager;
+    address private claimsManagerAddress;
+    address private signedBatchManagerAddress;
     address private owner;
 
     // blockchain -> claimHash -> queued
@@ -21,9 +21,9 @@ contract ClaimsHelper is IBridgeContractStructs {
     mapping(string => RefundRequestClaim) public queuedRefundRequestClaims;
     mapping(string => RefundExecutedClaim) public queuedRefundExecutedClaims;
 
-    constructor(address _signedBatchManager) {
+    constructor(address _signedBatchManagerAddress) {
         owner = msg.sender;
-        signedBatchManager = _signedBatchManager;
+        signedBatchManagerAddress = _signedBatchManagerAddress;
     }
 
     function getClaimBRC(string calldata _id) external view returns (BridgingRequestClaim memory claim) {
@@ -77,12 +77,12 @@ contract ClaimsHelper is IBridgeContractStructs {
         return true;
     }
 
-    function setClaimsManager(address _claimsManager) external onlyOwner {
-        claimsManager = _claimsManager;
+    function setClaimsManager(address _claimsManagerAddress) external onlyOwner {
+        claimsManagerAddress = _claimsManagerAddress;
     }
     
     modifier onlyClaimsManager() {
-        if (msg.sender != address(claimsManager)) revert NotClaimsManager();
+        if (msg.sender != address(claimsManagerAddress)) revert NotClaimsManager();
         _;
     }
 
@@ -92,7 +92,7 @@ contract ClaimsHelper is IBridgeContractStructs {
     }
 
     modifier onlySignedBatchManagerOrClaimsManager() {
-        if (msg.sender != address(signedBatchManager) && msg.sender != address(claimsManager))
+        if (msg.sender != address(signedBatchManagerAddress) && msg.sender != address(claimsManagerAddress))
             revert NotSignedBatchManagerOrBridgeContract();
         _;
     }

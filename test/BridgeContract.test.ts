@@ -1535,7 +1535,7 @@ describe("Bridge Contract", function () {
           1100
         );
         expect(nextBatchBlock).to.greaterThan(currentBlock + 1);
-        expect(await signedBatchManager.currentBatchBlock(_destinationChain)).to.equal(-1);
+        expect(await claimsManager.currentBatchBlock(_destinationChain)).to.equal(-1);
         expect(lastConfirmedTxNonce - lastBatchedTxNonce).to.be.lessThanOrEqual(1);
       });
     });
@@ -1605,16 +1605,8 @@ describe("Bridge Contract", function () {
       });
 
       it("Should reset current batch block and next timeout batch block when Batch Execution Failed Claims if confirmed", async function () {
-        const {
-          bridgeContract,
-          claimsManager,
-          signedBatchManager,
-          owner,
-          validators,
-          UTXOs,
-          validatorClaimsBEFC,
-          validatorsCardanoData,
-        } = await loadFixture(deployBridgeContractFixture);
+        const { bridgeContract, claimsManager, owner, validators, UTXOs, validatorClaimsBEFC, validatorsCardanoData } =
+          await loadFixture(deployBridgeContractFixture);
 
         await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", validatorsCardanoData, 100);
 
@@ -1629,7 +1621,7 @@ describe("Bridge Contract", function () {
         const currentBlock = await ethers.provider.getBlockNumber();
 
         expect(
-          await signedBatchManager.currentBatchBlock(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID)
+          await claimsManager.currentBatchBlock(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID)
         ).to.equal(-1);
         expect(nextBatchBlock).to.greaterThan(currentBlock + 1);
       });
@@ -1902,6 +1894,9 @@ describe("Bridge Contract", function () {
 
         expect(confirmedTxs.length).to.equal(1);
         expect(confirmedTxs[0].nonce).to.equal(1);
+        expect(confirmedTxs[0].observedTransactionHash).to.equal(
+          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash
+        );
         expect(confirmedTxs[0].blockHeight).to.be.lessThan(
           await claimsManager.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID)
         );
@@ -2008,13 +2003,132 @@ describe("Bridge Contract", function () {
         );
         expect(confirmedTxs.length).to.equal(2);
         expect(confirmedTxs[0].nonce).to.equal(1);
+        expect(confirmedTxs[0].observedTransactionHash).to.equal(
+          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash
+        );
         expect(confirmedTxs[0].blockHeight).to.be.lessThan(blockNum);
         expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
         expect(confirmedTxs[0].receivers[0].amount).to.equal(expectedReceiversAmount);
         expect(confirmedTxs[1].nonce).to.equal(2);
+        expect(confirmedTxs[1].observedTransactionHash).to.equal(
+          validatorClaimsBRC2.bridgingRequestClaims[0].observedTransactionHash
+        );
+        expect(confirmedTxs[1].blockHeight).to.be.lessThan(blockNum);
+      });
+
+      it("GetConfirmedTransactions should return transactions with appropriate Observed Transaction Hashes", async function () {
+        const {
+          bridgeContract,
+          owner,
+          UTXOs,
+          validators,
+          validatorClaimsBRC,
+          validatorsCardanoData,
+          claimsManager,
+          hre,
+        } = await loadFixture(deployBridgeContractFixture);
+
+        await bridgeContract
+          .connect(owner)
+          .registerChain(
+            validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+            UTXOs,
+            "0x",
+            "0x",
+            validatorsCardanoData,
+            1000
+          );
+        await bridgeContract
+          .connect(owner)
+          .registerChain(
+            validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+            UTXOs,
+            "0x",
+            "0x",
+            validatorsCardanoData,
+            1000
+          );
+
+        const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
+
+        // Impersonate as ClaimsManager in order to set Next Timeout Block value
+        const claimManagerAddress = await claimsManager.getAddress();
+
+        var signer = await impersonateAsContractAndMintFunds(claimManagerAddress);
+
+        await bridgeContract
+          .connect(signer)
+          .setNextTimeoutBlock(
+            validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+            Number(firstTimestampBlockNumber + 100)
+          );
+
+        await hre.network.provider.request({
+          method: "hardhat_stopImpersonatingAccount",
+          params: [claimManagerAddress],
+        });
+
+        const validatorClaimsBRC2 = {
+          ...validatorClaimsBRC,
+          bridgingRequestClaims: [
+            {
+              ...validatorClaimsBRC.bridgingRequestClaims[0],
+              observedTransactionHash: "0x676732344",
+            },
+          ],
+        };
+
+        const validatorClaimsBRC3 = {
+          ...validatorClaimsBRC,
+          bridgingRequestClaims: [
+            {
+              ...validatorClaimsBRC.bridgingRequestClaims[0],
+              observedTransactionHash: "0x782748343",
+            },
+          ],
+        };
+
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC3);
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC3);
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC3);
+        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC3);
+
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC2);
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC2);
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC2);
+        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC2);
+
+        const confirmedTxs = await bridgeContract
+          .connect(validators[0])
+          .getConfirmedTransactions(validatorClaimsBRC3.bridgingRequestClaims[0].destinationChainID);
+
+        const expectedReceiversAddress = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress;
+        const expectedReceiversAmount = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount;
+
+        const blockNum = await bridgeContract.nextTimeoutBlock(
+          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID
+        );
+        expect(confirmedTxs.length).to.equal(2);
+        expect(confirmedTxs[0].nonce).to.equal(1);
+        expect(confirmedTxs[0].observedTransactionHash).to.equal(
+          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash
+        );
+        expect(confirmedTxs[0].blockHeight).to.be.lessThan(blockNum);
+        expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
+        expect(confirmedTxs[0].receivers[0].amount).to.equal(expectedReceiversAmount);
+        expect(confirmedTxs[1].nonce).to.equal(2);
+        expect(confirmedTxs[1].observedTransactionHash).to.equal(
+          validatorClaimsBRC3.bridgingRequestClaims[0].observedTransactionHash
+        );
         expect(confirmedTxs[1].blockHeight).to.be.lessThan(blockNum);
       });
     });
+
     describe("Batch creation", function () {
       it("SignedBatch submition should be reverted if chain is not registered", async function () {
         const { bridgeContract, validators, owner, validatorClaimsBRC, UTXOs, validatorsCardanoData } =
@@ -2273,6 +2387,7 @@ describe("Bridge Contract", function () {
         const {
           bridgeContract,
           signedBatchManager,
+          claimsManager,
           owner,
           validators,
           UTXOs,
@@ -2319,7 +2434,7 @@ describe("Bridge Contract", function () {
 
         expect(
           (
-            await signedBatchManager
+            await claimsManager
               .connect(validators[0])
               .confirmedSignedBatches(signedBatch.destinationChainId, signedBatch.id)
           ).id
@@ -2327,7 +2442,7 @@ describe("Bridge Contract", function () {
 
         expect(
           (
-            await signedBatchManager
+            await claimsManager
               .connect(validators[0])
               .confirmedSignedBatches(signedBatch.destinationChainId, signedBatch.id)
           ).rawTransaction
@@ -2335,7 +2450,7 @@ describe("Bridge Contract", function () {
 
         expect(
           (
-            await signedBatchManager
+            await claimsManager
               .connect(validators[0])
               .confirmedSignedBatches(signedBatch.destinationChainId, signedBatch.id)
           ).multisigSignature
@@ -2343,7 +2458,7 @@ describe("Bridge Contract", function () {
 
         expect(
           (
-            await signedBatchManager
+            await claimsManager
               .connect(validators[0])
               .confirmedSignedBatches(signedBatch.destinationChainId, signedBatch.id)
           ).feePayerMultisigSignature

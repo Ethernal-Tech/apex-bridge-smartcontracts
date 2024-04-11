@@ -36,6 +36,7 @@ interface IBridgeContractStructs {
     }
 
     struct ConfirmedTransaction {
+        string  observedTransactionHash;
         uint256 nonce;
         uint256 blockHeight;
         Receiver[] receivers;
@@ -168,6 +169,7 @@ interface IBridgeContractStructs {
     error NotBridgeContract();
     error NotClaimsManager();
     error NotClaimsHelper();
+    error NotSignedBatchManager();
     error NotClaimsManagerOrBridgeContract();
     error NotSignedBatchManagerOrBridgeContract();
     error NotEnoughBridgingTokensAwailable(string _claimTransactionHash);
