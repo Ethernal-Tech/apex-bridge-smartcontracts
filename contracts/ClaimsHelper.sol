@@ -26,10 +26,6 @@ contract ClaimsHelper is IBridgeContractStructs {
         signedBatchManagerAddress = _signedBatchManagerAddress;
     }
 
-    function getClaimBRC(string calldata _id) external view returns (BridgingRequestClaim memory claim) {
-        return queuedBridgingRequestsClaims[_id];
-    }
-
     function addToQueuedBridgingRequestsClaims(BridgingRequestClaim calldata _claim) external onlyClaimsManager {
         queuedBridgingRequestsClaims[_claim.observedTransactionHash] = _claim;
     }
@@ -80,7 +76,7 @@ contract ClaimsHelper is IBridgeContractStructs {
     function setClaimsManager(address _claimsManagerAddress) external onlyOwner {
         claimsManagerAddress = _claimsManagerAddress;
     }
-    
+
     modifier onlyClaimsManager() {
         if (msg.sender != address(claimsManagerAddress)) revert NotClaimsManager();
         _;

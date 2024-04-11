@@ -153,7 +153,9 @@ contract BridgeContract is IBridgeContract {
             return 0;
         }
 
-        return claimsManager.getNewBatchId(_destinationChain);
+        (uint256 batchId, ) = claimsManager.lastConfirmedBatch(_destinationChain);
+
+        return batchId + 1;
     }
 
     // Will return confirmed transactions until NEXT_BATCH_TIMEOUT_BLOCK or maximum number of transactions that
@@ -208,7 +210,8 @@ contract BridgeContract is IBridgeContract {
     function getRawTransactionFromLastBatch(
         string calldata _destinationChain
     ) external view override returns (string memory) {
-        return claimsManager.getRawTransactionFromLastBatch(_destinationChain);
+        (, string memory _rawTransaction) = claimsManager.lastConfirmedBatch(_destinationChain);
+        return _rawTransaction;
     }
 
     function setClaimsManager(address _claimsManager) external onlyOwner {

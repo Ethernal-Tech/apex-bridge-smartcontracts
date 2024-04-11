@@ -304,16 +304,8 @@ contract ClaimsManager is IBridgeContractStructs {
         return voted[Strings.toString(lastConfirmedBatch[_destinationChain].id + 1)][addr];
     }
 
-    function getNewBatchId(string calldata _destinationChain) public view onlyBridgeContract returns (uint256 v) {
-        return lastConfirmedBatch[_destinationChain].id + 1;
-    }
-
     function getConfirmedBatch(string calldata _destinationChain) external view returns (ConfirmedBatch memory batch) {
         return lastConfirmedBatch[_destinationChain];
-    }
-
-    function getRawTransactionFromLastBatch(string calldata _destinationChain) external view returns (string memory) {
-        return lastConfirmedBatch[_destinationChain].rawTransaction;
     }
 
     function shouldCreateBatch(string calldata _destinationChain) public view onlyBridgeContract returns (bool) {
