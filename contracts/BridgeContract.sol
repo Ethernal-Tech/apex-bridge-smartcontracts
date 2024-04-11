@@ -243,9 +243,4 @@ contract BridgeContract is IBridgeContract {
         if (msg.sender != owner) revert NotOwner();
         _;
     }
-
-    modifier onlyClaimsManager() {
-        if (msg.sender != address(claimsManager)) revert NotClaimsManager();
-        _;
-    }
 }

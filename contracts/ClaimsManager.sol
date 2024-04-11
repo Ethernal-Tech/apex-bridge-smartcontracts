@@ -293,14 +293,11 @@ contract ClaimsManager is IBridgeContractStructs {
         confirmedTransactions[_claim.destinationChainID][nextNonce].blockHeight = block.number;
     }
 
-    function isBatchCreated(string calldata _destinationChain) public view onlyBridgeContract returns (bool batch) {
+    function isBatchCreated(string calldata _destinationChain) public view returns (bool batch) {
         return currentBatchBlock[_destinationChain] != int(-1);
     }
 
-    function isBatchAlreadySubmittedBy(
-        string calldata _destinationChain,
-        address addr
-    ) public view onlyBridgeContract returns (bool ok) {
+    function isBatchAlreadySubmittedBy(string calldata _destinationChain, address addr) public view returns (bool ok) {
         return voted[Strings.toString(lastConfirmedBatch[_destinationChain].id + 1)][addr];
     }
 
@@ -308,7 +305,7 @@ contract ClaimsManager is IBridgeContractStructs {
         return lastConfirmedBatch[_destinationChain];
     }
 
-    function shouldCreateBatch(string calldata _destinationChain) public view onlyBridgeContract returns (bool) {
+    function shouldCreateBatch(string calldata _destinationChain) public view returns (bool) {
         uint256 cnt = getBatchingTxsCount(_destinationChain);
 
         return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
@@ -425,11 +422,6 @@ contract ClaimsManager is IBridgeContractStructs {
 
     modifier onlyOwner() {
         if (msg.sender != address(owner)) revert NotOwner();
-        _;
-    }
-
-    modifier onlyClaimsManager() {
-        if (msg.sender != address(this)) revert NotClaimsManager();
         _;
     }
 

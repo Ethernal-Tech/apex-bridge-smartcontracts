@@ -108,10 +108,4 @@ contract SignedBatchManager is IBridgeContractStructs {
         if (msg.sender != bridgeContract) revert NotBridgeContract();
         _;
     }
-
-    modifier onlyClaimsManagerOrBridgeContract() {
-        if (msg.sender != address(claimsManager) && msg.sender != bridgeContract)
-            revert NotClaimsManagerOrBridgeContract();
-        _;
-    }
 }
