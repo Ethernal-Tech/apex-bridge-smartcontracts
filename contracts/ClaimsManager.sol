@@ -11,7 +11,7 @@ import "hardhat/console.sol";
 
 contract ClaimsManager is IBridgeContractStructs {
     ValidatorsContract private validatorsContract;
-    BridgeContract private bridgeContract;
+    address private bridgeContractAddress;
     ClaimsHelper private claimsHelper;
     SignedBatchManager private signedBatchManager;
     UTXOsManager private utxosManager;
@@ -61,7 +61,7 @@ contract ClaimsManager is IBridgeContractStructs {
         uint8 _timeoutBlocksNumber
     ) {
         owner = msg.sender;
-        bridgeContract = BridgeContract(_bridgeContract);
+        bridgeContractAddress = _bridgeContract;
         claimsHelper = ClaimsHelper(_claimsHelper);
         validatorsContract = ValidatorsContract(_validatorsContract);
         signedBatchManager = SignedBatchManager(_signedBatchManager);
@@ -384,12 +384,12 @@ contract ClaimsManager is IBridgeContractStructs {
     }
 
     modifier onlyBridgeContract() {
-        if (msg.sender != address(bridgeContract)) revert NotBridgeContract();
+        if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
         _;
     }
 
     modifier onlySignedBatchManagerOrBridgeContract() {
-        if (msg.sender != address(signedBatchManager) && msg.sender != address(bridgeContract))
+        if (msg.sender != address(signedBatchManager) && msg.sender != bridgeContractAddress)
             revert NotSignedBatchManagerOrBridgeContract();
         _;
     }
