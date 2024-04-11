@@ -146,10 +146,7 @@ contract BridgeContract is IBridgeContract {
         }
 
         uint256 cnt = claimsManager.getBatchingTxsCount(_destinationChain);
-        console.log("CNT:", cnt);
-        console.log("maxNumberOfTransactions:", claimsManager.maxNumberOfTransactions());
-        console.log("blockNumber:", block.number);
-        console.log("nextTimeoutBlock:", claimsManager.nextTimeoutBlock(_destinationChain));
+
         return
             cnt >= claimsManager.maxNumberOfTransactions() ||
             (cnt > 0 && block.number >= claimsManager.nextTimeoutBlock(_destinationChain));

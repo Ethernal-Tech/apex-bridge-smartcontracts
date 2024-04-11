@@ -57,16 +57,16 @@ contract ClaimsManager is IBridgeContractStructs {
         address _claimsHelper,
         address _validatorsContract,
         address _signedBatchManager,
-        uint8 _timeoutBlocksNumber,
-        uint16 _maxNumberOfTransactions
+        uint16 _maxNumberOfTransactions,
+        uint8 _timeoutBlocksNumber
     ) {
         owner = msg.sender;
         bridgeContract = BridgeContract(_bridgeContract);
         claimsHelper = ClaimsHelper(_claimsHelper);
         validatorsContract = ValidatorsContract(_validatorsContract);
         signedBatchManager = SignedBatchManager(_signedBatchManager);
-        timeoutBlocksNumber = _timeoutBlocksNumber;
         maxNumberOfTransactions = _maxNumberOfTransactions;
+        timeoutBlocksNumber = _timeoutBlocksNumber;
     }
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {

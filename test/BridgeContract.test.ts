@@ -1336,8 +1336,6 @@ describe("Bridge Contract", function () {
           deployBridgeContractFixture
         );
 
-        console.log(await claimsManager.isChainRegistered(validatorClaimsBEC.batchExecutedClaims[0].chainID));
-
         await expect(
           bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBEC)
         ).to.be.revertedWithCustomError(claimsHelper, "ChainIsNotRegistered");
@@ -1837,6 +1835,7 @@ describe("Bridge Contract", function () {
           hre,
           claimsManager,
         } = await loadFixture(deployBridgeContractFixture);
+
         await bridgeContract
           .connect(owner)
           .registerChain(
@@ -1858,9 +1857,14 @@ describe("Bridge Contract", function () {
             1000
           );
 
+        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
+        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
         const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
 
-        // Impersonate as BridgeContract in order to set Next Timeout Block value
+        // Impersonate as ClaimsManager in order to set Next Timeout Block value
         const bridgeContractAddress = await bridgeContract.getAddress();
 
         var signer = await impersonateAsContractAndMintFunds(bridgeContractAddress);
@@ -1869,7 +1873,7 @@ describe("Bridge Contract", function () {
           .connect(signer)
           .setNextTimeoutBlock(
             validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
-            Number(firstTimestampBlockNumber + 5)
+            Number(firstTimestampBlockNumber)
           );
 
         await hre.network.provider.request({
@@ -1877,10 +1881,10 @@ describe("Bridge Contract", function () {
           params: [bridgeContractAddress],
         });
 
-        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
-        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
-        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
-        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
+        // wait for next timeout
+        for (let i = 0; i < 6; i++) {
+          await ethers.provider.send("evm_mine");
+        }
 
         await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC_ConfirmedTransactions);
         await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC_ConfirmedTransactions);
@@ -1991,13 +1995,11 @@ describe("Bridge Contract", function () {
         await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC3);
         await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC3);
         await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC3);
-        console.log("PUC 1");
 
         const confirmedTxs = await bridgeContract
           .connect(validators[0])
           .getConfirmedTransactions(validatorClaimsBRC3.bridgingRequestClaims[0].destinationChainID);
 
-        console.log("PUC 2");
         const expectedReceiversAddress = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress;
         const expectedReceiversAmount = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount;
 
