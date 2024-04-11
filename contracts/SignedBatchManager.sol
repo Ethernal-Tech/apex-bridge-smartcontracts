@@ -27,7 +27,9 @@ contract SignedBatchManager is IBridgeContractStructs {
         string memory _destinationChainId = _signedBatch.destinationChainId;
         uint256 _batchId = _signedBatch.id;
 
-        if (_batchId != claimsManager.getLastConfirmedBatch(_signedBatch.destinationChainId).id + 1) {
+        (uint256 sbId, ) = claimsManager.lastConfirmedBatch(_destinationChainId);
+
+        if (_batchId != sbId + 1) {
             revert WrongBatchNonce(_destinationChainId, _batchId);
         }
 
@@ -78,14 +80,11 @@ contract SignedBatchManager is IBridgeContractStructs {
                 ][i].feePayerMultisigSignature;
             }
 
+            (uint256 sbId, ) = claimsManager.lastConfirmedBatch(_signedBatch.destinationChainId);
+
             claimsManager.setLastConfirmedBatch(
                 _signedBatch.destinationChainId,
-                ConfirmedBatch(
-                    claimsManager.getLastConfirmedBatch(_signedBatch.destinationChainId).id + 1,
-                    _signedBatch.rawTransaction,
-                    multisigSignatures,
-                    feePayerMultisigSignatures
-                )
+                ConfirmedBatch(sbId + 1, _signedBatch.rawTransaction, multisigSignatures, feePayerMultisigSignatures)
             );
 
             claimsManager.setCurrentBatchBlock(_signedBatch.destinationChainId, int256(block.number));
