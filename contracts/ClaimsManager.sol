@@ -14,7 +14,7 @@ contract ClaimsManager is IBridgeContractStructs {
     BridgeContract private bridgeContract;
     ClaimsHelper private claimsHelper;
     UTXOsManager private utxosManager;
-    address private signedBatchManager;
+    address private signedBatchManagerAddress;
     address private owner;
 
     // BlockchainID -> claimsCounter
@@ -52,12 +52,12 @@ contract ClaimsManager is IBridgeContractStructs {
 
     string private constant LAST_OBSERVED_BLOCK_INFO_KEY = "LAST_OBSERVED_BLOCK_INFO";
 
-    constructor(address _bridgeContract, address _claimsHelper, address _validatorsContract, address _signedBatchManager) {
+    constructor(address _bridgeContract, address _claimsHelper, address _validatorsContract, address _signedBatchManagerAddress) {
         owner = msg.sender;
         bridgeContract = BridgeContract(_bridgeContract);
         claimsHelper = ClaimsHelper(_claimsHelper);
         validatorsContract = ValidatorsContract(_validatorsContract);
-        signedBatchManager = _signedBatchManager;
+        signedBatchManagerAddress = _signedBatchManagerAddress;
     }
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {
@@ -408,13 +408,13 @@ contract ClaimsManager is IBridgeContractStructs {
     }
 
     modifier onlySignedBatchManager() {
-        if (msg.sender != signedBatchManager)
+        if (msg.sender != signedBatchManagerAddress)
             revert NotSignedBatchManager();
         _;
     }
 
     modifier onlySignedBatchManagerOrBridgeContract() {
-        if (msg.sender != signedBatchManager && msg.sender != address(bridgeContract))
+        if (msg.sender != signedBatchManagerAddress && msg.sender != address(bridgeContract))
             revert NotSignedBatchManagerOrBridgeContract();
         _;
     }
