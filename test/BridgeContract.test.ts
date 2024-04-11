@@ -2052,11 +2052,11 @@ describe("Bridge Contract", function () {
         const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
 
         // Impersonate as ClaimsManager in order to set Next Timeout Block value
-        const claimManagerAddress = await claimsManager.getAddress();
+        const bridgeContratAddress = await bridgeContract.getAddress();
 
-        var signer = await impersonateAsContractAndMintFunds(claimManagerAddress);
+        var signer = await impersonateAsContractAndMintFunds(bridgeContratAddress);
 
-        await bridgeContract
+        await claimsManager
           .connect(signer)
           .setNextTimeoutBlock(
             validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
@@ -2065,7 +2065,7 @@ describe("Bridge Contract", function () {
 
         await hre.network.provider.request({
           method: "hardhat_stopImpersonatingAccount",
-          params: [claimManagerAddress],
+          params: [bridgeContratAddress],
         });
 
         const validatorClaimsBRC2 = {
@@ -2110,7 +2110,7 @@ describe("Bridge Contract", function () {
         const expectedReceiversAddress = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress;
         const expectedReceiversAmount = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount;
 
-        const blockNum = await bridgeContract.nextTimeoutBlock(
+        const blockNum = await claimsManager.nextTimeoutBlock(
           validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID
         );
         expect(confirmedTxs.length).to.equal(2);

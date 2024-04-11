@@ -48,7 +48,7 @@ contract ClaimsManager is IBridgeContractStructs {
     mapping(string => uint256) public lastConfirmedTxNonce;
 
     // chainID -> nonce (nonce of the last transaction from the executed batch)
-    mapping(string => uint256) private lastBatchedTxNonce;
+    mapping(string => uint256) public lastBatchedTxNonce;
 
     // Blochchain ID -> blockNumber
     mapping(string => int256) public currentBatchBlock;
@@ -73,7 +73,7 @@ contract ClaimsManager is IBridgeContractStructs {
         bridgeContractAddress = _bridgeContract;
         claimsHelper = ClaimsHelper(_claimsHelper);
         validatorsContract = ValidatorsContract(_validatorsContract);
-        signedBatchManager = SignedBatchManager(_signedBatchManager);
+        signedBatchManagerAddress = _signedBatchManager;
         maxNumberOfTransactions = _maxNumberOfTransactions;
         timeoutBlocksNumber = _timeoutBlocksNumber;
     }
@@ -190,7 +190,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             claimsHelper.setClaimConfirmed(_claim.destinationChainID, _claim.observedTransactionHash);
             //int256 currentBatchBlock = currentBatchBlock[_claim.destinationChainID];
-            uint256 confirmedTxCount = bridgeContract.getBatchingTxsCount(_claim.destinationChainID);
+            uint256 confirmedTxCount = getBatchingTxsCount(_claim.destinationChainID);
             if (
                 (currentBatchBlock[_claim.destinationChainID] != -1) && // check if there is no batch in progress
                 (confirmedTxCount == 0) && // check if there is no other confirmed transactions
@@ -407,10 +407,6 @@ contract ClaimsManager is IBridgeContractStructs {
         return bridgedAmount;
     }
 
-    function getLastBatchedTxNonce(string calldata _destinationChain) public view returns (uint256) {
-        return lastBatchedTxNonce[_destinationChain];
-    }
-
     function getLastConfirmedBatch(string calldata _chainId) external view returns (ConfirmedBatch memory) {
         return lastConfirmedBatch[_chainId];
     }
@@ -461,7 +457,7 @@ contract ClaimsManager is IBridgeContractStructs {
     }
 
     modifier onlyBridgeContract() {
-        if (msg.sender != address(bridgeContract)) revert NotBridgeContract();
+        if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
         _;
     }
 
@@ -471,7 +467,7 @@ contract ClaimsManager is IBridgeContractStructs {
     }
 
     modifier onlySignedBatchManagerOrBridgeContract() {
-        if (msg.sender != signedBatchManagerAddress && msg.sender != address(bridgeContract))
+        if (msg.sender != signedBatchManagerAddress && msg.sender != bridgeContractAddress)
             revert NotSignedBatchManagerOrBridgeContract();
         _;
     }
