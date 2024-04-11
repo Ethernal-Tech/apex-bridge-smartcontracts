@@ -11,9 +11,9 @@ import "hardhat/console.sol";
 
 contract ClaimsManager is IBridgeContractStructs {
     ValidatorsContract private validatorsContract;
-    address private bridgeContractAddress;
     ClaimsHelper private claimsHelper;
     UTXOsManager private utxosManager;
+    address private bridgeContractAddress;
     address private signedBatchManagerAddress;
     address private owner;
 

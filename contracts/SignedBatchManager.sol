@@ -10,11 +10,10 @@ import "./ClaimsManager.sol";
 import "hardhat/console.sol";
 
 contract SignedBatchManager is IBridgeContractStructs {
-    address private bridgeContract;
     ClaimsHelper private claimsHelper;
     ClaimsManager private claimsManager;
+    address private bridgeContract;
     address private owner;
-
 
     // BlockchanID -> batchId -> -signedBatchWithoutSignaturesHash -> SignedBatch[]
     mapping(string => mapping(uint256 => mapping(bytes32 => SignedBatch[]))) public signedBatches;
@@ -59,7 +58,7 @@ contract SignedBatchManager is IBridgeContractStructs {
         signedBatches[_signedBatch.destinationChainId][_signedBatch.id][signedBatchHash].push(_signedBatch);
 
         if (claimsManager.hasConsensus(signedBatchHash)) {
-            claimsManager.setConfirmedSignedBatches(_signedBatch.destinationChainId, _signedBatch.id,_signedBatch);
+            claimsManager.setConfirmedSignedBatches(_signedBatch.destinationChainId, _signedBatch.id, _signedBatch);
 
             claimsHelper.setClaimConfirmed(_signedBatch.destinationChainId, Strings.toString(_signedBatch.id));
 
@@ -79,12 +78,15 @@ contract SignedBatchManager is IBridgeContractStructs {
                 ][i].feePayerMultisigSignature;
             }
 
-            claimsManager.setLastConfirmedBatch(_signedBatch.destinationChainId, ConfirmedBatch(
-                claimsManager.getLastConfirmedBatch(_signedBatch.destinationChainId).id + 1,
-                _signedBatch.rawTransaction,
-                multisigSignatures,
-                feePayerMultisigSignatures
-            ));
+            claimsManager.setLastConfirmedBatch(
+                _signedBatch.destinationChainId,
+                ConfirmedBatch(
+                    claimsManager.getLastConfirmedBatch(_signedBatch.destinationChainId).id + 1,
+                    _signedBatch.rawTransaction,
+                    multisigSignatures,
+                    feePayerMultisigSignatures
+                )
+            );
 
             claimsManager.setCurrentBatchBlock(_signedBatch.destinationChainId, int256(block.number));
         }

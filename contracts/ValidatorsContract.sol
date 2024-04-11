@@ -9,6 +9,7 @@ contract ValidatorsContract is IBridgeContractStructs {
     uint256 constant PRECOMPILE_GAS = 150000;
 
     address private bridgeContractAddress;
+
     // BlockchainID -> validator address -> ValidatorCardanoData
     mapping(string => mapping(address => ValidatorCardanoData)) private validatorsCardanoDataPerAddress;
     // BlockchainID -> ValidatorCardanoData[]

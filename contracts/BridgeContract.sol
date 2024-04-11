@@ -18,9 +18,9 @@ contract BridgeContract is IBridgeContract {
     SignedBatchManager private signedBatchManager;
     SlotsManager private slotsManager;
 
-    Chain[] private chains;
-
     address private owner;
+
+    Chain[] private chains;
 
     constructor() {
         owner = msg.sender;
