@@ -197,7 +197,7 @@ contract ClaimsManager is IBridgeContractStructs {
                 (block.number > nextTimeoutBlock[_claim.destinationChainID])
             ) // check if the current block number is greater than the NEXT_BATCH_TIMEOUT_BLOCK
             {
-                nextTimeoutBlock[_claim.destinationChainID] = block.number + maxNumberOfTransactions;
+                nextTimeoutBlock[_claim.destinationChainID] = block.number + timeoutBlocksNumber;
             }
         }
     }
@@ -223,7 +223,7 @@ contract ClaimsManager is IBridgeContractStructs {
                 lastBatchedTxNonce[_claim.chainID] = confirmedSignedBatch.includedTransactions[txLength - 1];
             }
 
-            nextTimeoutBlock[_claim.chainID] = block.number + maxNumberOfTransactions;
+            nextTimeoutBlock[_claim.chainID] = block.number + timeoutBlocksNumber;
 
             utxosManager.addUTXOs(_claim.chainID, _claim.outputUTXOs);
             utxosManager.removeUsedUTXOs(_claim.chainID, confirmedSignedBatch.usedUTXOs);
@@ -243,7 +243,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             currentBatchBlock[_claim.chainID] = int(-1);
 
-            nextTimeoutBlock[_claim.chainID] = block.number + maxNumberOfTransactions;
+            nextTimeoutBlock[_claim.chainID] = block.number + timeoutBlocksNumber;
         }
     }
 
