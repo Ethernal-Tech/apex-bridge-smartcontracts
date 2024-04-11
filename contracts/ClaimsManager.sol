@@ -13,8 +13,8 @@ contract ClaimsManager is IBridgeContractStructs {
     ValidatorsContract private validatorsContract;
     BridgeContract private bridgeContract;
     ClaimsHelper private claimsHelper;
-    SignedBatchManager private signedBatchManager;
     UTXOsManager private utxosManager;
+    address private signedBatchManagerAddress;
     address private owner;
 
     // BlockchainID -> claimsCounter
@@ -41,14 +41,23 @@ contract ClaimsManager is IBridgeContractStructs {
     // chainID -> nonce (nonce of the last transaction from the executed batch)
     mapping(string => uint256) private lastBatchedTxNonce;
 
+    // Blochchain ID -> blockNumber
+    mapping(string => int256) public currentBatchBlock;
+
+    // BlockchainID -> ConfirmedBatch
+    mapping(string => ConfirmedBatch) public lastConfirmedBatch;
+
+    // BlockchainID -> batchId -> SignedBatch
+    mapping(string => mapping(uint256 => SignedBatch)) public confirmedSignedBatches;
+
     string private constant LAST_OBSERVED_BLOCK_INFO_KEY = "LAST_OBSERVED_BLOCK_INFO";
 
-    constructor(address _bridgeContract, address _claimsHelper, address _validatorsContract, address _signedBatchManager) {
+    constructor(address _bridgeContract, address _claimsHelper, address _validatorsContract, address _signedBatchManagerAddress) {
         owner = msg.sender;
         bridgeContract = BridgeContract(_bridgeContract);
         claimsHelper = ClaimsHelper(_claimsHelper);
         validatorsContract = ValidatorsContract(_validatorsContract);
-        signedBatchManager = SignedBatchManager(_signedBatchManager);
+        signedBatchManagerAddress = _signedBatchManagerAddress;
     }
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {
@@ -162,10 +171,10 @@ contract ClaimsManager is IBridgeContractStructs {
             _setConfirmedTransactions(_claim);
 
             claimsHelper.setClaimConfirmed(_claim.destinationChainID, _claim.observedTransactionHash);
-            int256 currentBatchBlock = signedBatchManager.currentBatchBlock(_claim.destinationChainID);
+            //int256 currentBatchBlock = currentBatchBlock[_claim.destinationChainID];
             uint256 confirmedTxCount = bridgeContract.getBatchingTxsCount(_claim.destinationChainID);
             if (
-                (currentBatchBlock != -1) && // check if there is no batch in progress
+                (currentBatchBlock[_claim.destinationChainID] != -1) && // check if there is no batch in progress
                 (confirmedTxCount == 0) && // check if there is no other confirmed transactions
                 (block.number > bridgeContract.nextTimeoutBlock(_claim.destinationChainID))
             ) // check if the current block number is greater than the NEXT_BATCH_TIMEOUT_BLOCK
@@ -188,9 +197,9 @@ contract ClaimsManager is IBridgeContractStructs {
 
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
-            signedBatchManager.resetCurrentBatchBlock(_claim.chainID);
+            currentBatchBlock[_claim.chainID] = int(-1);
 
-            SignedBatch memory confirmedSignedBatch = signedBatchManager.getConfirmedSignedBatch(
+            SignedBatch memory confirmedSignedBatch = getConfirmedSignedBatch(
                 _claim.chainID,
                 _claim.batchNonceID
             );
@@ -217,7 +226,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
-            signedBatchManager.resetCurrentBatchBlock(_claim.chainID);
+            currentBatchBlock[_claim.chainID] = int(-1);
 
             bridgeContract.setNextTimeoutBlock(_claim.chainID, block.number);
         }
@@ -268,6 +277,29 @@ contract ClaimsManager is IBridgeContractStructs {
         confirmedTransactions[_claim.destinationChainID][nextNonce].blockHeight = block.number;
     }
 
+    function isBatchCreated(string calldata _destinationChain) public view onlyBridgeContract returns (bool batch) {
+        return currentBatchBlock[_destinationChain] != int(-1);
+    }
+
+    function isBatchAlreadySubmittedBy(
+        string calldata _destinationChain,
+        address addr
+    ) public view onlyBridgeContract returns (bool ok) {
+        return voted[Strings.toString(lastConfirmedBatch[_destinationChain].id + 1)][addr];
+    }
+
+    function getNewBatchId(string calldata _destinationChain) public view onlyBridgeContract returns (uint256 v) {
+        return lastConfirmedBatch[_destinationChain].id + 1;
+    }
+
+    function getConfirmedBatch(string calldata _destinationChain) external view returns (ConfirmedBatch memory batch) {
+        return lastConfirmedBatch[_destinationChain];
+    }
+
+    function getRawTransactionFromLastBatch(string calldata _destinationChain) external view returns (string memory) {
+        return lastConfirmedBatch[_destinationChain].rawTransaction;
+    }
+
     function setVoted(
         string calldata _id,
         address _voter,
@@ -284,8 +316,16 @@ contract ClaimsManager is IBridgeContractStructs {
         chainTokenQuantity[_chainID] = _tokenQuantity;
     }
 
+    function setConfirmedSignedBatches(string calldata _chainId, uint256 _signedBatchId, SignedBatch calldata _signedBatch) external onlySignedBatchManager {
+        confirmedSignedBatches[_chainId][_signedBatchId] = _signedBatch;
+    }
+
     function getLastConfirmedTxNonce(string calldata _destinationChain) public view returns (uint256) {
         return lastConfirmedTxNonce[_destinationChain];
+    }
+
+    function setLastConfirmedBatch(string calldata _chainID, ConfirmedBatch memory _confirmedBatch) external onlySignedBatchManager {
+        lastConfirmedBatch[_chainID] = _confirmedBatch;
     }
 
     function getConfirmedTransaction(
@@ -295,14 +335,20 @@ contract ClaimsManager is IBridgeContractStructs {
         return confirmedTransactions[_destinationChain][_nonce];
     }
 
+    function getConfirmedSignedBatch(
+        string memory _destinationChain,
+        uint256 _nonce
+    ) private view returns (SignedBatch memory signedBatch) {
+        return confirmedSignedBatches[_destinationChain][_nonce];
+    }
+
     function getTokenAmountFromSignedBatch(
         string memory _destinationChain,
         uint256 _nonce
     ) public view returns (uint256) {
         uint256 bridgedAmount;
 
-        uint256[] memory _nonces = signedBatchManager
-            .getConfirmedSignedBatch(_destinationChain, _nonce)
+        uint256[] memory _nonces = getConfirmedSignedBatch(_destinationChain, _nonce)
             .includedTransactions;
         for (uint i = 0; i < _nonces.length; i++) {
             bridgedAmount += getNeededTokenQuantity(confirmedTransactions[_destinationChain][_nonces[i]].receivers);
@@ -313,6 +359,18 @@ contract ClaimsManager is IBridgeContractStructs {
 
     function getLastBatchedTxNonce(string calldata _destinationChain) public view returns (uint256) {
         return lastBatchedTxNonce[_destinationChain];
+    }
+
+    function getLastConfirmedBatch(string calldata _chainId) external view returns (ConfirmedBatch memory) {
+        return lastConfirmedBatch[_chainId];
+    }
+
+    function setCurrentBatchBlock(string calldata _chainId, int value) external onlySignedBatchManager {
+        currentBatchBlock[_chainId] = value;
+    }
+
+    function resetCurrentBatchBlock(string calldata _chainId) external onlyBridgeContract {
+        currentBatchBlock[_chainId] = int(-1);
     }
 
     function hasConsensus(bytes32 _hash) public view returns (bool) {
@@ -349,8 +407,14 @@ contract ClaimsManager is IBridgeContractStructs {
         _;
     }
 
+    modifier onlySignedBatchManager() {
+        if (msg.sender != signedBatchManagerAddress)
+            revert NotSignedBatchManager();
+        _;
+    }
+
     modifier onlySignedBatchManagerOrBridgeContract() {
-        if (msg.sender != address(signedBatchManager) && msg.sender != address(bridgeContract))
+        if (msg.sender != signedBatchManagerAddress && msg.sender != address(bridgeContract))
             revert NotSignedBatchManagerOrBridgeContract();
         _;
     }
