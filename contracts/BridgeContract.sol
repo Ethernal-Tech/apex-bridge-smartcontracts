@@ -145,11 +145,7 @@ contract BridgeContract is IBridgeContract {
             return false;
         }
 
-        uint256 cnt = claimsManager.getBatchingTxsCount(_destinationChain);
-
-        return
-            cnt >= claimsManager.maxNumberOfTransactions() ||
-            (cnt > 0 && block.number >= claimsManager.nextTimeoutBlock(_destinationChain));
+        return claimsManager.shouldCreateBatch(_destinationChain);
     }
 
     function getNextBatchId(string calldata _destinationChain) external view override returns (uint256 result) {

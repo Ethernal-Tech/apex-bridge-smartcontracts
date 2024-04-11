@@ -285,6 +285,12 @@ contract ClaimsManager is IBridgeContractStructs {
         confirmedTransactions[_claim.destinationChainID][nextNonce].blockHeight = block.number;
     }
 
+    function shouldCreateBatch(string calldata _destinationChain) public view onlyBridgeContract returns (bool) {
+        uint256 cnt = getBatchingTxsCount(_destinationChain);
+
+        return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
+    }
+
     function setVoted(
         string calldata _id,
         address _voter,
