@@ -1024,45 +1024,6 @@ describe("Bridge Contract", function () {
         ).to.be.true;
       });
 
-      it("Should increase claimsCounter after adding new Bridging Request Claim", async function () {
-        const { bridgeContract, claimsManager, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } =
-          await loadFixture(deployBridgeContractFixture);
-        await bridgeContract
-          .connect(owner)
-          .registerChain(
-            validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
-            UTXOs,
-            "0x",
-            "0x",
-            validatorsCardanoData,
-            10000
-          );
-        await bridgeContract
-          .connect(owner)
-          .registerChain(
-            validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
-            UTXOs,
-            "0x",
-            "0x",
-            validatorsCardanoData,
-            10000
-          );
-
-        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsBRC);
-        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsBRC);
-        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsBRC);
-
-        const claimsCounter = await claimsManager.claimsCounter(
-          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID
-        );
-
-        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsBRC);
-
-        expect(
-          await claimsManager.claimsCounter(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID)
-        ).to.equal(claimsCounter + BigInt(1));
-      });
-
       it("Should reject Bridging Request Claim if there is not enough bridging tokens", async function () {
         const { bridgeContract, claimsHelper, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } =
           await loadFixture(deployBridgeContractFixture);
@@ -1692,25 +1653,6 @@ describe("Bridge Contract", function () {
             validatorClaimsRRC.refundRequestClaims[0].observedTransactionHash
           )
         ).to.be.true;
-      });
-
-      it("Should increase claimsCounter after adding new Refund Request Claim", async function () {
-        const { bridgeContract, claimsManager, owner, validators, UTXOs, validatorClaimsRRC, validatorsCardanoData } =
-          await loadFixture(deployBridgeContractFixture);
-
-        await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", validatorsCardanoData, 100);
-
-        await bridgeContract.connect(validators[0]).submitClaims(validatorClaimsRRC);
-        await bridgeContract.connect(validators[1]).submitClaims(validatorClaimsRRC);
-        await bridgeContract.connect(validators[2]).submitClaims(validatorClaimsRRC);
-
-        const claimsCounter = await claimsManager.claimsCounter(validatorClaimsRRC.refundRequestClaims[0].chainID);
-
-        await bridgeContract.connect(validators[3]).submitClaims(validatorClaimsRRC);
-
-        expect(await claimsManager.claimsCounter(validatorClaimsRRC.refundRequestClaims[0].chainID)).to.equal(
-          claimsCounter + BigInt(1)
-        );
       });
     });
     describe("Submit new Refund Executed Claim", function () {

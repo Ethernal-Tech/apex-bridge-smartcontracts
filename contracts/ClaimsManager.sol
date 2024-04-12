@@ -26,9 +26,6 @@ contract ClaimsManager is IBridgeContractStructs {
     uint16 public maxNumberOfTransactions;
     uint8 private timeoutBlocksNumber;
 
-    // BlockchainID -> claimsCounter
-    mapping(string => uint256) public claimsCounter;
-
     // TansactionHash -> Voter -> Voted
     mapping(string => mapping(address => bool)) public voted;
 
@@ -168,8 +165,6 @@ contract ClaimsManager is IBridgeContractStructs {
         numberOfVotes[claimHash]++;
 
         if (hasConsensus(claimHash)) {
-            claimsCounter[_claim.destinationChainID]++;
-
             chainTokenQuantity[_claim.sourceChainID] -= getNeededTokenQuantity(_claim.receivers);
 
             utxosManager.addNewBridgingUTXO(_claim.sourceChainID, _claim.outputUTXO);
@@ -239,8 +234,6 @@ contract ClaimsManager is IBridgeContractStructs {
 
         if (hasConsensus(claimHash)) {
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
-
-            claimsCounter[_claim.chainID]++;
         }
     }
 
