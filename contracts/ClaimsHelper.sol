@@ -48,11 +48,6 @@ contract ClaimsHelper is IBridgeContractStructs {
         claimsManagerAddress = _claimsManagerAddress;
     }
 
-    modifier onlyClaimsManager() {
-        if (msg.sender != address(claimsManagerAddress)) revert NotClaimsManager();
-        _;
-    }
-
     modifier onlyOwner() {
         if (msg.sender != address(owner)) revert NotOwner();
         _;
