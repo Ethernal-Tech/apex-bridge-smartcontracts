@@ -29,12 +29,13 @@ contract ClaimsManager is IBridgeContractStructs {
     // TansactionHash -> Voter -> Voted
     mapping(string => mapping(address => bool)) public voted;
 
-    mapping(string => uint256) public chainTokenQuantity;
-
     // ClaimHash -> numberOfVotes
     mapping(bytes32 => uint8) public numberOfVotes;
 
-    // chainID -> nonce -> ConfirmedTransaction
+    // BlockchainId -> TokenQuantity
+    mapping(string => uint256) public chainTokenQuantity;
+
+    // BlockchainID -> nonce -> ConfirmedTransaction
     mapping(string => mapping(uint256 => ConfirmedTransaction)) private confirmedTransactions;
 
     // chainID -> nonce (nonce of the last confirmed transaction)
@@ -51,8 +52,6 @@ contract ClaimsManager is IBridgeContractStructs {
 
     // BlockchainID -> batchId -> SignedBatch
     mapping(string => mapping(uint256 => SignedBatch)) public confirmedSignedBatches;
-
-    string private constant LAST_OBSERVED_BLOCK_INFO_KEY = "LAST_OBSERVED_BLOCK_INFO";
 
     constructor(
         address _bridgeContract,
@@ -172,7 +171,7 @@ contract ClaimsManager is IBridgeContractStructs {
             _setConfirmedTransactions(_claim);
 
             claimsHelper.setClaimConfirmed(_claim.destinationChainID, _claim.observedTransactionHash);
-            //int256 currentBatchBlock = currentBatchBlock[_claim.destinationChainID];
+
             uint256 confirmedTxCount = getBatchingTxsCount(_claim.destinationChainID);
             if (
                 (currentBatchBlock[_claim.destinationChainID] != -1) && // check if there is no batch in progress
