@@ -176,8 +176,6 @@ contract ClaimsManager is IBridgeContractStructs {
 
             chainTokenQuantity[_claim.sourceChainID] -= getNeededTokenQuantity(_claim.receivers);
 
-            claimsHelper.addToQueuedBridgingRequestsClaims(_claim);
-
             queuedClaims[_claim.destinationChainID][claimsCounter[_claim.destinationChainID]] = _claim
                 .observedTransactionHash;
 
@@ -211,8 +209,6 @@ contract ClaimsManager is IBridgeContractStructs {
         if (hasConsensus(claimHash)) {
             chainTokenQuantity[_claim.chainID] += getTokenAmountFromSignedBatch(_claim.chainID, _claim.batchNonceID);
 
-            claimsHelper.addToQueuedBatchExecutedClaims(_claim);
-
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
             currentBatchBlock[_claim.chainID] = int(-1);
@@ -237,8 +233,6 @@ contract ClaimsManager is IBridgeContractStructs {
         numberOfVotes[claimHash]++;
 
         if (hasConsensus(claimHash)) {
-            claimsHelper.addToQueuedBatchExecutionFailedClaims(_claim);
-
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
             currentBatchBlock[_claim.chainID] = int(-1);
@@ -254,8 +248,6 @@ contract ClaimsManager is IBridgeContractStructs {
         numberOfVotes[claimHash]++;
 
         if (hasConsensus(claimHash)) {
-            claimsHelper.addToQueuedRefundRequestClaims(_claim);
-
             queuedClaims[_claim.chainID][claimsCounter[_claim.chainID]] = _claim.observedTransactionHash;
 
             queuedClaimsTypes[_claim.chainID][claimsCounter[_claim.chainID]] = ClaimTypes.REFUND_REQUEST;
@@ -273,8 +265,6 @@ contract ClaimsManager is IBridgeContractStructs {
         numberOfVotes[claimHash]++;
 
         if (hasConsensus(claimHash)) {
-            claimsHelper.addToQueuedRefundExecutedClaims(_claim);
-
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
         }
     }
