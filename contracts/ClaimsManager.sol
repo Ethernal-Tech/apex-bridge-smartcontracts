@@ -28,10 +28,6 @@ contract ClaimsManager is IBridgeContractStructs {
 
     // BlockchainID -> claimsCounter
     mapping(string => uint256) public claimsCounter;
-    // BlockchainID -> claimCounter -> claimHash
-    mapping(string => mapping(uint256 => string)) public queuedClaims;
-    // BlockchainID -> claimCounter -> claimType
-    mapping(string => mapping(uint256 => ClaimTypes)) public queuedClaimsTypes;
 
     // TansactionHash -> Voter -> Voted
     mapping(string => mapping(address => bool)) public voted;
@@ -176,12 +172,6 @@ contract ClaimsManager is IBridgeContractStructs {
 
             chainTokenQuantity[_claim.sourceChainID] -= getNeededTokenQuantity(_claim.receivers);
 
-            queuedClaims[_claim.destinationChainID][claimsCounter[_claim.destinationChainID]] = _claim
-                .observedTransactionHash;
-
-            queuedClaimsTypes[_claim.destinationChainID][claimsCounter[_claim.destinationChainID]] = ClaimTypes
-                .BRIDGING_REQUEST;
-
             utxosManager.addNewBridgingUTXO(_claim.sourceChainID, _claim.outputUTXO);
 
             _setConfirmedTransactions(_claim);
@@ -248,10 +238,6 @@ contract ClaimsManager is IBridgeContractStructs {
         numberOfVotes[claimHash]++;
 
         if (hasConsensus(claimHash)) {
-            queuedClaims[_claim.chainID][claimsCounter[_claim.chainID]] = _claim.observedTransactionHash;
-
-            queuedClaimsTypes[_claim.chainID][claimsCounter[_claim.chainID]] = ClaimTypes.REFUND_REQUEST;
-
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
             claimsCounter[_claim.chainID]++;
