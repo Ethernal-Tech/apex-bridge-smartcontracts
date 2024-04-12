@@ -94,7 +94,7 @@ contract ValidatorsContract is IBridgeContractStructs {
         return validatorsCount;
     }
 
-    function _updateValidatorCardanoData(string calldata _chainId) private {
+    function _updateValidatorCardanoData(string calldata _chainId) internal {
         // validatorsCardanoDataPerAddress must be set for all the validator addresses
         uint cnt = 0;
         for (uint i = 0; i < validatorsAddresses.length; i++) {
@@ -118,7 +118,7 @@ contract ValidatorsContract is IBridgeContractStructs {
         string memory signature,
         string memory verifyingKey,
         bool isTx
-    ) private view returns (bool) {
+    ) internal view returns (bool) {
         // solhint-disable-line avoid-low-level-calls
         (bool callSuccess, bytes memory returnData) = PRECOMPILE.staticcall{gas: PRECOMPILE_GAS}(
             abi.encode(message, signature, verifyingKey, isTx)

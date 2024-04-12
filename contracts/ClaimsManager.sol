@@ -415,7 +415,6 @@ contract ClaimsManager is IBridgeContractStructs {
         nextTimeoutBlock[_chainId] = _blockNumber + timeoutBlocksNumber;
     }
 
-    // TODO: who will set this value?
     function setUTXOsManager(address _utxosManager) external onlyOwner {
         utxosManager = UTXOsManager(_utxosManager);
     }
