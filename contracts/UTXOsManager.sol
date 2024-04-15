@@ -16,10 +16,13 @@ contract UTXOsManager is IBridgeContractStructs {
     // Blockchain ID -> UTXOs
     mapping(string => UTXOs) private chainUTXOs;
 
-    constructor(address _bridgeContractAddress, address _claimsManagerAddress) {
+    function initialize() public {
+        owner = msg.sender;
+    }
+
+    function setDependencies(address _bridgeContractAddress, address _claimsManagerAddress) external onlyOwner {
         bridgeContractAddress = _bridgeContractAddress;
         claimsManagerAddress = _claimsManagerAddress;
-        owner = msg.sender;
     }
 
     function getChainUTXOs(string memory _chainID) external view returns (UTXOs memory) {
@@ -112,10 +115,6 @@ contract UTXOsManager is IBridgeContractStructs {
             keccak256(bytes(a.txHash)) == keccak256(bytes(b.txHash)) &&
             a.txIndex == b.txIndex &&
             a.amount == b.amount;
-    }
-
-    function setClaimsManagerAddress(address _claimsManagerAddress) external onlyOwner {
-        claimsManagerAddress = _claimsManagerAddress;
     }
 
     modifier onlyBridgeContract() {

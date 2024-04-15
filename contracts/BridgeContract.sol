@@ -12,18 +12,32 @@ import "./ValidatorsContract.sol";
 import "hardhat/console.sol";
 
 contract BridgeContract is IBridgeContract {
-    ValidatorsContract private validatorsContract;
     ClaimsManager private claimsManager;
-    UTXOsManager private utxosManager;
     SignedBatchManager private signedBatchManager;
     SlotsManager private slotsManager;
+    UTXOsManager private utxosManager;
+    ValidatorsContract private validatorsContract;
 
     address private owner;
 
     Chain[] private chains;
 
-    constructor() {
+    function initialize() public {
         owner = msg.sender;
+    }
+
+    function setDependencies(
+        address _claimsManagerAddress,
+        address _signedBatchManagerAddress,
+        address _slotsManagerAddress,
+        address _utxosManagerAddress,
+        address _validatorsContractAddress
+    ) external onlyOwner {
+        claimsManager = ClaimsManager(_claimsManagerAddress);
+        signedBatchManager = SignedBatchManager(_signedBatchManagerAddress);
+        slotsManager = SlotsManager(_slotsManagerAddress);
+        utxosManager = UTXOsManager(_utxosManagerAddress);
+        validatorsContract = ValidatorsContract(_validatorsContractAddress);
     }
 
     // Claims
@@ -212,26 +226,6 @@ contract BridgeContract is IBridgeContract {
     ) external view override returns (string memory) {
         (, string memory _rawTransaction) = claimsManager.lastConfirmedBatch(_destinationChain);
         return _rawTransaction;
-    }
-
-    function setClaimsManager(address _claimsManager) external onlyOwner {
-        claimsManager = ClaimsManager(_claimsManager);
-    }
-
-    function setSignedBatchManager(address _signedBatchManager) external onlyOwner {
-        signedBatchManager = SignedBatchManager(_signedBatchManager);
-    }
-
-    function setUTXOsManager(address _utxosManager) external onlyOwner {
-        utxosManager = UTXOsManager(_utxosManager);
-    }
-
-    function setSlotsManager(SlotsManager _slotsManager) external onlyOwner {
-        slotsManager = SlotsManager(_slotsManager);
-    }
-
-    function setValidatorsContract(ValidatorsContract _validatorsContract) external onlyOwner {
-        validatorsContract = ValidatorsContract(_validatorsContract);
     }
 
     modifier onlyValidator() {

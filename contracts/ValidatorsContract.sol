@@ -9,6 +9,7 @@ contract ValidatorsContract is IBridgeContractStructs {
     uint256 constant PRECOMPILE_GAS = 150000;
 
     address private bridgeContractAddress;
+    address private owner;
 
     // BlockchainID -> validator address -> ValidatorCardanoData
     mapping(string => mapping(address => ValidatorCardanoData)) private validatorsCardanoDataPerAddress;
@@ -22,12 +23,16 @@ contract ValidatorsContract is IBridgeContractStructs {
 
     uint8 public validatorsCount;
 
-    constructor(address[] memory _validators, address _bridgeContractAddress) {
+    function initialize(address[] memory _validators) public {
+        owner = msg.sender;
         for (uint i = 0; i < _validators.length; i++) {
             isAddressValidator[_validators[i]] = true;
             validatorsAddresses.push(_validators[i]);
         }
         validatorsCount = uint8(_validators.length);
+    }
+
+    function setDependencies(address _bridgeContractAddress) external onlyOwner {
         bridgeContractAddress = _bridgeContractAddress;
     }
 
@@ -129,6 +134,11 @@ contract ValidatorsContract is IBridgeContractStructs {
 
     modifier onlyBridgeContract() {
         if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
+        _;
+    }
+
+    modifier onlyOwner() {
+        if (msg.sender != owner) revert NotOwner();
         _;
     }
 }

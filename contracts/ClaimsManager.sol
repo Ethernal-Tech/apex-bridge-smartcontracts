@@ -10,11 +10,11 @@ import "./UTXOsManager.sol";
 import "hardhat/console.sol";
 
 contract ClaimsManager is IBridgeContractStructs {
-    ValidatorsContract private validatorsContract;
-    ClaimsHelper private claimsHelper;
-    UTXOsManager private utxosManager;
     address private bridgeContractAddress;
+    ClaimsHelper private claimsHelper;
     address private signedBatchManagerAddress;
+    UTXOsManager private utxosManager;
+    ValidatorsContract private validatorsContract;
     address private owner;
 
     // BlockchainID -> bool
@@ -53,19 +53,24 @@ contract ClaimsManager is IBridgeContractStructs {
     // BlockchainID -> batchId -> SignedBatch
     mapping(string => mapping(uint256 => SignedBatch)) public confirmedSignedBatches;
 
-    constructor(
-        address _bridgeContract,
-        address _claimsHelper,
-        address _validatorsContract,
-        address _signedBatchManager,
+    function initialize() public {
+        owner = msg.sender;
+    }
+
+    function setDependencies(
+        address _bridgeContractAddress,
+        address _claimsHelperAddress,
+        address _signedBatchManagerAddress,
+        address _utxosManager,
+        address _validatorsContractAddress,
         uint16 _maxNumberOfTransactions,
         uint8 _timeoutBlocksNumber
-    ) {
-        owner = msg.sender;
-        bridgeContractAddress = _bridgeContract;
-        claimsHelper = ClaimsHelper(_claimsHelper);
-        validatorsContract = ValidatorsContract(_validatorsContract);
-        signedBatchManagerAddress = _signedBatchManager;
+    ) external onlyOwner {
+        bridgeContractAddress = _bridgeContractAddress;
+        claimsHelper = ClaimsHelper(_claimsHelperAddress);
+        signedBatchManagerAddress = _signedBatchManagerAddress;
+        utxosManager = UTXOsManager(_utxosManager);
+        validatorsContract = ValidatorsContract(_validatorsContractAddress);
         maxNumberOfTransactions = _maxNumberOfTransactions;
         timeoutBlocksNumber = _timeoutBlocksNumber;
     }
@@ -381,10 +386,6 @@ contract ClaimsManager is IBridgeContractStructs {
 
     function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external onlyBridgeContract {
         nextTimeoutBlock[_chainId] = _blockNumber + timeoutBlocksNumber;
-    }
-
-    function setUTXOsManager(address _utxosManager) external onlyOwner {
-        utxosManager = UTXOsManager(_utxosManager);
     }
 
     modifier onlyOwner() {

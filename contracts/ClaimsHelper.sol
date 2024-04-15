@@ -14,8 +14,12 @@ contract ClaimsHelper is IBridgeContractStructs {
     // blockchain -> claimHash -> queued
     mapping(string => mapping(string => bool)) public isClaimConfirmed;
 
-    constructor(address _signedBatchManagerAddress) {
+    function initialize() public {
         owner = msg.sender;
+    }
+
+    function setDependencies(address _claimsManagerAddress, address _signedBatchManagerAddress) external onlyOwner {
+        claimsManagerAddress = _claimsManagerAddress;
         signedBatchManagerAddress = _signedBatchManagerAddress;
     }
 
@@ -42,10 +46,6 @@ contract ClaimsHelper is IBridgeContractStructs {
         }
 
         return true;
-    }
-
-    function setClaimsManager(address _claimsManagerAddress) external onlyOwner {
-        claimsManagerAddress = _claimsManagerAddress;
     }
 
     modifier onlyOwner() {

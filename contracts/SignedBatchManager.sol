@@ -10,17 +10,26 @@ import "./ClaimsManager.sol";
 import "hardhat/console.sol";
 
 contract SignedBatchManager is IBridgeContractStructs {
+    address private bridgeContractAddress;
     ClaimsHelper private claimsHelper;
     ClaimsManager private claimsManager;
-    address private bridgeContract;
     address private owner;
 
     // BlockchanID -> batchId -> -signedBatchWithoutSignaturesHash -> SignedBatch[]
     mapping(string => mapping(uint256 => mapping(bytes32 => SignedBatch[]))) public signedBatches;
 
-    constructor(address _bridgeContract) {
+    function initialize() public {
         owner = msg.sender;
-        bridgeContract = _bridgeContract;
+    }
+
+    function setDependencies(
+        address _bridgeContractAddress,
+        address _claimsManagerAddress,
+        address _claimsHelperAddress
+    ) external onlyOwner {
+        bridgeContractAddress = _bridgeContractAddress;
+        claimsHelper = ClaimsHelper(_claimsHelperAddress);
+        claimsManager = ClaimsManager(_claimsManagerAddress);
     }
 
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridgeContract {
@@ -91,21 +100,13 @@ contract SignedBatchManager is IBridgeContractStructs {
         }
     }
 
-    function setClaimsManager(address _claimsManager) external onlyOwner {
-        claimsManager = ClaimsManager(_claimsManager);
-    }
-
-    function setClaimsHelper(address _claimsHelper) external onlyOwner {
-        claimsHelper = ClaimsHelper(_claimsHelper);
-    }
-
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
         _;
     }
 
     modifier onlyBridgeContract() {
-        if (msg.sender != bridgeContract) revert NotBridgeContract();
+        if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
         _;
     }
 }

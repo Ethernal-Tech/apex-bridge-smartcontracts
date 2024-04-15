@@ -7,9 +7,10 @@ import "./ValidatorsContract.sol";
 import "hardhat/console.sol";
 
 contract SlotsManager is IBridgeContractStructs {
-    ValidatorsContract private validatorsContract;
     address private bridgeContractAddress;
-    
+    ValidatorsContract private validatorsContract;
+    address private owner;
+
     // BlockChainID -> CardanoBlock
     mapping(string => CardanoBlock) private lastObservedBlock;
 
@@ -19,12 +20,20 @@ contract SlotsManager is IBridgeContractStructs {
     // BlockchanID -> hash(slot, hash) -> bool - validator voted already or not
     mapping(string => mapping(bytes32 => mapping(address => bool))) private slotValidatorVotedPerChain;
 
-    constructor(address _bridgeContractAddress, address _validatorsContract) {
-        bridgeContractAddress = _bridgeContractAddress;
-        validatorsContract = ValidatorsContract(_validatorsContract);
+    function initialize() public {
+        owner = msg.sender;
     }
 
-    function updateBlocks(string calldata chainID, CardanoBlock[] calldata blocks, address _caller) external onlyBridgeContract {
+    function setDependencies(address _bridgeContractAddress, address _validatorsContractAddress) external onlyOwner {
+        bridgeContractAddress = _bridgeContractAddress;
+        validatorsContract = ValidatorsContract(_validatorsContractAddress);
+    }
+
+    function updateBlocks(
+        string calldata chainID,
+        CardanoBlock[] calldata blocks,
+        address _caller
+    ) external onlyBridgeContract {
         // Check if the caller has already voted for this claim
         for (uint i = 0; i < blocks.length; i++) {
             CardanoBlock memory cblock = blocks[i];
@@ -34,8 +43,10 @@ contract SlotsManager is IBridgeContractStructs {
             }
             slotValidatorVotedPerChain[chainID][chash][_caller] = true;
             slotVotesPerChain[chainID][chash]++;
-            if (slotVotesPerChain[chainID][chash] >= validatorsContract.getQuorumNumberOfValidators() &&
-                cblock.blockSlot > lastObservedBlock[chainID].blockSlot) {
+            if (
+                slotVotesPerChain[chainID][chash] >= validatorsContract.getQuorumNumberOfValidators() &&
+                cblock.blockSlot > lastObservedBlock[chainID].blockSlot
+            ) {
                 lastObservedBlock[chainID] = cblock;
             }
         }
@@ -47,6 +58,11 @@ contract SlotsManager is IBridgeContractStructs {
 
     modifier onlyBridgeContract() {
         if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
+        _;
+    }
+
+    modifier onlyOwner() {
+        if (msg.sender != owner) revert NotOwner();
         _;
     }
 }
