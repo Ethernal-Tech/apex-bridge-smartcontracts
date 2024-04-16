@@ -11,10 +11,8 @@ import "hardhat/console.sol";
 
 contract SignedBatchManager is IBridgeContractStructs {
     address private bridgeContractAddress;
-    address private bridgeContractAddress;
     ClaimsHelper private claimsHelper;
     ClaimsManager private claimsManager;
-    address private bridgeContract;
     address private owner;
 
     // BlockchanID -> batchId -> -signedBatchWithoutSignaturesHash -> SignedBatch[]
