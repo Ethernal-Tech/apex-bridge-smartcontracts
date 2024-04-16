@@ -155,7 +155,7 @@ contract BridgeContract is IBridgeContract {
     function shouldCreateBatch(string calldata _destinationChain) public view override returns (bool batch) {
         if (
             claimsManager.isBatchCreated(_destinationChain) ||
-            claimsManager.isBatchAlreadySubmittedBy(_destinationChain, msg.sender)
+            signedBatchManager.isBatchAlreadySubmittedBy(_destinationChain, msg.sender)
         ) {
             return false;
         }
@@ -168,7 +168,7 @@ contract BridgeContract is IBridgeContract {
             return 0;
         }
 
-        (uint256 batchId, ) = claimsManager.lastConfirmedBatch(_destinationChain);
+        (uint256 batchId, ) = signedBatchManager.lastConfirmedBatch(_destinationChain);
 
         return batchId + 1;
     }
@@ -203,7 +203,7 @@ contract BridgeContract is IBridgeContract {
     function getConfirmedBatch(
         string calldata _destinationChain
     ) external view override returns (ConfirmedBatch memory batch) {
-        return claimsManager.getConfirmedBatch(_destinationChain);
+        return signedBatchManager.getConfirmedBatch(_destinationChain);
     }
 
     function getValidatorsCardanoData(
@@ -225,7 +225,7 @@ contract BridgeContract is IBridgeContract {
     function getRawTransactionFromLastBatch(
         string calldata _destinationChain
     ) external view override returns (string memory) {
-        (, string memory _rawTransaction) = claimsManager.lastConfirmedBatch(_destinationChain);
+        (, string memory _rawTransaction) = signedBatchManager.lastConfirmedBatch(_destinationChain);
         return _rawTransaction;
     }
 
