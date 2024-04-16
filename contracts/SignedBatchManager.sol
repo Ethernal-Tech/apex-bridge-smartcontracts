@@ -21,7 +21,7 @@ contract SignedBatchManager is IBridgeContractStructs {
 
     // BlockchainID -> ConfirmedBatch
     mapping(string => ConfirmedBatch) public lastConfirmedBatch;
-
+    
     function initialize() public {
         owner = msg.sender;
     }

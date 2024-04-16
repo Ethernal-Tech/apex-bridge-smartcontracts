@@ -143,6 +143,7 @@ contract BridgeContract is IBridgeContract {
         claimsManager.resetCurrentBatchBlock(_chainId);
 
         claimsManager.setNextTimeoutBlock(_chainId, block.number);
+        claimsManager.setNextTimeoutBlock(_chainId, block.number);
 
         emit newChainRegistered(_chainId);
     }
