@@ -47,9 +47,6 @@ contract ClaimsManager is IBridgeContractStructs {
     // Blochchain ID -> blockNumber
     mapping(string => int256) public currentBatchBlock;
 
-    // BlockchainID -> batchId -> SignedBatch
-    mapping(string => mapping(uint256 => SignedBatch)) public confirmedSignedBatches;
-
     function initialize() public {
         owner = msg.sender;
     }
@@ -199,7 +196,10 @@ contract ClaimsManager is IBridgeContractStructs {
 
             currentBatchBlock[_claim.chainID] = int(-1);
 
-            SignedBatch memory confirmedSignedBatch = confirmedSignedBatches[_claim.chainID][_claim.batchNonceID];
+            SignedBatch memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatch(
+                _claim.chainID,
+                _claim.batchNonceID
+            );
             uint256 txLength = confirmedSignedBatch.includedTransactions.length;
             if (txLength > 0) {
                 lastBatchedTxNonce[_claim.chainID] = confirmedSignedBatch.includedTransactions[txLength - 1];
@@ -290,14 +290,6 @@ contract ClaimsManager is IBridgeContractStructs {
         chainTokenQuantity[_chainID] = _tokenQuantity;
     }
 
-    function setConfirmedSignedBatches(
-        string calldata _chainId,
-        uint256 _signedBatchId,
-        SignedBatch calldata _signedBatch
-    ) external onlySignedBatchManager {
-        confirmedSignedBatches[_chainId][_signedBatchId] = _signedBatch;
-    }
-
     function getConfirmedTransaction(
         string memory _destinationChain,
         uint256 _nonce
@@ -333,7 +325,8 @@ contract ClaimsManager is IBridgeContractStructs {
     ) public view returns (uint256) {
         uint256 bridgedAmount;
 
-        uint256[] memory _nonces = confirmedSignedBatches[_destinationChain][_nonce].includedTransactions;
+        uint256[] memory _nonces = claimsHelper.getConfirmedSignedBatch(_destinationChain, _nonce).includedTransactions;
+
         for (uint i = 0; i < _nonces.length; i++) {
             bridgedAmount += getNeededTokenQuantity(confirmedTransactions[_destinationChain][_nonces[i]].receivers);
         }

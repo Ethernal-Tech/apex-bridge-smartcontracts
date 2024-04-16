@@ -73,7 +73,7 @@ contract SignedBatchManager is IBridgeContractStructs {
         signedBatches[_signedBatch.destinationChainId][_signedBatch.id][signedBatchHash].push(_signedBatch);
 
         if (claimsManager.hasConsensus(signedBatchHash)) {
-            claimsManager.setConfirmedSignedBatches(_signedBatch.destinationChainId, _signedBatch.id, _signedBatch);
+            claimsHelper.setConfirmedSignedBatches(_signedBatch.destinationChainId, _signedBatch.id, _signedBatch);
 
             claimsHelper.setClaimConfirmed(_signedBatch.destinationChainId, Strings.toString(_signedBatch.id));
 

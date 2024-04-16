@@ -14,6 +14,9 @@ contract ClaimsHelper is IBridgeContractStructs {
     // blockchain -> claimHash -> queued
     mapping(string => mapping(string => bool)) public isClaimConfirmed;
 
+    // BlockchainID -> batchId -> SignedBatch
+    mapping(string => mapping(uint256 => SignedBatch)) public confirmedSignedBatches;
+
     function initialize() public {
         owner = msg.sender;
     }
@@ -23,11 +26,26 @@ contract ClaimsHelper is IBridgeContractStructs {
         signedBatchManagerAddress = _signedBatchManagerAddress;
     }
 
+    function getConfirmedSignedBatch(
+        string calldata _chainId,
+        uint256 _batchId
+    ) external view returns (SignedBatch memory) {
+        return confirmedSignedBatches[_chainId][_batchId];
+    }
+
     function setClaimConfirmed(
         string calldata _chain,
         string calldata _observerHash
     ) external onlySignedBatchManagerOrClaimsManager {
         isClaimConfirmed[_chain][_observerHash] = true;
+    }
+
+    function setConfirmedSignedBatches(
+        string calldata _chainId,
+        uint256 _signedBatchId,
+        SignedBatch calldata _signedBatch
+    ) external onlySignedBatchManagerOrClaimsManager {
+        confirmedSignedBatches[_chainId][_signedBatchId] = _signedBatch;
     }
 
     function _equal(string memory a, string memory b) internal pure returns (bool) {
