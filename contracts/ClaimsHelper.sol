@@ -17,6 +17,9 @@ contract ClaimsHelper is IBridgeContractStructs {
     // BlockchainID -> batchId -> SignedBatch
     mapping(string => mapping(uint256 => SignedBatch)) public confirmedSignedBatches;
 
+    // Blochchain ID -> blockNumber
+    mapping(string => int256) public currentBatchBlock;
+
     function initialize() public {
         owner = msg.sender;
     }
@@ -31,6 +34,14 @@ contract ClaimsHelper is IBridgeContractStructs {
         uint256 _batchId
     ) external view returns (SignedBatch memory) {
         return confirmedSignedBatches[_chainId][_batchId];
+    }
+
+    function setCurrentBatchBlock(string calldata _chainId, int value) external onlySignedBatchManager {
+        currentBatchBlock[_chainId] = value;
+    }
+
+    function resetCurrentBatchBlock(string calldata _chainId) external onlyClaimsManager {
+        currentBatchBlock[_chainId] = int(-1);
     }
 
     function setClaimConfirmed(
@@ -67,13 +78,23 @@ contract ClaimsHelper is IBridgeContractStructs {
     }
 
     modifier onlyOwner() {
-        if (msg.sender != address(owner)) revert NotOwner();
+        if (msg.sender != owner) revert NotOwner();
         _;
     }
 
     modifier onlySignedBatchManagerOrClaimsManager() {
-        if (msg.sender != address(signedBatchManagerAddress) && msg.sender != address(claimsManagerAddress))
+        if (msg.sender != signedBatchManagerAddress && msg.sender != claimsManagerAddress)
             revert NotSignedBatchManagerOrBridgeContract();
+        _;
+    }
+
+    modifier onlySignedBatchManager() {
+        if (msg.sender != signedBatchManagerAddress) revert NotSignedBatchManager();
+        _;
+    }
+
+    modifier onlyClaimsManager() {
+        if (msg.sender != claimsManagerAddress) revert NotClaimsManager();
         _;
     }
 }

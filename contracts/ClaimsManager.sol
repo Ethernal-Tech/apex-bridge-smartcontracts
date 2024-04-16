@@ -44,9 +44,6 @@ contract ClaimsManager is IBridgeContractStructs {
     // chainID -> nonce (nonce of the last transaction from the executed batch)
     mapping(string => uint256) public lastBatchedTxNonce;
 
-    // Blochchain ID -> blockNumber
-    mapping(string => int256) public currentBatchBlock;
-
     function initialize() public {
         owner = msg.sender;
     }
@@ -173,7 +170,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             uint256 confirmedTxCount = getBatchingTxsCount(_claim.destinationChainID);
             if (
-                (currentBatchBlock[_claim.destinationChainID] != -1) && // check if there is no batch in progress
+                (claimsHelper.currentBatchBlock(_claim.destinationChainID) != -1) && // check if there is no batch in progress
                 (confirmedTxCount == 0) && // check if there is no other confirmed transactions
                 (block.number > nextTimeoutBlock[_claim.destinationChainID])
             ) // check if the current block number is greater than the NEXT_BATCH_TIMEOUT_BLOCK
@@ -194,7 +191,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
-            currentBatchBlock[_claim.chainID] = int(-1);
+            claimsHelper.resetCurrentBatchBlock(_claim.chainID);
 
             SignedBatch memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatch(
                 _claim.chainID,
@@ -221,7 +218,7 @@ contract ClaimsManager is IBridgeContractStructs {
         if (hasConsensus(claimHash)) {
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
 
-            currentBatchBlock[_claim.chainID] = int(-1);
+            claimsHelper.resetCurrentBatchBlock(_claim.chainID);
 
             nextTimeoutBlock[_claim.chainID] = block.number + timeoutBlocksNumber;
         }
@@ -265,7 +262,7 @@ contract ClaimsManager is IBridgeContractStructs {
     }
 
     function isBatchCreated(string calldata _destinationChain) public view returns (bool batch) {
-        return currentBatchBlock[_destinationChain] != int(-1);
+        return claimsHelper.currentBatchBlock(_destinationChain) != int(-1);
     }
 
     function shouldCreateBatch(string calldata _destinationChain) public view returns (bool) {
@@ -334,12 +331,8 @@ contract ClaimsManager is IBridgeContractStructs {
         return bridgedAmount;
     }
 
-    function setCurrentBatchBlock(string calldata _chainId, int value) external onlySignedBatchManager {
-        currentBatchBlock[_chainId] = value;
-    }
-
     function resetCurrentBatchBlock(string calldata _chainId) external onlyBridgeContract {
-        currentBatchBlock[_chainId] = int(-1);
+        claimsHelper.resetCurrentBatchBlock(_chainId);
     }
 
     function hasConsensus(bytes32 _hash) public view returns (bool) {
@@ -365,7 +358,7 @@ contract ClaimsManager is IBridgeContractStructs {
     }
 
     modifier onlyOwner() {
-        if (msg.sender != address(owner)) revert NotOwner();
+        if (msg.sender != owner) revert NotOwner();
         _;
     }
 

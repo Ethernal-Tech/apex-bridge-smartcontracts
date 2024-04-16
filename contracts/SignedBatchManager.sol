@@ -102,7 +102,7 @@ contract SignedBatchManager is IBridgeContractStructs {
                 feePayerMultisigSignatures
             );
 
-            claimsManager.setCurrentBatchBlock(_signedBatch.destinationChainId, int256(block.number));
+            claimsHelper.setCurrentBatchBlock(_signedBatch.destinationChainId, int256(block.number));
         }
     }
 
