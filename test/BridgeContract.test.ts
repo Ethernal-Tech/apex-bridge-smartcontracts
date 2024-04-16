@@ -1845,9 +1845,7 @@ describe("Bridge Contract", function () {
         expect(confirmedTxs[0].observedTransactionHash).to.equal(
           validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash
         );
-        expect(confirmedTxs[0].sourceChainID).to.equal(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID);
         expect(confirmedTxs[0].blockHeight).to.be.lessThan(
-          await claimsManager.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID)
           await claimsManager.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID)
         );
         expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
@@ -1855,16 +1853,6 @@ describe("Bridge Contract", function () {
       });
 
       it("GetConfirmedTransactions should not return more transaction than MAX_NUMBER_OF_TRANSACTIONS", async function () {
-        const {
-          bridgeContract,
-          owner,
-          UTXOs,
-          validators,
-          validatorClaimsBRC,
-          validatorsCardanoData,
-          claimsManager,
-          hre,
-        } = await loadFixture(deployBridgeContractFixture);
         const {
           bridgeContract,
           owner,
@@ -1959,7 +1947,6 @@ describe("Bridge Contract", function () {
         const expectedReceiversAmount = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount;
 
         const blockNum = await claimsManager.nextTimeoutBlock(
-        const blockNum = await claimsManager.nextTimeoutBlock(
           validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID
         );
         expect(confirmedTxs.length).to.equal(2);
@@ -1967,19 +1954,12 @@ describe("Bridge Contract", function () {
         expect(confirmedTxs[0].observedTransactionHash).to.equal(
           validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash
         );
-        expect(confirmedTxs[0].sourceChainID).to.equal(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID);
         expect(confirmedTxs[0].blockHeight).to.be.lessThan(blockNum);
         expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
         expect(confirmedTxs[0].receivers[0].amount).to.equal(expectedReceiversAmount);
         expect(confirmedTxs[1].nonce).to.equal(2);
         expect(confirmedTxs[1].observedTransactionHash).to.equal(
           validatorClaimsBRC2.bridgingRequestClaims[0].observedTransactionHash
-        );
-        expect(confirmedTxs[1].observedTransactionHash).to.equal(
-          validatorClaimsBRC2.bridgingRequestClaims[0].observedTransactionHash
-        );
-        expect(confirmedTxs[1].sourceChainID).to.equal(
-          validatorClaimsBRC2.bridgingRequestClaims[0].sourceChainID
         );
         expect(confirmedTxs[1].blockHeight).to.be.lessThan(blockNum);
       });

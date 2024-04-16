@@ -95,7 +95,6 @@ contract BridgeContract is IBridgeContract {
         uint256 _tokenQuantity
     ) external override onlyValidator {
         if (claimsManager.isChainRegistered(_chainId)) {
-        if (claimsManager.isChainRegistered(_chainId)) {
             revert ChainAlreadyRegistered(_chainId);
         }
         if (claimsManager.voted(_chainId, msg.sender)) {
@@ -129,7 +128,6 @@ contract BridgeContract is IBridgeContract {
         string calldata _addressFeePayer,
         uint256 _tokenQuantity
     ) internal {
-        claimsManager.setChainRegistered(_chainId);
         claimsManager.setChainRegistered(_chainId);
         chains.push();
         chains[chains.length - 1].id = _chainId;

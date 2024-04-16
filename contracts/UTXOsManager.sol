@@ -10,7 +10,6 @@ contract UTXOsManager is IBridgeContractStructs {
     address private bridgeContractAddress;
     address private claimsManagerAddress;
     address private owner;
-    address private owner;
 
     uint64 private utxoNonceCounter;
 
