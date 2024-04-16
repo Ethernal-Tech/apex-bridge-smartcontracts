@@ -10,11 +10,10 @@ import "./ClaimsManager.sol";
 import "hardhat/console.sol";
 
 contract SignedBatchManager is IBridgeContractStructs {
-    address private bridgeContract;
     ClaimsHelper private claimsHelper;
     ClaimsManager private claimsManager;
+    address private bridgeContract;
     address private owner;
-
 
     // BlockchanID -> batchId -> -signedBatchWithoutSignaturesHash -> SignedBatch[]
     mapping(string => mapping(uint256 => mapping(bytes32 => SignedBatch[]))) public signedBatches;
@@ -28,7 +27,9 @@ contract SignedBatchManager is IBridgeContractStructs {
         string memory _destinationChainId = _signedBatch.destinationChainId;
         uint256 _batchId = _signedBatch.id;
 
-        if (_batchId != claimsManager.getLastConfirmedBatch(_signedBatch.destinationChainId).id + 1) {
+        (uint256 sbId, ) = claimsManager.lastConfirmedBatch(_destinationChainId);
+
+        if (_batchId != sbId + 1) {
             revert WrongBatchNonce(_destinationChainId, _batchId);
         }
 
@@ -59,7 +60,7 @@ contract SignedBatchManager is IBridgeContractStructs {
         signedBatches[_signedBatch.destinationChainId][_signedBatch.id][signedBatchHash].push(_signedBatch);
 
         if (claimsManager.hasConsensus(signedBatchHash)) {
-            claimsManager.setConfirmedSignedBatches(_signedBatch.destinationChainId, _signedBatch.id,_signedBatch);
+            claimsManager.setConfirmedSignedBatches(_signedBatch.destinationChainId, _signedBatch.id, _signedBatch);
 
             claimsHelper.setClaimConfirmed(_signedBatch.destinationChainId, Strings.toString(_signedBatch.id));
 
@@ -79,12 +80,12 @@ contract SignedBatchManager is IBridgeContractStructs {
                 ][i].feePayerMultisigSignature;
             }
 
-            claimsManager.setLastConfirmedBatch(_signedBatch.destinationChainId, ConfirmedBatch(
-                claimsManager.getLastConfirmedBatch(_signedBatch.destinationChainId).id + 1,
-                _signedBatch.rawTransaction,
-                multisigSignatures,
-                feePayerMultisigSignatures
-            ));
+            (uint256 sbId, ) = claimsManager.lastConfirmedBatch(_signedBatch.destinationChainId);
+
+            claimsManager.setLastConfirmedBatch(
+                _signedBatch.destinationChainId,
+                ConfirmedBatch(sbId + 1, _signedBatch.rawTransaction, multisigSignatures, feePayerMultisigSignatures)
+            );
 
             claimsManager.setCurrentBatchBlock(_signedBatch.destinationChainId, int256(block.number));
         }
@@ -105,12 +106,6 @@ contract SignedBatchManager is IBridgeContractStructs {
 
     modifier onlyBridgeContract() {
         if (msg.sender != bridgeContract) revert NotBridgeContract();
-        _;
-    }
-
-    modifier onlyClaimsManagerOrBridgeContract() {
-        if (msg.sender != address(claimsManager) && msg.sender != bridgeContract)
-            revert NotClaimsManagerOrBridgeContract();
         _;
     }
 }

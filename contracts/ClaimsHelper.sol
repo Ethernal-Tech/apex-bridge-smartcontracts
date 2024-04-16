@@ -14,42 +14,9 @@ contract ClaimsHelper is IBridgeContractStructs {
     // blockchain -> claimHash -> queued
     mapping(string => mapping(string => bool)) public isClaimConfirmed;
 
-    // claimHash -> claim
-    mapping(string => BridgingRequestClaim) public queuedBridgingRequestsClaims;
-    mapping(string => BatchExecutedClaim) public queuedBatchExecutedClaims;
-    mapping(string => BatchExecutionFailedClaim) public queuedBatchExecutionFailedClaims;
-    mapping(string => RefundRequestClaim) public queuedRefundRequestClaims;
-    mapping(string => RefundExecutedClaim) public queuedRefundExecutedClaims;
-
     constructor(address _signedBatchManagerAddress) {
         owner = msg.sender;
         signedBatchManagerAddress = _signedBatchManagerAddress;
-    }
-
-    function getClaimBRC(string calldata _id) external view returns (BridgingRequestClaim memory claim) {
-        return queuedBridgingRequestsClaims[_id];
-    }
-
-    function addToQueuedBridgingRequestsClaims(BridgingRequestClaim calldata _claim) external onlyClaimsManager {
-        queuedBridgingRequestsClaims[_claim.observedTransactionHash] = _claim;
-    }
-
-    function addToQueuedBatchExecutedClaims(BatchExecutedClaim calldata _claim) external onlyClaimsManager {
-        queuedBatchExecutedClaims[_claim.observedTransactionHash] = _claim;
-    }
-
-    function addToQueuedRefundRequestClaims(RefundRequestClaim calldata _claim) external onlyClaimsManager {
-        queuedRefundRequestClaims[_claim.observedTransactionHash] = _claim;
-    }
-
-    function addToQueuedRefundExecutedClaims(RefundExecutedClaim calldata _claim) external onlyClaimsManager {
-        queuedRefundExecutedClaims[_claim.observedTransactionHash] = _claim;
-    }
-
-    function addToQueuedBatchExecutionFailedClaims(
-        BatchExecutionFailedClaim calldata _claim
-    ) external onlyClaimsManager {
-        queuedBatchExecutionFailedClaims[_claim.observedTransactionHash] = _claim;
     }
 
     function setClaimConfirmed(
@@ -79,11 +46,6 @@ contract ClaimsHelper is IBridgeContractStructs {
 
     function setClaimsManager(address _claimsManagerAddress) external onlyOwner {
         claimsManagerAddress = _claimsManagerAddress;
-    }
-    
-    modifier onlyClaimsManager() {
-        if (msg.sender != address(claimsManagerAddress)) revert NotClaimsManager();
-        _;
     }
 
     modifier onlyOwner() {

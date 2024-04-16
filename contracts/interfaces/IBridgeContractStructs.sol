@@ -2,14 +2,6 @@
 pragma solidity ^0.8.23;
 
 interface IBridgeContractStructs {
-    enum ClaimTypes {
-        BRIDGING_REQUEST,
-        BATCH_EXECUTED,
-        BATCH_EXECUTION_FAILED,
-        REFUND_REQUEST,
-        REFUND_EXECUTED
-    }
-
     struct SignedBatch {
         uint256 id;
         string destinationChainId;
@@ -36,7 +28,7 @@ interface IBridgeContractStructs {
     }
 
     struct ConfirmedTransaction {
-        string  observedTransactionHash;
+        string observedTransactionHash;
         uint256 nonce;
         uint256 blockHeight;
         Receiver[] receivers;
@@ -162,15 +154,12 @@ interface IBridgeContractStructs {
 
     error AlreadyConfirmed(string _claimTransactionHash);
     error AlreadyProposed(string _claimTransactionHash);
-    error InvalidSlot(uint256 _slot);
     error ChainAlreadyRegistered(string _claimId);
     error NotOwner();
     error NotValidator();
     error NotBridgeContract();
     error NotClaimsManager();
-    error NotClaimsHelper();
     error NotSignedBatchManager();
-    error NotClaimsManagerOrBridgeContract();
     error NotSignedBatchManagerOrBridgeContract();
     error NotEnoughBridgingTokensAwailable(string _claimTransactionHash);
     error CanNotCreateBatchYet(string _blockchainID);
@@ -178,9 +167,7 @@ interface IBridgeContractStructs {
     error ChainIsNotRegistered(string _chainId);
     error WrongBatchNonce(string _chainId, uint256 _nonce);
     error InvalidSignature();
-    //TODO: remove when not needed anymore
-    error RefundRequestClaimNotYetSupporter();
-    
+
     event newChainProposal(string indexed chainId, address indexed sender);
     event newChainRegistered(string indexed chainId);
 }
