@@ -47,9 +47,6 @@ contract ClaimsManager is IBridgeContractStructs {
     // Blochchain ID -> blockNumber
     mapping(string => int256) public currentBatchBlock;
 
-    // BlockchainID -> ConfirmedBatch
-    mapping(string => ConfirmedBatch) public lastConfirmedBatch;
-
     // BlockchainID -> batchId -> SignedBatch
     mapping(string => mapping(uint256 => SignedBatch)) public confirmedSignedBatches;
 
@@ -271,14 +268,6 @@ contract ClaimsManager is IBridgeContractStructs {
         return currentBatchBlock[_destinationChain] != int(-1);
     }
 
-    function isBatchAlreadySubmittedBy(string calldata _destinationChain, address addr) public view returns (bool ok) {
-        return voted[Strings.toString(lastConfirmedBatch[_destinationChain].id + 1)][addr];
-    }
-
-    function getConfirmedBatch(string calldata _destinationChain) external view returns (ConfirmedBatch memory batch) {
-        return lastConfirmedBatch[_destinationChain];
-    }
-
     function shouldCreateBatch(string calldata _destinationChain) public view returns (bool) {
         uint256 cnt = getBatchingTxsCount(_destinationChain);
 
@@ -307,13 +296,6 @@ contract ClaimsManager is IBridgeContractStructs {
         SignedBatch calldata _signedBatch
     ) external onlySignedBatchManager {
         confirmedSignedBatches[_chainId][_signedBatchId] = _signedBatch;
-    }
-
-    function setLastConfirmedBatch(
-        string calldata _chainID,
-        ConfirmedBatch memory _confirmedBatch
-    ) external onlySignedBatchManager {
-        lastConfirmedBatch[_chainID] = _confirmedBatch;
     }
 
     function getConfirmedTransaction(

@@ -19,6 +19,9 @@ contract SignedBatchManager is IBridgeContractStructs {
     // BlockchanID -> batchId -> -signedBatchWithoutSignaturesHash -> SignedBatch[]
     mapping(string => mapping(uint256 => mapping(bytes32 => SignedBatch[]))) public signedBatches;
 
+    // BlockchainID -> ConfirmedBatch
+    mapping(string => ConfirmedBatch) public lastConfirmedBatch;
+
     function initialize() public {
         owner = msg.sender;
     }
@@ -37,7 +40,7 @@ contract SignedBatchManager is IBridgeContractStructs {
         string memory _destinationChainId = _signedBatch.destinationChainId;
         uint256 _batchId = _signedBatch.id;
 
-        (uint256 sbId, ) = claimsManager.lastConfirmedBatch(_destinationChainId);
+        uint256 sbId = lastConfirmedBatch[_destinationChainId].id;
 
         if (_batchId != sbId + 1) {
             revert WrongBatchNonce(_destinationChainId, _batchId);
@@ -90,15 +93,25 @@ contract SignedBatchManager is IBridgeContractStructs {
                 ][i].feePayerMultisigSignature;
             }
 
-            (uint256 sbId, ) = claimsManager.lastConfirmedBatch(_signedBatch.destinationChainId);
+            uint256 sbId = lastConfirmedBatch[_signedBatch.destinationChainId].id;
 
-            claimsManager.setLastConfirmedBatch(
-                _signedBatch.destinationChainId,
-                ConfirmedBatch(sbId + 1, _signedBatch.rawTransaction, multisigSignatures, feePayerMultisigSignatures)
+            lastConfirmedBatch[_signedBatch.destinationChainId] = ConfirmedBatch(
+                sbId + 1,
+                _signedBatch.rawTransaction,
+                multisigSignatures,
+                feePayerMultisigSignatures
             );
 
             claimsManager.setCurrentBatchBlock(_signedBatch.destinationChainId, int256(block.number));
         }
+    }
+
+    function isBatchAlreadySubmittedBy(string calldata _destinationChain, address addr) public view returns (bool ok) {
+        return claimsManager.voted(Strings.toString(lastConfirmedBatch[_destinationChain].id + 1), addr);
+    }
+
+    function getConfirmedBatch(string calldata _destinationChain) external view returns (ConfirmedBatch memory batch) {
+        return lastConfirmedBatch[_destinationChain];
     }
 
     modifier onlyOwner() {
