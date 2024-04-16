@@ -52,7 +52,7 @@ contract BridgeContract is IBridgeContract {
     }
 
     // Slots
-    function submitLastObservableBlocks(
+    function submitLastObservedBlocks(
         string calldata chainID,
         CardanoBlock[] calldata blocks
     ) external override onlyValidator {
