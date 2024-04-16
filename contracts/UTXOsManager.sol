@@ -9,6 +9,7 @@ import "hardhat/console.sol";
 contract UTXOsManager is IBridgeContractStructs {
     address private bridgeContractAddress;
     address private claimsManagerAddress;
+    address private owner;
 
     uint64 private utxoNonceCounter;
 
@@ -18,6 +19,7 @@ contract UTXOsManager is IBridgeContractStructs {
     constructor(address _bridgeContractAddress, address _claimsManagerAddress) {
         bridgeContractAddress = _bridgeContractAddress;
         claimsManagerAddress = _claimsManagerAddress;
+        owner = msg.sender;
     }
 
     function getChainUTXOs(string memory _chainID) external view returns (UTXOs memory) {
@@ -112,8 +114,7 @@ contract UTXOsManager is IBridgeContractStructs {
             a.amount == b.amount;
     }
 
-    // TODO: who will call this function?
-    function setClaimsManagerAddress(address _claimsManagerAddress) external {
+    function setClaimsManagerAddress(address _claimsManagerAddress) external onlyOwner {
         claimsManagerAddress = _claimsManagerAddress;
     }
 
@@ -124,6 +125,11 @@ contract UTXOsManager is IBridgeContractStructs {
 
     modifier onlyClaimsManager() {
         if (msg.sender != claimsManagerAddress) revert NotClaimsManager();
+        _;
+    }
+
+    modifier onlyOwner() {
+        if (msg.sender != owner) revert NotOwner();
         _;
     }
 }
