@@ -12,7 +12,10 @@ import "hardhat/console.sol";
 contract ClaimsManager is IBridgeContractStructs {
     address private bridgeContractAddress;
     ClaimsHelper private claimsHelper;
+    ClaimsHelper private claimsHelper;
     address private signedBatchManagerAddress;
+    UTXOsManager private utxosManager;
+    ValidatorsContract private validatorsContract;
     UTXOsManager private utxosManager;
     ValidatorsContract private validatorsContract;
     address private owner;
@@ -56,7 +59,7 @@ contract ClaimsManager is IBridgeContractStructs {
         address _validatorsContractAddress,
         uint16 _maxNumberOfTransactions,
         uint8 _timeoutBlocksNumber
-    ) external onlyOwner {
+    ) onlyOwner {
         bridgeContractAddress = _bridgeContractAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         signedBatchManagerAddress = _signedBatchManagerAddress;

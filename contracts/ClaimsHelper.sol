@@ -26,6 +26,10 @@ contract ClaimsHelper is IBridgeContractStructs {
 
     function setDependencies(address _claimsManagerAddress, address _signedBatchManagerAddress) external onlyOwner {
         claimsManagerAddress = _claimsManagerAddress;
+    }
+
+    function setDependencies(address _claimsManagerAddress, address _signedBatchManagerAddress) external onlyOwner {
+        claimsManagerAddress = _claimsManagerAddress;
         signedBatchManagerAddress = _signedBatchManagerAddress;
     }
 
