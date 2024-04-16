@@ -31,7 +31,6 @@ interface IBridgeContractStructs {
         string observedTransactionHash;
         uint256 nonce;
         uint256 blockHeight;
-        string sourceChainID;
         Receiver[] receivers;
     }
 
