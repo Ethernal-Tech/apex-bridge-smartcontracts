@@ -52,11 +52,9 @@ contract ClaimsHelper is IBridgeContractStructs {
     }
 
     function setConfirmedSignedBatches(
-        string calldata _chainId,
-        uint256 _signedBatchId,
         SignedBatch calldata _signedBatch
     ) external onlySignedBatchManagerOrClaimsManager {
-        confirmedSignedBatches[_chainId][_signedBatchId] = _signedBatch;
+        confirmedSignedBatches[_signedBatch.destinationChainId][_signedBatch.id] = _signedBatch;
     }
 
     function _equal(string memory a, string memory b) internal pure returns (bool) {
