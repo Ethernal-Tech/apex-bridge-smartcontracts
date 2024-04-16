@@ -13,6 +13,7 @@ contract SignedBatchManager is IBridgeContractStructs {
     address private bridgeContractAddress;
     ClaimsHelper private claimsHelper;
     ClaimsManager private claimsManager;
+    address private bridgeContract;
     address private owner;
 
     // BlockchanID -> batchId -> -signedBatchWithoutSignaturesHash -> SignedBatch[]

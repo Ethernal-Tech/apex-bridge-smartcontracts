@@ -10,6 +10,7 @@ contract UTXOsManager is IBridgeContractStructs {
     address private bridgeContractAddress;
     address private claimsManagerAddress;
     address private owner;
+    address private owner;
 
     uint64 private utxoNonceCounter;
 
@@ -23,6 +24,7 @@ contract UTXOsManager is IBridgeContractStructs {
     function setDependencies(address _bridgeContractAddress, address _claimsManagerAddress) external onlyOwner {
         bridgeContractAddress = _bridgeContractAddress;
         claimsManagerAddress = _claimsManagerAddress;
+        owner = msg.sender;
     }
 
     function getChainUTXOs(string memory _chainID) external view returns (UTXOs memory) {

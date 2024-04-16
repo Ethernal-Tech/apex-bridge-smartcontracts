@@ -25,6 +25,14 @@ contract ClaimsManager is IBridgeContractStructs {
 
     uint16 public maxNumberOfTransactions;
     uint8 private timeoutBlocksNumber;
+    // BlockchainID -> bool
+    mapping(string => bool) public isChainRegistered;
+
+    // Blochchain ID -> blockNumber
+    mapping(string => uint256) public nextTimeoutBlock;
+
+    uint16 public maxNumberOfTransactions;
+    uint8 private timeoutBlocksNumber;
 
     // TansactionHash -> Voter -> Voted
     mapping(string => mapping(address => bool)) public voted;
@@ -257,6 +265,7 @@ contract ClaimsManager is IBridgeContractStructs {
         uint256 nextNonce = ++lastConfirmedTxNonce[_claim.destinationChainID];
         confirmedTransactions[_claim.destinationChainID][nextNonce].observedTransactionHash = _claim
             .observedTransactionHash;
+        confirmedTransactions[_claim.destinationChainID][nextNonce].sourceChainID = _claim.sourceChainID;
         confirmedTransactions[_claim.destinationChainID][nextNonce].nonce = nextNonce;
 
         for (uint i = 0; i < _claim.receivers.length; i++) {

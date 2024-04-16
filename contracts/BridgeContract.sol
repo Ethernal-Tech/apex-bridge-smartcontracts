@@ -66,7 +66,7 @@ contract BridgeContract is IBridgeContract {
     }
 
     // Slots
-    function submitLastObservableBlocks(
+    function submitLastObservedBlocks(
         string calldata chainID,
         CardanoBlock[] calldata blocks
     ) external override onlyValidator {
@@ -94,6 +94,7 @@ contract BridgeContract is IBridgeContract {
         ValidatorCardanoData calldata _validator,
         uint256 _tokenQuantity
     ) external override onlyValidator {
+        if (claimsManager.isChainRegistered(_chainId)) {
         if (claimsManager.isChainRegistered(_chainId)) {
             revert ChainAlreadyRegistered(_chainId);
         }
@@ -129,6 +130,7 @@ contract BridgeContract is IBridgeContract {
         uint256 _tokenQuantity
     ) internal {
         claimsManager.setChainRegistered(_chainId);
+        claimsManager.setChainRegistered(_chainId);
         chains.push();
         chains[chains.length - 1].id = _chainId;
         chains[chains.length - 1].utxos = _initialUTXOs;
@@ -142,6 +144,7 @@ contract BridgeContract is IBridgeContract {
 
         claimsManager.resetCurrentBatchBlock(_chainId);
 
+        claimsManager.setNextTimeoutBlock(_chainId, block.number);
         claimsManager.setNextTimeoutBlock(_chainId, block.number);
 
         emit newChainRegistered(_chainId);

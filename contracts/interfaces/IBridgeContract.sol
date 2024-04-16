@@ -11,7 +11,7 @@ abstract contract IBridgeContract is IBridgeContractStructs {
     function submitSignedBatch(SignedBatch calldata _signedBatch) external virtual;
 
     // Slots
-    function submitLastObservableBlocks(string calldata chainID, CardanoBlock[] calldata blocks) external virtual;
+    function submitLastObservedBlocks(string calldata chainID, CardanoBlock[] calldata blocks) external virtual;
 
     // Chain registration through some kind of governance
     function registerChain(
