@@ -36,53 +36,59 @@ describe("Bridge Contract", function () {
     const BridgeContract = await ethers.getContractFactory("BridgeContract");
     const bridgeContract = await BridgeContract.deploy();
 
-    const ValidatorsContract = await ethers.getContractFactory("ValidatorsContract");
-    const validatorsContract = await ValidatorsContract.deploy(validators, bridgeContract.target);
-
-    const SlotsManager = await ethers.getContractFactory("SlotsManager");
-    const slotsManager = await SlotsManager.deploy(bridgeContract.target, validatorsContract.target);
-
-    const SignedBatchManager = await ethers.getContractFactory("SignedBatchManager");
-    const signedBatchManager = await SignedBatchManager.deploy(bridgeContract.target);
-
     const ClaimsHelper = await ethers.getContractFactory("ClaimsHelper");
-    const claimsHelper = await ClaimsHelper.deploy(signedBatchManager.target);
+    const claimsHelper = await ClaimsHelper.deploy();
 
     const ClaimsManager = await ethers.getContractFactory("ClaimsManager");
-    const claimsManager = await ClaimsManager.deploy(
+    const claimsManager = await ClaimsManager.deploy();
+
+    const SignedBatchManager = await ethers.getContractFactory("SignedBatchManager");
+    const signedBatchManager = await SignedBatchManager.deploy();
+
+    const SlotsManager = await ethers.getContractFactory("SlotsManager");
+    const slotsManager = await SlotsManager.deploy();
+
+    const UTXOsManager = await ethers.getContractFactory("UTXOsManager");
+    const uTXOsManager = await UTXOsManager.deploy();
+
+    const ValidatorsContract = await ethers.getContractFactory("ValidatorsContract");
+    const validatorsContract = await ValidatorsContract.deploy();
+
+    await bridgeContract.initialize();
+    await claimsHelper.initialize();
+    await claimsManager.initialize();
+    await signedBatchManager.initialize();
+    await slotsManager.initialize();
+    await uTXOsManager.initialize();
+    await validatorsContract.initialize(validators);
+
+    await bridgeContract.setDependencies(
+      claimsManager.target,
+      signedBatchManager.target,
+      slotsManager.target,
+      uTXOsManager.target,
+      validatorsContract.target
+    );
+
+    await claimsHelper.setDependencies(claimsManager.target, signedBatchManager.target);
+
+    await claimsManager.setDependencies(
       bridgeContract.target,
       claimsHelper.target,
-      validatorsContract.target,
       signedBatchManager.target,
+      uTXOsManager.target,
+      validatorsContract.target,
       2,
       5
     );
 
-    const UTXOsManager = await ethers.getContractFactory("UTXOsManager");
-    const uTXOsManager = await UTXOsManager.deploy(bridgeContract.target, claimsManager.target);
+    await signedBatchManager.setDependencies(bridgeContract.target, claimsManager.target, claimsHelper.target);
 
-    await bridgeContract.setValidatorsContract(validatorsContract.target);
-    await bridgeContract.setSlotsManager(slotsManager.target);
-    await bridgeContract.setSignedBatchManager(signedBatchManager.target);
-    await bridgeContract.setClaimsManager(claimsManager.target);
-    await bridgeContract.setUTXOsManager(uTXOsManager.target);
+    await slotsManager.setDependencies(bridgeContract.target, validatorsContract.target);
 
-    //await claimsHelper.setSignedBatchManagerAddress(signedBatchManager.target);
+    await uTXOsManager.setDependencies(bridgeContract.target, claimsManager.target);
 
-    await uTXOsManager.setClaimsManagerAddress(claimsManager.target);
-
-    // impersonate as an owner to set contract dependencies
-    var signer = await impersonateAsContractAndMintFunds(owner.address);
-
-    await signedBatchManager.connect(signer).setClaimsHelper(claimsHelper.target);
-    await signedBatchManager.connect(signer).setClaimsManager(claimsManager.target);
-    await claimsHelper.connect(signer).setClaimsManager(claimsManager.target);
-    await claimsManager.connect(signer).setUTXOsManager(uTXOsManager.target);
-
-    await hre.network.provider.request({
-      method: "hardhat_stopImpersonatingAccount",
-      params: [owner.address],
-    });
+    await validatorsContract.setDependencies(bridgeContract.target);
 
     const UTXOs = {
       multisigOwnedUTXOs: [
@@ -1839,9 +1845,7 @@ describe("Bridge Contract", function () {
         expect(confirmedTxs[0].observedTransactionHash).to.equal(
           validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash
         );
-        expect(confirmedTxs[0].sourceChainID).to.equal(
-          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID
-        );
+        expect(confirmedTxs[0].sourceChainID).to.equal(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID);
         expect(confirmedTxs[0].blockHeight).to.be.lessThan(
           await claimsManager.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID)
         );
@@ -1951,9 +1955,7 @@ describe("Bridge Contract", function () {
         expect(confirmedTxs[0].observedTransactionHash).to.equal(
           validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash
         );
-        expect(confirmedTxs[0].sourceChainID).to.equal(
-          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID
-        );
+        expect(confirmedTxs[0].sourceChainID).to.equal(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID);
         expect(confirmedTxs[0].blockHeight).to.be.lessThan(blockNum);
         expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
         expect(confirmedTxs[0].receivers[0].amount).to.equal(expectedReceiversAmount);
@@ -1961,9 +1963,7 @@ describe("Bridge Contract", function () {
         expect(confirmedTxs[1].observedTransactionHash).to.equal(
           validatorClaimsBRC2.bridgingRequestClaims[0].observedTransactionHash
         );
-        expect(confirmedTxs[1].sourceChainID).to.equal(
-          validatorClaimsBRC2.bridgingRequestClaims[0].sourceChainID
-        );
+        expect(confirmedTxs[1].sourceChainID).to.equal(validatorClaimsBRC2.bridgingRequestClaims[0].sourceChainID);
         expect(confirmedTxs[1].blockHeight).to.be.lessThan(blockNum);
       });
 
@@ -2069,9 +2069,7 @@ describe("Bridge Contract", function () {
         expect(confirmedTxs[0].observedTransactionHash).to.equal(
           validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash
         );
-        expect(confirmedTxs[0].sourceChainID).to.equal(
-          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID
-        );
+        expect(confirmedTxs[0].sourceChainID).to.equal(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID);
         expect(confirmedTxs[0].blockHeight).to.be.lessThan(blockNum);
         expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
         expect(confirmedTxs[0].receivers[0].amount).to.equal(expectedReceiversAmount);
@@ -2079,9 +2077,7 @@ describe("Bridge Contract", function () {
         expect(confirmedTxs[1].observedTransactionHash).to.equal(
           validatorClaimsBRC3.bridgingRequestClaims[0].observedTransactionHash
         );
-        expect(confirmedTxs[1].sourceChainID).to.equal(
-          validatorClaimsBRC3.bridgingRequestClaims[0].sourceChainID
-        );
+        expect(confirmedTxs[1].sourceChainID).to.equal(validatorClaimsBRC3.bridgingRequestClaims[0].sourceChainID);
         expect(confirmedTxs[1].blockHeight).to.be.lessThan(blockNum);
       });
     });
