@@ -20,6 +20,9 @@ contract ClaimsHelper is IBridgeContractStructs {
     // Blochchain ID -> blockNumber
     mapping(string => int256) public currentBatchBlock;
 
+    // TansactionHash -> Voter -> Voted
+    mapping(string => mapping(address => bool)) public voted;
+
     function initialize() public {
         owner = msg.sender;
     }
@@ -55,6 +58,10 @@ contract ClaimsHelper is IBridgeContractStructs {
         SignedBatch calldata _signedBatch
     ) external onlySignedBatchManagerOrClaimsManager {
         confirmedSignedBatches[_signedBatch.destinationChainId][_signedBatch.id] = _signedBatch;
+    }
+
+    function setVoted(string calldata _id, address _voter, bool _value) external onlySignedBatchManagerOrClaimsManager {
+        voted[_id][_voter] = _value;
     }
 
     function _equal(string memory a, string memory b) internal pure returns (bool) {

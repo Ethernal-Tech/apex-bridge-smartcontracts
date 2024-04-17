@@ -97,7 +97,7 @@ contract BridgeContract is IBridgeContract {
         if (claimsManager.isChainRegistered(_chainId)) {
             revert ChainAlreadyRegistered(_chainId);
         }
-        if (claimsManager.voted(_chainId, msg.sender)) {
+        if (claimsManager.getVoted(_chainId, msg.sender)) {
             revert AlreadyProposed(_chainId);
         }
 

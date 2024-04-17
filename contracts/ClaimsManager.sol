@@ -26,9 +26,6 @@ contract ClaimsManager is IBridgeContractStructs {
     uint16 public maxNumberOfTransactions;
     uint8 private timeoutBlocksNumber;
 
-    // TansactionHash -> Voter -> Voted
-    mapping(string => mapping(address => bool)) public voted;
-
     // ClaimHash -> numberOfVotes
     mapping(bytes32 => uint8) public numberOfVotes;
 
@@ -73,7 +70,7 @@ contract ClaimsManager is IBridgeContractStructs {
                 revert ChainIsNotRegistered(_claim.sourceChainID);
             }
 
-            if (voted[_claim.observedTransactionHash][_caller]) {
+            if (claimsHelper.voted(_claim.observedTransactionHash, _caller)) {
                 revert AlreadyProposed(_claim.observedTransactionHash);
             }
 
@@ -93,7 +90,7 @@ contract ClaimsManager is IBridgeContractStructs {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
-            if (voted[_claim.observedTransactionHash][_caller]) {
+            if (claimsHelper.voted(_claim.observedTransactionHash, _caller)) {
                 revert AlreadyProposed(_claim.observedTransactionHash);
             }
 
@@ -109,7 +106,7 @@ contract ClaimsManager is IBridgeContractStructs {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
-            if (voted[_claim.observedTransactionHash][_caller]) {
+            if (claimsHelper.voted(_claim.observedTransactionHash, _caller)) {
                 revert AlreadyProposed(_claim.observedTransactionHash);
             }
 
@@ -125,7 +122,7 @@ contract ClaimsManager is IBridgeContractStructs {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
-            if (voted[_claim.observedTransactionHash][_caller]) {
+            if (claimsHelper.voted(_claim.observedTransactionHash, _caller)) {
                 revert AlreadyProposed(_claim.observedTransactionHash);
             }
 
@@ -141,7 +138,7 @@ contract ClaimsManager is IBridgeContractStructs {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
-            if (voted[_claim.observedTransactionHash][_caller]) {
+            if (claimsHelper.voted(_claim.observedTransactionHash, _caller)) {
                 revert AlreadyProposed(_claim.observedTransactionHash);
             }
 
@@ -155,7 +152,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
     function _submitClaimsBRC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
         BridgingRequestClaim memory _claim = _claims.bridgingRequestClaims[index];
-        voted[_claim.observedTransactionHash][_caller] = true;
+        claimsHelper.setVoted(_claim.observedTransactionHash, _caller, true);
         bytes32 claimHash = keccak256(abi.encode(_claim));
         numberOfVotes[claimHash]++;
 
@@ -182,7 +179,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
     function _submitClaimsBEC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
         BatchExecutedClaim memory _claim = _claims.batchExecutedClaims[index];
-        voted[_claim.observedTransactionHash][_caller] = true;
+        claimsHelper.setVoted(_claim.observedTransactionHash, _caller, true);
         bytes32 claimHash = keccak256(abi.encode(_claim));
         numberOfVotes[claimHash]++;
 
@@ -211,7 +208,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
     function _submitClaimsBEFC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
         BatchExecutionFailedClaim memory _claim = _claims.batchExecutionFailedClaims[index];
-        voted[_claim.observedTransactionHash][_caller] = true;
+        claimsHelper.setVoted(_claim.observedTransactionHash, _caller, true);
         bytes32 claimHash = keccak256(abi.encode(_claim));
         numberOfVotes[claimHash]++;
 
@@ -226,7 +223,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
     function _submitClaimsRRC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
         RefundRequestClaim memory _claim = _claims.refundRequestClaims[index];
-        voted[_claim.observedTransactionHash][_caller] = true;
+        claimsHelper.setVoted(_claim.observedTransactionHash, _caller, true);
         bytes32 claimHash = keccak256(abi.encode(_claim));
         numberOfVotes[claimHash]++;
 
@@ -237,7 +234,7 @@ contract ClaimsManager is IBridgeContractStructs {
 
     function _submitClaimsREC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
         RefundExecutedClaim memory _claim = _claims.refundExecutedClaims[index];
-        voted[_claim.observedTransactionHash][_caller] = true;
+        claimsHelper.setVoted(_claim.observedTransactionHash, _caller, true);
         bytes32 claimHash = keccak256(abi.encode(_claim));
         numberOfVotes[claimHash]++;
 
@@ -269,14 +266,6 @@ contract ClaimsManager is IBridgeContractStructs {
         uint256 cnt = getBatchingTxsCount(_destinationChain);
 
         return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
-    }
-
-    function setVoted(
-        string calldata _id,
-        address _voter,
-        bool _value
-    ) external onlySignedBatchManagerOrBridgeContract {
-        voted[_id][_voter] = _value;
     }
 
     function setNumberOfVotes(bytes32 _hash) external onlySignedBatchManagerOrBridgeContract {
@@ -355,6 +344,14 @@ contract ClaimsManager is IBridgeContractStructs {
 
     function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external onlyBridgeContract {
         nextTimeoutBlock[_chainId] = _blockNumber + timeoutBlocksNumber;
+    }
+
+    function setVoted(string calldata _id, address _voter, bool _value) external onlyBridgeContract {
+        claimsHelper.setVoted(_id, _voter, _value);
+    }
+
+    function getVoted(string calldata _id, address _voter) external view returns (bool) {
+        return claimsHelper.voted(_id, _voter);
     }
 
     modifier onlyOwner() {
