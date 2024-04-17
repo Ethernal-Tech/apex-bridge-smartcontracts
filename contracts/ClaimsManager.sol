@@ -26,9 +26,6 @@ contract ClaimsManager is IBridgeContractStructs {
     uint16 public maxNumberOfTransactions;
     uint8 private timeoutBlocksNumber;
 
-    // ClaimHash -> numberOfVotes
-    mapping(bytes32 => uint8) public numberOfVotes;
-
     // BlockchainId -> TokenQuantity
     mapping(string => uint256) public chainTokenQuantity;
 
@@ -154,7 +151,7 @@ contract ClaimsManager is IBridgeContractStructs {
         BridgingRequestClaim memory _claim = _claims.bridgingRequestClaims[index];
         claimsHelper.setVoted(_claim.observedTransactionHash, _caller, true);
         bytes32 claimHash = keccak256(abi.encode(_claim));
-        numberOfVotes[claimHash]++;
+        claimsHelper.setNumberOfVotes(claimHash);
 
         if (hasConsensus(claimHash)) {
             chainTokenQuantity[_claim.sourceChainID] -= getNeededTokenQuantity(_claim.receivers);
@@ -181,7 +178,7 @@ contract ClaimsManager is IBridgeContractStructs {
         BatchExecutedClaim memory _claim = _claims.batchExecutedClaims[index];
         claimsHelper.setVoted(_claim.observedTransactionHash, _caller, true);
         bytes32 claimHash = keccak256(abi.encode(_claim));
-        numberOfVotes[claimHash]++;
+        claimsHelper.setNumberOfVotes(claimHash);
 
         if (hasConsensus(claimHash)) {
             chainTokenQuantity[_claim.chainID] += getTokenAmountFromSignedBatch(_claim.chainID, _claim.batchNonceID);
@@ -210,7 +207,7 @@ contract ClaimsManager is IBridgeContractStructs {
         BatchExecutionFailedClaim memory _claim = _claims.batchExecutionFailedClaims[index];
         claimsHelper.setVoted(_claim.observedTransactionHash, _caller, true);
         bytes32 claimHash = keccak256(abi.encode(_claim));
-        numberOfVotes[claimHash]++;
+        claimsHelper.setNumberOfVotes(claimHash);
 
         if (hasConsensus(claimHash)) {
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
@@ -225,7 +222,7 @@ contract ClaimsManager is IBridgeContractStructs {
         RefundRequestClaim memory _claim = _claims.refundRequestClaims[index];
         claimsHelper.setVoted(_claim.observedTransactionHash, _caller, true);
         bytes32 claimHash = keccak256(abi.encode(_claim));
-        numberOfVotes[claimHash]++;
+        claimsHelper.setNumberOfVotes(claimHash);
 
         if (hasConsensus(claimHash)) {
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
@@ -236,7 +233,7 @@ contract ClaimsManager is IBridgeContractStructs {
         RefundExecutedClaim memory _claim = _claims.refundExecutedClaims[index];
         claimsHelper.setVoted(_claim.observedTransactionHash, _caller, true);
         bytes32 claimHash = keccak256(abi.encode(_claim));
-        numberOfVotes[claimHash]++;
+        claimsHelper.setNumberOfVotes(claimHash);
 
         if (hasConsensus(claimHash)) {
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
@@ -268,8 +265,8 @@ contract ClaimsManager is IBridgeContractStructs {
         return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
     }
 
-    function setNumberOfVotes(bytes32 _hash) external onlySignedBatchManagerOrBridgeContract {
-        numberOfVotes[_hash]++;
+    function setNumberOfVotes(bytes32 _hash) external onlyBridgeContract {
+        claimsHelper.setNumberOfVotes(_hash);
     }
 
     function setTokenQuantity(string calldata _chainID, uint256 _tokenQuantity) external onlyBridgeContract {
@@ -325,7 +322,7 @@ contract ClaimsManager is IBridgeContractStructs {
     }
 
     function hasConsensus(bytes32 _hash) public view returns (bool) {
-        return numberOfVotes[_hash] >= validatorsContract.getQuorumNumberOfValidators();
+        return claimsHelper.numberOfVotes(_hash) >= validatorsContract.getQuorumNumberOfValidators();
     }
 
     function getNeededTokenQuantity(Receiver[] memory _receivers) internal pure returns (uint256) {
@@ -352,6 +349,10 @@ contract ClaimsManager is IBridgeContractStructs {
 
     function getVoted(string calldata _id, address _voter) external view returns (bool) {
         return claimsHelper.voted(_id, _voter);
+    }
+
+    function getNumberOfVotes(bytes32 _hash) external view returns (uint8) {
+        return claimsHelper.numberOfVotes(_hash);
     }
 
     modifier onlyOwner() {

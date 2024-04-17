@@ -67,7 +67,7 @@ contract SignedBatchManager is IBridgeContractStructs {
             _signedBatch.usedUTXOs
         );
         bytes32 signedBatchHash = keccak256(abi.encode(_signedBatchWithoutSignatures));
-        claimsManager.setNumberOfVotes(signedBatchHash);
+        claimsHelper.setNumberOfVotes(signedBatchHash);
 
         signedBatches[_signedBatch.destinationChainId][_signedBatch.id][signedBatchHash].push(_signedBatch);
 

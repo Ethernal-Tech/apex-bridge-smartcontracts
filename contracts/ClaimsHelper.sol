@@ -23,6 +23,9 @@ contract ClaimsHelper is IBridgeContractStructs {
     // TansactionHash -> Voter -> Voted
     mapping(string => mapping(address => bool)) public voted;
 
+    // ClaimHash -> numberOfVotes
+    mapping(bytes32 => uint8) public numberOfVotes;
+
     function initialize() public {
         owner = msg.sender;
     }
@@ -54,6 +57,10 @@ contract ClaimsHelper is IBridgeContractStructs {
         isClaimConfirmed[_chain][_observerHash] = true;
     }
 
+    function getNumberOfVotes(bytes32 _hash) external view returns (uint8) {
+        return numberOfVotes[_hash];
+    }
+
     function setConfirmedSignedBatches(
         SignedBatch calldata _signedBatch
     ) external onlySignedBatchManagerOrClaimsManager {
@@ -62,6 +69,10 @@ contract ClaimsHelper is IBridgeContractStructs {
 
     function setVoted(string calldata _id, address _voter, bool _value) external onlySignedBatchManagerOrClaimsManager {
         voted[_id][_voter] = _value;
+    }
+
+    function setNumberOfVotes(bytes32 _hash) external onlySignedBatchManagerOrClaimsManager {
+        numberOfVotes[_hash]++;
     }
 
     function _equal(string memory a, string memory b) internal pure returns (bool) {
