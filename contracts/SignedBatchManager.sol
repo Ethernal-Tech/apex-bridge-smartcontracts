@@ -45,7 +45,7 @@ contract SignedBatchManager is IBridgeContractStructs {
             revert WrongBatchNonce(_destinationChainId, _batchId);
         }
 
-        if (claimsHelper.voted(Strings.toString(_batchId), _caller)) {
+        if (claimsHelper.hasVoted(Strings.toString(_batchId), _caller)) {
             revert AlreadyProposed(Strings.toString(_batchId));
         }
 
@@ -108,7 +108,7 @@ contract SignedBatchManager is IBridgeContractStructs {
     }
 
     function isBatchAlreadySubmittedBy(string calldata _destinationChain, address addr) public view returns (bool ok) {
-        return claimsHelper.voted(Strings.toString(lastConfirmedBatch[_destinationChain].id + 1), addr);
+        return claimsHelper.hasVoted(Strings.toString(lastConfirmedBatch[_destinationChain].id + 1), addr);
     }
 
     function getConfirmedBatch(string calldata _destinationChain) external view returns (ConfirmedBatch memory batch) {

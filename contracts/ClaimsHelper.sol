@@ -21,7 +21,7 @@ contract ClaimsHelper is IBridgeContractStructs {
     mapping(string => int256) public currentBatchBlock;
 
     // TansactionHash -> Voter -> Voted
-    mapping(string => mapping(address => bool)) public voted;
+    mapping(string => mapping(address => bool)) public hasVoted;
 
     // ClaimHash -> numberOfVotes
     mapping(bytes32 => uint8) public numberOfVotes;
@@ -72,7 +72,7 @@ contract ClaimsHelper is IBridgeContractStructs {
         address _voter,
         bytes32 _hash
     ) external onlySignedBatchManagerOrClaimsManager {
-        voted[_id][_voter] = true;
+        hasVoted[_id][_voter] = true;
         numberOfVotes[_hash]++;
     }
 

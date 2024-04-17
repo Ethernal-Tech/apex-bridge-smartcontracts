@@ -63,7 +63,7 @@ contract ClaimsManager is IBridgeContractStructs {
                 revert ChainIsNotRegistered(_claim.sourceChainID);
             }
 
-            if (claimsHelper.voted(_claim.observedTransactionHash, _caller)) {
+            if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
                 revert AlreadyProposed(_claim.observedTransactionHash);
             }
 
@@ -83,7 +83,7 @@ contract ClaimsManager is IBridgeContractStructs {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
-            if (claimsHelper.voted(_claim.observedTransactionHash, _caller)) {
+            if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
                 revert AlreadyProposed(_claim.observedTransactionHash);
             }
 
@@ -99,7 +99,7 @@ contract ClaimsManager is IBridgeContractStructs {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
-            if (claimsHelper.voted(_claim.observedTransactionHash, _caller)) {
+            if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
                 revert AlreadyProposed(_claim.observedTransactionHash);
             }
 
@@ -115,7 +115,7 @@ contract ClaimsManager is IBridgeContractStructs {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
-            if (claimsHelper.voted(_claim.observedTransactionHash, _caller)) {
+            if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
                 revert AlreadyProposed(_claim.observedTransactionHash);
             }
 
@@ -131,7 +131,7 @@ contract ClaimsManager is IBridgeContractStructs {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
-            if (claimsHelper.voted(_claim.observedTransactionHash, _caller)) {
+            if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
                 revert AlreadyProposed(_claim.observedTransactionHash);
             }
 
@@ -334,8 +334,8 @@ contract ClaimsManager is IBridgeContractStructs {
         claimsHelper.setVoted(_id, _voter, _hash);
     }
 
-    function getVoted(string calldata _id, address _voter) external view returns (bool) {
-        return claimsHelper.voted(_id, _voter);
+    function hasVoted(string calldata _id, address _voter) external view returns (bool) {
+        return claimsHelper.hasVoted(_id, _voter);
     }
 
     function getNumberOfVotes(bytes32 _hash) external view returns (uint8) {
