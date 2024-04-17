@@ -5,7 +5,6 @@ import "./interfaces/IBridgeContractStructs.sol";
 import "./BridgeContract.sol";
 import "./ClaimsHelper.sol";
 import "./ValidatorsContract.sol";
-import "./SignedBatchManager.sol";
 import "./UTXOsManager.sol";
 import "hardhat/console.sol";
 
