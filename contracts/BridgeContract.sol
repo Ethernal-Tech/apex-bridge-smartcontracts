@@ -111,7 +111,7 @@ contract BridgeContract is IBridgeContract {
         bytes32 chainHash = keccak256(abi.encode(_chain));
 
         claimsManager.setVoted(_chainId, msg.sender, true);
-        claimsManager.setNumberOfVotes(chainHash);
+        claimsManager.incrementNumberOfVotes(chainHash);
         validatorsContract.addValidatorCardanoData(_chainId, msg.sender, _validator);
 
         if (claimsManager.getNumberOfVotes(chainHash) == validatorsContract.getValidatorsCount()) {

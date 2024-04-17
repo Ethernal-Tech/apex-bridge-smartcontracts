@@ -147,7 +147,7 @@ contract ClaimsManager is IBridgeContractStructs {
         BridgingRequestClaim memory _claim = _claims.bridgingRequestClaims[index];
         claimsHelper.setVoted(_claim.observedTransactionHash, _caller, true);
         bytes32 claimHash = keccak256(abi.encode(_claim));
-        claimsHelper.setNumberOfVotes(claimHash);
+        claimsHelper.incrementNumberOfVotes(claimHash);
 
         if (hasConsensus(claimHash)) {
             chainTokenQuantity[_claim.sourceChainID] -= getNeededTokenQuantity(_claim.receivers);
@@ -174,7 +174,7 @@ contract ClaimsManager is IBridgeContractStructs {
         BatchExecutedClaim memory _claim = _claims.batchExecutedClaims[index];
         claimsHelper.setVoted(_claim.observedTransactionHash, _caller, true);
         bytes32 claimHash = keccak256(abi.encode(_claim));
-        claimsHelper.setNumberOfVotes(claimHash);
+        claimsHelper.incrementNumberOfVotes(claimHash);
 
         if (hasConsensus(claimHash)) {
             chainTokenQuantity[_claim.chainID] += getTokenAmountFromSignedBatch(_claim.chainID, _claim.batchNonceID);
@@ -203,7 +203,7 @@ contract ClaimsManager is IBridgeContractStructs {
         BatchExecutionFailedClaim memory _claim = _claims.batchExecutionFailedClaims[index];
         claimsHelper.setVoted(_claim.observedTransactionHash, _caller, true);
         bytes32 claimHash = keccak256(abi.encode(_claim));
-        claimsHelper.setNumberOfVotes(claimHash);
+        claimsHelper.incrementNumberOfVotes(claimHash);
 
         if (hasConsensus(claimHash)) {
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
@@ -218,7 +218,7 @@ contract ClaimsManager is IBridgeContractStructs {
         RefundRequestClaim memory _claim = _claims.refundRequestClaims[index];
         claimsHelper.setVoted(_claim.observedTransactionHash, _caller, true);
         bytes32 claimHash = keccak256(abi.encode(_claim));
-        claimsHelper.setNumberOfVotes(claimHash);
+        claimsHelper.incrementNumberOfVotes(claimHash);
 
         if (hasConsensus(claimHash)) {
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
@@ -229,7 +229,7 @@ contract ClaimsManager is IBridgeContractStructs {
         RefundExecutedClaim memory _claim = _claims.refundExecutedClaims[index];
         claimsHelper.setVoted(_claim.observedTransactionHash, _caller, true);
         bytes32 claimHash = keccak256(abi.encode(_claim));
-        claimsHelper.setNumberOfVotes(claimHash);
+        claimsHelper.incrementNumberOfVotes(claimHash);
 
         if (hasConsensus(claimHash)) {
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
@@ -261,8 +261,8 @@ contract ClaimsManager is IBridgeContractStructs {
         return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
     }
 
-    function setNumberOfVotes(bytes32 _hash) external onlyBridgeContract {
-        claimsHelper.setNumberOfVotes(_hash);
+    function incrementNumberOfVotes(bytes32 _hash) external onlyBridgeContract {
+        claimsHelper.incrementNumberOfVotes(_hash);
     }
 
     function setTokenQuantity(string calldata _chainID, uint256 _tokenQuantity) external onlyBridgeContract {

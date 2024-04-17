@@ -71,7 +71,7 @@ contract ClaimsHelper is IBridgeContractStructs {
         voted[_id][_voter] = _value;
     }
 
-    function setNumberOfVotes(bytes32 _hash) external onlySignedBatchManagerOrClaimsManager {
+    function incrementNumberOfVotes(bytes32 _hash) external onlySignedBatchManagerOrClaimsManager {
         numberOfVotes[_hash]++;
     }
 
