@@ -57,8 +57,6 @@ contract SignedBatchManager is IBridgeContractStructs {
     }
 
     function _submitSignedBatch(SignedBatch calldata _signedBatch) internal {
-        claimsHelper.setVoted(Strings.toString(_signedBatch.id), msg.sender, true);
-
         SignedBatchWithoutSignatures memory _signedBatchWithoutSignatures = SignedBatchWithoutSignatures(
             _signedBatch.id,
             _signedBatch.destinationChainId,
@@ -67,7 +65,7 @@ contract SignedBatchManager is IBridgeContractStructs {
             _signedBatch.usedUTXOs
         );
         bytes32 signedBatchHash = keccak256(abi.encode(_signedBatchWithoutSignatures));
-        claimsHelper.incrementNumberOfVotes(signedBatchHash);
+        claimsHelper.setVoted(Strings.toString(_signedBatch.id), msg.sender, signedBatchHash);
 
         signedBatches[_signedBatch.destinationChainId][_signedBatch.id][signedBatchHash].push(_signedBatch);
 

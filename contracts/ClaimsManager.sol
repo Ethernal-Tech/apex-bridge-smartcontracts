@@ -145,9 +145,8 @@ contract ClaimsManager is IBridgeContractStructs {
 
     function _submitClaimsBRC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
         BridgingRequestClaim memory _claim = _claims.bridgingRequestClaims[index];
-        claimsHelper.setVoted(_claim.observedTransactionHash, _caller, true);
         bytes32 claimHash = keccak256(abi.encode(_claim));
-        claimsHelper.incrementNumberOfVotes(claimHash);
+        claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 
         if (hasConsensus(claimHash)) {
             chainTokenQuantity[_claim.sourceChainID] -= getNeededTokenQuantity(_claim.receivers);
@@ -172,9 +171,8 @@ contract ClaimsManager is IBridgeContractStructs {
 
     function _submitClaimsBEC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
         BatchExecutedClaim memory _claim = _claims.batchExecutedClaims[index];
-        claimsHelper.setVoted(_claim.observedTransactionHash, _caller, true);
         bytes32 claimHash = keccak256(abi.encode(_claim));
-        claimsHelper.incrementNumberOfVotes(claimHash);
+        claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 
         if (hasConsensus(claimHash)) {
             chainTokenQuantity[_claim.chainID] += getTokenAmountFromSignedBatch(_claim.chainID, _claim.batchNonceID);
@@ -201,9 +199,8 @@ contract ClaimsManager is IBridgeContractStructs {
 
     function _submitClaimsBEFC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
         BatchExecutionFailedClaim memory _claim = _claims.batchExecutionFailedClaims[index];
-        claimsHelper.setVoted(_claim.observedTransactionHash, _caller, true);
         bytes32 claimHash = keccak256(abi.encode(_claim));
-        claimsHelper.incrementNumberOfVotes(claimHash);
+        claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 
         if (hasConsensus(claimHash)) {
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
@@ -216,9 +213,8 @@ contract ClaimsManager is IBridgeContractStructs {
 
     function _submitClaimsRRC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
         RefundRequestClaim memory _claim = _claims.refundRequestClaims[index];
-        claimsHelper.setVoted(_claim.observedTransactionHash, _caller, true);
         bytes32 claimHash = keccak256(abi.encode(_claim));
-        claimsHelper.incrementNumberOfVotes(claimHash);
+        claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 
         if (hasConsensus(claimHash)) {
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
@@ -227,9 +223,8 @@ contract ClaimsManager is IBridgeContractStructs {
 
     function _submitClaimsREC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
         RefundExecutedClaim memory _claim = _claims.refundExecutedClaims[index];
-        claimsHelper.setVoted(_claim.observedTransactionHash, _caller, true);
         bytes32 claimHash = keccak256(abi.encode(_claim));
-        claimsHelper.incrementNumberOfVotes(claimHash);
+        claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 
         if (hasConsensus(claimHash)) {
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
@@ -259,10 +254,6 @@ contract ClaimsManager is IBridgeContractStructs {
         uint256 cnt = getBatchingTxsCount(_destinationChain);
 
         return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
-    }
-
-    function incrementNumberOfVotes(bytes32 _hash) external onlyBridgeContract {
-        claimsHelper.incrementNumberOfVotes(_hash);
     }
 
     function setTokenQuantity(string calldata _chainID, uint256 _tokenQuantity) external onlyBridgeContract {
@@ -339,8 +330,8 @@ contract ClaimsManager is IBridgeContractStructs {
         nextTimeoutBlock[_chainId] = _blockNumber + timeoutBlocksNumber;
     }
 
-    function setVoted(string calldata _id, address _voter, bool _value) external onlyBridgeContract {
-        claimsHelper.setVoted(_id, _voter, _value);
+    function setVoted(string calldata _id, address _voter, bytes32 _hash) external onlyBridgeContract {
+        claimsHelper.setVoted(_id, _voter, _hash);
     }
 
     function getVoted(string calldata _id, address _voter) external view returns (bool) {

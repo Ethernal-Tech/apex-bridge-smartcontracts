@@ -67,11 +67,12 @@ contract ClaimsHelper is IBridgeContractStructs {
         confirmedSignedBatches[_signedBatch.destinationChainId][_signedBatch.id] = _signedBatch;
     }
 
-    function setVoted(string calldata _id, address _voter, bool _value) external onlySignedBatchManagerOrClaimsManager {
-        voted[_id][_voter] = _value;
-    }
-
-    function incrementNumberOfVotes(bytes32 _hash) external onlySignedBatchManagerOrClaimsManager {
+    function setVoted(
+        string calldata _id,
+        address _voter,
+        bytes32 _hash
+    ) external onlySignedBatchManagerOrClaimsManager {
+        voted[_id][_voter] = true;
         numberOfVotes[_hash]++;
     }
 
