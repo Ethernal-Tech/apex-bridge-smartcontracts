@@ -5,14 +5,14 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBridgeContractStructs.sol";
 import "./BridgeContract.sol";
 import "./ClaimsHelper.sol";
-import "./ClaimsManager.sol";
+import "./ValidatorsContract.sol";
 
 import "hardhat/console.sol";
 
 contract SignedBatchManager is IBridgeContractStructs {
     address private bridgeContractAddress;
     ClaimsHelper private claimsHelper;
-    ClaimsManager private claimsManager;
+    ValidatorsContract private validatorsContract;
     address private owner;
 
     // BlockchanID -> batchId -> -signedBatchWithoutSignaturesHash -> SignedBatch[]
@@ -27,12 +27,12 @@ contract SignedBatchManager is IBridgeContractStructs {
 
     function setDependencies(
         address _bridgeContractAddress,
-        address _claimsManagerAddress,
-        address _claimsHelperAddress
+        address _claimsHelperAddress,
+        address _validatorsContractAddress
     ) external onlyOwner {
         bridgeContractAddress = _bridgeContractAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
-        claimsManager = ClaimsManager(_claimsManagerAddress);
+        validatorsContract = ValidatorsContract(_validatorsContractAddress);
     }
 
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridgeContract {
@@ -71,7 +71,7 @@ contract SignedBatchManager is IBridgeContractStructs {
 
         signedBatches[_signedBatch.destinationChainId][_signedBatch.id][signedBatchHash].push(_signedBatch);
 
-        if (claimsManager.hasConsensus(signedBatchHash)) {
+        if (hasConsensus(signedBatchHash)) {
             claimsHelper.setConfirmedSignedBatches(_signedBatch);
 
             claimsHelper.setClaimConfirmed(_signedBatch.destinationChainId, Strings.toString(_signedBatch.id));
@@ -103,6 +103,10 @@ contract SignedBatchManager is IBridgeContractStructs {
 
             claimsHelper.setCurrentBatchBlock(_signedBatch.destinationChainId, int256(block.number));
         }
+    }
+
+    function hasConsensus(bytes32 _hash) public view returns (bool) {
+        return claimsHelper.numberOfVotes(_hash) >= validatorsContract.getQuorumNumberOfValidators();
     }
 
     function isBatchAlreadySubmittedBy(string calldata _destinationChain, address addr) public view returns (bool ok) {

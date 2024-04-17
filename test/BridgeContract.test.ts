@@ -82,7 +82,7 @@ describe("Bridge Contract", function () {
       5
     );
 
-    await signedBatchManager.setDependencies(bridgeContract.target, claimsManager.target, claimsHelper.target);
+    await signedBatchManager.setDependencies(bridgeContract.target, claimsHelper.target, validatorsContract);
 
     await slotsManager.setDependencies(bridgeContract.target, validatorsContract.target);
 
