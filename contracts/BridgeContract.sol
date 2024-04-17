@@ -97,7 +97,7 @@ contract BridgeContract is IBridgeContract {
         if (claimsManager.isChainRegistered(_chainId)) {
             revert ChainAlreadyRegistered(_chainId);
         }
-        if (claimsManager.voted(_chainId, msg.sender)) {
+        if (claimsManager.hasVoted(_chainId, msg.sender)) {
             revert AlreadyProposed(_chainId);
         }
 
@@ -110,11 +110,10 @@ contract BridgeContract is IBridgeContract {
         );
         bytes32 chainHash = keccak256(abi.encode(_chain));
 
-        claimsManager.setVoted(_chainId, msg.sender, true);
-        claimsManager.setNumberOfVotes(chainHash);
+        claimsManager.setVoted(_chainId, msg.sender, chainHash);
         validatorsContract.addValidatorCardanoData(_chainId, msg.sender, _validator);
 
-        if (claimsManager.numberOfVotes(chainHash) == validatorsContract.getValidatorsCount()) {
+        if (claimsManager.getNumberOfVotes(chainHash) == validatorsContract.getValidatorsCount()) {
             _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
         } else {
             emit newChainProposal(_chainId, msg.sender);

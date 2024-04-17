@@ -5,14 +5,14 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBridgeContractStructs.sol";
 import "./BridgeContract.sol";
 import "./ClaimsHelper.sol";
-import "./ClaimsManager.sol";
+import "./ValidatorsContract.sol";
 
 import "hardhat/console.sol";
 
 contract SignedBatchManager is IBridgeContractStructs {
     address private bridgeContractAddress;
     ClaimsHelper private claimsHelper;
-    ClaimsManager private claimsManager;
+    ValidatorsContract private validatorsContract;
     address private owner;
 
     // BlockchanID -> batchId -> -signedBatchWithoutSignaturesHash -> SignedBatch[]
@@ -27,12 +27,12 @@ contract SignedBatchManager is IBridgeContractStructs {
 
     function setDependencies(
         address _bridgeContractAddress,
-        address _claimsManagerAddress,
-        address _claimsHelperAddress
+        address _claimsHelperAddress,
+        address _validatorsContractAddress
     ) external onlyOwner {
         bridgeContractAddress = _bridgeContractAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
-        claimsManager = ClaimsManager(_claimsManagerAddress);
+        validatorsContract = ValidatorsContract(_validatorsContractAddress);
     }
 
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridgeContract {
@@ -45,7 +45,7 @@ contract SignedBatchManager is IBridgeContractStructs {
             revert WrongBatchNonce(_destinationChainId, _batchId);
         }
 
-        if (claimsManager.voted(Strings.toString(_batchId), _caller)) {
+        if (claimsHelper.hasVoted(Strings.toString(_batchId), _caller)) {
             revert AlreadyProposed(Strings.toString(_batchId));
         }
 
@@ -57,8 +57,6 @@ contract SignedBatchManager is IBridgeContractStructs {
     }
 
     function _submitSignedBatch(SignedBatch calldata _signedBatch) internal {
-        claimsManager.setVoted(Strings.toString(_signedBatch.id), msg.sender, true);
-
         SignedBatchWithoutSignatures memory _signedBatchWithoutSignatures = SignedBatchWithoutSignatures(
             _signedBatch.id,
             _signedBatch.destinationChainId,
@@ -67,11 +65,11 @@ contract SignedBatchManager is IBridgeContractStructs {
             _signedBatch.usedUTXOs
         );
         bytes32 signedBatchHash = keccak256(abi.encode(_signedBatchWithoutSignatures));
-        claimsManager.setNumberOfVotes(signedBatchHash);
+        claimsHelper.setVoted(Strings.toString(_signedBatch.id), msg.sender, signedBatchHash);
 
         signedBatches[_signedBatch.destinationChainId][_signedBatch.id][signedBatchHash].push(_signedBatch);
 
-        if (claimsManager.hasConsensus(signedBatchHash)) {
+        if (hasConsensus(signedBatchHash)) {
             claimsHelper.setConfirmedSignedBatches(_signedBatch);
 
             claimsHelper.setClaimConfirmed(_signedBatch.destinationChainId, Strings.toString(_signedBatch.id));
@@ -105,8 +103,12 @@ contract SignedBatchManager is IBridgeContractStructs {
         }
     }
 
+    function hasConsensus(bytes32 _hash) public view returns (bool) {
+        return claimsHelper.numberOfVotes(_hash) >= validatorsContract.getQuorumNumberOfValidators();
+    }
+
     function isBatchAlreadySubmittedBy(string calldata _destinationChain, address addr) public view returns (bool ok) {
-        return claimsManager.voted(Strings.toString(lastConfirmedBatch[_destinationChain].id + 1), addr);
+        return claimsHelper.hasVoted(Strings.toString(lastConfirmedBatch[_destinationChain].id + 1), addr);
     }
 
     function getConfirmedBatch(string calldata _destinationChain) external view returns (ConfirmedBatch memory batch) {
