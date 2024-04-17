@@ -12,7 +12,6 @@ import "hardhat/console.sol";
 contract ClaimsManager is IBridgeContractStructs {
     address private bridgeContractAddress;
     ClaimsHelper private claimsHelper;
-    address private signedBatchManagerAddress;
     UTXOsManager private utxosManager;
     ValidatorsContract private validatorsContract;
     address private owner;
@@ -45,7 +44,6 @@ contract ClaimsManager is IBridgeContractStructs {
     function setDependencies(
         address _bridgeContractAddress,
         address _claimsHelperAddress,
-        address _signedBatchManagerAddress,
         address _utxosManager,
         address _validatorsContractAddress,
         uint16 _maxNumberOfTransactions,
@@ -53,7 +51,6 @@ contract ClaimsManager is IBridgeContractStructs {
     ) external onlyOwner {
         bridgeContractAddress = _bridgeContractAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
-        signedBatchManagerAddress = _signedBatchManagerAddress;
         utxosManager = UTXOsManager(_utxosManager);
         validatorsContract = ValidatorsContract(_validatorsContractAddress);
         maxNumberOfTransactions = _maxNumberOfTransactions;

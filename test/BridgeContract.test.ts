@@ -75,7 +75,6 @@ describe("Bridge Contract", function () {
     await claimsManager.setDependencies(
       bridgeContract.target,
       claimsHelper.target,
-      signedBatchManager.target,
       uTXOsManager.target,
       validatorsContract.target,
       2,
