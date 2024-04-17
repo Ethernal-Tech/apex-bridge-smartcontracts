@@ -14,6 +14,12 @@ contract ClaimsHelper is IBridgeContractStructs {
     // blockchain -> claimHash -> queued
     mapping(string => mapping(string => bool)) public isClaimConfirmed;
 
+    // BlockchainID -> batchId -> SignedBatch
+    mapping(string => mapping(uint256 => SignedBatch)) public confirmedSignedBatches;
+
+    // Blochchain ID -> blockNumber
+    mapping(string => int256) public currentBatchBlock;
+
     function initialize() public {
         owner = msg.sender;
     }
@@ -23,11 +29,32 @@ contract ClaimsHelper is IBridgeContractStructs {
         signedBatchManagerAddress = _signedBatchManagerAddress;
     }
 
+    function getConfirmedSignedBatch(
+        string calldata _chainId,
+        uint256 _batchId
+    ) external view returns (SignedBatch memory) {
+        return confirmedSignedBatches[_chainId][_batchId];
+    }
+
+    function setCurrentBatchBlock(string calldata _chainId, int value) external onlySignedBatchManager {
+        currentBatchBlock[_chainId] = value;
+    }
+
+    function resetCurrentBatchBlock(string calldata _chainId) external onlyClaimsManager {
+        currentBatchBlock[_chainId] = int(-1);
+    }
+
     function setClaimConfirmed(
         string calldata _chain,
         string calldata _observerHash
     ) external onlySignedBatchManagerOrClaimsManager {
         isClaimConfirmed[_chain][_observerHash] = true;
+    }
+
+    function setConfirmedSignedBatches(
+        SignedBatch calldata _signedBatch
+    ) external onlySignedBatchManagerOrClaimsManager {
+        confirmedSignedBatches[_signedBatch.destinationChainId][_signedBatch.id] = _signedBatch;
     }
 
     function _equal(string memory a, string memory b) internal pure returns (bool) {
@@ -49,13 +76,23 @@ contract ClaimsHelper is IBridgeContractStructs {
     }
 
     modifier onlyOwner() {
-        if (msg.sender != address(owner)) revert NotOwner();
+        if (msg.sender != owner) revert NotOwner();
         _;
     }
 
     modifier onlySignedBatchManagerOrClaimsManager() {
-        if (msg.sender != address(signedBatchManagerAddress) && msg.sender != address(claimsManagerAddress))
+        if (msg.sender != signedBatchManagerAddress && msg.sender != claimsManagerAddress)
             revert NotSignedBatchManagerOrBridgeContract();
+        _;
+    }
+
+    modifier onlySignedBatchManager() {
+        if (msg.sender != signedBatchManagerAddress) revert NotSignedBatchManager();
+        _;
+    }
+
+    modifier onlyClaimsManager() {
+        if (msg.sender != claimsManagerAddress) revert NotClaimsManager();
         _;
     }
 }

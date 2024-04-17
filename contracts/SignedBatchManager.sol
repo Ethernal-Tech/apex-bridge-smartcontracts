@@ -13,7 +13,6 @@ contract SignedBatchManager is IBridgeContractStructs {
     address private bridgeContractAddress;
     ClaimsHelper private claimsHelper;
     ClaimsManager private claimsManager;
-    address private bridgeContract;
     address private owner;
 
     // BlockchanID -> batchId -> -signedBatchWithoutSignaturesHash -> SignedBatch[]
@@ -21,7 +20,7 @@ contract SignedBatchManager is IBridgeContractStructs {
 
     // BlockchainID -> ConfirmedBatch
     mapping(string => ConfirmedBatch) public lastConfirmedBatch;
-    
+
     function initialize() public {
         owner = msg.sender;
     }
@@ -73,7 +72,7 @@ contract SignedBatchManager is IBridgeContractStructs {
         signedBatches[_signedBatch.destinationChainId][_signedBatch.id][signedBatchHash].push(_signedBatch);
 
         if (claimsManager.hasConsensus(signedBatchHash)) {
-            claimsManager.setConfirmedSignedBatches(_signedBatch.destinationChainId, _signedBatch.id, _signedBatch);
+            claimsHelper.setConfirmedSignedBatches(_signedBatch);
 
             claimsHelper.setClaimConfirmed(_signedBatch.destinationChainId, Strings.toString(_signedBatch.id));
 
@@ -102,7 +101,7 @@ contract SignedBatchManager is IBridgeContractStructs {
                 feePayerMultisigSignatures
             );
 
-            claimsManager.setCurrentBatchBlock(_signedBatch.destinationChainId, int256(block.number));
+            claimsHelper.setCurrentBatchBlock(_signedBatch.destinationChainId, int256(block.number));
         }
     }
 

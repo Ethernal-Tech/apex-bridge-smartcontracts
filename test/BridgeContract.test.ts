@@ -493,7 +493,7 @@ describe("Bridge Contract", function () {
 
   describe("Deployment", function () {
     it("Should set 5 validator with quorum of 4", async function () {
-      const { bridgeContract, validatorsContract } = await loadFixture(deployBridgeContractFixture);
+      const { validatorsContract } = await loadFixture(deployBridgeContractFixture);
       const numberOfValidators = await validatorsContract.getQuorumNumberOfValidators();
 
       expect(numberOfValidators).to.equal(4);
@@ -868,7 +868,7 @@ describe("Bridge Contract", function () {
       });
 
       it("Should not update Validators Cardano Data until length of the list with the new data doesn't match the number of validators", async function () {
-        const { bridgeContract, validators, UTXOs, validatorsCardanoData, validatorsContract, hre, validator6 } =
+        const { bridgeContract, validators, validatorsCardanoData, validatorsContract, hre, validator6 } =
           await loadFixture(deployBridgeContractFixture);
 
         const bridgeContractAddress = await bridgeContract.getAddress();
@@ -1094,7 +1094,7 @@ describe("Bridge Contract", function () {
       });
 
       it("Should not add any UTXO to the source chain if Bridging Request Claim quorum is not reached", async function () {
-        const { bridgeContract, claimsManager, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } =
+        const { bridgeContract, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } =
           await loadFixture(deployBridgeContractFixture);
         await bridgeContract
           .connect(owner)
@@ -1128,7 +1128,7 @@ describe("Bridge Contract", function () {
       });
 
       it("Should add requred amount of UTXO to the source chain when Bridging Request Claim is confirmed", async function () {
-        const { bridgeContract, claimsManager, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } =
+        const { bridgeContract, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } =
           await loadFixture(deployBridgeContractFixture);
         await bridgeContract
           .connect(owner)
@@ -1299,7 +1299,7 @@ describe("Bridge Contract", function () {
         ).to.be.revertedWithCustomError(bridgeContract, "InvalidSignature");
       });
       it("Should revert if chain is not registered", async function () {
-        const { bridgeContract, claimsManager, claimsHelper, validators, validatorClaimsBEC } = await loadFixture(
+        const { bridgeContract, claimsHelper, validators, validatorClaimsBEC } = await loadFixture(
           deployBridgeContractFixture
         );
 
@@ -1446,7 +1446,7 @@ describe("Bridge Contract", function () {
         const {
           bridgeContract,
           claimsManager,
-          signedBatchManager,
+          claimsHelper,
           owner,
           validators,
           UTXOs,
@@ -1502,7 +1502,7 @@ describe("Bridge Contract", function () {
           1100
         );
         expect(nextBatchBlock).to.greaterThan(currentBlock + 1);
-        expect(await claimsManager.currentBatchBlock(_destinationChain)).to.equal(-1);
+        expect(await claimsHelper.currentBatchBlock(_destinationChain)).to.equal(-1);
         expect(lastConfirmedTxNonce - lastBatchedTxNonce).to.be.lessThanOrEqual(1);
       });
     });
@@ -1572,8 +1572,16 @@ describe("Bridge Contract", function () {
       });
 
       it("Should reset current batch block and next timeout batch block when Batch Execution Failed Claims if confirmed", async function () {
-        const { bridgeContract, claimsManager, owner, validators, UTXOs, validatorClaimsBEFC, validatorsCardanoData } =
-          await loadFixture(deployBridgeContractFixture);
+        const {
+          bridgeContract,
+          claimsManager,
+          claimsHelper,
+          owner,
+          validators,
+          UTXOs,
+          validatorClaimsBEFC,
+          validatorsCardanoData,
+        } = await loadFixture(deployBridgeContractFixture);
 
         await bridgeContract.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", validatorsCardanoData, 100);
 
@@ -1588,7 +1596,7 @@ describe("Bridge Contract", function () {
         const currentBlock = await ethers.provider.getBlockNumber();
 
         expect(
-          await claimsManager.currentBatchBlock(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID)
+          await claimsHelper.currentBatchBlock(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID)
         ).to.equal(-1);
         expect(nextBatchBlock).to.greaterThan(currentBlock + 1);
       });
@@ -2339,8 +2347,7 @@ describe("Bridge Contract", function () {
       it("SignedBatch should be added to signedBatches if there are enough votes", async function () {
         const {
           bridgeContract,
-          signedBatchManager,
-          claimsManager,
+          claimsHelper,
           owner,
           validators,
           UTXOs,
@@ -2387,33 +2394,33 @@ describe("Bridge Contract", function () {
 
         expect(
           (
-            await claimsManager
+            await claimsHelper
               .connect(validators[0])
-              .confirmedSignedBatches(signedBatch.destinationChainId, signedBatch.id)
+              .getConfirmedSignedBatch(signedBatch.destinationChainId, signedBatch.id)
           ).id
         ).to.equal(signedBatch.id);
 
         expect(
           (
-            await claimsManager
+            await claimsHelper
               .connect(validators[0])
-              .confirmedSignedBatches(signedBatch.destinationChainId, signedBatch.id)
+              .getConfirmedSignedBatch(signedBatch.destinationChainId, signedBatch.id)
           ).rawTransaction
         ).to.equal(signedBatch.rawTransaction);
 
         expect(
           (
-            await claimsManager
+            await claimsHelper
               .connect(validators[0])
-              .confirmedSignedBatches(signedBatch.destinationChainId, signedBatch.id)
+              .getConfirmedSignedBatch(signedBatch.destinationChainId, signedBatch.id)
           ).multisigSignature
         ).to.equal(signedBatch.multisigSignature);
 
         expect(
           (
-            await claimsManager
+            await claimsHelper
               .connect(validators[0])
-              .confirmedSignedBatches(signedBatch.destinationChainId, signedBatch.id)
+              .getConfirmedSignedBatch(signedBatch.destinationChainId, signedBatch.id)
           ).feePayerMultisigSignature
         ).to.equal(signedBatch.feePayerMultisigSignature);
       });
@@ -2496,7 +2503,6 @@ describe("Bridge Contract", function () {
           UTXOs,
           validatorClaimsBRC,
           validatorsCardanoData,
-          signedBatchManager,
           signedBatch,
           validatorClaimsBEC,
         } = await loadFixture(deployBridgeContractFixture);
