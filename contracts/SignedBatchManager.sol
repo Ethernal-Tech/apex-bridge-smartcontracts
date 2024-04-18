@@ -3,11 +3,8 @@ pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBridgeContractStructs.sol";
-import "./BridgeContract.sol";
 import "./ClaimsHelper.sol";
 import "./ValidatorsContract.sol";
-
-import "hardhat/console.sol";
 
 contract SignedBatchManager is IBridgeContractStructs {
     address private bridgeContractAddress;

@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBridgeContract.sol";
-import "./ClaimsHelper.sol";
-import "./SlotsManager.sol";
 import "./ClaimsManager.sol";
 import "./SignedBatchManager.sol";
+import "./SlotsManager.sol";
 import "./UTXOsManager.sol";
 import "./ValidatorsContract.sol";
-import "hardhat/console.sol";
 
 contract BridgeContract is IBridgeContract {
     ClaimsManager private claimsManager;
@@ -101,12 +98,7 @@ contract BridgeContract is IBridgeContract {
             revert AlreadyProposed(_chainId);
         }
 
-        Chain memory _chain = Chain(
-            _chainId,
-            _initialUTXOs,
-            _addressMultisig,
-            _addressFeePayer
-        );
+        Chain memory _chain = Chain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer);
         bytes32 chainHash = keccak256(abi.encode(_chain));
 
         claimsManager.setVoted(_chainId, msg.sender, chainHash);

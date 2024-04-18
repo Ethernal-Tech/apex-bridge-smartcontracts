@@ -2,9 +2,7 @@
 pragma solidity ^0.8.23;
 
 import "./interfaces/IBridgeContractStructs.sol";
-import "./BridgeContract.sol";
 import "./ValidatorsContract.sol";
-import "hardhat/console.sol";
 
 contract SlotsManager is IBridgeContractStructs {
     address private bridgeContractAddress;

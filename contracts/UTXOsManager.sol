@@ -2,9 +2,6 @@
 pragma solidity ^0.8.23;
 
 import "./interfaces/IBridgeContractStructs.sol";
-import "./BridgeContract.sol";
-import "./SignedBatchManager.sol";
-import "hardhat/console.sol";
 
 contract UTXOsManager is IBridgeContractStructs {
     address private bridgeContractAddress;

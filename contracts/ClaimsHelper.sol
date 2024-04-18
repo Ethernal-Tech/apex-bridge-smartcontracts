@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBridgeContractStructs.sol";
-import "hardhat/console.sol";
-import "./SlotsManager.sol";
 
 contract ClaimsHelper is IBridgeContractStructs {
     address private claimsManagerAddress;

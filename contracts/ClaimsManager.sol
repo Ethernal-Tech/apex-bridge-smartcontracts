@@ -2,11 +2,9 @@
 pragma solidity ^0.8.23;
 
 import "./interfaces/IBridgeContractStructs.sol";
-import "./BridgeContract.sol";
 import "./ClaimsHelper.sol";
-import "./ValidatorsContract.sol";
 import "./UTXOsManager.sol";
-import "hardhat/console.sol";
+import "./ValidatorsContract.sol";
 
 contract ClaimsManager is IBridgeContractStructs {
     address private bridgeContractAddress;
