@@ -101,12 +101,11 @@ contract BridgeContract is IBridgeContract {
             revert AlreadyProposed(_chainId);
         }
 
-        ChainWithoutSignatures memory _chain = ChainWithoutSignatures(
+        Chain memory _chain = Chain(
             _chainId,
             _initialUTXOs,
             _addressMultisig,
-            _addressFeePayer,
-            _tokenQuantity
+            _addressFeePayer
         );
         bytes32 chainHash = keccak256(abi.encode(_chain));
 
@@ -133,7 +132,6 @@ contract BridgeContract is IBridgeContract {
         chains[chains.length - 1].utxos = _initialUTXOs;
         chains[chains.length - 1].addressMultisig = _addressMultisig;
         chains[chains.length - 1].addressFeePayer = _addressFeePayer;
-        chains[chains.length - 1].tokenQuantity = _tokenQuantity;
 
         utxosManager.setInitialUTxOs(_chainId, _initialUTXOs);
 
