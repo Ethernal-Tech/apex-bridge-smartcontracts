@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeContractStructs.sol";
 
-contract ValidatorsContract is IBridgeContractStructs {
+contract ValidatorsContract is IBridgeContractStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     // slither-disable too-many-digits
     address constant PRECOMPILE = 0x0000000000000000000000000000000000002050;
     uint256 constant PRECOMPILE_GAS = 150000;
@@ -23,14 +26,22 @@ contract ValidatorsContract is IBridgeContractStructs {
 
     uint8 public validatorsCount;
 
-    function initialize(address[] memory _validators) public {
-        owner = msg.sender;
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize() public initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
         for (uint i = 0; i < _validators.length; i++) {
             isAddressValidator[_validators[i]] = true;
             validatorsAddresses.push(_validators[i]);
         }
         validatorsCount = uint8(_validators.length);
     }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function setDependencies(address _bridgeContractAddress) external onlyOwner {
         bridgeContractAddress = _bridgeContractAddress;

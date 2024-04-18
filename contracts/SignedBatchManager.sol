@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBridgeContractStructs.sol";
 import "./ClaimsHelper.sol";
 import "./ValidatorsContract.sol";
 
-contract SignedBatchManager is IBridgeContractStructs {
+contract SignedBatchManager is IBridgeContractStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private bridgeContractAddress;
     ClaimsHelper private claimsHelper;
     ValidatorsContract private validatorsContract;
@@ -18,9 +21,17 @@ contract SignedBatchManager is IBridgeContractStructs {
     // BlockchainID -> ConfirmedBatch
     mapping(string => ConfirmedBatch) public lastConfirmedBatch;
 
-    function initialize() public {
-        owner = msg.sender;
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
     }
+
+    function initialize() public initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function setDependencies(
         address _bridgeContractAddress,

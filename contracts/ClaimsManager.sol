@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeContractStructs.sol";
 import "./ClaimsHelper.sol";
 import "./UTXOsManager.sol";
 import "./ValidatorsContract.sol";
 
-contract ClaimsManager is IBridgeContractStructs {
+contract ClaimsManager is IBridgeContractStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private bridgeContractAddress;
     ClaimsHelper private claimsHelper;
     UTXOsManager private utxosManager;
@@ -34,24 +37,30 @@ contract ClaimsManager is IBridgeContractStructs {
     // chainID -> nonce (nonce of the last transaction from the executed batch)
     mapping(string => uint256) public lastBatchedTxNonce;
 
-    function initialize() public {
-        owner = msg.sender;
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
     }
+
+    function initialize(uint16 _maxNumberOfTransactions, uint8 _timeoutBlocksNumber) public initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+        maxNumberOfTransactions = _maxNumberOfTransactions;
+        timeoutBlocksNumber = _timeoutBlocksNumber;
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function setDependencies(
         address _bridgeContractAddress,
         address _claimsHelperAddress,
         address _utxosManager,
-        address _validatorsContractAddress,
-        uint16 _maxNumberOfTransactions,
-        uint8 _timeoutBlocksNumber
+        address _validatorsContractAddress
     ) external onlyOwner {
         bridgeContractAddress = _bridgeContractAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         utxosManager = UTXOsManager(_utxosManager);
         validatorsContract = ValidatorsContract(_validatorsContractAddress);
-        maxNumberOfTransactions = _maxNumberOfTransactions;
-        timeoutBlocksNumber = _timeoutBlocksNumber;
     }
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {
