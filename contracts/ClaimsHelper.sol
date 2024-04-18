@@ -9,7 +9,6 @@ import "./interfaces/IBridgeContractStructs.sol";
 contract ClaimsHelper is IBridgeContractStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private claimsManagerAddress;
     address private signedBatchManagerAddress;
-    address private owner;
 
     // blockchain -> claimHash -> queued
     mapping(string => mapping(string => bool)) public isClaimConfirmed;
@@ -100,11 +99,6 @@ contract ClaimsHelper is IBridgeContractStructs, Initializable, OwnableUpgradeab
         }
 
         return true;
-    }
-
-    modifier onlyOwner() {
-        if (msg.sender != owner) revert NotOwner();
-        _;
     }
 
     modifier onlySignedBatchManagerOrClaimsManager() {

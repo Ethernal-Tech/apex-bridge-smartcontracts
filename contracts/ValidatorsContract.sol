@@ -12,7 +12,6 @@ contract ValidatorsContract is IBridgeContractStructs, Initializable, OwnableUpg
     uint256 constant PRECOMPILE_GAS = 150000;
 
     address private bridgeContractAddress;
-    address private owner;
 
     // BlockchainID -> validator address -> ValidatorCardanoData
     mapping(string => mapping(address => ValidatorCardanoData)) private validatorsCardanoDataPerAddress;
@@ -31,7 +30,7 @@ contract ValidatorsContract is IBridgeContractStructs, Initializable, OwnableUpg
         _disableInitializers();
     }
 
-    function initialize() public initializer {
+    function initialize(address[] memory _validators) public initializer {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
         for (uint i = 0; i < _validators.length; i++) {
@@ -145,11 +144,6 @@ contract ValidatorsContract is IBridgeContractStructs, Initializable, OwnableUpg
 
     modifier onlyBridgeContract() {
         if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
-        _;
-    }
-
-    modifier onlyOwner() {
-        if (msg.sender != owner) revert NotOwner();
         _;
     }
 }

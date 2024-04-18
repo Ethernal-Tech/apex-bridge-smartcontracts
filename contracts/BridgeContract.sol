@@ -18,8 +18,6 @@ contract BridgeContract is IBridgeContract, Initializable, OwnableUpgradeable, U
     UTXOsManager private utxosManager;
     ValidatorsContract private validatorsContract;
 
-    address private owner;
-
     Chain[] private chains;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -230,11 +228,6 @@ contract BridgeContract is IBridgeContract, Initializable, OwnableUpgradeable, U
 
     modifier onlyValidator() {
         if (!validatorsContract.isValidator(msg.sender)) revert NotValidator();
-        _;
-    }
-
-    modifier onlyOwner() {
-        if (msg.sender != owner) revert NotOwner();
         _;
     }
 }

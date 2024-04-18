@@ -10,7 +10,6 @@ import "./ValidatorsContract.sol";
 contract SlotsManager is IBridgeContractStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private bridgeContractAddress;
     ValidatorsContract private validatorsContract;
-    address private owner;
 
     // BlockChainID -> CardanoBlock
     mapping(string => CardanoBlock) private lastObservedBlock;
@@ -67,11 +66,6 @@ contract SlotsManager is IBridgeContractStructs, Initializable, OwnableUpgradeab
 
     modifier onlyBridgeContract() {
         if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
-        _;
-    }
-
-    modifier onlyOwner() {
-        if (msg.sender != owner) revert NotOwner();
         _;
     }
 }

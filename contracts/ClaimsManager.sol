@@ -14,7 +14,6 @@ contract ClaimsManager is IBridgeContractStructs, Initializable, OwnableUpgradea
     ClaimsHelper private claimsHelper;
     UTXOsManager private utxosManager;
     ValidatorsContract private validatorsContract;
-    address private owner;
 
     // BlockchainID -> bool
     mapping(string => bool) public isChainRegistered;
@@ -347,11 +346,6 @@ contract ClaimsManager is IBridgeContractStructs, Initializable, OwnableUpgradea
 
     function getNumberOfVotes(bytes32 _hash) external view returns (uint8) {
         return claimsHelper.numberOfVotes(_hash);
-    }
-
-    modifier onlyOwner() {
-        if (msg.sender != owner) revert NotOwner();
-        _;
     }
 
     modifier onlyBridgeContract() {

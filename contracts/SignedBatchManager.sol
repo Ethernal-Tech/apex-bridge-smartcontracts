@@ -13,7 +13,6 @@ contract SignedBatchManager is IBridgeContractStructs, Initializable, OwnableUpg
     address private bridgeContractAddress;
     ClaimsHelper private claimsHelper;
     ValidatorsContract private validatorsContract;
-    address private owner;
 
     // BlockchanID -> batchId -> -signedBatchWithoutSignaturesHash -> SignedBatch[]
     mapping(string => mapping(uint256 => mapping(bytes32 => SignedBatch[]))) public signedBatches;
@@ -121,11 +120,6 @@ contract SignedBatchManager is IBridgeContractStructs, Initializable, OwnableUpg
 
     function getConfirmedBatch(string calldata _destinationChain) external view returns (ConfirmedBatch memory batch) {
         return lastConfirmedBatch[_destinationChain];
-    }
-
-    modifier onlyOwner() {
-        if (msg.sender != owner) revert NotOwner();
-        _;
     }
 
     modifier onlyBridgeContract() {
