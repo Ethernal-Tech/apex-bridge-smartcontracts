@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-interface IBridgeContractStructs {
+interface IBridgeStructs {
     struct SignedBatch {
         uint256 id;
         string destinationChainId;
@@ -99,7 +99,7 @@ interface IBridgeContractStructs {
         UTXO utxo;
         // the refund transaction itself
         string rawTransaction;
-        // validators signature over raw transaction
+        // validatorsArray signature over raw transaction
         // note: only multisig signs refund txs
         string multisigSignature;
         // retry attempt counter
@@ -149,10 +149,10 @@ interface IBridgeContractStructs {
     error ChainAlreadyRegistered(string _claimId);
     error NotOwner();
     error NotValidator();
-    error NotBridgeContract();
-    error NotClaimsManager();
-    error NotSignedBatchManager();
-    error NotSignedBatchManagerOrBridgeContract();
+    error NotBridge();
+    error NotClaims();
+    error NotSignedBatches();
+    error NotSignedBatchesOrBridge();
     error NotEnoughBridgingTokensAwailable(string _claimTransactionHash);
     error CanNotCreateBatchYet(string _blockchainID);
     error InvalidData(string data);

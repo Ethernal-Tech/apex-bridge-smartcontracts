@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import "./interfaces/IBridgeContractStructs.sol";
-import "./BridgeContract.sol";
-import "./ValidatorsContract.sol";
+import "./interfaces/IBridgeStructs.sol";
+import "./Bridge.sol";
+import "./Validators.sol";
 import "hardhat/console.sol";
 
-contract SlotsManager is IBridgeContractStructs {
-    address private bridgeContractAddress;
-    ValidatorsContract private validatorsContract;
+contract Slots is IBridgeStructs {
+    address private bridgeAddress;
+    Validators private validatorsArray;
     address private owner;
 
     // BlockChainID -> CardanoBlock
@@ -24,16 +24,16 @@ contract SlotsManager is IBridgeContractStructs {
         owner = msg.sender;
     }
 
-    function setDependencies(address _bridgeContractAddress, address _validatorsContractAddress) external onlyOwner {
-        bridgeContractAddress = _bridgeContractAddress;
-        validatorsContract = ValidatorsContract(_validatorsContractAddress);
+    function setDependencies(address _bridgeAddress, address _validatorsArrayAddress) external onlyOwner {
+        bridgeAddress = _bridgeAddress;
+        validatorsArray = Validators(_validatorsArrayAddress);
     }
 
     function updateBlocks(
         string calldata chainID,
         CardanoBlock[] calldata blocks,
         address _caller
-    ) external onlyBridgeContract {
+    ) external onlyBridge {
         // Check if the caller has already voted for this claim
         for (uint i = 0; i < blocks.length; i++) {
             CardanoBlock memory cblock = blocks[i];
@@ -44,7 +44,7 @@ contract SlotsManager is IBridgeContractStructs {
             slotValidatorVotedPerChain[chainID][chash][_caller] = true;
             slotVotesPerChain[chainID][chash]++;
             if (
-                slotVotesPerChain[chainID][chash] >= validatorsContract.getQuorumNumberOfValidators() &&
+                slotVotesPerChain[chainID][chash] >= validatorsArray.getQuorumNumberOfValidators() &&
                 cblock.blockSlot > lastObservedBlock[chainID].blockSlot
             ) {
                 lastObservedBlock[chainID] = cblock;
@@ -56,8 +56,8 @@ contract SlotsManager is IBridgeContractStructs {
         return lastObservedBlock[chainID];
     }
 
-    modifier onlyBridgeContract() {
-        if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
+    modifier onlyBridge() {
+        if (msg.sender != bridgeAddress) revert NotBridge();
         _;
     }
 

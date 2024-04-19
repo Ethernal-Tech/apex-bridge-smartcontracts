@@ -1,14 +1,11 @@
 import { ethers } from "hardhat";
 
 async function main() {
+  const bridge = await ethers.deployContract("Bridge");
 
-  const bridgeContract = await ethers.deployContract("BridgeContract");
+  await bridge.waitForDeployment();
 
-  await bridgeContract.waitForDeployment();
-
-  console.log(
-    `BridgeContract deployed to ${bridgeContract.target}`
-  );
+  console.log(`Bridge deployed to ${bridge.target}`);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

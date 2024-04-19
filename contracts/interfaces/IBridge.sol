@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import "./IBridgeContractStructs.sol";
+import "./IBridgeStructs.sol";
 
-abstract contract IBridgeContract is IBridgeContractStructs {
+abstract contract IBridge is IBridgeStructs {
     // Claims
     function submitClaims(ValidatorClaims calldata _claims) external virtual;
 
@@ -63,7 +63,7 @@ abstract contract IBridgeContract is IBridgeContractStructs {
 
     function getValidatorsCardanoData(
         string calldata _chainId
-    ) external view virtual returns (ValidatorCardanoData[] memory validators);
+    ) external view virtual returns (ValidatorCardanoData[] memory validatorsArray);
 
     function getLastObservedBlock(
         string calldata _sourceChain

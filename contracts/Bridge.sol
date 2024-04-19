@@ -2,21 +2,21 @@
 pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "./interfaces/IBridgeContract.sol";
+import "./interfaces/IBridge.sol";
 import "./ClaimsHelper.sol";
-import "./SlotsManager.sol";
-import "./ClaimsManager.sol";
-import "./SignedBatchManager.sol";
-import "./UTXOsManager.sol";
-import "./ValidatorsContract.sol";
+import "./Slots.sol";
+import "./Claims.sol";
+import "./SignedBatches.sol";
+import "./UTXOsc.sol";
+import "./Validators.sol";
 import "hardhat/console.sol";
 
-contract BridgeContract is IBridgeContract {
-    ClaimsManager private claimsManager;
-    SignedBatchManager private signedBatchManager;
-    SlotsManager private slotsManager;
-    UTXOsManager private utxosManager;
-    ValidatorsContract private validatorsContract;
+contract Bridge is IBridge {
+    Claims private claims;
+    SignedBatches private signedBatches;
+    Slots private slots;
+    UTXOsc private utxosc;
+    Validators private validatorsArray;
 
     address private owner;
 
@@ -27,22 +27,22 @@ contract BridgeContract is IBridgeContract {
     }
 
     function setDependencies(
-        address _claimsManagerAddress,
-        address _signedBatchManagerAddress,
-        address _slotsManagerAddress,
-        address _utxosManagerAddress,
-        address _validatorsContractAddress
+        address _claimsAddress,
+        address _signedBatchesAddress,
+        address _slotsAddress,
+        address _utxoscAddress,
+        address _validatorsArrayAddress
     ) external onlyOwner {
-        claimsManager = ClaimsManager(_claimsManagerAddress);
-        signedBatchManager = SignedBatchManager(_signedBatchManagerAddress);
-        slotsManager = SlotsManager(_slotsManagerAddress);
-        utxosManager = UTXOsManager(_utxosManagerAddress);
-        validatorsContract = ValidatorsContract(_validatorsContractAddress);
+        claims = Claims(_claimsAddress);
+        signedBatches = SignedBatches(_signedBatchesAddress);
+        slots = Slots(_slotsAddress);
+        utxosc = UTXOsc(_utxoscAddress);
+        validatorsArray = Validators(_validatorsArrayAddress);
     }
 
     // Claims
     function submitClaims(ValidatorClaims calldata _claims) external override onlyValidator {
-        claimsManager.submitClaims(_claims, msg.sender);
+        claims.submitClaims(_claims, msg.sender);
     }
 
     // Batches
@@ -52,7 +52,7 @@ contract BridgeContract is IBridgeContract {
             revert CanNotCreateBatchYet(_signedBatch.destinationChainId);
         }
         if (
-            !validatorsContract.isSignatureValid(
+            !validatorsArray.isSignatureValid(
                 _signedBatch.destinationChainId,
                 _signedBatch.rawTransaction,
                 _signedBatch.multisigSignature,
@@ -62,7 +62,7 @@ contract BridgeContract is IBridgeContract {
         ) {
             revert InvalidSignature();
         }
-        signedBatchManager.submitSignedBatch(_signedBatch, msg.sender);
+        signedBatches.submitSignedBatch(_signedBatch, msg.sender);
     }
 
     // Slots
@@ -70,7 +70,7 @@ contract BridgeContract is IBridgeContract {
         string calldata chainID,
         CardanoBlock[] calldata blocks
     ) external override onlyValidator {
-        slotsManager.updateBlocks(chainID, blocks, msg.sender);
+        slots.updateBlocks(chainID, blocks, msg.sender);
     }
 
     // Chain registration by Owner
@@ -79,10 +79,10 @@ contract BridgeContract is IBridgeContract {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
-        ValidatorAddressCardanoData[] calldata validators,
+        ValidatorAddressCardanoData[] calldata validatorsCardanoData,
         uint256 _tokenQuantity
     ) public override onlyOwner {
-        validatorsContract.setValidatorsCardanoData(_chainId, validators);
+        validatorsArray.setValidatorsCardanoData(_chainId, validatorsCardanoData);
         _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
     }
 
@@ -94,25 +94,20 @@ contract BridgeContract is IBridgeContract {
         ValidatorCardanoData calldata _validator,
         uint256 _tokenQuantity
     ) external override onlyValidator {
-        if (claimsManager.isChainRegistered(_chainId)) {
+        if (claims.isChainRegistered(_chainId)) {
             revert ChainAlreadyRegistered(_chainId);
         }
-        if (claimsManager.hasVoted(_chainId, msg.sender)) {
+        if (claims.hasVoted(_chainId, msg.sender)) {
             revert AlreadyProposed(_chainId);
         }
 
-        Chain memory _chain = Chain(
-            _chainId,
-            _initialUTXOs,
-            _addressMultisig,
-            _addressFeePayer
-        );
+        Chain memory _chain = Chain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer);
         bytes32 chainHash = keccak256(abi.encode(_chain));
 
-        claimsManager.setVoted(_chainId, msg.sender, chainHash);
-        validatorsContract.addValidatorCardanoData(_chainId, msg.sender, _validator);
+        claims.setVoted(_chainId, msg.sender, chainHash);
+        validatorsArray.addValidatorCardanoData(_chainId, msg.sender, _validator);
 
-        if (claimsManager.getNumberOfVotes(chainHash) == validatorsContract.getValidatorsCount()) {
+        if (claims.getNumberOfVotes(chainHash) == validatorsArray.getValidatorsCount()) {
             _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
         } else {
             emit newChainProposal(_chainId, msg.sender);
@@ -126,20 +121,20 @@ contract BridgeContract is IBridgeContract {
         string calldata _addressFeePayer,
         uint256 _tokenQuantity
     ) internal {
-        claimsManager.setChainRegistered(_chainId);
+        claims.setChainRegistered(_chainId);
         chains.push();
         chains[chains.length - 1].id = _chainId;
         chains[chains.length - 1].utxos = _initialUTXOs;
         chains[chains.length - 1].addressMultisig = _addressMultisig;
         chains[chains.length - 1].addressFeePayer = _addressFeePayer;
 
-        utxosManager.setInitialUTxOs(_chainId, _initialUTXOs);
+        utxosc.setInitialUTxOs(_chainId, _initialUTXOs);
 
-        claimsManager.setTokenQuantity(_chainId, _tokenQuantity);
+        claims.setTokenQuantity(_chainId, _tokenQuantity);
 
-        claimsManager.resetCurrentBatchBlock(_chainId);
+        claims.resetCurrentBatchBlock(_chainId);
 
-        claimsManager.setNextTimeoutBlock(_chainId, block.number);
+        claims.setNextTimeoutBlock(_chainId, block.number);
 
         emit newChainRegistered(_chainId);
     }
@@ -150,13 +145,13 @@ contract BridgeContract is IBridgeContract {
     // It will also check if the given validator already submitted a signed batch and return the response accordingly.
     function shouldCreateBatch(string calldata _destinationChain) public view override returns (bool batch) {
         if (
-            claimsManager.isBatchCreated(_destinationChain) ||
-            signedBatchManager.isBatchAlreadySubmittedBy(_destinationChain, msg.sender)
+            claims.isBatchCreated(_destinationChain) ||
+            signedBatches.isBatchAlreadySubmittedBy(_destinationChain, msg.sender)
         ) {
             return false;
         }
 
-        return claimsManager.shouldCreateBatch(_destinationChain);
+        return claims.shouldCreateBatch(_destinationChain);
     }
 
     function getNextBatchId(string calldata _destinationChain) external view override returns (uint256 result) {
@@ -164,7 +159,7 @@ contract BridgeContract is IBridgeContract {
             return 0;
         }
 
-        (uint256 batchId, ) = signedBatchManager.lastConfirmedBatch(_destinationChain);
+        (uint256 batchId, ) = signedBatches.lastConfirmedBatch(_destinationChain);
 
         return batchId + 1;
     }
@@ -178,13 +173,13 @@ contract BridgeContract is IBridgeContract {
             revert CanNotCreateBatchYet(_destinationChain);
         }
 
-        uint256 firstTxNonce = claimsManager.lastBatchedTxNonce(_destinationChain) + 1;
+        uint256 firstTxNonce = claims.lastBatchedTxNonce(_destinationChain) + 1;
 
-        uint256 counterConfirmedTransactions = claimsManager.getBatchingTxsCount(_destinationChain);
+        uint256 counterConfirmedTransactions = claims.getBatchingTxsCount(_destinationChain);
         _confirmedTransactions = new ConfirmedTransaction[](counterConfirmedTransactions);
 
         for (uint i = 0; i < counterConfirmedTransactions; i++) {
-            _confirmedTransactions[i] = claimsManager.getConfirmedTransaction(_destinationChain, firstTxNonce + i);
+            _confirmedTransactions[i] = claims.getConfirmedTransaction(_destinationChain, firstTxNonce + i);
         }
 
         return _confirmedTransactions;
@@ -193,25 +188,25 @@ contract BridgeContract is IBridgeContract {
     function getAvailableUTXOs(
         string calldata _destinationChain
     ) external view override returns (UTXOs memory availableUTXOs) {
-        return utxosManager.getChainUTXOs(_destinationChain);
+        return utxosc.getChainUTXOs(_destinationChain);
     }
 
     function getConfirmedBatch(
         string calldata _destinationChain
     ) external view override returns (ConfirmedBatch memory batch) {
-        return signedBatchManager.getConfirmedBatch(_destinationChain);
+        return signedBatches.getConfirmedBatch(_destinationChain);
     }
 
     function getValidatorsCardanoData(
         string calldata _chainId
-    ) external view override returns (ValidatorCardanoData[] memory validators) {
-        return validatorsContract.getValidatorsCardanoData(_chainId);
+    ) external view override returns (ValidatorCardanoData[] memory validatorsCardanoData) {
+        return validatorsArray.getValidatorsCardanoData(_chainId);
     }
 
     function getLastObservedBlock(
         string calldata _sourceChain
     ) external view override returns (CardanoBlock memory cblock) {
-        return slotsManager.getLastObservedBlock(_sourceChain);
+        return slots.getLastObservedBlock(_sourceChain);
     }
 
     function getAllRegisteredChains() external view override returns (Chain[] memory _chains) {
@@ -221,12 +216,12 @@ contract BridgeContract is IBridgeContract {
     function getRawTransactionFromLastBatch(
         string calldata _destinationChain
     ) external view override returns (string memory) {
-        (, string memory _rawTransaction) = signedBatchManager.lastConfirmedBatch(_destinationChain);
+        (, string memory _rawTransaction) = signedBatches.lastConfirmedBatch(_destinationChain);
         return _rawTransaction;
     }
 
     modifier onlyValidator() {
-        if (!validatorsContract.isValidator(msg.sender)) revert NotValidator();
+        if (!validatorsArray.isValidator(msg.sender)) revert NotValidator();
         _;
     }
 
