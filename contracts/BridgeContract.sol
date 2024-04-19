@@ -26,6 +26,10 @@ contract BridgeContract is IBridgeContract {
         owner = msg.sender;
     }
 
+    function checkOwner() external view override returns (address) {
+        return owner;
+    }
+
     function setDependencies(
         address _claimsManagerAddress,
         address _signedBatchManagerAddress,
@@ -101,12 +105,7 @@ contract BridgeContract is IBridgeContract {
             revert AlreadyProposed(_chainId);
         }
 
-        Chain memory _chain = Chain(
-            _chainId,
-            _initialUTXOs,
-            _addressMultisig,
-            _addressFeePayer
-        );
+        Chain memory _chain = Chain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer);
         bytes32 chainHash = keccak256(abi.encode(_chain));
 
         claimsManager.setVoted(_chainId, msg.sender, chainHash);
