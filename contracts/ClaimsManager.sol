@@ -69,6 +69,10 @@ contract ClaimsManager is IBridgeContractStructs, Initializable, OwnableUpgradea
                 revert ChainIsNotRegistered(_claim.sourceChainID);
             }
 
+            if (!isChainRegistered[_claim.destinationChainID]) {
+                revert ChainIsNotRegistered(_claim.destinationChainID);
+            }
+
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
                 revert AlreadyProposed(_claim.observedTransactionHash);
             }
