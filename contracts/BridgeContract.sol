@@ -26,7 +26,7 @@ contract BridgeContract is IBridgeContract {
         owner = msg.sender;
     }
 
-    function checkOwner() external view override returns (address) {
+    function checkOwner() external view returns (address) {
         return owner;
     }
 
