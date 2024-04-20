@@ -22,7 +22,7 @@ contract ClaimsManager is IBridgeContractStructs, Initializable, OwnableUpgradea
     mapping(string => uint256) public nextTimeoutBlock;
 
     uint16 public maxNumberOfTransactions;
-    uint8 private timeoutBlocksNumber;
+    uint8 public timeoutBlocksNumber;
 
     // BlockchainId -> TokenQuantity
     mapping(string => uint256) public chainTokenQuantity;
