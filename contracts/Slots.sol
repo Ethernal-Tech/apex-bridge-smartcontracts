@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
-import "./Bridge.sol";
 import "./Validators.sol";
-import "hardhat/console.sol";
 
-contract Slots is IBridgeStructs {
+contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private bridgeAddress;
-    Validators private validatorsArray;
-    address private owner;
+    Validators private validators;
 
     // BlockChainID -> CardanoBlock
     mapping(string => CardanoBlock) private lastObservedBlock;
@@ -20,13 +20,21 @@ contract Slots is IBridgeStructs {
     // BlockchanID -> hash(slot, hash) -> bool - validator voted already or not
     mapping(string => mapping(bytes32 => mapping(address => bool))) private slotValidatorVotedPerChain;
 
-    function initialize() public {
-        owner = msg.sender;
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
     }
 
-    function setDependencies(address _bridgeAddress, address _validatorsArrayAddress) external onlyOwner {
+    function initialize() public initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
+    function setDependencies(address _bridgeAddress, address _validatorsAddress) external onlyOwner {
         bridgeAddress = _bridgeAddress;
-        validatorsArray = Validators(_validatorsArrayAddress);
+        validators = Validators(_validatorsAddress);
     }
 
     function updateBlocks(
@@ -44,7 +52,7 @@ contract Slots is IBridgeStructs {
             slotValidatorVotedPerChain[chainID][chash][_caller] = true;
             slotVotesPerChain[chainID][chash]++;
             if (
-                slotVotesPerChain[chainID][chash] >= validatorsArray.getQuorumNumberOfValidators() &&
+                slotVotesPerChain[chainID][chash] >= validators.getQuorumNumberOfValidators() &&
                 cblock.blockSlot > lastObservedBlock[chainID].blockSlot
             ) {
                 lastObservedBlock[chainID] = cblock;
@@ -58,11 +66,6 @@ contract Slots is IBridgeStructs {
 
     modifier onlyBridge() {
         if (msg.sender != bridgeAddress) revert NotBridge();
-        _;
-    }
-
-    modifier onlyOwner() {
-        if (msg.sender != owner) revert NotOwner();
         _;
     }
 }

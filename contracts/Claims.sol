@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
-import "./Bridge.sol";
 import "./ClaimsHelper.sol";
-import "./Validators.sol";
 import "./UTXOsc.sol";
-import "hardhat/console.sol";
+import "./Validators.sol";
 
-contract Claims is IBridgeStructs {
+contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
     UTXOsc private utxosc;
-    Validators private validatorsArray;
-    address private owner;
+    Validators private validators;
 
     // BlockchainID -> bool
     mapping(string => bool) public isChainRegistered;
@@ -22,7 +22,7 @@ contract Claims is IBridgeStructs {
     mapping(string => uint256) public nextTimeoutBlock;
 
     uint16 public maxNumberOfTransactions;
-    uint8 private timeoutBlocksNumber;
+    uint8 public timeoutBlocksNumber;
 
     // BlockchainId -> TokenQuantity
     mapping(string => uint256) public chainTokenQuantity;
@@ -36,24 +36,30 @@ contract Claims is IBridgeStructs {
     // chainID -> nonce (nonce of the last transaction from the executed batch)
     mapping(string => uint256) public lastBatchedTxNonce;
 
-    function initialize() public {
-        owner = msg.sender;
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
     }
+
+    function initialize(uint16 _maxNumberOfTransactions, uint8 _timeoutBlocksNumber) public initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+        maxNumberOfTransactions = _maxNumberOfTransactions;
+        timeoutBlocksNumber = _timeoutBlocksNumber;
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function setDependencies(
         address _bridgeAddress,
         address _claimsHelperAddress,
         address _utxosc,
-        address _validatorsArrayAddress,
-        uint16 _maxNumberOfTransactions,
-        uint8 _timeoutBlocksNumber
+        address _validatorsAddress
     ) external onlyOwner {
         bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         utxosc = UTXOsc(_utxosc);
-        validatorsArray = Validators(_validatorsArrayAddress);
-        maxNumberOfTransactions = _maxNumberOfTransactions;
-        timeoutBlocksNumber = _timeoutBlocksNumber;
+        validators = Validators(_validatorsAddress);
     }
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
@@ -61,6 +67,10 @@ contract Claims is IBridgeStructs {
             BridgingRequestClaim memory _claim = _claims.bridgingRequestClaims[i];
             if (!isChainRegistered[_claim.sourceChainID]) {
                 revert ChainIsNotRegistered(_claim.sourceChainID);
+            }
+
+            if (!isChainRegistered[_claim.destinationChainID]) {
+                revert ChainIsNotRegistered(_claim.destinationChainID);
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
@@ -159,7 +169,7 @@ contract Claims is IBridgeStructs {
 
             uint256 confirmedTxCount = getBatchingTxsCount(_claim.destinationChainID);
             if (
-                (claimsHelper.currentBatchBlock(_claim.destinationChainID) != -1) && // check if there is no batch in progress
+                (claimsHelper.currentBatchBlock(_claim.destinationChainID) != -1) && // there is no batch in progress
                 (confirmedTxCount == 0) && // check if there is no other confirmed transactions
                 (block.number > nextTimeoutBlock[_claim.destinationChainID])
             ) // check if the current block number is greater than the NEXT_BATCH_TIMEOUT_BLOCK
@@ -309,7 +319,7 @@ contract Claims is IBridgeStructs {
     }
 
     function hasConsensus(bytes32 _hash) public view returns (bool) {
-        return claimsHelper.numberOfVotes(_hash) >= validatorsArray.getQuorumNumberOfValidators();
+        return claimsHelper.numberOfVotes(_hash) >= validators.getQuorumNumberOfValidators();
     }
 
     function getNeededTokenQuantity(Receiver[] memory _receivers) internal pure returns (uint256) {
@@ -340,11 +350,6 @@ contract Claims is IBridgeStructs {
 
     function getNumberOfVotes(bytes32 _hash) external view returns (uint8) {
         return claimsHelper.numberOfVotes(_hash);
-    }
-
-    modifier onlyOwner() {
-        if (msg.sender != owner) revert NotOwner();
-        _;
     }
 
     modifier onlyBridge() {

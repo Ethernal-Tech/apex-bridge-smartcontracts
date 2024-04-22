@@ -1,43 +1,49 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridge.sol";
-import "./ClaimsHelper.sol";
-import "./Slots.sol";
 import "./Claims.sol";
 import "./SignedBatches.sol";
+import "./Slots.sol";
 import "./UTXOsc.sol";
 import "./Validators.sol";
-import "hardhat/console.sol";
 
-contract Bridge is IBridge {
+contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     Claims private claims;
     SignedBatches private signedBatches;
     Slots private slots;
     UTXOsc private utxosc;
-    Validators private validatorsArray;
-
-    address private owner;
+    Validators private validators;
 
     Chain[] private chains;
 
-    function initialize() public {
-        owner = msg.sender;
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
     }
+
+    function initialize() public initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function setDependencies(
         address _claimsAddress,
         address _signedBatchesAddress,
         address _slotsAddress,
         address _utxoscAddress,
-        address _validatorsArrayAddress
+        address _validatorsAddress
     ) external onlyOwner {
         claims = Claims(_claimsAddress);
         signedBatches = SignedBatches(_signedBatchesAddress);
         slots = Slots(_slotsAddress);
         utxosc = UTXOsc(_utxoscAddress);
-        validatorsArray = Validators(_validatorsArrayAddress);
+        validators = Validators(_validatorsAddress);
     }
 
     // Claims
@@ -52,7 +58,7 @@ contract Bridge is IBridge {
             revert CanNotCreateBatchYet(_signedBatch.destinationChainId);
         }
         if (
-            !validatorsArray.isSignatureValid(
+            !validators.isSignatureValid(
                 _signedBatch.destinationChainId,
                 _signedBatch.rawTransaction,
                 _signedBatch.multisigSignature,
@@ -71,6 +77,7 @@ contract Bridge is IBridge {
         CardanoBlock[] calldata blocks
     ) external override onlyValidator {
         slots.updateBlocks(chainID, blocks, msg.sender);
+        slots.updateBlocks(chainID, blocks, msg.sender);
     }
 
     // Chain registration by Owner
@@ -79,10 +86,10 @@ contract Bridge is IBridge {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
-        ValidatorAddressCardanoData[] calldata validatorsCardanoData,
+        ValidatorAddressCardanoData[] calldata _validatorsAddressCardanoData,
         uint256 _tokenQuantity
     ) public override onlyOwner {
-        validatorsArray.setValidatorsCardanoData(_chainId, validatorsCardanoData);
+        validators.setValidatorsCardanoData(_chainId, _validatorsAddressCardanoData);
         _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
     }
 
@@ -91,7 +98,7 @@ contract Bridge is IBridge {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
-        ValidatorCardanoData calldata _validator,
+        ValidatorCardanoData calldata _validatorCardanoData,
         uint256 _tokenQuantity
     ) external override onlyValidator {
         if (claims.isChainRegistered(_chainId)) {
@@ -105,9 +112,9 @@ contract Bridge is IBridge {
         bytes32 chainHash = keccak256(abi.encode(_chain));
 
         claims.setVoted(_chainId, msg.sender, chainHash);
-        validatorsArray.addValidatorCardanoData(_chainId, msg.sender, _validator);
+        validators.addValidatorCardanoData(_chainId, msg.sender, _validatorCardanoData);
 
-        if (claims.getNumberOfVotes(chainHash) == validatorsArray.getValidatorsCount()) {
+        if (claims.getNumberOfVotes(chainHash) == validators.getValidatorsCount()) {
             _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
         } else {
             emit newChainProposal(_chainId, msg.sender);
@@ -199,8 +206,8 @@ contract Bridge is IBridge {
 
     function getValidatorsCardanoData(
         string calldata _chainId
-    ) external view override returns (ValidatorCardanoData[] memory validatorsCardanoData) {
-        return validatorsArray.getValidatorsCardanoData(_chainId);
+    ) external view override returns (ValidatorCardanoData[] memory validatorCardanoData) {
+        return validators.getValidatorsCardanoData(_chainId);
     }
 
     function getLastObservedBlock(
@@ -221,12 +228,7 @@ contract Bridge is IBridge {
     }
 
     modifier onlyValidator() {
-        if (!validatorsArray.isValidator(msg.sender)) revert NotValidator();
-        _;
-    }
-
-    modifier onlyOwner() {
-        if (msg.sender != owner) revert NotOwner();
+        if (!validators.isValidator(msg.sender)) revert NotValidator();
         _;
     }
 }

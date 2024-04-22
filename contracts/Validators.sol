@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
 
-contract Validators is IBridgeStructs {
+contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     // slither-disable too-many-digits
     address constant PRECOMPILE = 0x0000000000000000000000000000000000002050;
     uint256 constant PRECOMPILE_GAS = 150000;
 
     address private bridgeAddress;
-    address private owner;
 
     // BlockchainID -> validator address -> ValidatorCardanoData
     mapping(string => mapping(address => ValidatorCardanoData)) private validatorsCardanoDataPerAddress;
@@ -17,20 +19,28 @@ contract Validators is IBridgeStructs {
     mapping(string => ValidatorCardanoData[]) private validatorsCardanoData;
 
     // keep validatorsArrayAddresses because maybe
-    address[] private validatorsArrayAddresses;
+    address[] private validatorsAddresses;
     // mapping in case they could be added/removed
     mapping(address => bool) private isAddressValidator;
 
     uint8 public validatorsCount;
 
-    function initialize(address[] memory _validatorsArray) public {
-        owner = msg.sender;
-        for (uint i = 0; i < _validatorsArray.length; i++) {
-            isAddressValidator[_validatorsArray[i]] = true;
-            validatorsArrayAddresses.push(_validatorsArray[i]);
-        }
-        validatorsCount = uint8(_validatorsArray.length);
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
     }
+
+    function initialize(address[] memory _validators) public initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+        for (uint i = 0; i < _validators.length; i++) {
+            isAddressValidator[_validators[i]] = true;
+            validatorsAddresses.push(_validators[i]);
+        }
+        validatorsCount = uint8(_validators.length);
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function setDependencies(address _bridgeAddress) external onlyOwner {
         bridgeAddress = _bridgeAddress;
@@ -55,14 +65,14 @@ contract Validators is IBridgeStructs {
 
     function setValidatorsCardanoData(
         string calldata _chainId,
-        ValidatorAddressCardanoData[] calldata validatorsArray
+        ValidatorAddressCardanoData[] calldata validatorAddressCardanoData
     ) external onlyBridge {
-        if (validatorsCount != validatorsArray.length) {
-            revert InvalidData("validatorsArray count");
+        if (validatorsCount != validatorAddressCardanoData.length) {
+            revert InvalidData("validators count");
         }
         // set validator cardano data for each validator
-        for (uint i = 0; i < validatorsArray.length; i++) {
-            ValidatorAddressCardanoData memory dt = validatorsArray[i];
+        for (uint i = 0; i < validatorAddressCardanoData.length; i++) {
+            ValidatorAddressCardanoData memory dt = validatorAddressCardanoData[i];
             validatorsCardanoDataPerAddress[_chainId][dt.addr] = dt.data;
         }
         _updateValidatorCardanoData(_chainId);
@@ -102,21 +112,19 @@ contract Validators is IBridgeStructs {
     function _updateValidatorCardanoData(string calldata _chainId) internal {
         // validatorsCardanoDataPerAddress must be set for all the validator addresses
         uint cnt = 0;
-        for (uint i = 0; i < validatorsArrayAddresses.length; i++) {
-            if (bytes(validatorsCardanoDataPerAddress[_chainId][validatorsArrayAddresses[i]].verifyingKey).length > 0) {
+        for (uint i = 0; i < validatorsAddresses.length; i++) {
+            if (bytes(validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]].verifyingKey).length > 0) {
                 cnt++;
             }
         }
 
-        if (cnt != validatorsArrayAddresses.length) {
+        if (cnt != validatorsAddresses.length) {
             return;
         }
 
         delete validatorsCardanoData[_chainId];
-        for (uint i = 0; i < validatorsArrayAddresses.length; i++) {
-            validatorsCardanoData[_chainId].push(
-                validatorsCardanoDataPerAddress[_chainId][validatorsArrayAddresses[i]]
-            );
+        for (uint i = 0; i < validatorsAddresses.length; i++) {
+            validatorsCardanoData[_chainId].push(validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]]);
         }
     }
 
@@ -136,11 +144,6 @@ contract Validators is IBridgeStructs {
 
     modifier onlyBridge() {
         if (msg.sender != bridgeAddress) revert NotBridge();
-        _;
-    }
-
-    modifier onlyOwner() {
-        if (msg.sender != owner) revert NotOwner();
         _;
     }
 }

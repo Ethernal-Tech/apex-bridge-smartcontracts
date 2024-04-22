@@ -1,29 +1,35 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
-import "./Bridge.sol";
-import "./SignedBatches.sol";
-import "hardhat/console.sol";
 
-contract UTXOsc is IBridgeStructs {
+contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private bridgeAddress;
     address private claimsAddress;
-    address private owner;
 
     uint64 private utxoNonceCounter;
 
     // Blockchain ID -> UTXOs
     mapping(string => UTXOs) private chainUTXOs;
 
-    function initialize() public {
-        owner = msg.sender;
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
     }
+
+    function initialize() public initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function setDependencies(address _bridgeAddress, address _claimsAddress) external onlyOwner {
         bridgeAddress = _bridgeAddress;
         claimsAddress = _claimsAddress;
-        owner = msg.sender;
     }
 
     function getChainUTXOs(string memory _chainID) external view returns (UTXOs memory) {
@@ -125,11 +131,6 @@ contract UTXOsc is IBridgeStructs {
 
     modifier onlyClaims() {
         if (msg.sender != claimsAddress) revert NotClaims();
-        _;
-    }
-
-    modifier onlyOwner() {
-        if (msg.sender != owner) revert NotOwner();
         _;
     }
 }

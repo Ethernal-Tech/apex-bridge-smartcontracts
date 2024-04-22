@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
-import "hardhat/console.sol";
-import "./Slots.sol";
 
-contract ClaimsHelper is IBridgeStructs {
+contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private claimsAddress;
     address private signedBatchesAddress;
-    address private owner;
 
     // blockchain -> claimHash -> queued
     mapping(string => mapping(string => bool)) public isClaimConfirmed;
@@ -26,9 +25,17 @@ contract ClaimsHelper is IBridgeStructs {
     // ClaimHash -> numberOfVotes
     mapping(bytes32 => uint8) public numberOfVotes;
 
-    function initialize() public {
-        owner = msg.sender;
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
     }
+
+    function initialize() public initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function setDependencies(address _claimsAddress, address _signedBatchesAddress) external onlyOwner {
         claimsAddress = _claimsAddress;
@@ -86,11 +93,6 @@ contract ClaimsHelper is IBridgeStructs {
         }
 
         return true;
-    }
-
-    modifier onlyOwner() {
-        if (msg.sender != owner) revert NotOwner();
-        _;
     }
 
     modifier onlySignedBatchesOrClaims() {

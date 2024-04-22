@@ -1,19 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBridgeStructs.sol";
-import "./Bridge.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
 
-import "hardhat/console.sol";
-
-contract SignedBatches is IBridgeStructs {
+contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
-    Validators private validatorsArray;
-    address private owner;
+    Validators private validators;
 
     // BlockchanID -> batchId -> -signedBatchWithoutSignaturesHash -> SignedBatch[]
     mapping(string => mapping(uint256 => mapping(bytes32 => SignedBatch[]))) public signedBatches;
@@ -21,18 +20,26 @@ contract SignedBatches is IBridgeStructs {
     // BlockchainID -> ConfirmedBatch
     mapping(string => ConfirmedBatch) public lastConfirmedBatch;
 
-    function initialize() public {
-        owner = msg.sender;
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
     }
+
+    function initialize() public initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function setDependencies(
         address _bridgeAddress,
         address _claimsHelperAddress,
-        address _validatorsArrayAddress
+        address _validatorsAddress
     ) external onlyOwner {
         bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
-        validatorsArray = Validators(_validatorsArrayAddress);
+        validators = Validators(_validatorsAddress);
     }
 
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
@@ -104,7 +111,7 @@ contract SignedBatches is IBridgeStructs {
     }
 
     function hasConsensus(bytes32 _hash) public view returns (bool) {
-        return claimsHelper.numberOfVotes(_hash) >= validatorsArray.getQuorumNumberOfValidators();
+        return claimsHelper.numberOfVotes(_hash) >= validators.getQuorumNumberOfValidators();
     }
 
     function isBatchAlreadySubmittedBy(string calldata _destinationChain, address addr) public view returns (bool ok) {
@@ -113,11 +120,6 @@ contract SignedBatches is IBridgeStructs {
 
     function getConfirmedBatch(string calldata _destinationChain) external view returns (ConfirmedBatch memory batch) {
         return lastConfirmedBatch[_destinationChain];
-    }
-
-    modifier onlyOwner() {
-        if (msg.sender != owner) revert NotOwner();
-        _;
     }
 
     modifier onlyBridge() {

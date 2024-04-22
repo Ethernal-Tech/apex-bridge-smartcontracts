@@ -1,9 +1,6 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
-
-// const { ProxyAgent, setGlobalDispatcher } = require("undici")
-// const proxyAgent = new ProxyAgent("http://ftn.proxy:8080")
-// setGlobalDispatcher(proxyAgent)
+import "@nomiclabs/hardhat-solhint";
 
 const config: HardhatUserConfig = {
   solidity: {
