@@ -21,7 +21,7 @@ async function main() {
   const utxosc = await UTXOsc.deploy();
 
   const Validators = await ethers.getContractFactory("Validators");
-  const validators = await Validators.deploy();
+  const validatorsc = await Validators.deploy();
 
   // deployment of contract proxy
   const BridgeProxy = await ethers.getContractFactory("ERC1967Proxy");
@@ -72,7 +72,7 @@ async function main() {
   ];
 
   const validatorsProxy = await ValidatorsProxy.deploy(
-    await validators.getAddress(),
+    await validatorsc.getAddress(),
     Validators.interface.encodeFunctionData("initialize", [validators])
   );
 
@@ -118,7 +118,7 @@ async function main() {
   console.log("Claims timeoutBlocksNumber:", await claims.timeoutBlocksNumber());
   console.log("ClaimsDeployed timeoutBlocksNumber:", await claimsDeployed.timeoutBlocksNumber());
   console.log("---");
-  console.log("ValdatorsContract numberOfValidators:", await validators.validatorsCount());
+  console.log("ValdatorsContract numberOfValidators:", await validatorsc.validatorsCount());
   console.log("ValdatorsContractDeployed numberOfValidators:", await validatorsDeployed.validatorsCount());
 
   //await bridgeDeployed.console.log(`Bridge deployed to ${bridge.target}`);

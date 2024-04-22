@@ -69,7 +69,6 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
             revert InvalidSignature();
         }
         signedBatches.submitSignedBatch(_signedBatch, msg.sender);
-        signedBatches.submitSignedBatch(_signedBatch, msg.sender);
     }
 
     // Slots
@@ -130,7 +129,6 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint256 _tokenQuantity
     ) internal {
         claims.setChainRegistered(_chainId);
-        claims.setChainRegistered(_chainId);
         chains.push();
         chains[chains.length - 1].id = _chainId;
         chains[chains.length - 1].utxos = _initialUTXOs;
@@ -138,15 +136,11 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         chains[chains.length - 1].addressFeePayer = _addressFeePayer;
 
         utxosc.setInitialUTxOs(_chainId, _initialUTXOs);
-        utxosc.setInitialUTxOs(_chainId, _initialUTXOs);
 
-        claims.setTokenQuantity(_chainId, _tokenQuantity);
         claims.setTokenQuantity(_chainId, _tokenQuantity);
 
         claims.resetCurrentBatchBlock(_chainId);
-        claims.resetCurrentBatchBlock(_chainId);
 
-        claims.setNextTimeoutBlock(_chainId, block.number);
         claims.setNextTimeoutBlock(_chainId, block.number);
 
         emit newChainRegistered(_chainId);
