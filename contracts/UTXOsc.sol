@@ -4,11 +4,11 @@ pragma solidity ^0.8.23;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "./interfaces/IBridgeContractStructs.sol";
+import "./interfaces/IBridgeStructs.sol";
 
-contract UTXOsManager is IBridgeContractStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
-    address private bridgeContractAddress;
-    address private claimsManagerAddress;
+contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+    address private bridgeAddress;
+    address private claimsAddress;
 
     uint64 private utxoNonceCounter;
 
@@ -27,26 +27,26 @@ contract UTXOsManager is IBridgeContractStructs, Initializable, OwnableUpgradeab
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-    function setDependencies(address _bridgeContractAddress, address _claimsManagerAddress) external onlyOwner {
-        bridgeContractAddress = _bridgeContractAddress;
-        claimsManagerAddress = _claimsManagerAddress;
+    function setDependencies(address _bridgeAddress, address _claimsAddress) external onlyOwner {
+        bridgeAddress = _bridgeAddress;
+        claimsAddress = _claimsAddress;
     }
 
     function getChainUTXOs(string memory _chainID) external view returns (UTXOs memory) {
         return chainUTXOs[_chainID];
     }
 
-    function addNewBridgingUTXO(string calldata _chainID, UTXO calldata _utxo) public onlyClaimsManager {
+    function addNewBridgingUTXO(string calldata _chainID, UTXO calldata _utxo) public onlyClaims {
         UTXO memory tempUtxo = _utxo;
         tempUtxo.nonce = ++utxoNonceCounter;
         chainUTXOs[_chainID].multisigOwnedUTXOs.push(tempUtxo);
     }
 
-    function addUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external onlyClaimsManager {
+    function addUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external onlyClaims {
         _addNewUTXOs(_chainID, _outputUTXOs);
     }
 
-    function removeUsedUTXOs(string calldata _chainID, UTXOs calldata _utxos) external onlyClaimsManager {
+    function removeUsedUTXOs(string calldata _chainID, UTXOs calldata _utxos) external onlyClaims {
         _removeMultisigUTXOs(_chainID, _utxos.multisigOwnedUTXOs);
         _removeFeeUTXOs(_chainID, _utxos.feePayerOwnedUTXOs);
     }
@@ -111,7 +111,7 @@ contract UTXOsManager is IBridgeContractStructs, Initializable, OwnableUpgradeab
         }
     }
 
-    function setInitialUTxOs(string calldata _chainID, UTXOs calldata _UTXOs) external onlyBridgeContract {
+    function setInitialUTxOs(string calldata _chainID, UTXOs calldata _UTXOs) external onlyBridge {
         _addNewUTXOs(_chainID, _UTXOs);
     }
 
@@ -124,13 +124,13 @@ contract UTXOsManager is IBridgeContractStructs, Initializable, OwnableUpgradeab
             a.amount == b.amount;
     }
 
-    modifier onlyBridgeContract() {
-        if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
+    modifier onlyBridge() {
+        if (msg.sender != bridgeAddress) revert NotBridge();
         _;
     }
 
-    modifier onlyClaimsManager() {
-        if (msg.sender != claimsManagerAddress) revert NotClaimsManager();
+    modifier onlyClaims() {
+        if (msg.sender != claimsAddress) revert NotClaims();
         _;
     }
 }

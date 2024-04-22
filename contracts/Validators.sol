@@ -4,14 +4,14 @@ pragma solidity ^0.8.23;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "./interfaces/IBridgeContractStructs.sol";
+import "./interfaces/IBridgeStructs.sol";
 
-contract ValidatorsContract is IBridgeContractStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract ValidatorsContract is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     // slither-disable too-many-digits
     address constant PRECOMPILE = 0x0000000000000000000000000000000000002050;
     uint256 constant PRECOMPILE_GAS = 150000;
 
-    address private bridgeContractAddress;
+    address private bridgeAddress;
 
     // BlockchainID -> validator address -> ValidatorCardanoData
     mapping(string => mapping(address => ValidatorCardanoData)) private validatorsCardanoDataPerAddress;
@@ -42,8 +42,8 @@ contract ValidatorsContract is IBridgeContractStructs, Initializable, OwnableUpg
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-    function setDependencies(address _bridgeContractAddress) external onlyOwner {
-        bridgeContractAddress = _bridgeContractAddress;
+    function setDependencies(address _bridgeAddress) external onlyOwner {
+        bridgeAddress = _bridgeAddress;
     }
 
     function isValidator(address addr) public view returns (bool) {
@@ -66,7 +66,7 @@ contract ValidatorsContract is IBridgeContractStructs, Initializable, OwnableUpg
     function setValidatorsCardanoData(
         string calldata _chainId,
         ValidatorAddressCardanoData[] calldata validators
-    ) external onlyBridgeContract {
+    ) external onlyBridge {
         if (validatorsCount != validators.length) {
             revert InvalidData("validators count");
         }
@@ -82,7 +82,7 @@ contract ValidatorsContract is IBridgeContractStructs, Initializable, OwnableUpg
         string calldata _chainId,
         address addr,
         ValidatorCardanoData calldata data
-    ) external onlyBridgeContract {
+    ) external onlyBridge {
         // We dont have enough stack to validate signatures bellow
         // but if validator does not provide valid keys he will not be able to send batches
         // so i think we are good without these checks. will left them for historical reason
@@ -142,8 +142,8 @@ contract ValidatorsContract is IBridgeContractStructs, Initializable, OwnableUpg
         return callSuccess && abi.decode(returnData, (bool));
     }
 
-    modifier onlyBridgeContract() {
-        if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
+    modifier onlyBridge() {
+        if (msg.sender != bridgeAddress) revert NotBridge();
         _;
     }
 }

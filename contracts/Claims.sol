@@ -4,15 +4,15 @@ pragma solidity ^0.8.23;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "./interfaces/IBridgeContractStructs.sol";
+import "./interfaces/IBridgeStructs.sol";
 import "./ClaimsHelper.sol";
-import "./UTXOsManager.sol";
-import "./ValidatorsContract.sol";
+import "./UTXOsc.sol";
+import "./Validators.sol";
 
-contract ClaimsManager is IBridgeContractStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
-    address private bridgeContractAddress;
+contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+    address private bridgeAddress;
     ClaimsHelper private claimsHelper;
-    UTXOsManager private utxosManager;
+    UTXOsc private utxosc;
     ValidatorsContract private validatorsContract;
 
     // BlockchainID -> bool
@@ -51,18 +51,18 @@ contract ClaimsManager is IBridgeContractStructs, Initializable, OwnableUpgradea
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function setDependencies(
-        address _bridgeContractAddress,
+        address _bridgeAddress,
         address _claimsHelperAddress,
-        address _utxosManager,
+        address _utxosc,
         address _validatorsContractAddress
     ) external onlyOwner {
-        bridgeContractAddress = _bridgeContractAddress;
+        bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
-        utxosManager = UTXOsManager(_utxosManager);
+        utxosc = UTXOsc(_utxosc);
         validatorsContract = ValidatorsContract(_validatorsContractAddress);
     }
 
-    function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {
+    function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
         for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
             BridgingRequestClaim memory _claim = _claims.bridgingRequestClaims[i];
             if (!isChainRegistered[_claim.sourceChainID]) {
@@ -161,7 +161,7 @@ contract ClaimsManager is IBridgeContractStructs, Initializable, OwnableUpgradea
         if (hasConsensus(claimHash)) {
             chainTokenQuantity[_claim.sourceChainID] -= getNeededTokenQuantity(_claim.receivers);
 
-            utxosManager.addNewBridgingUTXO(_claim.sourceChainID, _claim.outputUTXO);
+            utxosc.addNewBridgingUTXO(_claim.sourceChainID, _claim.outputUTXO);
 
             _setConfirmedTransactions(_claim);
 
@@ -202,8 +202,8 @@ contract ClaimsManager is IBridgeContractStructs, Initializable, OwnableUpgradea
 
             nextTimeoutBlock[_claim.chainID] = block.number + timeoutBlocksNumber;
 
-            utxosManager.addUTXOs(_claim.chainID, _claim.outputUTXOs);
-            utxosManager.removeUsedUTXOs(_claim.chainID, confirmedSignedBatch.usedUTXOs);
+            utxosc.addUTXOs(_claim.chainID, _claim.outputUTXOs);
+            utxosc.removeUsedUTXOs(_claim.chainID, confirmedSignedBatch.usedUTXOs);
         }
     }
 
@@ -266,7 +266,7 @@ contract ClaimsManager is IBridgeContractStructs, Initializable, OwnableUpgradea
         return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
     }
 
-    function setTokenQuantity(string calldata _chainID, uint256 _tokenQuantity) external onlyBridgeContract {
+    function setTokenQuantity(string calldata _chainID, uint256 _tokenQuantity) external onlyBridge {
         chainTokenQuantity[_chainID] = _tokenQuantity;
     }
 
@@ -314,7 +314,7 @@ contract ClaimsManager is IBridgeContractStructs, Initializable, OwnableUpgradea
         return bridgedAmount;
     }
 
-    function resetCurrentBatchBlock(string calldata _chainId) external onlyBridgeContract {
+    function resetCurrentBatchBlock(string calldata _chainId) external onlyBridge {
         claimsHelper.resetCurrentBatchBlock(_chainId);
     }
 
@@ -332,15 +332,15 @@ contract ClaimsManager is IBridgeContractStructs, Initializable, OwnableUpgradea
         return tokenQuantity;
     }
 
-    function setChainRegistered(string calldata _chainId) external onlyBridgeContract {
+    function setChainRegistered(string calldata _chainId) external onlyBridge {
         isChainRegistered[_chainId] = true;
     }
 
-    function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external onlyBridgeContract {
+    function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external onlyBridge {
         nextTimeoutBlock[_chainId] = _blockNumber + timeoutBlocksNumber;
     }
 
-    function setVoted(string calldata _id, address _voter, bytes32 _hash) external onlyBridgeContract {
+    function setVoted(string calldata _id, address _voter, bytes32 _hash) external onlyBridge {
         claimsHelper.setVoted(_id, _voter, _hash);
     }
 
@@ -352,8 +352,8 @@ contract ClaimsManager is IBridgeContractStructs, Initializable, OwnableUpgradea
         return claimsHelper.numberOfVotes(_hash);
     }
 
-    modifier onlyBridgeContract() {
-        if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
+    modifier onlyBridge() {
+        if (msg.sender != bridgeAddress) revert NotBridge();
         _;
     }
 }

@@ -4,11 +4,11 @@ pragma solidity ^0.8.23;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "./interfaces/IBridgeContractStructs.sol";
-import "./ValidatorsContract.sol";
+import "./interfaces/IBridgeStructs.sol";
+import "./Validators.sol";
 
-contract SlotsManager is IBridgeContractStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
-    address private bridgeContractAddress;
+contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+    address private bridgeAddress;
     ValidatorsContract private validatorsContract;
 
     // BlockChainID -> CardanoBlock
@@ -32,8 +32,8 @@ contract SlotsManager is IBridgeContractStructs, Initializable, OwnableUpgradeab
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-    function setDependencies(address _bridgeContractAddress, address _validatorsContractAddress) external onlyOwner {
-        bridgeContractAddress = _bridgeContractAddress;
+    function setDependencies(address _bridgeAddress, address _validatorsContractAddress) external onlyOwner {
+        bridgeAddress = _bridgeAddress;
         validatorsContract = ValidatorsContract(_validatorsContractAddress);
     }
 
@@ -41,7 +41,7 @@ contract SlotsManager is IBridgeContractStructs, Initializable, OwnableUpgradeab
         string calldata chainID,
         CardanoBlock[] calldata blocks,
         address _caller
-    ) external onlyBridgeContract {
+    ) external onlyBridge {
         // Check if the caller has already voted for this claim
         for (uint i = 0; i < blocks.length; i++) {
             CardanoBlock memory cblock = blocks[i];
@@ -64,8 +64,8 @@ contract SlotsManager is IBridgeContractStructs, Initializable, OwnableUpgradeab
         return lastObservedBlock[chainID];
     }
 
-    modifier onlyBridgeContract() {
-        if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
+    modifier onlyBridge() {
+        if (msg.sender != bridgeAddress) revert NotBridge();
         _;
     }
 }

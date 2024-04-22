@@ -5,12 +5,12 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "./interfaces/IBridgeContractStructs.sol";
+import "./interfaces/IBridgeStructs.sol";
 import "./ClaimsHelper.sol";
-import "./ValidatorsContract.sol";
+import "./Validators.sol";
 
-contract SignedBatchManager is IBridgeContractStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
-    address private bridgeContractAddress;
+contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+    address private bridgeAddress;
     ClaimsHelper private claimsHelper;
     ValidatorsContract private validatorsContract;
 
@@ -33,16 +33,16 @@ contract SignedBatchManager is IBridgeContractStructs, Initializable, OwnableUpg
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function setDependencies(
-        address _bridgeContractAddress,
+        address _bridgeAddress,
         address _claimsHelperAddress,
         address _validatorsContractAddress
     ) external onlyOwner {
-        bridgeContractAddress = _bridgeContractAddress;
+        bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         validatorsContract = ValidatorsContract(_validatorsContractAddress);
     }
 
-    function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridgeContract {
+    function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
         string memory _destinationChainId = _signedBatch.destinationChainId;
         uint256 _batchId = _signedBatch.id;
 
@@ -122,8 +122,8 @@ contract SignedBatchManager is IBridgeContractStructs, Initializable, OwnableUpg
         return lastConfirmedBatch[_destinationChain];
     }
 
-    modifier onlyBridgeContract() {
-        if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
+    modifier onlyBridge() {
+        if (msg.sender != bridgeAddress) revert NotBridge();
         _;
     }
 }
