@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import "./interfaces/IBridgeContractStructs.sol";
+import "./interfaces/IBridgeStructs.sol";
 
-contract ValidatorsContract is IBridgeContractStructs {
+contract Validators is IBridgeStructs {
     // slither-disable too-many-digits
     address constant PRECOMPILE = 0x0000000000000000000000000000000000002050;
     uint256 constant PRECOMPILE_GAS = 150000;
 
-    address private bridgeContractAddress;
+    address private bridgeAddress;
     address private owner;
 
     // BlockchainID -> validator address -> ValidatorCardanoData
@@ -16,24 +16,24 @@ contract ValidatorsContract is IBridgeContractStructs {
     // BlockchainID -> ValidatorCardanoData[]
     mapping(string => ValidatorCardanoData[]) private validatorsCardanoData;
 
-    // keep validatorsAddresses because maybe
-    address[] private validatorsAddresses;
+    // keep validatorsArrayAddresses because maybe
+    address[] private validatorsArrayAddresses;
     // mapping in case they could be added/removed
     mapping(address => bool) private isAddressValidator;
 
     uint8 public validatorsCount;
 
-    function initialize(address[] memory _validators) public {
+    function initialize(address[] memory _validatorsArray) public {
         owner = msg.sender;
-        for (uint i = 0; i < _validators.length; i++) {
-            isAddressValidator[_validators[i]] = true;
-            validatorsAddresses.push(_validators[i]);
+        for (uint i = 0; i < _validatorsArray.length; i++) {
+            isAddressValidator[_validatorsArray[i]] = true;
+            validatorsArrayAddresses.push(_validatorsArray[i]);
         }
-        validatorsCount = uint8(_validators.length);
+        validatorsCount = uint8(_validatorsArray.length);
     }
 
-    function setDependencies(address _bridgeContractAddress) external onlyOwner {
-        bridgeContractAddress = _bridgeContractAddress;
+    function setDependencies(address _bridgeAddress) external onlyOwner {
+        bridgeAddress = _bridgeAddress;
     }
 
     function isValidator(address addr) public view returns (bool) {
@@ -55,14 +55,14 @@ contract ValidatorsContract is IBridgeContractStructs {
 
     function setValidatorsCardanoData(
         string calldata _chainId,
-        ValidatorAddressCardanoData[] calldata validators
-    ) external onlyBridgeContract {
-        if (validatorsCount != validators.length) {
-            revert InvalidData("validators count");
+        ValidatorAddressCardanoData[] calldata validatorsArray
+    ) external onlyBridge {
+        if (validatorsCount != validatorsArray.length) {
+            revert InvalidData("validatorsArray count");
         }
         // set validator cardano data for each validator
-        for (uint i = 0; i < validators.length; i++) {
-            ValidatorAddressCardanoData memory dt = validators[i];
+        for (uint i = 0; i < validatorsArray.length; i++) {
+            ValidatorAddressCardanoData memory dt = validatorsArray[i];
             validatorsCardanoDataPerAddress[_chainId][dt.addr] = dt.data;
         }
         _updateValidatorCardanoData(_chainId);
@@ -72,7 +72,7 @@ contract ValidatorsContract is IBridgeContractStructs {
         string calldata _chainId,
         address addr,
         ValidatorCardanoData calldata data
-    ) external onlyBridgeContract {
+    ) external onlyBridge {
         // We dont have enough stack to validate signatures bellow
         // but if validator does not provide valid keys he will not be able to send batches
         // so i think we are good without these checks. will left them for historical reason
@@ -102,19 +102,21 @@ contract ValidatorsContract is IBridgeContractStructs {
     function _updateValidatorCardanoData(string calldata _chainId) internal {
         // validatorsCardanoDataPerAddress must be set for all the validator addresses
         uint cnt = 0;
-        for (uint i = 0; i < validatorsAddresses.length; i++) {
-            if (bytes(validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]].verifyingKey).length > 0) {
+        for (uint i = 0; i < validatorsArrayAddresses.length; i++) {
+            if (bytes(validatorsCardanoDataPerAddress[_chainId][validatorsArrayAddresses[i]].verifyingKey).length > 0) {
                 cnt++;
             }
         }
 
-        if (cnt != validatorsAddresses.length) {
+        if (cnt != validatorsArrayAddresses.length) {
             return;
         }
 
         delete validatorsCardanoData[_chainId];
-        for (uint i = 0; i < validatorsAddresses.length; i++) {
-            validatorsCardanoData[_chainId].push(validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]]);
+        for (uint i = 0; i < validatorsArrayAddresses.length; i++) {
+            validatorsCardanoData[_chainId].push(
+                validatorsCardanoDataPerAddress[_chainId][validatorsArrayAddresses[i]]
+            );
         }
     }
 
@@ -132,8 +134,8 @@ contract ValidatorsContract is IBridgeContractStructs {
         return callSuccess && abi.decode(returnData, (bool));
     }
 
-    modifier onlyBridgeContract() {
-        if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
+    modifier onlyBridge() {
+        if (msg.sender != bridgeAddress) revert NotBridge();
         _;
     }
 

@@ -2,17 +2,17 @@
 pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "./interfaces/IBridgeContractStructs.sol";
-import "./BridgeContract.sol";
+import "./interfaces/IBridgeStructs.sol";
+import "./Bridge.sol";
 import "./ClaimsHelper.sol";
-import "./ValidatorsContract.sol";
+import "./Validators.sol";
 
 import "hardhat/console.sol";
 
-contract SignedBatchManager is IBridgeContractStructs {
-    address private bridgeContractAddress;
+contract SignedBatches is IBridgeStructs {
+    address private bridgeAddress;
     ClaimsHelper private claimsHelper;
-    ValidatorsContract private validatorsContract;
+    Validators private validatorsArray;
     address private owner;
 
     // BlockchanID -> batchId -> -signedBatchWithoutSignaturesHash -> SignedBatch[]
@@ -26,16 +26,16 @@ contract SignedBatchManager is IBridgeContractStructs {
     }
 
     function setDependencies(
-        address _bridgeContractAddress,
+        address _bridgeAddress,
         address _claimsHelperAddress,
-        address _validatorsContractAddress
+        address _validatorsArrayAddress
     ) external onlyOwner {
-        bridgeContractAddress = _bridgeContractAddress;
+        bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
-        validatorsContract = ValidatorsContract(_validatorsContractAddress);
+        validatorsArray = Validators(_validatorsArrayAddress);
     }
 
-    function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridgeContract {
+    function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
         string memory _destinationChainId = _signedBatch.destinationChainId;
         uint256 _batchId = _signedBatch.id;
 
@@ -104,7 +104,7 @@ contract SignedBatchManager is IBridgeContractStructs {
     }
 
     function hasConsensus(bytes32 _hash) public view returns (bool) {
-        return claimsHelper.numberOfVotes(_hash) >= validatorsContract.getQuorumNumberOfValidators();
+        return claimsHelper.numberOfVotes(_hash) >= validatorsArray.getQuorumNumberOfValidators();
     }
 
     function isBatchAlreadySubmittedBy(string calldata _destinationChain, address addr) public view returns (bool ok) {
@@ -120,8 +120,8 @@ contract SignedBatchManager is IBridgeContractStructs {
         _;
     }
 
-    modifier onlyBridgeContract() {
-        if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
+    modifier onlyBridge() {
+        if (msg.sender != bridgeAddress) revert NotBridge();
         _;
     }
 }

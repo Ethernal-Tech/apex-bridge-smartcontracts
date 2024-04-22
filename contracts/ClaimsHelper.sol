@@ -2,13 +2,13 @@
 pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "./interfaces/IBridgeContractStructs.sol";
+import "./interfaces/IBridgeStructs.sol";
 import "hardhat/console.sol";
-import "./SlotsManager.sol";
+import "./Slots.sol";
 
-contract ClaimsHelper is IBridgeContractStructs {
-    address private claimsManagerAddress;
-    address private signedBatchManagerAddress;
+contract ClaimsHelper is IBridgeStructs {
+    address private claimsAddress;
+    address private signedBatchesAddress;
     address private owner;
 
     // blockchain -> claimHash -> queued
@@ -30,9 +30,9 @@ contract ClaimsHelper is IBridgeContractStructs {
         owner = msg.sender;
     }
 
-    function setDependencies(address _claimsManagerAddress, address _signedBatchManagerAddress) external onlyOwner {
-        claimsManagerAddress = _claimsManagerAddress;
-        signedBatchManagerAddress = _signedBatchManagerAddress;
+    function setDependencies(address _claimsAddress, address _signedBatchesAddress) external onlyOwner {
+        claimsAddress = _claimsAddress;
+        signedBatchesAddress = _signedBatchesAddress;
     }
 
     function getConfirmedSignedBatch(
@@ -42,18 +42,18 @@ contract ClaimsHelper is IBridgeContractStructs {
         return confirmedSignedBatches[_chainId][_batchId];
     }
 
-    function setCurrentBatchBlock(string calldata _chainId, int value) external onlySignedBatchManager {
+    function setCurrentBatchBlock(string calldata _chainId, int value) external onlySignedBatches {
         currentBatchBlock[_chainId] = value;
     }
 
-    function resetCurrentBatchBlock(string calldata _chainId) external onlyClaimsManager {
+    function resetCurrentBatchBlock(string calldata _chainId) external onlyClaims {
         currentBatchBlock[_chainId] = int(-1);
     }
 
     function setClaimConfirmed(
         string calldata _chain,
         string calldata _observerHash
-    ) external onlySignedBatchManagerOrClaimsManager {
+    ) external onlySignedBatchesOrClaims {
         isClaimConfirmed[_chain][_observerHash] = true;
     }
 
@@ -61,17 +61,11 @@ contract ClaimsHelper is IBridgeContractStructs {
         return numberOfVotes[_hash];
     }
 
-    function setConfirmedSignedBatches(
-        SignedBatch calldata _signedBatch
-    ) external onlySignedBatchManagerOrClaimsManager {
+    function setConfirmedSignedBatches(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
         confirmedSignedBatches[_signedBatch.destinationChainId][_signedBatch.id] = _signedBatch;
     }
 
-    function setVoted(
-        string calldata _id,
-        address _voter,
-        bytes32 _hash
-    ) external onlySignedBatchManagerOrClaimsManager {
+    function setVoted(string calldata _id, address _voter, bytes32 _hash) external onlySignedBatchesOrClaims {
         hasVoted[_id][_voter] = true;
         numberOfVotes[_hash]++;
     }
@@ -99,19 +93,18 @@ contract ClaimsHelper is IBridgeContractStructs {
         _;
     }
 
-    modifier onlySignedBatchManagerOrClaimsManager() {
-        if (msg.sender != signedBatchManagerAddress && msg.sender != claimsManagerAddress)
-            revert NotSignedBatchManagerOrBridgeContract();
+    modifier onlySignedBatchesOrClaims() {
+        if (msg.sender != signedBatchesAddress && msg.sender != claimsAddress) revert NotSignedBatchesOrBridge();
         _;
     }
 
-    modifier onlySignedBatchManager() {
-        if (msg.sender != signedBatchManagerAddress) revert NotSignedBatchManager();
+    modifier onlySignedBatches() {
+        if (msg.sender != signedBatchesAddress) revert NotSignedBatches();
         _;
     }
 
-    modifier onlyClaimsManager() {
-        if (msg.sender != claimsManagerAddress) revert NotClaimsManager();
+    modifier onlyClaims() {
+        if (msg.sender != claimsAddress) revert NotClaims();
         _;
     }
 }

@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import "./interfaces/IBridgeContractStructs.sol";
-import "./BridgeContract.sol";
+import "./interfaces/IBridgeStructs.sol";
+import "./Bridge.sol";
 import "./ClaimsHelper.sol";
-import "./ValidatorsContract.sol";
-import "./UTXOsManager.sol";
+import "./Validators.sol";
+import "./UTXOsc.sol";
 import "hardhat/console.sol";
 
-contract ClaimsManager is IBridgeContractStructs {
-    address private bridgeContractAddress;
+contract Claims is IBridgeStructs {
+    address private bridgeAddress;
     ClaimsHelper private claimsHelper;
-    UTXOsManager private utxosManager;
-    ValidatorsContract private validatorsContract;
+    UTXOsc private utxosc;
+    Validators private validatorsArray;
     address private owner;
 
     // BlockchainID -> bool
@@ -41,22 +41,22 @@ contract ClaimsManager is IBridgeContractStructs {
     }
 
     function setDependencies(
-        address _bridgeContractAddress,
+        address _bridgeAddress,
         address _claimsHelperAddress,
-        address _utxosManager,
-        address _validatorsContractAddress,
+        address _utxosc,
+        address _validatorsArrayAddress,
         uint16 _maxNumberOfTransactions,
         uint8 _timeoutBlocksNumber
     ) external onlyOwner {
-        bridgeContractAddress = _bridgeContractAddress;
+        bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
-        utxosManager = UTXOsManager(_utxosManager);
-        validatorsContract = ValidatorsContract(_validatorsContractAddress);
+        utxosc = UTXOsc(_utxosc);
+        validatorsArray = Validators(_validatorsArrayAddress);
         maxNumberOfTransactions = _maxNumberOfTransactions;
         timeoutBlocksNumber = _timeoutBlocksNumber;
     }
 
-    function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridgeContract {
+    function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
         for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
             BridgingRequestClaim memory _claim = _claims.bridgingRequestClaims[i];
             if (!isChainRegistered[_claim.sourceChainID]) {
@@ -151,7 +151,7 @@ contract ClaimsManager is IBridgeContractStructs {
         if (hasConsensus(claimHash)) {
             chainTokenQuantity[_claim.sourceChainID] -= getNeededTokenQuantity(_claim.receivers);
 
-            utxosManager.addNewBridgingUTXO(_claim.sourceChainID, _claim.outputUTXO);
+            utxosc.addNewBridgingUTXO(_claim.sourceChainID, _claim.outputUTXO);
 
             _setConfirmedTransactions(_claim);
 
@@ -192,8 +192,8 @@ contract ClaimsManager is IBridgeContractStructs {
 
             nextTimeoutBlock[_claim.chainID] = block.number + timeoutBlocksNumber;
 
-            utxosManager.addUTXOs(_claim.chainID, _claim.outputUTXOs);
-            utxosManager.removeUsedUTXOs(_claim.chainID, confirmedSignedBatch.usedUTXOs);
+            utxosc.addUTXOs(_claim.chainID, _claim.outputUTXOs);
+            utxosc.removeUsedUTXOs(_claim.chainID, confirmedSignedBatch.usedUTXOs);
         }
     }
 
@@ -256,7 +256,7 @@ contract ClaimsManager is IBridgeContractStructs {
         return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
     }
 
-    function setTokenQuantity(string calldata _chainID, uint256 _tokenQuantity) external onlyBridgeContract {
+    function setTokenQuantity(string calldata _chainID, uint256 _tokenQuantity) external onlyBridge {
         chainTokenQuantity[_chainID] = _tokenQuantity;
     }
 
@@ -304,12 +304,12 @@ contract ClaimsManager is IBridgeContractStructs {
         return bridgedAmount;
     }
 
-    function resetCurrentBatchBlock(string calldata _chainId) external onlyBridgeContract {
+    function resetCurrentBatchBlock(string calldata _chainId) external onlyBridge {
         claimsHelper.resetCurrentBatchBlock(_chainId);
     }
 
     function hasConsensus(bytes32 _hash) public view returns (bool) {
-        return claimsHelper.numberOfVotes(_hash) >= validatorsContract.getQuorumNumberOfValidators();
+        return claimsHelper.numberOfVotes(_hash) >= validatorsArray.getQuorumNumberOfValidators();
     }
 
     function getNeededTokenQuantity(Receiver[] memory _receivers) internal pure returns (uint256) {
@@ -322,15 +322,15 @@ contract ClaimsManager is IBridgeContractStructs {
         return tokenQuantity;
     }
 
-    function setChainRegistered(string calldata _chainId) external onlyBridgeContract {
+    function setChainRegistered(string calldata _chainId) external onlyBridge {
         isChainRegistered[_chainId] = true;
     }
 
-    function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external onlyBridgeContract {
+    function setNextTimeoutBlock(string calldata _chainId, uint256 _blockNumber) external onlyBridge {
         nextTimeoutBlock[_chainId] = _blockNumber + timeoutBlocksNumber;
     }
 
-    function setVoted(string calldata _id, address _voter, bytes32 _hash) external onlyBridgeContract {
+    function setVoted(string calldata _id, address _voter, bytes32 _hash) external onlyBridge {
         claimsHelper.setVoted(_id, _voter, _hash);
     }
 
@@ -347,8 +347,8 @@ contract ClaimsManager is IBridgeContractStructs {
         _;
     }
 
-    modifier onlyBridgeContract() {
-        if (msg.sender != bridgeContractAddress) revert NotBridgeContract();
+    modifier onlyBridge() {
+        if (msg.sender != bridgeAddress) revert NotBridge();
         _;
     }
 }
