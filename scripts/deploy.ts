@@ -3,25 +3,25 @@ import { ethers } from "hardhat";
 async function main() {
   //deployment of contract logic
   const Bridge = await ethers.getContractFactory("Bridge");
-  const bridge = await Bridge.deploy();
+  const bridgeLogic = await Bridge.deploy();
 
   const ClaimsHelper = await ethers.getContractFactory("ClaimsHelper");
-  const claimsHelper = await ClaimsHelper.deploy();
+  const claimsHelperLogic = await ClaimsHelper.deploy();
 
   const Claims = await ethers.getContractFactory("Claims");
-  const claims = await Claims.deploy();
+  const claimsLogic = await Claims.deploy();
 
   const SignedBatches = await ethers.getContractFactory("SignedBatches");
-  const signedBatches = await SignedBatches.deploy();
+  const signedBatchesLogic = await SignedBatches.deploy();
 
   const Slots = await ethers.getContractFactory("Slots");
-  const slots = await Slots.deploy();
+  const slotsLogic = await Slots.deploy();
 
   const UTXOsc = await ethers.getContractFactory("UTXOsc");
-  const utxosc = await UTXOsc.deploy();
+  const utxoscLogic = await UTXOsc.deploy();
 
   const Validators = await ethers.getContractFactory("Validators");
-  const validatorsc = await Validators.deploy();
+  const validatorscLogic = await Validators.deploy();
 
   // deployment of contract proxy
   const BridgeProxy = await ethers.getContractFactory("ERC1967Proxy");
@@ -33,37 +33,37 @@ async function main() {
   const ValidatorsProxy = await ethers.getContractFactory("ERC1967Proxy");
 
   const bridgeProxy = await BridgeProxy.deploy(
-    await bridge.getAddress(),
+    await bridgeLogic.getAddress(),
     Bridge.interface.encodeFunctionData("initialize", [])
   );
 
   const claimsHelperProxy = await ClaimsHelperProxy.deploy(
-    await claimsHelper.getAddress(),
+    await claimsHelperLogic.getAddress(),
     ClaimsHelper.interface.encodeFunctionData("initialize", [])
   );
 
   const claimsProxy = await ClaimsProxy.deploy(
-    await claims.getAddress(),
+    await claimsLogic.getAddress(),
     Claims.interface.encodeFunctionData("initialize", [2, 5])
   );
 
   const signedBatchesProxy = await SignedBatchesProxy.deploy(
-    await signedBatches.getAddress(),
+    await signedBatchesLogic.getAddress(),
     SignedBatches.interface.encodeFunctionData("initialize", [])
   );
 
   const slotsProxy = await SlotsProxy.deploy(
-    await slots.getAddress(),
+    await slotsLogic.getAddress(),
     Slots.interface.encodeFunctionData("initialize", [])
   );
 
   const utxoscProxy = await UTXOscProxy.deploy(
-    await utxosc.getAddress(),
+    await utxoscLogic.getAddress(),
     UTXOsc.interface.encodeFunctionData("initialize", [])
   );
 
   const [validator1, validator2, validator3, validator4, validator5] = await ethers.getSigners();
-  const validators = [
+  const validatorsAddresses = [
     validator1.address,
     validator2.address,
     validator3.address,
@@ -72,33 +72,33 @@ async function main() {
   ];
 
   const validatorsProxy = await ValidatorsProxy.deploy(
-    await validatorsc.getAddress(),
-    Validators.interface.encodeFunctionData("initialize", [validators])
+    await validatorscLogic.getAddress(),
+    Validators.interface.encodeFunctionData("initialize", [validatorsAddresses])
   );
 
   //casting proxy contracts to contract logic
   const BridgeDeployed = await ethers.getContractFactory("Bridge");
-  const bridgeDeployed = BridgeDeployed.attach(bridgeProxy.target);
+  const bridge = BridgeDeployed.attach(bridgeProxy.target);
 
   const ClaimsHelperDeployed = await ethers.getContractFactory("ClaimsHelper");
-  const claimsHelperDeployed = ClaimsHelperDeployed.attach(claimsHelperProxy.target);
+  const claimsHelper = ClaimsHelperDeployed.attach(claimsHelperProxy.target);
 
   const ClaimsDeployed = await ethers.getContractFactory("Claims");
-  const claimsDeployed = ClaimsDeployed.attach(claimsProxy.target);
+  const claims = ClaimsDeployed.attach(claimsProxy.target);
 
   const SignedBatchesDeployed = await ethers.getContractFactory("SignedBatches");
-  const signedBatchesDeployed = SignedBatchesDeployed.attach(signedBatchesProxy.target);
+  const signedBatches = SignedBatchesDeployed.attach(signedBatchesProxy.target);
 
   const SlotsDeployed = await ethers.getContractFactory("Slots");
-  const slotsDeployed = SlotsDeployed.attach(slotsProxy.target);
+  const slots = SlotsDeployed.attach(slotsProxy.target);
 
   const UTXOscDeployed = await ethers.getContractFactory("UTXOsc");
-  const utxoscDeployed = UTXOscDeployed.attach(utxoscProxy.target);
+  const utxosc = UTXOscDeployed.attach(utxoscProxy.target);
 
-  const ValidatorsDeployed = await ethers.getContractFactory("Validators");
-  const validatorsDeployed = ValidatorsDeployed.attach(validatorsProxy.target);
+  const ValidatorscDeployed = await ethers.getContractFactory("Validators");
+  const validatorsc = ValidatorscDeployed.attach(validatorsProxy.target);
 
-  await bridgeDeployed.setDependencies(
+  await bridge.setDependencies(
     claimsProxy.target,
     signedBatchesProxy.target,
     slotsProxy.target,
@@ -106,20 +106,20 @@ async function main() {
     validatorsProxy.target
   );
 
-  console.log("Bridge deployed at:", bridge.target);
+  console.log("BridgeLogic deployed at:", bridgeLogic.target);
   console.log("BridgeProxy deployed at:", bridgeProxy.target);
-  console.log("BridgeDeployed deployed at:", bridgeDeployed.target);
+  console.log("Bridge deployed at:", bridge.target);
   console.log("---");
+  console.log("BridgeLogic owner:", await bridgeLogic.owner());
   console.log("Bridge owner:", await bridge.owner());
-  console.log("BridgeDeployed owner:", await bridgeDeployed.owner());
   console.log("---");
+  console.log("ClaimsLogic maxNumberOfTransactions:", await claimsLogic.maxNumberOfTransactions());
   console.log("Claims maxNumberOfTransactions:", await claims.maxNumberOfTransactions());
-  console.log("ClaimsDeployed maxNumberOfTransactions:", await claimsDeployed.maxNumberOfTransactions());
+  console.log("ClaimsLogic timeoutBlocksNumber:", await claimsLogic.timeoutBlocksNumber());
   console.log("Claims timeoutBlocksNumber:", await claims.timeoutBlocksNumber());
-  console.log("ClaimsDeployed timeoutBlocksNumber:", await claimsDeployed.timeoutBlocksNumber());
   console.log("---");
-  console.log("ValdatorsContract numberOfValidators:", await validatorsc.validatorsCount());
-  console.log("ValdatorsContractDeployed numberOfValidators:", await validatorsDeployed.validatorsCount());
+  console.log("ValdatorsLogic numberOfValidators:", await validatorscLogic.validatorsCount());
+  console.log("Valdators numberOfValidators:", await validatorsc.validatorsCount());
 
   //await bridgeDeployed.console.log(`Bridge deployed to ${bridge.target}`);
 }
