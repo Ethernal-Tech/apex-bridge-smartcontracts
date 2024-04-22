@@ -6,7 +6,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
 
-contract ValidatorsContract is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     // slither-disable too-many-digits
     address constant PRECOMPILE = 0x0000000000000000000000000000000000002050;
     uint256 constant PRECOMPILE_GAS = 150000;

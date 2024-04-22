@@ -51,8 +51,8 @@ describe("Bridge Contract", function () {
     const UTXOsc = await ethers.getContractFactory("UTXOsc");
     const uTXOsManager = await UTXOsc.deploy();
 
-    const ValidatorsContract = await ethers.getContractFactory("ValidatorsContract");
-    const validatorsContract = await ValidatorsContract.deploy();
+    const Validators = await ethers.getContractFactory("Validators");
+    const validatorsc = await Validators.deploy();
 
     await bridge.initialize();
     await claimsHelper.initialize();
@@ -60,34 +60,27 @@ describe("Bridge Contract", function () {
     await signedBatches.initialize();
     await slots.initialize();
     await uTXOsManager.initialize();
-    await validatorsContract.initialize(validators);
+    await validators.initialize(validators);
 
     await bridge.setDependencies(
       claims.target,
       signedBatches.target,
       slots.target,
       uTXOsManager.target,
-      validatorsContract.target
+      validators.target
     );
 
     await claimsHelper.setDependencies(claims.target, signedBatches.target);
 
-    await claims.setDependencies(
-      bridge.target,
-      claimsHelper.target,
-      uTXOsManager.target,
-      validatorsContract.target,
-      2,
-      5
-    );
+    await claims.setDependencies(bridge.target, claimsHelper.target, uTXOsManager.target, validators.target, 2, 5);
 
-    await signedBatches.setDependencies(bridge.target, claimsHelper.target, validatorsContract);
+    await signedBatches.setDependencies(bridge.target, claimsHelper.target, validators);
 
-    await slots.setDependencies(bridge.target, validatorsContract.target);
+    await slots.setDependencies(bridge.target, validators.target);
 
     await uTXOsManager.setDependencies(bridge.target, claims.target);
 
-    await validatorsContract.setDependencies(bridge.target);
+    await validators.setDependencies(bridge.target);
 
     const UTXOs = {
       multisigOwnedUTXOs: [
@@ -486,14 +479,14 @@ describe("Bridge Contract", function () {
       validatorClaimsBRC_ConfirmedTransactions,
       signedBatch,
       validatorsCardanoData,
-      validatorsContract,
+      validators,
     };
   }
 
   describe("Deployment", function () {
     it("Should set 5 validator with quorum of 4", async function () {
-      const { validatorsContract } = await loadFixture(deployBridgeFixture);
-      const numberOfValidators = await validatorsContract.getQuorumNumberOfValidators();
+      const { validators } = await loadFixture(deployBridgeFixture);
+      const numberOfValidators = await validators.getQuorumNumberOfValidators();
 
       expect(numberOfValidators).to.equal(4);
     });
@@ -799,42 +792,43 @@ describe("Bridge Contract", function () {
       });
 
       it("Should not update Validators Cardano Data until all validators submit their data", async function () {
-        const { bridge, validators, UTXOs, validatorsCardanoData, validatorsContract, hre, validator6 } =
-          await loadFixture(deployBridgeFixture);
+        const { bridge, validators, UTXOs, validatorsCardanoData, validators, hre, validator6 } = await loadFixture(
+          deployBridgeFixture
+        );
 
         const bridgeAddress = await bridge.getAddress();
 
         var signer = await impersonateAsContractAndMintFunds(bridgeAddress);
 
-        await validatorsContract
+        await validators
           .connect(signer)
           .addValidatorCardanoData("chainID1 1", validatorsCardanoData[0].addr, validatorsCardanoData[0].data);
-        await validatorsContract
+        await validators
           .connect(signer)
           .addValidatorCardanoData("chainID1 1", validatorsCardanoData[1].addr, validatorsCardanoData[1].data);
-        await validatorsContract
+        await validators
           .connect(signer)
           .addValidatorCardanoData("chainID1 1", validatorsCardanoData[2].addr, validatorsCardanoData[2].data);
-        await validatorsContract
+        await validators
           .connect(signer)
           .addValidatorCardanoData("chainID1 1", validatorsCardanoData[3].addr, validatorsCardanoData[3].data);
 
-        const data = await validatorsContract.connect(validators[0]).getValidatorsCardanoData("chainID1 1");
+        const data = await validators.connect(validators[0]).getValidatorsCardanoData("chainID1 1");
         expect(data.length).to.equal(0);
 
-        await validatorsContract
+        await validators
           .connect(signer)
           .addValidatorCardanoData("chainID1 1", validatorsCardanoData[4].addr, validatorsCardanoData[4].data);
 
-        const data2 = await validatorsContract.connect(validators[0]).getValidatorsCardanoData("chainID1 1");
-        expect(data2.length).to.equal(await validatorsContract.validatorsCount());
+        const data2 = await validators.connect(validators[0]).getValidatorsCardanoData("chainID1 1");
+        expect(data2.length).to.equal(await validators.validatorsCount());
 
-        await validatorsContract
+        await validators
           .connect(signer)
           .addValidatorCardanoData("chainID1 1", validator6, validatorsCardanoData[4].data);
 
-        const data3 = await validatorsContract.connect(validators[0]).getValidatorsCardanoData("chainID1 1");
-        expect(data3.length).to.equal(await validatorsContract.validatorsCount());
+        const data3 = await validators.connect(validators[0]).getValidatorsCardanoData("chainID1 1");
+        expect(data3.length).to.equal(await validators.validatorsCount());
 
         await hre.network.provider.request({
           method: "hardhat_stopImpersonatingAccount",
@@ -843,7 +837,7 @@ describe("Bridge Contract", function () {
       });
 
       it("Should not update Validators Cardano Data until length of the list with the new data doesn't match the number of validators", async function () {
-        const { bridge, validators, validatorsCardanoData, validatorsContract, hre, validator6 } = await loadFixture(
+        const { bridge, validators, validatorsCardanoData, validators, hre, validator6 } = await loadFixture(
           deployBridgeFixture
         );
 
@@ -860,10 +854,10 @@ describe("Bridge Contract", function () {
         });
 
         await expect(
-          validatorsContract.connect(signer).setValidatorsCardanoData("chainID1 1", validatorsCardanoData)
-        ).to.revertedWithCustomError(validatorsContract, "InvalidData");
+          validators.connect(signer).setValidatorsCardanoData("chainID1 1", validatorsCardanoData)
+        ).to.revertedWithCustomError(validators, "InvalidData");
 
-        const data3 = await validatorsContract.connect(validators[0]).getValidatorsCardanoData("chainID1 1");
+        const data3 = await validators.connect(validators[0]).getValidatorsCardanoData("chainID1 1");
         expect(validatorsCardanoData.length).to.be.greaterThan(validators.length);
         expect(data3.length).to.equal(0);
 

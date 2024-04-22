@@ -16,7 +16,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     SignedBatches private signedBatches;
     Slots private slots;
     UTXOsc private utxosc;
-    ValidatorsContract private validatorsContract;
+    Validators private validators;
 
     Chain[] private chains;
 
@@ -37,13 +37,13 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         address _signedBatchesAddress,
         address _slotsAddress,
         address _utxoscAddress,
-        address _validatorsContractAddress
+        address _validatorsAddress
     ) external onlyOwner {
         claims = Claims(_claimsAddress);
         signedBatches = SignedBatches(_signedBatchesAddress);
         slots = Slots(_slotsAddress);
         utxosc = UTXOsc(_utxoscAddress);
-        validatorsContract = ValidatorsContract(_validatorsContractAddress);
+        validators = Validators(_validatorsAddress);
     }
 
     // Claims
@@ -58,7 +58,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
             revert CanNotCreateBatchYet(_signedBatch.destinationChainId);
         }
         if (
-            !validatorsContract.isSignatureValid(
+            !validators.isSignatureValid(
                 _signedBatch.destinationChainId,
                 _signedBatch.rawTransaction,
                 _signedBatch.multisigSignature,
@@ -85,10 +85,10 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
-        ValidatorAddressCardanoData[] calldata validators,
+        ValidatorAddressCardanoData[] calldata _validatorsAddressCardanoData,
         uint256 _tokenQuantity
     ) public override onlyOwner {
-        validatorsContract.setValidatorsCardanoData(_chainId, validators);
+        validators.setValidatorsCardanoData(_chainId, _validatorsAddressCardanoData);
         _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
     }
 
@@ -97,7 +97,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         UTXOs calldata _initialUTXOs,
         string calldata _addressMultisig,
         string calldata _addressFeePayer,
-        ValidatorCardanoData calldata _validator,
+        ValidatorCardanoData calldata _validatorCardanoData,
         uint256 _tokenQuantity
     ) external override onlyValidator {
         if (claims.isChainRegistered(_chainId)) {
@@ -111,9 +111,9 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         bytes32 chainHash = keccak256(abi.encode(_chain));
 
         claims.setVoted(_chainId, msg.sender, chainHash);
-        validatorsContract.addValidatorCardanoData(_chainId, msg.sender, _validator);
+        validators.addValidatorCardanoData(_chainId, msg.sender, _validatorCardanoData);
 
-        if (claims.getNumberOfVotes(chainHash) == validatorsContract.getValidatorsCount()) {
+        if (claims.getNumberOfVotes(chainHash) == validators.getValidatorsCount()) {
             _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
         } else {
             emit newChainProposal(_chainId, msg.sender);
@@ -205,8 +205,8 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     function getValidatorsCardanoData(
         string calldata _chainId
-    ) external view override returns (ValidatorCardanoData[] memory validators) {
-        return validatorsContract.getValidatorsCardanoData(_chainId);
+    ) external view override returns (ValidatorCardanoData[] memory validatorCardanoData) {
+        return validators.getValidatorsCardanoData(_chainId);
     }
 
     function getLastObservedBlock(
@@ -227,7 +227,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     modifier onlyValidator() {
-        if (!validatorsContract.isValidator(msg.sender)) revert NotValidator();
+        if (!validators.isValidator(msg.sender)) revert NotValidator();
         _;
     }
 }

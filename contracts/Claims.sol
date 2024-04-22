@@ -13,7 +13,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
     UTXOsc private utxosc;
-    ValidatorsContract private validatorsContract;
+    Validators private validators;
 
     // BlockchainID -> bool
     mapping(string => bool) public isChainRegistered;
@@ -54,12 +54,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         address _bridgeAddress,
         address _claimsHelperAddress,
         address _utxosc,
-        address _validatorsContractAddress
+        address _validatorsAddress
     ) external onlyOwner {
         bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         utxosc = UTXOsc(_utxosc);
-        validatorsContract = ValidatorsContract(_validatorsContractAddress);
+        validators = Validators(_validatorsAddress);
     }
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
@@ -319,7 +319,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function hasConsensus(bytes32 _hash) public view returns (bool) {
-        return claimsHelper.numberOfVotes(_hash) >= validatorsContract.getQuorumNumberOfValidators();
+        return claimsHelper.numberOfVotes(_hash) >= validators.getQuorumNumberOfValidators();
     }
 
     function getNeededTokenQuantity(Receiver[] memory _receivers) internal pure returns (uint256) {

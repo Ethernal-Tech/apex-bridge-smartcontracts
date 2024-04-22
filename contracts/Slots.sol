@@ -9,7 +9,7 @@ import "./Validators.sol";
 
 contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private bridgeAddress;
-    ValidatorsContract private validatorsContract;
+    Validators private validators;
 
     // BlockChainID -> CardanoBlock
     mapping(string => CardanoBlock) private lastObservedBlock;
@@ -32,9 +32,9 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-    function setDependencies(address _bridgeAddress, address _validatorsContractAddress) external onlyOwner {
+    function setDependencies(address _bridgeAddress, address _validatorsAddress) external onlyOwner {
         bridgeAddress = _bridgeAddress;
-        validatorsContract = ValidatorsContract(_validatorsContractAddress);
+        validators = Validators(_validatorsAddress);
     }
 
     function updateBlocks(
@@ -52,7 +52,7 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
             slotValidatorVotedPerChain[chainID][chash][_caller] = true;
             slotVotesPerChain[chainID][chash]++;
             if (
-                slotVotesPerChain[chainID][chash] >= validatorsContract.getQuorumNumberOfValidators() &&
+                slotVotesPerChain[chainID][chash] >= validators.getQuorumNumberOfValidators() &&
                 cblock.blockSlot > lastObservedBlock[chainID].blockSlot
             ) {
                 lastObservedBlock[chainID] = cblock;

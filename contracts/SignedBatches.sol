@@ -12,7 +12,7 @@ import "./Validators.sol";
 contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
-    ValidatorsContract private validatorsContract;
+    Validators private validators;
 
     // BlockchanID -> batchId -> -signedBatchWithoutSignaturesHash -> SignedBatch[]
     mapping(string => mapping(uint256 => mapping(bytes32 => SignedBatch[]))) public signedBatches;
@@ -35,11 +35,11 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     function setDependencies(
         address _bridgeAddress,
         address _claimsHelperAddress,
-        address _validatorsContractAddress
+        address _validatorsAddress
     ) external onlyOwner {
         bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
-        validatorsContract = ValidatorsContract(_validatorsContractAddress);
+        validators = Validators(_validatorsAddress);
     }
 
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
@@ -111,7 +111,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     }
 
     function hasConsensus(bytes32 _hash) public view returns (bool) {
-        return claimsHelper.numberOfVotes(_hash) >= validatorsContract.getQuorumNumberOfValidators();
+        return claimsHelper.numberOfVotes(_hash) >= validators.getQuorumNumberOfValidators();
     }
 
     function isBatchAlreadySubmittedBy(string calldata _destinationChain, address addr) public view returns (bool ok) {
