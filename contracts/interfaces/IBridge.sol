@@ -63,7 +63,7 @@ abstract contract IBridge is IBridgeStructs {
 
     function getValidatorsCardanoData(
         string calldata _chainId
-    ) external view virtual returns (ValidatorCardanoData[] memory validators);
+    ) external view virtual returns (ValidatorCardanoData[] memory validatorsArray);
 
     function getLastObservedBlock(
         string calldata _sourceChain

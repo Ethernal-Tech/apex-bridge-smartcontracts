@@ -99,7 +99,7 @@ interface IBridgeStructs {
         UTXO utxo;
         // the refund transaction itself
         string rawTransaction;
-        // validators signature over raw transaction
+        // validatorsArray signature over raw transaction
         // note: only multisig signs refund txs
         string multisigSignature;
         // retry attempt counter
