@@ -19,7 +19,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     mapping(string => ValidatorCardanoData[]) private validatorsCardanoData;
 
     // keep validatorsArrayAddresses because maybe
-    address[] private validatorsArrayAddresses;
+    address[] private validatorsAddresses;
     // mapping in case they could be added/removed
     mapping(address => bool) private isAddressValidator;
 
@@ -37,7 +37,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
             isAddressValidator[_validators[i]] = true;
             validatorsAddresses.push(_validators[i]);
         }
-        validatorsCount = uint8(_validatorsArray.length);
+        validatorsCount = uint8(_validators.length);
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
@@ -65,14 +65,14 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
 
     function setValidatorsCardanoData(
         string calldata _chainId,
-        ValidatorAddressCardanoData[] calldata validators
+        ValidatorAddressCardanoData[] calldata validatorAddressCardanoData
     ) external onlyBridge {
-        if (validatorsCount != validators.length) {
+        if (validatorsCount != validatorAddressCardanoData.length) {
             revert InvalidData("validators count");
         }
         // set validator cardano data for each validator
-        for (uint i = 0; i < validatorsArray.length; i++) {
-            ValidatorAddressCardanoData memory dt = validatorsArray[i];
+        for (uint i = 0; i < validatorAddressCardanoData.length; i++) {
+            ValidatorAddressCardanoData memory dt = validatorAddressCardanoData[i];
             validatorsCardanoDataPerAddress[_chainId][dt.addr] = dt.data;
         }
         _updateValidatorCardanoData(_chainId);
@@ -112,21 +112,19 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     function _updateValidatorCardanoData(string calldata _chainId) internal {
         // validatorsCardanoDataPerAddress must be set for all the validator addresses
         uint cnt = 0;
-        for (uint i = 0; i < validatorsArrayAddresses.length; i++) {
-            if (bytes(validatorsCardanoDataPerAddress[_chainId][validatorsArrayAddresses[i]].verifyingKey).length > 0) {
+        for (uint i = 0; i < validatorsAddresses.length; i++) {
+            if (bytes(validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]].verifyingKey).length > 0) {
                 cnt++;
             }
         }
 
-        if (cnt != validatorsArrayAddresses.length) {
+        if (cnt != validatorsAddresses.length) {
             return;
         }
 
         delete validatorsCardanoData[_chainId];
-        for (uint i = 0; i < validatorsArrayAddresses.length; i++) {
-            validatorsCardanoData[_chainId].push(
-                validatorsCardanoDataPerAddress[_chainId][validatorsArrayAddresses[i]]
-            );
+        for (uint i = 0; i < validatorsAddresses.length; i++) {
+            validatorsCardanoData[_chainId].push(validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]]);
         }
     }
 

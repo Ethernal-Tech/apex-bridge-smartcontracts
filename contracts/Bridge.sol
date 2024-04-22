@@ -52,9 +52,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     // Batches
-    function submitSignedBatch(
-        SignedBatch calldata _signedBatch
-    ) external override onlyValidator {
+    function submitSignedBatch(SignedBatch calldata _signedBatch) external override onlyValidator {
         if (!shouldCreateBatch(_signedBatch.destinationChainId)) {
             // it will revert also if chain is not registered
             revert CanNotCreateBatchYet(_signedBatch.destinationChainId);
@@ -105,10 +103,8 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint256 _tokenQuantity
     ) external override onlyValidator {
         if (claims.isChainRegistered(_chainId)) {
-        if (claims.isChainRegistered(_chainId)) {
             revert ChainAlreadyRegistered(_chainId);
         }
-        if (claims.hasVoted(_chainId, msg.sender)) {
         if (claims.hasVoted(_chainId, msg.sender)) {
             revert AlreadyProposed(_chainId);
         }
@@ -160,9 +156,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     // Will determine if enough transactions are confirmed, or the timeout between two batches is exceeded.
     // It will also check if the given validator already submitted a signed batch and return the response accordingly.
-    function shouldCreateBatch(
-        string calldata _destinationChain
-    ) public view override returns (bool batch) {
+    function shouldCreateBatch(string calldata _destinationChain) public view override returns (bool batch) {
         if (
             claims.isBatchCreated(_destinationChain) ||
             signedBatches.isBatchAlreadySubmittedBy(_destinationChain, msg.sender)
@@ -171,12 +165,9 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         }
 
         return claims.shouldCreateBatch(_destinationChain);
-        return claims.shouldCreateBatch(_destinationChain);
     }
 
-    function getNextBatchId(
-        string calldata _destinationChain
-    ) external view override returns (uint256 result) {
+    function getNextBatchId(string calldata _destinationChain) external view override returns (uint256 result) {
         if (!shouldCreateBatch(_destinationChain)) {
             return 0;
         }
@@ -190,17 +181,11 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     // can be included in the batch, if the maximum number of transactions in a batch has been exceeded
     function getConfirmedTransactions(
         string calldata _destinationChain
-    )
-        external
-        view
-        override
-        returns (ConfirmedTransaction[] memory _confirmedTransactions)
-    {
+    ) external view override returns (ConfirmedTransaction[] memory _confirmedTransactions) {
         if (!shouldCreateBatch(_destinationChain)) {
             revert CanNotCreateBatchYet(_destinationChain);
         }
 
-        uint256 firstTxNonce = claims.lastBatchedTxNonce(_destinationChain) + 1;
         uint256 firstTxNonce = claims.lastBatchedTxNonce(_destinationChain) + 1;
 
         uint256 counterConfirmedTransactions = claims.getBatchingTxsCount(_destinationChain);
@@ -217,13 +202,11 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         string calldata _destinationChain
     ) external view override returns (UTXOs memory availableUTXOs) {
         return utxosc.getChainUTXOs(_destinationChain);
-        return utxosc.getChainUTXOs(_destinationChain);
     }
 
     function getConfirmedBatch(
         string calldata _destinationChain
     ) external view override returns (ConfirmedBatch memory batch) {
-        return signedBatches.getConfirmedBatch(_destinationChain);
         return signedBatches.getConfirmedBatch(_destinationChain);
     }
 
@@ -237,15 +220,9 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         string calldata _sourceChain
     ) external view override returns (CardanoBlock memory cblock) {
         return slots.getLastObservedBlock(_sourceChain);
-        return slots.getLastObservedBlock(_sourceChain);
     }
 
-    function getAllRegisteredChains()
-        external
-        view
-        override
-        returns (Chain[] memory _chains)
-    {
+    function getAllRegisteredChains() external view override returns (Chain[] memory _chains) {
         return chains;
     }
 

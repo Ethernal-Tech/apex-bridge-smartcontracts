@@ -49,36 +49,30 @@ describe("Bridge Contract", function () {
     const slots = await Slots.deploy();
 
     const UTXOsc = await ethers.getContractFactory("UTXOsc");
-    const uTXOsManager = await UTXOsc.deploy();
+    const utxosc = await UTXOsc.deploy();
 
     const Validators = await ethers.getContractFactory("Validators");
     const validatorsc = await Validators.deploy();
 
     await bridge.initialize();
     await claimsHelper.initialize();
-    await claims.initialize();
+    await claims.initialize(2, 5);
     await signedBatches.initialize();
     await slots.initialize();
-    await uTXOsManager.initialize();
+    await utxosc.initialize();
     await validatorsc.initialize(validators);
 
-    await bridge.setDependencies(
-      claims.target,
-      signedBatches.target,
-      slots.target,
-      uTXOsManager.target,
-      validatorsc.target
-    );
+    await bridge.setDependencies(claims.target, signedBatches.target, slots.target, utxosc.target, validatorsc.target);
 
     await claimsHelper.setDependencies(claims.target, signedBatches.target);
 
-    await claims.setDependencies(bridge.target, claimsHelper.target, uTXOsManager.target, validatorsc.target, 2, 5);
+    await claims.setDependencies(bridge.target, claimsHelper.target, utxosc.target, validatorsc.target);
 
     await signedBatches.setDependencies(bridge.target, claimsHelper.target, validatorsc);
 
     await slots.setDependencies(bridge.target, validatorsc.target);
 
-    await uTXOsManager.setDependencies(bridge.target, claims.target);
+    await utxosc.setDependencies(bridge.target, claims.target);
 
     await validatorsc.setDependencies(bridge.target);
 
@@ -458,7 +452,7 @@ describe("Bridge Contract", function () {
       bridge,
       claimsHelper,
       claims,
-      uTXOsManager,
+      utxosc,
       signedBatches,
       owner,
       UTXOs,
@@ -509,14 +503,14 @@ describe("Bridge Contract", function () {
       });
 
       it("Should store UTXOs when new chain is registered by owner", async function () {
-        const { bridge, uTXOsManager, owner, UTXOs, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+        const { bridge, utxosc, owner, UTXOs, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
         await bridge.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", validatorsCardanoData, 100);
 
-        expect((await uTXOsManager.getChainUTXOs("chainID1")).multisigOwnedUTXOs[0].txHash).to.equal(
+        expect((await utxosc.getChainUTXOs("chainID1")).multisigOwnedUTXOs[0].txHash).to.equal(
           UTXOs.multisigOwnedUTXOs[0].txHash
         );
-        expect((await uTXOsManager.getChainUTXOs("chainID1")).feePayerOwnedUTXOs[0].txHash).to.equal(
+        expect((await utxosc.getChainUTXOs("chainID1")).feePayerOwnedUTXOs[0].txHash).to.equal(
           UTXOs.feePayerOwnedUTXOs[0].txHash
         );
       });
@@ -681,9 +675,7 @@ describe("Bridge Contract", function () {
       });
 
       it("Should store UTXOs when new chain is registered with Governance", async function () {
-        const { bridge, uTXOsManager, validators, UTXOs, validatorsCardanoData } = await loadFixture(
-          deployBridgeFixture
-        );
+        const { bridge, utxosc, validators, UTXOs, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
         await bridge
           .connect(validators[0])
@@ -701,10 +693,10 @@ describe("Bridge Contract", function () {
           .connect(validators[4])
           .registerChainGovernance("chainID1", UTXOs, "0x", "0x", validatorsCardanoData[4].data, 100);
 
-        expect((await uTXOsManager.getChainUTXOs("chainID1")).multisigOwnedUTXOs[0].txHash).to.equal(
+        expect((await utxosc.getChainUTXOs("chainID1")).multisigOwnedUTXOs[0].txHash).to.equal(
           UTXOs.multisigOwnedUTXOs[0].txHash
         );
-        expect((await uTXOsManager.getChainUTXOs("chainID1")).feePayerOwnedUTXOs[0].txHash).to.equal(
+        expect((await utxosc.getChainUTXOs("chainID1")).feePayerOwnedUTXOs[0].txHash).to.equal(
           UTXOs.feePayerOwnedUTXOs[0].txHash
         );
       });
@@ -2591,7 +2583,7 @@ describe("Bridge Contract", function () {
       it("Should remove used UTXOs and add out new UTXOs when Batch Executed Claim is confirmed", async function () {
         const {
           bridge,
-          uTXOsManager,
+          utxosc,
           owner,
           validators,
           UTXOs,
@@ -2632,7 +2624,7 @@ describe("Bridge Contract", function () {
           await ethers.provider.send("evm_mine");
         }
 
-        const initialResult = await uTXOsManager.getChainUTXOs(
+        const initialResult = await utxosc.getChainUTXOs(
           validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID
         );
         expect(initialResult.multisigOwnedUTXOs.length).to.equal(UTXOs.multisigOwnedUTXOs.length);
@@ -2648,7 +2640,7 @@ describe("Bridge Contract", function () {
         await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
         await bridge.connect(validators[3]).submitClaims(validatorClaimsBEC); // UTXO_Nonces[destinationChainID]: [8, 13, 14], [10, 12, 15]
 
-        const result = await uTXOsManager.getChainUTXOs(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID);
+        const result = await utxosc.getChainUTXOs(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID);
 
         const { multiSig, feePayer } = {
           multiSig: [...result.multisigOwnedUTXOs],
