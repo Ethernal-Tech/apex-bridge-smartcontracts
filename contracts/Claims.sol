@@ -78,7 +78,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
 
             if (claimsHelper.isClaimConfirmed(_claim.destinationChainID, _claim.observedTransactionHash)) {
-                revert AlreadyConfirmed(_claim.observedTransactionHash);
+                continue;
             }
 
             if (chainTokenQuantity[_claim.sourceChainID] < getNeededTokenQuantity(_claim.receivers)) {
@@ -98,7 +98,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
 
             if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
-                revert AlreadyConfirmed(_claim.observedTransactionHash);
+                continue;
             }
 
             _submitClaimsBEC(_claims, i, _caller);
@@ -114,7 +114,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
 
             if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
-                revert AlreadyConfirmed(_claim.observedTransactionHash);
+                continue;
             }
 
             _submitClaimsBEFC(_claims, i, _caller);
@@ -130,7 +130,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
 
             if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
-                revert AlreadyConfirmed(_claim.observedTransactionHash);
+                continue;
             }
 
             _submitClaimsRRC(_claims, i, _caller);
@@ -146,7 +146,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
 
             if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
-                revert AlreadyConfirmed(_claim.observedTransactionHash);
+                continue;
             }
 
             _submitClaimsREC(_claims, i, _caller);

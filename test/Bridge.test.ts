@@ -952,7 +952,7 @@ describe("Bridge Contract", function () {
       );
     });
 
-    it("Should revert if Bridging Request Claim is already confirmed", async function () {
+    it("Should skip if Bridging Request Claim is already confirmed", async function () {
       const { bridge, claimsHelper, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
       await bridge
@@ -980,11 +980,7 @@ describe("Bridge Contract", function () {
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
-
-      await expect(bridge.connect(validators[4]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
-        claimsHelper,
-        "AlreadyConfirmed"
-      );
+      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
     });
 
     it("Should revert if same validator submits the same Bridging Request Claim twice", async function () {
@@ -1553,7 +1549,7 @@ describe("Bridge Contract", function () {
       );
     });
 
-    it("Should revert if Batch Execution Failed Claims is already confirmed", async function () {
+    it("Should skip if Batch Execution Failed Claims is already confirmed", async function () {
       const { bridge, owner, validators, UTXOs, validatorClaimsBEFC, validatorsCardanoData } = await loadFixture(
         deployBridgeFixture
       );
@@ -1564,11 +1560,7 @@ describe("Bridge Contract", function () {
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
-
-      await expect(bridge.connect(validators[4]).submitClaims(validatorClaimsBEFC)).to.be.revertedWithCustomError(
-        bridge,
-        "AlreadyConfirmed"
-      );
+      await bridge.connect(validators[4]).submitClaims(validatorClaimsBEFC);
     });
 
     it("Should revert if same validator submits the same Batch Execution Failed Claims twice", async function () {
@@ -1643,7 +1635,7 @@ describe("Bridge Contract", function () {
       );
     });
 
-    it("Should revert if Refund Request Claims is already confirmed", async function () {
+    it("Should skip if Refund Request Claims is already confirmed", async function () {
       const { bridge, owner, validators, UTXOs, validatorClaimsRRC, validatorsCardanoData } = await loadFixture(
         deployBridgeFixture
       );
@@ -1651,17 +1643,10 @@ describe("Bridge Contract", function () {
       await bridge.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", validatorsCardanoData, 100);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
-
       await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
-
       await bridge.connect(validators[2]).submitClaims(validatorClaimsRRC);
-
       await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
-
-      await expect(bridge.connect(validators[4]).submitClaims(validatorClaimsRRC)).to.be.revertedWithCustomError(
-        bridge,
-        "AlreadyConfirmed"
-      );
+      await bridge.connect(validators[4]).submitClaims(validatorClaimsRRC);
     });
 
     it("Should revert if same validator submits the same Refund Request Claims twice", async function () {
@@ -1716,7 +1701,7 @@ describe("Bridge Contract", function () {
       );
     });
 
-    it("Should revert if Refund Executed Claim is already confirmed", async function () {
+    it("Should skip if Refund Executed Claim is already confirmed", async function () {
       const { bridge, owner, validators, UTXOs, validatorClaimsRRC, validatorsCardanoData } = await loadFixture(
         deployBridgeFixture
       );
@@ -1724,17 +1709,10 @@ describe("Bridge Contract", function () {
       await bridge.connect(owner).registerChain("chainID1", UTXOs, "0x", "0x", validatorsCardanoData, 100);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
-
       await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
-
       await bridge.connect(validators[2]).submitClaims(validatorClaimsRRC);
-
       await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
-
-      await expect(bridge.connect(validators[4]).submitClaims(validatorClaimsRRC)).to.be.revertedWithCustomError(
-        bridge,
-        "AlreadyConfirmed"
-      );
+      await bridge.connect(validators[4]).submitClaims(validatorClaimsRRC);
     });
 
     it("Should revert if same validator submits the same Refund Executed Claim twice", async function () {
@@ -1793,7 +1771,7 @@ describe("Bridge Contract", function () {
       );
     });
 
-    it("Should revert if Last Observed Block Info is already confirmed", async function () {
+    it("Should skip if Last Observed Block Info is already confirmed", async function () {
       const { bridge, owner, validators, UTXOs, validatorClaimsRRC, validatorsCardanoData } = await loadFixture(
         deployBridgeFixture
       );
@@ -1808,10 +1786,7 @@ describe("Bridge Contract", function () {
 
       await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
 
-      await expect(bridge.connect(validators[4]).submitClaims(validatorClaimsRRC)).to.be.revertedWithCustomError(
-        bridge,
-        "AlreadyConfirmed"
-      );
+      await bridge.connect(validators[4]).submitClaims(validatorClaimsRRC);
     });
   });
 
