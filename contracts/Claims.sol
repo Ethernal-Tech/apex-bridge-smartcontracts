@@ -74,7 +74,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
-                revert AlreadyProposed(_claim.observedTransactionHash);
+                continue;
             }
 
             if (claimsHelper.isClaimConfirmed(_claim.destinationChainID, _claim.observedTransactionHash)) {
@@ -82,7 +82,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
 
             if (chainTokenQuantity[_claim.sourceChainID] < getNeededTokenQuantity(_claim.receivers)) {
-                revert NotEnoughBridgingTokensAwailable(_claim.observedTransactionHash);
+                continue;
             }
 
             _submitClaimsBRC(_claims, i, _caller);
@@ -94,7 +94,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
-                revert AlreadyProposed(_claim.observedTransactionHash);
+                continue;
             }
 
             if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
@@ -110,7 +110,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
-                revert AlreadyProposed(_claim.observedTransactionHash);
+                continue;
             }
 
             if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
@@ -126,7 +126,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
-                revert AlreadyProposed(_claim.observedTransactionHash);
+                continue;
             }
 
             if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
@@ -142,7 +142,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
-                revert AlreadyProposed(_claim.observedTransactionHash);
+                continue;
             }
 
             if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {

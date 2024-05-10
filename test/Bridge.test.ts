@@ -935,7 +935,25 @@ describe("Bridge Contract", function () {
 
   describe("Submit new Bridging Request Claim", function () {
     it("Should revert if either source and destination chains are not registered", async function () {
-      const { bridge, validators, validatorClaimsBRC } = await loadFixture(deployBridgeFixture);
+      const { bridge, owner, validators, UTXOs, validatorsCardanoData, validatorClaimsBRC } = await loadFixture(
+        deployBridgeFixture
+      );
+
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
+        bridge,
+        "ChainIsNotRegistered"
+      );
+
+      await bridge
+        .connect(owner)
+        .registerChain(
+          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+          UTXOs,
+          "0x",
+          "0x",
+          validatorsCardanoData,
+          10000
+        );
 
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
         bridge,
@@ -983,7 +1001,7 @@ describe("Bridge Contract", function () {
       await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
     });
 
-    it("Should revert if same validator submits the same Bridging Request Claim twice", async function () {
+    it("Should skip if same validator submits the same Bridging Request Claim twice", async function () {
       const { bridge, claimsHelper, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
       await bridge
@@ -1008,11 +1026,7 @@ describe("Bridge Contract", function () {
         );
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
-        claimsHelper,
-        "AlreadyProposed"
-      );
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
     });
 
     it("Should add new Bridging Request Claim if there are enough votes", async function () {
@@ -1060,7 +1074,7 @@ describe("Bridge Contract", function () {
       ).to.be.true;
     });
 
-    it("Should reject Bridging Request Claim if there is not enough bridging tokens", async function () {
+    it("Should skip Bridging Request Claim if there is not enough bridging tokens", async function () {
       const { bridge, claimsHelper, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
       await bridge
@@ -1084,10 +1098,7 @@ describe("Bridge Contract", function () {
           1
         );
 
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
-        claimsHelper,
-        "NotEnoughBridgingTokensAwailable"
-      );
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
     });
 
     it("Should remove requred amount of tokens from source chain when Bridging Request Claim is confirmed", async function () {
@@ -1343,7 +1354,7 @@ describe("Bridge Contract", function () {
       );
     });
 
-    it("Should revert if same validator submits the same Batch Executed Claim twice", async function () {
+    it("Should skip if same validator submits the same Batch Executed Claim twice", async function () {
       const { bridge, claimsHelper, owner, validators, UTXOs, validatorClaimsBEC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
@@ -1351,10 +1362,7 @@ describe("Bridge Contract", function () {
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
 
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEC)).to.be.revertedWithCustomError(
-        claimsHelper,
-        "AlreadyProposed"
-      );
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
     });
 
     it("Should add new Batch Executed Claim if there are enough votes", async function () {
@@ -1563,7 +1571,7 @@ describe("Bridge Contract", function () {
       await bridge.connect(validators[4]).submitClaims(validatorClaimsBEFC);
     });
 
-    it("Should revert if same validator submits the same Batch Execution Failed Claims twice", async function () {
+    it("Should skip if same validator submits the same Batch Execution Failed Claims twice", async function () {
       const { bridge, claimsHelper, owner, validators, UTXOs, validatorClaimsBEFC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
@@ -1571,10 +1579,7 @@ describe("Bridge Contract", function () {
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
 
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC)).to.be.revertedWithCustomError(
-        claimsHelper,
-        "AlreadyProposed"
-      );
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
     });
 
     it("Should add new Batch Execution Failed Claims if there are enough votes", async function () {
@@ -1649,7 +1654,7 @@ describe("Bridge Contract", function () {
       await bridge.connect(validators[4]).submitClaims(validatorClaimsRRC);
     });
 
-    it("Should revert if same validator submits the same Refund Request Claims twice", async function () {
+    it("Should skip if same validator submits the same Refund Request Claims twice", async function () {
       const { bridge, claimsHelper, owner, validators, UTXOs, validatorClaimsRRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
@@ -1657,10 +1662,7 @@ describe("Bridge Contract", function () {
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
 
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsRRC)).to.be.revertedWithCustomError(
-        claimsHelper,
-        "AlreadyProposed"
-      );
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
     });
 
     it("Should add new Refund Request Claims if there are enough votes", async function () {
@@ -1715,7 +1717,7 @@ describe("Bridge Contract", function () {
       await bridge.connect(validators[4]).submitClaims(validatorClaimsRRC);
     });
 
-    it("Should revert if same validator submits the same Refund Executed Claim twice", async function () {
+    it("Should skip if same validator submits the same Refund Executed Claim twice", async function () {
       const { bridge, claimsHelper, owner, validators, UTXOs, validatorClaimsREC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
@@ -1723,10 +1725,7 @@ describe("Bridge Contract", function () {
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsREC);
 
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsREC)).to.be.revertedWithCustomError(
-        claimsHelper,
-        "AlreadyProposed"
-      );
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsREC);
     });
 
     it("Should add new Refund Executed Claim if there are enough votes", async function () {
@@ -1757,7 +1756,7 @@ describe("Bridge Contract", function () {
     });
   });
   describe("Submit new Last Observed Block Info", function () {
-    it("Should revert if same validator submits the same Last Observed Block Info twice", async function () {
+    it("Should skip if same validator submits the same Last Observed Block Info twice", async function () {
       const { bridge, claimsHelper, owner, validators, UTXOs, validatorClaimsRRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
@@ -1765,10 +1764,7 @@ describe("Bridge Contract", function () {
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
 
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsRRC)).to.be.revertedWithCustomError(
-        claimsHelper,
-        "AlreadyProposed"
-      );
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
     });
 
     it("Should skip if Last Observed Block Info is already confirmed", async function () {
