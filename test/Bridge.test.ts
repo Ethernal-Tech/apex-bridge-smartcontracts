@@ -934,10 +934,31 @@ describe("Bridge Contract", function () {
   });
 
   describe("Submit new Bridging Request Claim", function () {
-    it("Should skip if either source and destination chains are not registered", async function () {
-      const { bridge, validators, validatorClaimsBRC } = await loadFixture(deployBridgeFixture);
+    it("Should revert if either source and destination chains are not registered", async function () {
+      const { bridge, owner, validators, UTXOs, validatorsCardanoData, validatorClaimsBRC } = await loadFixture(
+        deployBridgeFixture
+      );
 
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
+        bridge,
+        "ChainIsNotRegistered"
+      );
+
+      await bridge
+        .connect(owner)
+        .registerChain(
+          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+          UTXOs,
+          "0x",
+          "0x",
+          validatorsCardanoData,
+          10000
+        );
+
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
+        bridge,
+        "ChainIsNotRegistered"
+      );
     });
 
     it("Should reject any claim if not sent by validator", async function () {
@@ -1324,10 +1345,13 @@ describe("Bridge Contract", function () {
         "InvalidSignature"
       );
     });
-    it("Should skip if chain is not registered", async function () {
+    it("Should revert if chain is not registered", async function () {
       const { bridge, claimsHelper, validators, validatorClaimsBEC } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEC)).to.be.revertedWithCustomError(
+        claimsHelper,
+        "ChainIsNotRegistered"
+      );
     });
 
     it("Should skip if same validator submits the same Batch Executed Claim twice", async function () {
@@ -1524,10 +1548,13 @@ describe("Bridge Contract", function () {
   });
 
   describe("Submit new Batch Execution Failed Claims", function () {
-    it("Should skip if chain is not registered", async function () {
+    it("Should revert if chain is not registered", async function () {
       const { bridge, validators, validatorClaimsBEFC } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC)).to.be.revertedWithCustomError(
+        bridge,
+        "ChainIsNotRegistered"
+      );
     });
 
     it("Should skip if Batch Execution Failed Claims is already confirmed", async function () {
@@ -1604,10 +1631,13 @@ describe("Bridge Contract", function () {
   });
 
   describe("Submit new Refund Request Claims", function () {
-    it("Should skip if chain is not registered", async function () {
+    it("Should revert if chain is not registered", async function () {
       const { bridge, validators, validatorClaimsRRC } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsRRC)).to.be.revertedWithCustomError(
+        bridge,
+        "ChainIsNotRegistered"
+      );
     });
 
     it("Should skip if Refund Request Claims is already confirmed", async function () {
@@ -1664,10 +1694,13 @@ describe("Bridge Contract", function () {
   });
 
   describe("Submit new Refund Executed Claim", function () {
-    it("Should skip if chain is not registered", async function () {
+    it("Should revert if chain is not registered", async function () {
       const { bridge, validators, validatorClaimsRRC } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsRRC)).to.be.revertedWithCustomError(
+        bridge,
+        "ChainIsNotRegistered"
+      );
     });
 
     it("Should skip if Refund Executed Claim is already confirmed", async function () {

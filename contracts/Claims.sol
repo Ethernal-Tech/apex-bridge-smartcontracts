@@ -66,11 +66,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
             BridgingRequestClaim memory _claim = _claims.bridgingRequestClaims[i];
             if (!isChainRegistered[_claim.sourceChainID]) {
-                continue;
+                revert ChainIsNotRegistered(_claim.sourceChainID);
             }
 
             if (!isChainRegistered[_claim.destinationChainID]) {
-                continue;
+                revert ChainIsNotRegistered(_claim.destinationChainID);
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
@@ -90,7 +90,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         for (uint i = 0; i < _claims.batchExecutedClaims.length; i++) {
             BatchExecutedClaim memory _claim = _claims.batchExecutedClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
-                continue;
+                revert ChainIsNotRegistered(_claim.chainID);
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
@@ -106,7 +106,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         for (uint i = 0; i < _claims.batchExecutionFailedClaims.length; i++) {
             BatchExecutionFailedClaim memory _claim = _claims.batchExecutionFailedClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
-                continue;
+                revert ChainIsNotRegistered(_claim.chainID);
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
@@ -122,7 +122,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         for (uint i = 0; i < _claims.refundRequestClaims.length; i++) {
             RefundRequestClaim memory _claim = _claims.refundRequestClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
-                continue;
+                revert ChainIsNotRegistered(_claim.chainID);
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
@@ -138,7 +138,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         for (uint i = 0; i < _claims.refundExecutedClaims.length; i++) {
             RefundExecutedClaim memory _claim = _claims.refundExecutedClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
-                continue;
+                revert ChainIsNotRegistered(_claim.chainID);
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {

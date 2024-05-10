@@ -153,7 +153,7 @@ interface IBridgeStructs {
     error NotClaims();
     error NotSignedBatches();
     error NotSignedBatchesOrBridge();
-    error NotEnoughBridgingTokensAwailable(string _claimTransactionHash);
+    error NotEnoughBridgingTokensAvailable(string _claimTransactionHash);
     error CanNotCreateBatchYet(string _blockchainID);
     error InvalidData(string data);
     error ChainIsNotRegistered(string _chainId);
