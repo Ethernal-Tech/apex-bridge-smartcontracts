@@ -169,7 +169,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             uint256 confirmedTxCount = getBatchingTxsCount(_claim.destinationChainID);
             if (
-                (claimsHelper.currentBatchBlock(_claim.destinationChainID) != -1) && // there is no batch in progress
+                (claimsHelper.currentBatchBlock(_claim.destinationChainID) == -1) && // there is no batch in progress
                 (confirmedTxCount == 0) && // check if there is no other confirmed transactions
                 (block.number > nextTimeoutBlock[_claim.destinationChainID])
             ) // check if the current block number is greater than the NEXT_BATCH_TIMEOUT_BLOCK
