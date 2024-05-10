@@ -8,6 +8,8 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBridgeStructs.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
+import "hardhat/console.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     uint256 constant proposerEpochBlocksCount = 20;
@@ -82,7 +84,18 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         }
 
         // if this validator is proposer -> update lastProposedBatchData
-        if (validators.isValidatorProposer(_caller, block.number / proposerEpochBlocksCount)) {
+        uint256 validatorIdx = validators.addressValidatorIndex(_caller) - 1;
+        uint256 epoch = block.number / proposerEpochBlocksCount;
+        uint256 proposerIdx = epoch % validators.getValidatorsCount();
+        bool isProposer = proposerIdx == validatorIdx;
+
+        console.log("CREWAAAAAAAAAAA SUBMIT BATCH");
+        console.log(Strings.toString(block.number));
+        console.log(Strings.toString(epoch));
+        console.log(Strings.toString(proposerIdx));
+        console.log(Strings.toString(validatorIdx));
+
+        if (isProposer) {
             claimsHelper.setLastProposedBatchData(_destinationChainId, _signedBatch.proposerData);
         }
 

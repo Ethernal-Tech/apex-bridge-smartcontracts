@@ -21,7 +21,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     // keep validatorsArrayAddresses because maybe
     address[] private validatorsAddresses;
     // mapping in case they could be added/removed
-    mapping(address => uint256) private addressValidatorIndex;
+    mapping(address => uint256) public addressValidatorIndex;
 
     uint8 public validatorsCount;
 
@@ -48,11 +48,6 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
 
     function isValidator(address _addr) public view returns (bool _isValidator) {
         return addressValidatorIndex[_addr] != 0;
-    }
-
-    function isValidatorProposer(address _addr, uint256 number) public view returns (bool _isProposer) {
-        uint256 idx = addressValidatorIndex[_addr] - 1;
-        return number % validatorsAddresses.length == idx;
     }
 
     function isSignatureValid(
