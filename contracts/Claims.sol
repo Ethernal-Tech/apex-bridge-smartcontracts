@@ -66,15 +66,15 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
             BridgingRequestClaim memory _claim = _claims.bridgingRequestClaims[i];
             if (!isChainRegistered[_claim.sourceChainID]) {
-                revert ChainIsNotRegistered(_claim.sourceChainID);
+                continue;
             }
 
             if (!isChainRegistered[_claim.destinationChainID]) {
-                revert ChainIsNotRegistered(_claim.destinationChainID);
+                continue;
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
-                revert AlreadyProposed(_claim.observedTransactionHash);
+                continue;
             }
 
             if (claimsHelper.isClaimConfirmed(_claim.destinationChainID, _claim.observedTransactionHash)) {
@@ -82,7 +82,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
 
             if (chainTokenQuantity[_claim.sourceChainID] < getNeededTokenQuantity(_claim.receivers)) {
-                revert NotEnoughBridgingTokensAwailable(_claim.observedTransactionHash);
+                continue;
             }
 
             _submitClaimsBRC(_claims, i, _caller);
@@ -90,11 +90,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         for (uint i = 0; i < _claims.batchExecutedClaims.length; i++) {
             BatchExecutedClaim memory _claim = _claims.batchExecutedClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
-                revert ChainIsNotRegistered(_claim.chainID);
+                continue;
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
-                revert AlreadyProposed(_claim.observedTransactionHash);
+                continue;
             }
 
             if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
@@ -106,11 +106,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         for (uint i = 0; i < _claims.batchExecutionFailedClaims.length; i++) {
             BatchExecutionFailedClaim memory _claim = _claims.batchExecutionFailedClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
-                revert ChainIsNotRegistered(_claim.chainID);
+                continue;
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
-                revert AlreadyProposed(_claim.observedTransactionHash);
+                continue;
             }
 
             if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
@@ -122,11 +122,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         for (uint i = 0; i < _claims.refundRequestClaims.length; i++) {
             RefundRequestClaim memory _claim = _claims.refundRequestClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
-                revert ChainIsNotRegistered(_claim.chainID);
+                continue;
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
-                revert AlreadyProposed(_claim.observedTransactionHash);
+                continue;
             }
 
             if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
@@ -138,11 +138,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         for (uint i = 0; i < _claims.refundExecutedClaims.length; i++) {
             RefundExecutedClaim memory _claim = _claims.refundExecutedClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
-                revert ChainIsNotRegistered(_claim.chainID);
+                continue;
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
-                revert AlreadyProposed(_claim.observedTransactionHash);
+                continue;
             }
 
             if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
