@@ -44,26 +44,26 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
 
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
         string memory _destinationChainId = _signedBatch.destinationChainId;
-        uint256 _batchId = _signedBatch.id;
+        string memory _batchIdStr = Strings.toString(_signedBatch.id);
 
         uint256 sbId = lastConfirmedBatch[_destinationChainId].id;
 
-        if (_batchId != sbId + 1) {
-            revert WrongBatchNonce(_destinationChainId, _batchId);
+        if (_signedBatch.id != sbId + 1) {
+            revert WrongBatchNonce(_destinationChainId, _signedBatch.id);
         }
 
-        if (claimsHelper.hasVoted(Strings.toString(_batchId), _caller)) {
-            revert AlreadyProposed(Strings.toString(_batchId));
+        if (claimsHelper.hasVoted(_batchIdStr, _caller)) {
+            return;
         }
 
-        if (claimsHelper.isClaimConfirmed(_destinationChainId, Strings.toString(_batchId))) {
-            revert AlreadyConfirmed(Strings.toString(_batchId));
+        if (claimsHelper.isClaimConfirmed(_destinationChainId, _batchIdStr)) {
+            return;
         }
-
-        _submitSignedBatch(_signedBatch);
+        
+        _submitSignedBatch(_signedBatch, _batchIdStr);
     }
 
-    function _submitSignedBatch(SignedBatch calldata _signedBatch) internal {
+    function _submitSignedBatch(SignedBatch calldata _signedBatch, string memory _batchId) internal {
         SignedBatchWithoutSignatures memory _signedBatchWithoutSignatures = SignedBatchWithoutSignatures(
             _signedBatch.id,
             _signedBatch.destinationChainId,
@@ -72,14 +72,14 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             _signedBatch.usedUTXOs
         );
         bytes32 signedBatchHash = keccak256(abi.encode(_signedBatchWithoutSignatures));
-        claimsHelper.setVoted(Strings.toString(_signedBatch.id), msg.sender, signedBatchHash);
+        claimsHelper.setVoted(_batchId, msg.sender, signedBatchHash);
 
         signedBatches[_signedBatch.destinationChainId][_signedBatch.id][signedBatchHash].push(_signedBatch);
 
         if (hasConsensus(signedBatchHash)) {
             claimsHelper.setConfirmedSignedBatches(_signedBatch);
 
-            claimsHelper.setClaimConfirmed(_signedBatch.destinationChainId, Strings.toString(_signedBatch.id));
+            claimsHelper.setClaimConfirmed(_signedBatch.destinationChainId, _batchId);
 
             uint256 numberOfSignedBatches = signedBatches[_signedBatch.destinationChainId][_signedBatch.id][
                 signedBatchHash
