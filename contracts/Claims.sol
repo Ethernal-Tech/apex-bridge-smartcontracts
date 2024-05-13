@@ -163,11 +163,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             utxosc.addNewBridgingUTXO(_claim.sourceChainID, _claim.outputUTXO);
 
-            _setConfirmedTransactions(_claim);
+            uint256 confirmedTxCount = getBatchingTxsCount(_claim.destinationChainID);
 
+            _setConfirmedTransactions(_claim);
             claimsHelper.setClaimConfirmed(_claim.destinationChainID, _claim.observedTransactionHash);
 
-            uint256 confirmedTxCount = getBatchingTxsCount(_claim.destinationChainID);
             if (
                 (claimsHelper.currentBatchBlock(_claim.destinationChainID) == -1) && // there is no batch in progress
                 (confirmedTxCount == 0) && // check if there is no other confirmed transactions
