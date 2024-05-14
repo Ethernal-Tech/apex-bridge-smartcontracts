@@ -303,10 +303,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     ) public view returns (uint256) {
         uint256 bridgedAmount;
 
-        uint256 _firstTxNounce = claimsHelper.getConfirmedSignedBatch(_destinationChain, _nonce).firstTxNonceId;
-        uint256 _lastTxNounce = claimsHelper.getConfirmedSignedBatch(_destinationChain, _nonce).lastTxNonceId;
+        SignedBatch memory _signedBatch = claimsHelper.getConfirmedSignedBatch(_destinationChain, _nonce);
 
-        for (uint i = _firstTxNounce; i <= _lastTxNounce; i++) {
+        for (uint i = _signedBatch.firstTxNonceId; i <= _signedBatch.lastTxNounce; i++) {
             bridgedAmount += getNeededTokenQuantity(confirmedTransactions[_destinationChain][i].receivers);
         }
 
