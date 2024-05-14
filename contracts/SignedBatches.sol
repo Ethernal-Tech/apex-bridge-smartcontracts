@@ -14,8 +14,11 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     ClaimsHelper private claimsHelper;
     Validators private validators;
 
-    // BlockchanID -> batchId -> -signedBatchWithoutSignaturesHash -> SignedBatch[]
-    mapping(string => mapping(uint256 => mapping(bytes32 => SignedBatch[]))) public signedBatches;
+    // BlockchanID -> hash -> multisigSignatures
+    mapping(string => mapping(bytes32 => string[])) private multisigSignatures;
+
+    // BlockchanID -> hash -> multisigSignatures
+    mapping(string => mapping(bytes32 => string[])) private feePayerMultisigSignatures;
 
     // BlockchainID -> ConfirmedBatch
     mapping(string => ConfirmedBatch) public lastConfirmedBatch;
@@ -59,7 +62,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         if (claimsHelper.isClaimConfirmed(_destinationChainId, _batchIdStr)) {
             return;
         }
-        
+
         _submitSignedBatch(_signedBatch, _batchIdStr);
     }
 
@@ -74,36 +77,23 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         bytes32 signedBatchHash = keccak256(abi.encode(_signedBatchWithoutSignatures));
         claimsHelper.setVoted(_batchId, msg.sender, signedBatchHash);
 
-        signedBatches[_signedBatch.destinationChainId][_signedBatch.id][signedBatchHash].push(_signedBatch);
+        multisigSignatures[_signedBatch.destinationChainId][signedBatchHash].push(
+            _signedBatch.multisigSignature
+        );
+        feePayerMultisigSignatures[_signedBatch.destinationChainId][signedBatchHash].push(
+            _signedBatch.feePayerMultisigSignature
+        );
 
         if (hasConsensus(signedBatchHash)) {
-            claimsHelper.setConfirmedSignedBatches(_signedBatch);
+            claimsHelper.setConfirmedSignedBatchData(_signedBatch);
 
             claimsHelper.setClaimConfirmed(_signedBatch.destinationChainId, _batchId);
 
-            uint256 numberOfSignedBatches = signedBatches[_signedBatch.destinationChainId][_signedBatch.id][
-                signedBatchHash
-            ].length;
-
-            string[] memory multisigSignatures = new string[](numberOfSignedBatches);
-            string[] memory feePayerMultisigSignatures = new string[](numberOfSignedBatches);
-
-            for (uint i = 0; i < numberOfSignedBatches; i++) {
-                multisigSignatures[i] = signedBatches[_signedBatch.destinationChainId][_signedBatch.id][
-                    signedBatchHash
-                ][i].multisigSignature;
-                feePayerMultisigSignatures[i] = signedBatches[_signedBatch.destinationChainId][_signedBatch.id][
-                    signedBatchHash
-                ][i].feePayerMultisigSignature;
-            }
-
-            uint256 sbId = lastConfirmedBatch[_signedBatch.destinationChainId].id;
-
             lastConfirmedBatch[_signedBatch.destinationChainId] = ConfirmedBatch(
-                sbId + 1,
+                lastConfirmedBatch[_signedBatch.destinationChainId].id + 1,
                 _signedBatch.rawTransaction,
-                multisigSignatures,
-                feePayerMultisigSignatures
+                multisigSignatures[_signedBatch.destinationChainId][signedBatchHash],
+                feePayerMultisigSignatures[_signedBatch.destinationChainId][signedBatchHash]
             );
 
             claimsHelper.setCurrentBatchBlock(_signedBatch.destinationChainId, int256(block.number));

@@ -191,7 +191,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             claimsHelper.resetCurrentBatchBlock(_claim.chainID);
 
-            SignedBatch memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatch(
+            ConfirmedSignedBatchData memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
                 _claim.chainID,
                 _claim.batchNonceID
             );
@@ -305,7 +305,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     ) public view returns (uint256) {
         uint256 bridgedAmount;
 
-        uint256[] memory _nonces = claimsHelper.getConfirmedSignedBatch(_destinationChain, _nonce).includedTransactions;
+        uint256[] memory _nonces = claimsHelper.getConfirmedSignedBatchData(_destinationChain, _nonce).includedTransactions;
 
         for (uint i = 0; i < _nonces.length; i++) {
             bridgedAmount += getNeededTokenQuantity(confirmedTransactions[_destinationChain][_nonces[i]].receivers);
