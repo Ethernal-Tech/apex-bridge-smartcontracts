@@ -171,8 +171,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             if (
                 (claimsHelper.currentBatchBlock(_claim.destinationChainID) == -1) && // there is no batch in progress
                 (confirmedTxCount == 0) && // check if there is no other confirmed transactions
-                (block.number > nextTimeoutBlock[_claim.destinationChainID])
-            ) // check if the current block number is greater than the NEXT_BATCH_TIMEOUT_BLOCK
+                (block.number >= nextTimeoutBlock[_claim.destinationChainID])
+            ) // check if the current block number is greater or equal than the NEXT_BATCH_TIMEOUT_BLOCK
             {
                 nextTimeoutBlock[_claim.destinationChainID] = block.number + timeoutBlocksNumber;
             }
