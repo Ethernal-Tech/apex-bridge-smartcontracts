@@ -14,7 +14,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     mapping(string => mapping(string => bool)) public isClaimConfirmed;
 
     // BlockchainID -> batchId -> SignedBatch
-    mapping(string => mapping(uint256 => SignedBatch)) public confirmedSignedBatches;
+    mapping(string => mapping(uint256 => ConfirmedSignedBatchData)) public confirmedSignedBatches;
 
     // Blochchain ID -> blockNumber
     mapping(string => int256) public currentBatchBlock;
@@ -42,10 +42,10 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         signedBatchesAddress = _signedBatchesAddress;
     }
 
-    function getConfirmedSignedBatch(
+    function getConfirmedSignedBatchData(
         string calldata _chainId,
         uint256 _batchId
-    ) external view returns (SignedBatch memory) {
+    ) external view returns (ConfirmedSignedBatchData memory) {
         return confirmedSignedBatches[_chainId][_batchId];
     }
 
@@ -68,8 +68,11 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         return numberOfVotes[_hash];
     }
 
-    function setConfirmedSignedBatches(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
-        confirmedSignedBatches[_signedBatch.destinationChainId][_signedBatch.id] = _signedBatch;
+    function setConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
+        // because of UnimplementedFeatureError: Copying of type struct IBridgeStructs.UTXO memory[] memory to storage not yet supported.
+        confirmedSignedBatches[_signedBatch.destinationChainId][_signedBatch.id].includedTransactions = _signedBatch
+            .includedTransactions;
+        confirmedSignedBatches[_signedBatch.destinationChainId][_signedBatch.id].usedUTXOs = _signedBatch.usedUTXOs;
     }
 
     function setVoted(string calldata _id, address _voter, bytes32 _hash) external onlySignedBatchesOrClaims {

@@ -22,6 +22,11 @@ interface IBridgeStructs {
         UTXOs usedUTXOs;
     }
 
+    struct ConfirmedSignedBatchData {
+        uint256[] includedTransactions;
+        UTXOs usedUTXOs;
+    }
+
     struct ConfirmedBatch {
         uint256 id;
         string rawTransaction;

@@ -191,7 +191,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             claimsHelper.resetCurrentBatchBlock(_claim.chainID);
 
-            SignedBatch memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatch(
+            ConfirmedSignedBatchData memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
                 _claim.chainID,
                 _claim.batchNonceID
             );
