@@ -196,9 +196,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 _claim.batchNonceID
             );
 
-            if (confirmedSignedBatch.lastTxNonceId > 0) {
-                lastBatchedTxNonce[_claim.chainID] = confirmedSignedBatch.lastTxNonceId;
-            }
+            lastBatchedTxNonce[_claim.chainID] = confirmedSignedBatch.lastTxNonceId;
 
             nextTimeoutBlock[_claim.chainID] = block.number + timeoutBlocksNumber;
 
