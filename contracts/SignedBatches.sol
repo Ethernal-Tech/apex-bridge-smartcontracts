@@ -59,7 +59,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         if (claimsHelper.isClaimConfirmed(_destinationChainId, _batchIdStr)) {
             return;
         }
-        
+
         _submitSignedBatch(_signedBatch, _batchIdStr);
     }
 
@@ -68,7 +68,8 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             _signedBatch.id,
             _signedBatch.destinationChainId,
             _signedBatch.rawTransaction,
-            _signedBatch.includedTransactions,
+            _signedBatch.firstTxNonceId,
+            _signedBatch.lastTxNonceId,
             _signedBatch.usedUTXOs
         );
         bytes32 signedBatchHash = keccak256(abi.encode(_signedBatchWithoutSignatures));

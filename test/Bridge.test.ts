@@ -479,6 +479,8 @@ describe("Bridge Contract", function () {
       rawTransaction: "rawTransaction1",
       multisigSignature: "multisigSignature1",
       feePayerMultisigSignature: "feePayerMultisigSignature1",
+      firstTxNonceId: 1,
+      lastTxNonceId: 1,
       includedTransactions: [1],
       usedUTXOs: {
         multisigOwnedUTXOs: [
@@ -2127,7 +2129,8 @@ describe("Bridge Contract", function () {
         rawTransaction: "rawTransaction1",
         multisigSignature: "multisigSignature1",
         feePayerMultisigSignature: "feePayerMultisigSignature1",
-        includedTransactions: [1],
+        firstTxNonceId: 1,
+        lastTxNonceId: 1,
         usedUTXOs: {
           multisigOwnedUTXOs: [
             {
@@ -2201,7 +2204,8 @@ describe("Bridge Contract", function () {
         rawTransaction: "rawTransaction1",
         multisigSignature: "multisigSignature1",
         feePayerMultisigSignature: "feePayerMultisigSignature1",
-        includedTransactions: [1],
+        firstTxNonceId: 1,
+        lastTxNonceId: 1,
         usedUTXOs: {
           multisigOwnedUTXOs: [],
           feePayerOwnedUTXOs: [],

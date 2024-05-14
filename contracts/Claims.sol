@@ -195,9 +195,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 _claim.chainID,
                 _claim.batchNonceID
             );
-            uint256 txLength = confirmedSignedBatch.includedTransactions.length;
-            if (txLength > 0) {
-                lastBatchedTxNonce[_claim.chainID] = confirmedSignedBatch.includedTransactions[txLength - 1];
+
+            if (confirmedSignedBatch.lastTxNonceId > 0) {
+                lastBatchedTxNonce[_claim.chainID] = confirmedSignedBatch.lastTxNonceId;
             }
 
             nextTimeoutBlock[_claim.chainID] = block.number + timeoutBlocksNumber;
@@ -305,10 +305,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     ) public view returns (uint256) {
         uint256 bridgedAmount;
 
-        uint256[] memory _nonces = claimsHelper.getConfirmedSignedBatch(_destinationChain, _nonce).includedTransactions;
+        uint256 _firstTxNounce = claimsHelper.getConfirmedSignedBatch(_destinationChain, _nonce).firstTxNonceId;
+        uint256 _lastTxNounce = claimsHelper.getConfirmedSignedBatch(_destinationChain, _nonce).lastTxNonceId;
 
-        for (uint i = 0; i < _nonces.length; i++) {
-            bridgedAmount += getNeededTokenQuantity(confirmedTransactions[_destinationChain][_nonces[i]].receivers);
+        for (uint i = _firstTxNounce; i <= _lastTxNounce; i++) {
+            bridgedAmount += getNeededTokenQuantity(confirmedTransactions[_destinationChain][i].receivers);
         }
 
         return bridgedAmount;
