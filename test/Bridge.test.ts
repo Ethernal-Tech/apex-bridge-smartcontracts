@@ -479,7 +479,8 @@ describe("Bridge Contract", function () {
       rawTransaction: "rawTransaction1",
       multisigSignature: "multisigSignature1",
       feePayerMultisigSignature: "feePayerMultisigSignature1",
-      includedTransactions: [1],
+      firstTxNonceId: 1,
+      lastTxNonceId: 1,
       usedUTXOs: {
         multisigOwnedUTXOs: [
           {
@@ -2127,7 +2128,8 @@ describe("Bridge Contract", function () {
         rawTransaction: "rawTransaction1",
         multisigSignature: "multisigSignature1",
         feePayerMultisigSignature: "feePayerMultisigSignature1",
-        includedTransactions: [1],
+        firstTxNonceId: 1,
+        lastTxNonceId: 1,
         usedUTXOs: {
           multisigOwnedUTXOs: [
             {
@@ -2201,7 +2203,8 @@ describe("Bridge Contract", function () {
         rawTransaction: "rawTransaction1",
         multisigSignature: "multisigSignature1",
         feePayerMultisigSignature: "feePayerMultisigSignature1",
-        includedTransactions: [1],
+        firstTxNonceId: 1,
+        lastTxNonceId: 1,
         usedUTXOs: {
           multisigOwnedUTXOs: [],
           feePayerOwnedUTXOs: [],
@@ -2376,28 +2379,41 @@ describe("Bridge Contract", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      const confBatch = await claimsHelper.connect(validators[0]).getConfirmedSignedBatchData(
-        signedBatch.destinationChainId, signedBatch.id)
+      const confBatch = await claimsHelper
+        .connect(validators[0])
+        .getConfirmedSignedBatchData(signedBatch.destinationChainId, signedBatch.id);
 
-      expect(confBatch.includedTransactions.length).to.equal(signedBatch.includedTransactions.length);
+      expect(confBatch.firstTxNonceId).to.equal(signedBatch.firstTxNonceId);
+      expect(confBatch.lastTxNonceId).to.equal(signedBatch.lastTxNonceId);
       expect(confBatch.usedUTXOs.feePayerOwnedUTXOs.length).to.equal(signedBatch.usedUTXOs.feePayerOwnedUTXOs.length);
       expect(confBatch.usedUTXOs.multisigOwnedUTXOs.length).to.equal(signedBatch.usedUTXOs.multisigOwnedUTXOs.length);
 
       for (let i = 0; i < confBatch.usedUTXOs.multisigOwnedUTXOs.length; i++) {
-        expect(confBatch.usedUTXOs.multisigOwnedUTXOs[i].txHash).to.equal(signedBatch.usedUTXOs.multisigOwnedUTXOs[i].txHash);
-        expect(confBatch.usedUTXOs.multisigOwnedUTXOs[i].txIndex).to.equal(signedBatch.usedUTXOs.multisigOwnedUTXOs[i].txIndex);
-        expect(confBatch.usedUTXOs.multisigOwnedUTXOs[i].amount).to.equal(signedBatch.usedUTXOs.multisigOwnedUTXOs[i].amount);
+        expect(confBatch.usedUTXOs.multisigOwnedUTXOs[i].txHash).to.equal(
+          signedBatch.usedUTXOs.multisigOwnedUTXOs[i].txHash
+        );
+        expect(confBatch.usedUTXOs.multisigOwnedUTXOs[i].txIndex).to.equal(
+          signedBatch.usedUTXOs.multisigOwnedUTXOs[i].txIndex
+        );
+        expect(confBatch.usedUTXOs.multisigOwnedUTXOs[i].amount).to.equal(
+          signedBatch.usedUTXOs.multisigOwnedUTXOs[i].amount
+        );
       }
 
       for (let i = 0; i < confBatch.usedUTXOs.feePayerOwnedUTXOs.length; i++) {
-        expect(confBatch.usedUTXOs.feePayerOwnedUTXOs[i].txHash).to.equal(signedBatch.usedUTXOs.feePayerOwnedUTXOs[i].txHash);
-        expect(confBatch.usedUTXOs.feePayerOwnedUTXOs[i].txIndex).to.equal(signedBatch.usedUTXOs.feePayerOwnedUTXOs[i].txIndex);
-        expect(confBatch.usedUTXOs.feePayerOwnedUTXOs[i].amount).to.equal(signedBatch.usedUTXOs.feePayerOwnedUTXOs[i].amount);
+        expect(confBatch.usedUTXOs.feePayerOwnedUTXOs[i].txHash).to.equal(
+          signedBatch.usedUTXOs.feePayerOwnedUTXOs[i].txHash
+        );
+        expect(confBatch.usedUTXOs.feePayerOwnedUTXOs[i].txIndex).to.equal(
+          signedBatch.usedUTXOs.feePayerOwnedUTXOs[i].txIndex
+        );
+        expect(confBatch.usedUTXOs.feePayerOwnedUTXOs[i].amount).to.equal(
+          signedBatch.usedUTXOs.feePayerOwnedUTXOs[i].amount
+        );
       }
 
-      for (let i = 0; i < confBatch.includedTransactions.length; i++) {
-        expect(confBatch.includedTransactions[i]).to.equal(signedBatch.includedTransactions[i]);
-      }
+      expect(confBatch.firstTxNonceId).to.equal(signedBatch.firstTxNonceId);
+      expect(confBatch.lastTxNonceId).to.equal(signedBatch.lastTxNonceId);
     });
 
     it("Should create ConfirmedBatch if there are enough votes", async function () {

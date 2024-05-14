@@ -8,7 +8,8 @@ interface IBridgeStructs {
         string rawTransaction;
         string multisigSignature;
         string feePayerMultisigSignature;
-        uint256[] includedTransactions;
+        uint256 firstTxNonceId;
+        uint256 lastTxNonceId;
         UTXOs usedUTXOs;
     }
 
@@ -16,12 +17,14 @@ interface IBridgeStructs {
         uint256 id;
         string destinationChainId;
         string rawTransaction;
-        uint256[] includedTransactions;
+        uint256 firstTxNonceId;
+        uint256 lastTxNonceId;
         UTXOs usedUTXOs;
     }
 
     struct ConfirmedSignedBatchData {
-        uint256[] includedTransactions;
+        uint256 firstTxNonceId;
+        uint256 lastTxNonceId;
         UTXOs usedUTXOs;
     }
 

@@ -71,15 +71,14 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             _signedBatch.id,
             _signedBatch.destinationChainId,
             _signedBatch.rawTransaction,
-            _signedBatch.includedTransactions,
+            _signedBatch.firstTxNonceId,
+            _signedBatch.lastTxNonceId,
             _signedBatch.usedUTXOs
         );
         bytes32 signedBatchHash = keccak256(abi.encode(_signedBatchWithoutSignatures));
         claimsHelper.setVoted(_batchId, msg.sender, signedBatchHash);
 
-        multisigSignatures[_signedBatch.destinationChainId][signedBatchHash].push(
-            _signedBatch.multisigSignature
-        );
+        multisigSignatures[_signedBatch.destinationChainId][signedBatchHash].push(_signedBatch.multisigSignature);
         feePayerMultisigSignatures[_signedBatch.destinationChainId][signedBatchHash].push(
             _signedBatch.feePayerMultisigSignature
         );
