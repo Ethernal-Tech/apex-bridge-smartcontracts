@@ -55,8 +55,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     // Batches
     function submitSignedBatch(SignedBatch calldata _signedBatch) external override onlyValidator {
         if (!shouldCreateBatch(_signedBatch.destinationChainId)) {
-            // it will revert also if chain is not registered
-            revert CanNotCreateBatchYet(_signedBatch.destinationChainId);
+            return;
         }
         if (
             !validators.isSignatureValid(

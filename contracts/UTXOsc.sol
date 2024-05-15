@@ -32,7 +32,7 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         claimsAddress = _claimsAddress;
     }
 
-    function getChainUTXOs(string memory _chainID) external view returns (UTXOs memory) {
+    function getChainUTXOs(string calldata _chainID) external view returns (UTXOs memory) {
         return chainUTXOs[_chainID];
     }
 
@@ -51,7 +51,7 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         _removeFeeUTXOs(_chainID, _utxos.feePayerOwnedUTXOs);
     }
 
-    function _removeMultisigUTXOs(string calldata _chainID, UTXO[] memory utxos) internal {
+    function _removeMultisigUTXOs(string calldata _chainID, UTXO[] calldata utxos) internal {
         uint i = 0;
         uint lenu = chainUTXOs[_chainID].multisigOwnedUTXOs.length;
         while (i < lenu) {
@@ -74,7 +74,7 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _removeFeeUTXOs(string calldata _chainID, UTXO[] memory utxos) internal {
+    function _removeFeeUTXOs(string calldata _chainID, UTXO[] calldata utxos) internal {
         uint lenu = chainUTXOs[_chainID].feePayerOwnedUTXOs.length;
         uint i = 0;
         while (i < lenu) {

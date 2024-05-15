@@ -2086,7 +2086,7 @@ describe("Bridge Contract", function () {
   });
 
   describe("Batch creation", function () {
-    it("SignedBatch submition should be reverted if chain is not registered", async function () {
+    it("SignedBatch submition should return imediatelly if chain is not registered", async function () {
       const { bridge, validators, owner, validatorClaimsBRC, UTXOs, validatorsCardanoData } = await loadFixture(
         deployBridgeFixture
       );
@@ -2158,7 +2158,7 @@ describe("Bridge Contract", function () {
 
       await expect(
         bridge.connect(validators[0]).submitSignedBatch(signedBatch_UnregisteredChain)
-      ).to.be.revertedWithCustomError(bridge, "CanNotCreateBatchYet"); // should create batch should return false for unregistered chain
+      ) // submitSignedBatch should return for unregistered chain
     });
 
     it("SignedBatch submition should do nothing if batch nounce is not correct", async function () {

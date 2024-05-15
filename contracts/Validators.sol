@@ -30,7 +30,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         _disableInitializers();
     }
 
-    function initialize(address[] memory _validators) public initializer {
+    function initialize(address[] calldata _validators) public initializer {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
         for (uint i = 0; i < _validators.length; i++) {
@@ -72,7 +72,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         }
         // set validator cardano data for each validator
         for (uint i = 0; i < validatorAddressCardanoData.length; i++) {
-            ValidatorAddressCardanoData memory dt = validatorAddressCardanoData[i];
+            ValidatorAddressCardanoData calldata dt = validatorAddressCardanoData[i];
             validatorsCardanoDataPerAddress[_chainId][dt.addr] = dt.data;
         }
         _updateValidatorCardanoData(_chainId);

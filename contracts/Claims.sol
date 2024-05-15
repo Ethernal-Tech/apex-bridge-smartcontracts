@@ -64,7 +64,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
         for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
-            BridgingRequestClaim memory _claim = _claims.bridgingRequestClaims[i];
+            BridgingRequestClaim calldata _claim = _claims.bridgingRequestClaims[i];
             if (!isChainRegistered[_claim.sourceChainID]) {
                 revert ChainIsNotRegistered(_claim.sourceChainID);
             }
@@ -88,7 +88,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             _submitClaimsBRC(_claims, i, _caller);
         }
         for (uint i = 0; i < _claims.batchExecutedClaims.length; i++) {
-            BatchExecutedClaim memory _claim = _claims.batchExecutedClaims[i];
+            BatchExecutedClaim calldata _claim = _claims.batchExecutedClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
@@ -104,7 +104,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             _submitClaimsBEC(_claims, i, _caller);
         }
         for (uint i = 0; i < _claims.batchExecutionFailedClaims.length; i++) {
-            BatchExecutionFailedClaim memory _claim = _claims.batchExecutionFailedClaims[i];
+            BatchExecutionFailedClaim calldata _claim = _claims.batchExecutionFailedClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
@@ -120,7 +120,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             _submitClaimsBEFC(_claims, i, _caller);
         }
         for (uint i = 0; i < _claims.refundRequestClaims.length; i++) {
-            RefundRequestClaim memory _claim = _claims.refundRequestClaims[i];
+            RefundRequestClaim calldata _claim = _claims.refundRequestClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
@@ -136,7 +136,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             _submitClaimsRRC(_claims, i, _caller);
         }
         for (uint i = 0; i < _claims.refundExecutedClaims.length; i++) {
-            RefundExecutedClaim memory _claim = _claims.refundExecutedClaims[i];
+            RefundExecutedClaim calldata _claim = _claims.refundExecutedClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
@@ -154,7 +154,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _submitClaimsBRC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        BridgingRequestClaim memory _claim = _claims.bridgingRequestClaims[index];
+        BridgingRequestClaim calldata _claim = _claims.bridgingRequestClaims[index];
         bytes32 claimHash = keccak256(abi.encode(_claim));
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 
@@ -180,7 +180,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _submitClaimsBEC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        BatchExecutedClaim memory _claim = _claims.batchExecutedClaims[index];
+        BatchExecutedClaim calldata _claim = _claims.batchExecutedClaims[index];
         bytes32 claimHash = keccak256(abi.encode(_claim));
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 
@@ -206,7 +206,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _submitClaimsBEFC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        BatchExecutionFailedClaim memory _claim = _claims.batchExecutionFailedClaims[index];
+        BatchExecutionFailedClaim calldata _claim = _claims.batchExecutionFailedClaims[index];
         bytes32 claimHash = keccak256(abi.encode(_claim));
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 
@@ -220,7 +220,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _submitClaimsRRC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        RefundRequestClaim memory _claim = _claims.refundRequestClaims[index];
+        RefundRequestClaim calldata _claim = _claims.refundRequestClaims[index];
         bytes32 claimHash = keccak256(abi.encode(_claim));
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 
@@ -230,7 +230,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _submitClaimsREC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        RefundExecutedClaim memory _claim = _claims.refundExecutedClaims[index];
+        RefundExecutedClaim calldata _claim = _claims.refundExecutedClaims[index];
         bytes32 claimHash = keccak256(abi.encode(_claim));
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 
@@ -239,8 +239,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _setConfirmedTransactions(BridgingRequestClaim memory _claim) internal {
-        // passed the claim with the memory keyword
+    function _setConfirmedTransactions(BridgingRequestClaim calldata _claim) internal {
         uint256 nextNonce = ++lastConfirmedTxNonce[_claim.destinationChainID];
         confirmedTransactions[_claim.destinationChainID][nextNonce].observedTransactionHash = _claim
             .observedTransactionHash;
@@ -273,13 +272,13 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function getConfirmedTransaction(
-        string memory _destinationChain,
+        string calldata _destinationChain,
         uint256 _nonce
     ) public view returns (ConfirmedTransaction memory) {
         return confirmedTransactions[_destinationChain][_nonce];
     }
 
-    function getBatchingTxsCount(string memory _chainId) public view returns (uint256 counterConfirmedTransactions) {
+    function getBatchingTxsCount(string calldata _chainId) public view returns (uint256 counterConfirmedTransactions) {
         uint256 lastConfirmedTxNonceForChain = lastConfirmedTxNonce[_chainId];
         uint256 lastBatchedTxNonceForChain = lastBatchedTxNonce[_chainId];
 
@@ -301,7 +300,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function getTokenAmountFromSignedBatch(
-        string memory _destinationChain,
+        string calldata _destinationChain,
         uint256 _nonce
     ) public view returns (uint256) {
         uint256 bridgedAmount;
