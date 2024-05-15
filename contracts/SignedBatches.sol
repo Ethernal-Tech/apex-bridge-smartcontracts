@@ -52,7 +52,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         uint256 sbId = lastConfirmedBatch[_destinationChainId].id;
 
         if (_signedBatch.id != sbId + 1) {
-            revert WrongBatchNonce(_destinationChainId, _signedBatch.id);
+            return; // do not revert! batcher can lag a little bit. revert WrongBatchNonce(_destinationChainId, _signedBatch.id);
         }
 
         if (claimsHelper.hasVoted(_batchIdStr, _caller)) {
@@ -76,14 +76,15 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             _signedBatch.usedUTXOs
         );
         bytes32 signedBatchHash = keccak256(abi.encode(_signedBatchWithoutSignatures));
-        claimsHelper.setVoted(_batchId, msg.sender, signedBatchHash);
 
         multisigSignatures[_signedBatch.destinationChainId][signedBatchHash].push(_signedBatch.multisigSignature);
         feePayerMultisigSignatures[_signedBatch.destinationChainId][signedBatchHash].push(
             _signedBatch.feePayerMultisigSignature
         );
 
-        if (hasConsensus(signedBatchHash)) {
+        uint256 votesCount = claimsHelper.setVoted(_batchId, msg.sender, signedBatchHash);
+
+        if (votesCount >= validators.getQuorumNumberOfValidators()) {
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
 
             claimsHelper.setClaimConfirmed(_signedBatch.destinationChainId, _batchId);
@@ -95,12 +96,8 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
                 feePayerMultisigSignatures[_signedBatch.destinationChainId][signedBatchHash]
             );
 
-            claimsHelper.setCurrentBatchBlock(_signedBatch.destinationChainId, int256(block.number));
+            claimsHelper.updateCurrentBatchBlock(_signedBatch.destinationChainId);
         }
-    }
-
-    function hasConsensus(bytes32 _hash) public view returns (bool) {
-        return claimsHelper.numberOfVotes(_hash) >= validators.getQuorumNumberOfValidators();
     }
 
     function isBatchAlreadySubmittedBy(string calldata _destinationChain, address addr) public view returns (bool ok) {

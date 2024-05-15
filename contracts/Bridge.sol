@@ -111,10 +111,9 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         Chain memory _chain = Chain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer);
         bytes32 chainHash = keccak256(abi.encode(_chain));
 
-        claims.setVoted(_chainId, msg.sender, chainHash);
         validators.addValidatorCardanoData(_chainId, msg.sender, _validatorCardanoData);
 
-        if (claims.getNumberOfVotes(chainHash) == validators.getValidatorsCount()) {
+        if (claims.setVoted(_chainId, msg.sender, chainHash) == validators.getValidatorsCount()) {
             _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
         } else {
             emit newChainProposal(_chainId, msg.sender);
