@@ -230,7 +230,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _submitClaimsREC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        RefundExecutedClaim memory _claim = _claims.refundExecutedClaims[index];
+        RefundExecutedClaim calldata _claim = _claims.refundExecutedClaims[index];
         bytes32 claimHash = keccak256(abi.encode(_claim));
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 
@@ -239,8 +239,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _setConfirmedTransactions(BridgingRequestClaim memory _claim) internal {
-        // passed the claim with the memory keyword
+    function _setConfirmedTransactions(BridgingRequestClaim calldata _claim) internal {
         uint256 nextNonce = ++lastConfirmedTxNonce[_claim.destinationChainID];
         confirmedTransactions[_claim.destinationChainID][nextNonce].observedTransactionHash = _claim
             .observedTransactionHash;
@@ -273,13 +272,13 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function getConfirmedTransaction(
-        string memory _destinationChain,
+        string calldata _destinationChain,
         uint256 _nonce
     ) public view returns (ConfirmedTransaction memory) {
         return confirmedTransactions[_destinationChain][_nonce];
     }
 
-    function getBatchingTxsCount(string memory _chainId) public view returns (uint256 counterConfirmedTransactions) {
+    function getBatchingTxsCount(string calldata _chainId) public view returns (uint256 counterConfirmedTransactions) {
         uint256 lastConfirmedTxNonceForChain = lastConfirmedTxNonce[_chainId];
         uint256 lastBatchedTxNonceForChain = lastBatchedTxNonce[_chainId];
 
@@ -301,7 +300,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function getTokenAmountFromSignedBatch(
-        string memory _destinationChain,
+        string calldata _destinationChain,
         uint256 _nonce
     ) public view returns (uint256) {
         uint256 bridgedAmount;
