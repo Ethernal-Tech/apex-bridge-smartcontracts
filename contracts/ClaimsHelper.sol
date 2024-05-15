@@ -49,12 +49,12 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         return confirmedSignedBatches[_chainId][_batchId];
     }
 
-    function setCurrentBatchBlock(string calldata _chainId, int value) external onlySignedBatches {
-        currentBatchBlock[_chainId] = value;
+    function updateCurrentBatchBlock(string calldata _chainId) external onlySignedBatches {
+        currentBatchBlock[_chainId] = int256(block.number);
     }
 
     function resetCurrentBatchBlock(string calldata _chainId) external onlyClaims {
-        currentBatchBlock[_chainId] = int(-1);
+        currentBatchBlock[_chainId] = int256(-1);
     }
 
     function setClaimConfirmed(
@@ -62,10 +62,6 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         string calldata _observerHash
     ) external onlySignedBatchesOrClaims {
         isClaimConfirmed[_chain][_observerHash] = true;
-    }
-
-    function getNumberOfVotes(bytes32 _hash) external view returns (uint8) {
-        return numberOfVotes[_hash];
     }
 
     function setConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
@@ -77,9 +73,10 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         confirmedSignedBatches[_signedBatch.destinationChainId][_signedBatch.id].usedUTXOs = _signedBatch.usedUTXOs;
     }
 
-    function setVoted(string calldata _id, address _voter, bytes32 _hash) external onlySignedBatchesOrClaims {
+    function setVoted(string calldata _id, address _voter, bytes32 _hash) external onlySignedBatchesOrClaims returns (uint256) {
         hasVoted[_id][_voter] = true;
-        numberOfVotes[_hash]++;
+        uint256 v = ++numberOfVotes[_hash]; // v is numberOfVotes[_hash] + 1
+        return v;
     }
 
     function _equal(string memory a, string memory b) internal pure returns (bool) {

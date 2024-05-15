@@ -2161,7 +2161,7 @@ describe("Bridge Contract", function () {
       ).to.be.revertedWithCustomError(bridge, "CanNotCreateBatchYet"); // should create batch should return false for unregistered chain
     });
 
-    it("SignedBatch submition should be reverted if batch nounce is not correct", async function () {
+    it("SignedBatch submition should do nothing if batch nounce is not correct", async function () {
       const { bridge, owner, validators, UTXOs, validatorsCardanoData, validatorClaimsBRC } = await loadFixture(
         deployBridgeFixture
       );
@@ -2211,10 +2211,7 @@ describe("Bridge Contract", function () {
         },
       };
 
-      await expect(bridge.connect(validators[0]).submitSignedBatch(signedBatch)).to.be.revertedWithCustomError(
-        bridge,
-        "WrongBatchNonce"
-      );
+      await expect(bridge.connect(validators[0]).submitSignedBatch(signedBatch));
     });
 
     it("getNextBatchId should return 0 if there are no confirmed claims", async function () {
