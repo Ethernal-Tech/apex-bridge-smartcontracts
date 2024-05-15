@@ -224,7 +224,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         bytes32 claimHash = keccak256(abi.encode(_claim));
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 
-        if (votesCnt >= validators.getQuorumNumberOfValidators()) { 
+        if (votesCnt >= validators.getQuorumNumberOfValidators()) {
             claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
         }
     }
@@ -290,11 +290,10 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         counterConfirmedTransactions = 0;
 
         while (counterConfirmedTransactions < txsToProcess) {
-            ConfirmedTransaction memory confirmedTx = getConfirmedTransaction(
-                _chainId,
+            uint256 blockHeight = confirmedTransactions[_chainId][
                 lastBatchedTxNonceForChain + counterConfirmedTransactions + 1
-            );
-            if (confirmedTx.blockHeight >= nextTimeoutBlock[_chainId]) {
+            ].blockHeight;
+            if (blockHeight >= nextTimeoutBlock[_chainId]) {
                 break;
             }
             counterConfirmedTransactions++;
