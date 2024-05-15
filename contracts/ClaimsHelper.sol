@@ -83,24 +83,6 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         return v;
     }
 
-    function _equal(string memory a, string memory b) internal pure returns (bool) {
-        return bytes(a).length == bytes(b).length && keccak256(bytes(a)) == keccak256(bytes(b));
-    }
-
-    function _equalReveivers(Receiver[] memory a, Receiver[] memory b) internal pure returns (bool) {
-        if (a.length != b.length) {
-            return false;
-        }
-
-        for (uint256 i = 0; i < a.length; i++) {
-            if (a[i].amount != b[i].amount || !_equal(a[i].destinationAddress, b[i].destinationAddress)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     modifier onlySignedBatchesOrClaims() {
         if (msg.sender != signedBatchesAddress && msg.sender != claimsAddress) revert NotSignedBatchesOrBridge();
         _;
