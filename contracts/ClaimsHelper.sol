@@ -73,7 +73,11 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         confirmedSignedBatches[_signedBatch.destinationChainId][_signedBatch.id].usedUTXOs = _signedBatch.usedUTXOs;
     }
 
-    function setVoted(string calldata _id, address _voter, bytes32 _hash) external onlySignedBatchesOrClaims returns (uint256) {
+    function setVoted(
+        string calldata _id,
+        address _voter,
+        bytes32 _hash
+    ) external onlySignedBatchesOrClaims returns (uint256) {
         hasVoted[_id][_voter] = true;
         uint256 v = ++numberOfVotes[_hash]; // v is numberOfVotes[_hash] + 1
         return v;

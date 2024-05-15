@@ -76,7 +76,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             _signedBatch.usedUTXOs
         );
         bytes32 signedBatchHash = keccak256(abi.encode(_signedBatchWithoutSignatures));
-        
+
         multisigSignatures[_signedBatch.destinationChainId][signedBatchHash].push(_signedBatch.multisigSignature);
         feePayerMultisigSignatures[_signedBatch.destinationChainId][signedBatchHash].push(
             _signedBatch.feePayerMultisigSignature
