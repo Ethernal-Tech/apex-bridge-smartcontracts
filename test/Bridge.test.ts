@@ -1328,26 +1328,20 @@ describe("Bridge Contract", function () {
         validatorClaimsBEC,
         validatorsCardanoData,
       } = await loadFixture(deployBridgeFixture);
-      await bridge
-        .connect(owner)
-        .registerChain(
-          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
-          UTXOs,
-          "0x",
-          "0x",
-          validatorsCardanoData,
-          100
-        );
-      await bridge
-        .connect(owner)
-        .registerChain(
-          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
-          UTXOs,
-          "0x",
-          "0x",
-          validatorsCardanoData,
-          100
-        );
+      const sourceChain = {
+        id: validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+        addressMultisig: "0x",
+        addressFeePayer: "0x",
+      };
+
+      const destinationChain = {
+        id: validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+        addressMultisig: "0x",
+        addressFeePayer: "0x",
+      };
+
+      await bridge.connect(owner).registerChain(sourceChain, UTXOs, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(destinationChain, UTXOs, 100, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -2054,26 +2048,20 @@ describe("Bridge Contract", function () {
         deployBridgeFixture
       );
 
-      await bridge
-        .connect(owner)
-        .registerChain(
-          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
-          UTXOs,
-          "0x",
-          "0x",
-          validatorsCardanoData,
-          100
-        );
-      await bridge
-        .connect(owner)
-        .registerChain(
-          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
-          UTXOs,
-          "0x",
-          "0x",
-          validatorsCardanoData,
-          100
-        );
+      const sourceChain = {
+        id: validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+        addressMultisig: "0x",
+        addressFeePayer: "0x",
+      };
+
+      const destinationChain = {
+        id: validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+        addressMultisig: "0x",
+        addressFeePayer: "0x",
+      };
+
+      await bridge.connect(owner).registerChain(sourceChain, UTXOs, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(destinationChain, UTXOs, 100, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -2127,26 +2115,20 @@ describe("Bridge Contract", function () {
         deployBridgeFixture
       );
 
-      await bridge
-        .connect(owner)
-        .registerChain(
-          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
-          UTXOs,
-          "0x",
-          "0x",
-          validatorsCardanoData,
-          100
-        );
-      await bridge
-        .connect(owner)
-        .registerChain(
-          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
-          UTXOs,
-          "0x",
-          "0x",
-          validatorsCardanoData,
-          100
-        );
+      const sourceChain = {
+        id: validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+        addressMultisig: "0x",
+        addressFeePayer: "0x",
+      };
+
+      const destinationChain = {
+        id: validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+        addressMultisig: "0x",
+        addressFeePayer: "0x",
+      };
+
+      await bridge.connect(owner).registerChain(sourceChain, UTXOs, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(destinationChain, UTXOs, 100, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -2301,26 +2283,20 @@ describe("Bridge Contract", function () {
       const { bridge, claimsHelper, owner, validators, UTXOs, signedBatch, validatorsCardanoData, validatorClaimsBRC } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge
-        .connect(owner)
-        .registerChain(
-          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
-          UTXOs,
-          "0x",
-          "0x",
-          validatorsCardanoData,
-          100
-        );
-      await bridge
-        .connect(owner)
-        .registerChain(
-          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
-          UTXOs,
-          "0x",
-          "0x",
-          validatorsCardanoData,
-          100
-        );
+      const sourceChain = {
+        id: validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+        addressMultisig: "0x",
+        addressFeePayer: "0x",
+      };
+
+      const destinationChain = {
+        id: validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+        addressMultisig: "0x",
+        addressFeePayer: "0x",
+      };
+
+      await bridge.connect(owner).registerChain(sourceChain, UTXOs, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(destinationChain, UTXOs, 100, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
