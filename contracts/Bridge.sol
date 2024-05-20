@@ -11,6 +11,7 @@ import "./SignedBatches.sol";
 import "./Slots.sol";
 import "./UTXOsc.sol";
 import "./Validators.sol";
+import "hardhat/console.sol";
 
 contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     Claims private claims;
@@ -128,6 +129,8 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         claims.resetCurrentBatchBlock(_chain.id);
 
         claims.setNextTimeoutBlock(_chain.id, block.number);
+
+        console.log("Chain registered: %s", _chain.id);
 
         emit newChainRegistered(_chain.id);
     }

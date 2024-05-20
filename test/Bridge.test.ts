@@ -607,13 +607,9 @@ describe("Bridge Contract", function () {
     it("Should emit new chain registered when registered by owner", async function () {
       const { bridge, owner, chain, UTXOs, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
-      await expect(
-        bridge
-          .connect(owner)
-          .registerChain(chain, UTXOs, 100, validatorsCardanoData)
-          .to.emit(bridge, "newChainRegistered")
-          .withArgs("chainID1")
-      );
+      await expect(bridge.connect(owner).registerChain(chain, UTXOs, 100, validatorsCardanoData))
+        .to.emit(bridge, "newChainRegistered")
+        .withArgs("chainID1");
     });
   });
 
