@@ -132,7 +132,6 @@ interface IBridgeStructs {
 
     struct Chain {
         string id;
-        UTXOs utxos;
         string addressMultisig;
         string addressFeePayer;
     }

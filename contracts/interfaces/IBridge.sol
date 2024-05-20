@@ -15,21 +15,17 @@ abstract contract IBridge is IBridgeStructs {
 
     // Chain registration through some kind of governance
     function registerChain(
-        string calldata _chainId,
+        Chain calldata _chain,
         UTXOs calldata _initialUTXOs,
-        string calldata _addressMultisig,
-        string calldata _addressFeePayer,
-        ValidatorAddressCardanoData[] calldata _validatorData,
-        uint256 _tokenQuantity
+        uint256 _tokenQuantity,
+        ValidatorAddressCardanoData[] calldata _validatorData
     ) external virtual;
 
     function registerChainGovernance(
-        string calldata _chainId,
+        Chain calldata _chain,
         UTXOs calldata _initialUTXOs,
-        string calldata _addressMultisig,
-        string calldata _addressFeePayer,
-        ValidatorCardanoData calldata _validatorData,
-        uint256 _tokenQuantity
+        uint256 _tokenQuantity,
+        ValidatorCardanoData calldata _validatorData
     ) external virtual;
 
     // Queries
