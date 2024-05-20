@@ -885,7 +885,7 @@ describe("Bridge Contract", function () {
 
   describe("Submit new Bridging Request Claim", function () {
     it("Should revert if either source and destination chains are not registered", async function () {
-      const { bridge, owner, validators, UTXOs, validatorsCardanoData, validatorClaimsBRC } = await loadFixture(
+      const { bridge, owner, validators, chain, UTXOs, validatorsCardanoData, validatorClaimsBRC } = await loadFixture(
         deployBridgeFixture
       );
 
@@ -894,16 +894,7 @@ describe("Bridge Contract", function () {
         "ChainIsNotRegistered"
       );
 
-      await bridge
-        .connect(owner)
-        .registerChain(
-          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
-          UTXOs,
-          "0x",
-          "0x",
-          validatorsCardanoData,
-          10000
-        );
+      await bridge.connect(owner).registerChain(chain, UTXOs, 10000, validatorsCardanoData);
 
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
         bridge,
