@@ -1027,26 +1027,21 @@ describe("Bridge Contract", function () {
     it("Should skip Bridging Request Claim if there is not enough bridging tokens", async function () {
       const { bridge, claimsHelper, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
-      await bridge
-        .connect(owner)
-        .registerChain(
-          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
-          UTXOs,
-          "0x",
-          "0x",
-          validatorsCardanoData,
-          1
-        );
-      await bridge
-        .connect(owner)
-        .registerChain(
-          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
-          UTXOs,
-          "0x",
-          "0x",
-          validatorsCardanoData,
-          1
-        );
+
+      const sourceChain = {
+        id: validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+        addressMultisig: "0x",
+        addressFeePayer: "0x",
+      };
+
+      const destinationChain = {
+        id: validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+        addressMultisig: "0x",
+        addressFeePayer: "0x",
+      };
+
+      await bridge.connect(owner).registerChain(sourceChain, UTXOs, 1, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(destinationChain, UTXOs, 1, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
     });
