@@ -2161,26 +2161,20 @@ describe("Bridge Contract", function () {
       const { bridge, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } = await loadFixture(
         deployBridgeFixture
       );
-      await bridge
-        .connect(owner)
-        .registerChain(
-          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
-          UTXOs,
-          "0x",
-          "0x",
-          validatorsCardanoData,
-          10000
-        );
-      await bridge
-        .connect(owner)
-        .registerChain(
-          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
-          UTXOs,
-          "0x",
-          "0x",
-          validatorsCardanoData,
-          1000
-        );
+      const sourceChain = {
+        id: validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+        addressMultisig: "0x",
+        addressFeePayer: "0x",
+      };
+
+      const destinationChain = {
+        id: validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+        addressMultisig: "0x",
+        addressFeePayer: "0x",
+      };
+
+      await bridge.connect(owner).registerChain(sourceChain, UTXOs, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(destinationChain, UTXOs, 10000, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
 
@@ -2198,26 +2192,20 @@ describe("Bridge Contract", function () {
       const { bridge, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } = await loadFixture(
         deployBridgeFixture
       );
-      await bridge
-        .connect(owner)
-        .registerChain(
-          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
-          UTXOs,
-          "0x",
-          "0x",
-          validatorsCardanoData,
-          10000
-        );
-      await bridge
-        .connect(owner)
-        .registerChain(
-          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
-          UTXOs,
-          "0x",
-          "0x",
-          validatorsCardanoData,
-          1000
-        );
+      const sourceChain = {
+        id: validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+        addressMultisig: "0x",
+        addressFeePayer: "0x",
+      };
+
+      const destinationChain = {
+        id: validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+        addressMultisig: "0x",
+        addressFeePayer: "0x",
+      };
+
+      await bridge.connect(owner).registerChain(sourceChain, UTXOs, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(destinationChain, UTXOs, 10000, validatorsCardanoData);
 
       const validatorClaimsBRC2 = {
         ...validatorClaimsBRC,
@@ -2246,26 +2234,20 @@ describe("Bridge Contract", function () {
       const { bridge, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } = await loadFixture(
         deployBridgeFixture
       );
-      await bridge
-        .connect(owner)
-        .registerChain(
-          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
-          UTXOs,
-          "0x",
-          "0x",
-          validatorsCardanoData,
-          10000
-        );
-      await bridge
-        .connect(owner)
-        .registerChain(
-          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
-          UTXOs,
-          "0x",
-          "0x",
-          validatorsCardanoData,
-          1000
-        );
+      const sourceChain = {
+        id: validatorClaimsBRC.bridgingRequestClaims[0].sourceChainID,
+        addressMultisig: "0x",
+        addressFeePayer: "0x",
+      };
+
+      const destinationChain = {
+        id: validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
+        addressMultisig: "0x",
+        addressFeePayer: "0x",
+      };
+
+      await bridge.connect(owner).registerChain(sourceChain, UTXOs, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(destinationChain, UTXOs, 10000, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
