@@ -46,7 +46,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     }
 
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
-        string memory _destinationChainId = _signedBatch.destinationChainId;
+        string calldata _destinationChainId = _signedBatch.destinationChainId;
         string memory _batchIdStr = Strings.toString(_signedBatch.id);
 
         uint256 sbId = lastConfirmedBatch[_destinationChainId].id;

@@ -129,8 +129,8 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     }
 
     function _isSignatureValid(
-        string memory message,
-        string memory signature,
+        string calldata message,
+        string calldata signature,
         string memory verifyingKey,
         bool isTx
     ) internal view returns (bool) {
