@@ -11,7 +11,6 @@ import "./SignedBatches.sol";
 import "./Slots.sol";
 import "./UTXOsc.sol";
 import "./Validators.sol";
-import "hardhat/console.sol";
 
 contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     Claims private claims;
@@ -104,7 +103,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
             revert AlreadyProposed(_chain.id);
         }
 
-        bytes32 chainHash = keccak256(abi.encode(_chain));
+        bytes32 chainHash = keccak256(abi.encode(_chain, _initialUTXOs, _tokenQuantity));
 
         validators.addValidatorCardanoData(_chain.id, msg.sender, _validatorCardanoData);
 
@@ -129,8 +128,6 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         claims.resetCurrentBatchBlock(_chain.id);
 
         claims.setNextTimeoutBlock(_chain.id, block.number);
-
-        console.log("Chain registered: %s", _chain.id);
 
         emit newChainRegistered(_chain.id);
     }
