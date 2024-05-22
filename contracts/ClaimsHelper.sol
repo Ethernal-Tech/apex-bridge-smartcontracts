@@ -10,8 +10,8 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     address private claimsAddress;
     address private signedBatchesAddress;
 
-    // blockchain -> claimHash -> queued
-    mapping(string => mapping(string => bool)) public isClaimConfirmed;
+    // claimHash -> queued
+    mapping(string => bool) public isClaimConfirmed;
 
     // BlockchainID -> batchId -> SignedBatch
     mapping(string => mapping(uint256 => ConfirmedSignedBatchData)) public confirmedSignedBatches;
@@ -57,11 +57,8 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         currentBatchBlock[_chainId] = int256(-1);
     }
 
-    function setClaimConfirmed(
-        string calldata _chain,
-        string calldata _observerHash
-    ) external onlySignedBatchesOrClaims {
-        isClaimConfirmed[_chain][_observerHash] = true;
+    function setClaimConfirmed(string calldata _observerHash) external onlySignedBatchesOrClaims {
+        isClaimConfirmed[_observerHash] = true;
     }
 
     function setConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {

@@ -47,26 +47,18 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
 
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
         string calldata _destinationChainId = _signedBatch.destinationChainId;
-        string memory _batchIdStr = Strings.toString(_signedBatch.id);
 
-        uint256 sbId = lastConfirmedBatch[_destinationChainId].id;
-
-        if (_signedBatch.id != sbId + 1) {
+        if (_signedBatch.id != lastConfirmedBatch[_destinationChainId].id + 1) {
             return; // do not revert! batcher can lag a little bit. revert WrongBatchNonce(_destinationChainId, _signedBatch.id);
         }
+
+        //TODO: this will probably be removed in the next optimization iteration, keeping it so PR would say simple
+        string memory _batchIdStr = Strings.toString(_signedBatch.id);
 
         if (claimsHelper.hasVoted(_batchIdStr, _caller)) {
             return;
         }
 
-        if (claimsHelper.isClaimConfirmed(_destinationChainId, _batchIdStr)) {
-            return;
-        }
-
-        _submitSignedBatch(_signedBatch, _batchIdStr);
-    }
-
-    function _submitSignedBatch(SignedBatch calldata _signedBatch, string memory _batchId) internal {
         SignedBatchWithoutSignatures memory _signedBatchWithoutSignatures = SignedBatchWithoutSignatures(
             _signedBatch.id,
             _signedBatch.destinationChainId,
@@ -75,25 +67,38 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             _signedBatch.lastTxNonceId,
             _signedBatch.usedUTXOs
         );
-        bytes32 signedBatchHash = keccak256(abi.encode(_signedBatchWithoutSignatures));
+        bytes32 _signedBatchHash = keccak256(abi.encode(_signedBatchWithoutSignatures));
 
-        multisigSignatures[_signedBatch.destinationChainId][signedBatchHash].push(_signedBatch.multisigSignature);
-        feePayerMultisigSignatures[_signedBatch.destinationChainId][signedBatchHash].push(
+        //TODO: temporary solution, string will be changed to bytes32 removing the need for this conversion
+        if (claimsHelper.isClaimConfirmed(string(abi.encode(_signedBatchHash)))) {
+            return;
+        }
+
+        _submitSignedBatch(_signedBatch, _batchIdStr, _signedBatchHash);
+    }
+
+    function _submitSignedBatch(
+        SignedBatch calldata _signedBatch,
+        string memory _batchIdStr,
+        bytes32 _signedBatchHash
+    ) internal {
+        multisigSignatures[_signedBatch.destinationChainId][_signedBatchHash].push(_signedBatch.multisigSignature);
+        feePayerMultisigSignatures[_signedBatch.destinationChainId][_signedBatchHash].push(
             _signedBatch.feePayerMultisigSignature
         );
 
-        uint256 votesCount = claimsHelper.setVoted(_batchId, msg.sender, signedBatchHash);
+        uint256 votesCount = claimsHelper.setVoted(_batchIdStr, msg.sender, _signedBatchHash);
 
         if (votesCount >= validators.getQuorumNumberOfValidators()) {
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
 
-            claimsHelper.setClaimConfirmed(_signedBatch.destinationChainId, _batchId);
+            claimsHelper.setClaimConfirmed(_batchIdStr);
 
             lastConfirmedBatch[_signedBatch.destinationChainId] = ConfirmedBatch(
                 lastConfirmedBatch[_signedBatch.destinationChainId].id + 1,
                 _signedBatch.rawTransaction,
-                multisigSignatures[_signedBatch.destinationChainId][signedBatchHash],
-                feePayerMultisigSignatures[_signedBatch.destinationChainId][signedBatchHash]
+                multisigSignatures[_signedBatch.destinationChainId][_signedBatchHash],
+                feePayerMultisigSignatures[_signedBatch.destinationChainId][_signedBatchHash]
             );
 
             claimsHelper.updateCurrentBatchBlock(_signedBatch.destinationChainId);

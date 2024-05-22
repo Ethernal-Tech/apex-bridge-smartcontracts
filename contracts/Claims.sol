@@ -77,7 +77,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 continue;
             }
 
-            if (claimsHelper.isClaimConfirmed(_claim.destinationChainID, _claim.observedTransactionHash)) {
+            if (claimsHelper.isClaimConfirmed(_claim.observedTransactionHash)) {
                 continue;
             }
 
@@ -97,7 +97,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 continue;
             }
 
-            if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
+            if (claimsHelper.isClaimConfirmed(_claim.observedTransactionHash)) {
                 continue;
             }
 
@@ -113,7 +113,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 continue;
             }
 
-            if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
+            if (claimsHelper.isClaimConfirmed(_claim.observedTransactionHash)) {
                 continue;
             }
 
@@ -129,7 +129,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 continue;
             }
 
-            if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
+            if (claimsHelper.isClaimConfirmed(_claim.observedTransactionHash)) {
                 continue;
             }
 
@@ -145,7 +145,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 continue;
             }
 
-            if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
+            if (claimsHelper.isClaimConfirmed(_claim.observedTransactionHash)) {
                 continue;
             }
 
@@ -166,7 +166,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             uint256 confirmedTxCount = getBatchingTxsCount(_claim.destinationChainID);
 
             _setConfirmedTransactions(_claim);
-            claimsHelper.setClaimConfirmed(_claim.destinationChainID, _claim.observedTransactionHash);
+            claimsHelper.setClaimConfirmed(_claim.observedTransactionHash);
 
             if (
                 (claimsHelper.currentBatchBlock(_claim.destinationChainID) == -1) && // there is no batch in progress
@@ -187,7 +187,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         if (votesCnt >= validators.getQuorumNumberOfValidators()) {
             chainTokenQuantity[_claim.chainID] += getTokenAmountFromSignedBatch(_claim.chainID, _claim.batchNonceID);
 
-            claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
+            claimsHelper.setClaimConfirmed(_claim.observedTransactionHash);
 
             claimsHelper.resetCurrentBatchBlock(_claim.chainID);
 
@@ -211,7 +211,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 
         if (votesCnt >= validators.getQuorumNumberOfValidators()) {
-            claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
+            claimsHelper.setClaimConfirmed(_claim.observedTransactionHash);
 
             claimsHelper.resetCurrentBatchBlock(_claim.chainID);
 
@@ -225,7 +225,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 
         if (votesCnt >= validators.getQuorumNumberOfValidators()) {
-            claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
+            claimsHelper.setClaimConfirmed(_claim.observedTransactionHash);
         }
     }
 
@@ -235,7 +235,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 
         if (votesCnt >= validators.getQuorumNumberOfValidators()) {
-            claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
+            claimsHelper.setClaimConfirmed(_claim.observedTransactionHash);
         }
     }
 
