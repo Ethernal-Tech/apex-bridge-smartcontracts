@@ -977,21 +977,13 @@ describe("Bridge Contract", function () {
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
 
-      expect(
-        await claimsHelper.isClaimConfirmed(
-          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
-          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash
-        )
-      ).to.be.false;
+      expect(await claimsHelper.isClaimConfirmed(validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash))
+        .to.be.false;
 
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-      expect(
-        await claimsHelper.isClaimConfirmed(
-          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainID,
-          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash
-        )
-      ).to.be.true;
+      expect(await claimsHelper.isClaimConfirmed(validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash))
+        .to.be.true;
     });
 
     it("Should skip Bridging Request Claim if there is not enough bridging tokens", async function () {
@@ -1291,21 +1283,13 @@ describe("Bridge Contract", function () {
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
 
-      expect(
-        await claimsHelper.isClaimConfirmed(
-          validatorClaimsBEC.batchExecutedClaims[0].chainID,
-          validatorClaimsBEC.batchExecutedClaims[0].observedTransactionHash
-        )
-      ).to.be.false;
+      expect(await claimsHelper.isClaimConfirmed(validatorClaimsBEC.batchExecutedClaims[0].observedTransactionHash)).to
+        .be.false;
 
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
-      expect(
-        await claimsHelper.isClaimConfirmed(
-          validatorClaimsBEC.batchExecutedClaims[0].chainID,
-          validatorClaimsBEC.batchExecutedClaims[0].observedTransactionHash
-        )
-      ).to.be.true;
+      expect(await claimsHelper.isClaimConfirmed(validatorClaimsBEC.batchExecutedClaims[0].observedTransactionHash)).to
+        .be.true;
     });
 
     it("Should add requred amount of tokens from source chain when Bridging Executed Claim is confirmed", async function () {
@@ -1456,19 +1440,13 @@ describe("Bridge Contract", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
 
       expect(
-        await claimsHelper.isClaimConfirmed(
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID,
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].observedTransactionHash
-        )
+        await claimsHelper.isClaimConfirmed(validatorClaimsBEFC.batchExecutionFailedClaims[0].observedTransactionHash)
       ).to.be.false;
 
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
 
       expect(
-        await claimsHelper.isClaimConfirmed(
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID,
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].observedTransactionHash
-        )
+        await claimsHelper.isClaimConfirmed(validatorClaimsBEFC.batchExecutionFailedClaims[0].observedTransactionHash)
       ).to.be.true;
     });
 
@@ -1548,21 +1526,13 @@ describe("Bridge Contract", function () {
       await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsRRC);
 
-      expect(
-        await claimsHelper.isClaimConfirmed(
-          validatorClaimsRRC.refundRequestClaims[0].chainID,
-          validatorClaimsRRC.refundRequestClaims[0].observedTransactionHash
-        )
-      ).to.be.false;
+      expect(await claimsHelper.isClaimConfirmed(validatorClaimsRRC.refundRequestClaims[0].observedTransactionHash)).to
+        .be.false;
 
       await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
 
-      expect(
-        await claimsHelper.isClaimConfirmed(
-          validatorClaimsRRC.refundRequestClaims[0].chainID,
-          validatorClaimsRRC.refundRequestClaims[0].observedTransactionHash
-        )
-      ).to.be.true;
+      expect(await claimsHelper.isClaimConfirmed(validatorClaimsRRC.refundRequestClaims[0].observedTransactionHash)).to
+        .be.true;
     });
   });
 
@@ -1612,21 +1582,13 @@ describe("Bridge Contract", function () {
       await bridge.connect(validators[1]).submitClaims(validatorClaimsREC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsREC);
 
-      expect(
-        await claimsHelper.isClaimConfirmed(
-          validatorClaimsREC.refundExecutedClaims[0].chainID,
-          validatorClaimsREC.refundExecutedClaims[0].observedTransactionHash
-        )
-      ).to.be.false;
+      expect(await claimsHelper.isClaimConfirmed(validatorClaimsREC.refundExecutedClaims[0].observedTransactionHash)).to
+        .be.false;
 
       await bridge.connect(validators[3]).submitClaims(validatorClaimsREC);
 
-      expect(
-        await claimsHelper.isClaimConfirmed(
-          validatorClaimsREC.refundExecutedClaims[0].chainID,
-          validatorClaimsREC.refundExecutedClaims[0].observedTransactionHash
-        )
-      ).to.be.true;
+      expect(await claimsHelper.isClaimConfirmed(validatorClaimsREC.refundExecutedClaims[0].observedTransactionHash)).to
+        .be.true;
     });
   });
   describe("Submit new Last Observed Block Info", function () {
