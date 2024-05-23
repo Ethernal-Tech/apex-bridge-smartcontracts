@@ -81,67 +81,55 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     // Chain registration by Owner
     function registerChain(
-        string calldata _chainId,
+        Chain calldata _chain,
         UTXOs calldata _initialUTXOs,
-        string calldata _addressMultisig,
-        string calldata _addressFeePayer,
-        ValidatorAddressCardanoData[] calldata _validatorsAddressCardanoData,
-        uint256 _tokenQuantity
+        uint256 _tokenQuantity,
+        ValidatorAddressCardanoData[] calldata _validatorsAddressCardanoData
     ) public override onlyOwner {
-        validators.setValidatorsCardanoData(_chainId, _validatorsAddressCardanoData);
-        _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
+        validators.setValidatorsCardanoData(_chain.id, _validatorsAddressCardanoData);
+        _registerChain(_chain, _initialUTXOs, _tokenQuantity);
     }
 
     function registerChainGovernance(
-        string calldata _chainId,
+        Chain calldata _chain,
         UTXOs calldata _initialUTXOs,
-        string calldata _addressMultisig,
-        string calldata _addressFeePayer,
-        ValidatorCardanoData calldata _validatorCardanoData,
-        uint256 _tokenQuantity
+        uint256 _tokenQuantity,
+        ValidatorCardanoData calldata _validatorCardanoData
     ) external override onlyValidator {
-        if (claims.isChainRegistered(_chainId)) {
-            revert ChainAlreadyRegistered(_chainId);
+        if (claims.isChainRegistered(_chain.id)) {
+            revert ChainAlreadyRegistered(_chain.id);
         }
-        if (claims.hasVoted(_chainId, msg.sender)) {
-            revert AlreadyProposed(_chainId);
+        if (claims.hasVoted(_chain.id, msg.sender)) {
+            revert AlreadyProposed(_chain.id);
         }
 
-        Chain memory _chain = Chain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer);
-        bytes32 chainHash = keccak256(abi.encode(_chain));
+        bytes32 chainHash = keccak256(abi.encode(_chain, _initialUTXOs, _tokenQuantity));
 
-        validators.addValidatorCardanoData(_chainId, msg.sender, _validatorCardanoData);
+        validators.addValidatorCardanoData(_chain.id, msg.sender, _validatorCardanoData);
 
-        if (claims.setVoted(_chainId, msg.sender, chainHash) == validators.getValidatorsCount()) {
-            _registerChain(_chainId, _initialUTXOs, _addressMultisig, _addressFeePayer, _tokenQuantity);
+        if (claims.setVoted(_chain.id, msg.sender, chainHash) == validators.getValidatorsCount()) {
+            _registerChain(_chain, _initialUTXOs, _tokenQuantity);
         } else {
-            emit newChainProposal(_chainId, msg.sender);
+            emit newChainProposal(_chain.id, msg.sender);
         }
     }
 
-    function _registerChain(
-        string calldata _chainId,
-        UTXOs calldata _initialUTXOs,
-        string calldata _addressMultisig,
-        string calldata _addressFeePayer,
-        uint256 _tokenQuantity
-    ) internal {
-        claims.setChainRegistered(_chainId);
+    function _registerChain(Chain calldata _chain, UTXOs calldata _initialUTXOs, uint256 _tokenQuantity) internal {
+        claims.setChainRegistered(_chain.id);
         chains.push();
-        chains[chains.length - 1].id = _chainId;
-        chains[chains.length - 1].utxos = _initialUTXOs;
-        chains[chains.length - 1].addressMultisig = _addressMultisig;
-        chains[chains.length - 1].addressFeePayer = _addressFeePayer;
+        chains[chains.length - 1].id = _chain.id;
+        chains[chains.length - 1].addressMultisig = _chain.addressMultisig;
+        chains[chains.length - 1].addressFeePayer = _chain.addressFeePayer;
 
-        utxosc.setInitialUTxOs(_chainId, _initialUTXOs);
+        utxosc.setInitialUTxOs(_chain.id, _initialUTXOs);
 
-        claims.setTokenQuantity(_chainId, _tokenQuantity);
+        claims.setTokenQuantity(_chain.id, _tokenQuantity);
 
-        claims.resetCurrentBatchBlock(_chainId);
+        claims.resetCurrentBatchBlock(_chain.id);
 
-        claims.setNextTimeoutBlock(_chainId, block.number);
+        claims.setNextTimeoutBlock(_chain.id, block.number);
 
-        emit newChainRegistered(_chainId);
+        emit newChainRegistered(_chain.id);
     }
 
     // Queries
