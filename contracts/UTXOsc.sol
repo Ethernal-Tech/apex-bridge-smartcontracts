@@ -56,7 +56,8 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint lenu = chainUTXOs[_chainID].multisigOwnedUTXOs.length;
         while (i < lenu) {
             bool shouldDelete = false;
-            for (uint j = 0; j < utxos.length; j++) {
+            uint256 utxosLength = utxos.length;
+            for (uint j = 0; j < utxosLength; j++) {
                 if (equalUTXO(utxos[j], chainUTXOs[_chainID].multisigOwnedUTXOs[i])) {
                     shouldDelete = true;
                     break;
@@ -79,7 +80,8 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint i = 0;
         while (i < lenu) {
             bool shouldDelete = false;
-            for (uint j = 0; j < utxos.length; j++) {
+            uint256 utxosLength = utxos.length;
+            for (uint j = 0; j < utxosLength; j++) {
                 if (equalUTXO(utxos[j], chainUTXOs[_chainID].feePayerOwnedUTXOs[i])) {
                     shouldDelete = true;
                     break;
@@ -98,13 +100,15 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _addNewUTXOs(string calldata _chainID, UTXOs calldata utxos) internal {
-        for (uint i = 0; i < utxos.multisigOwnedUTXOs.length; i++) {
+        uint256 utxosMultisigOwnedUTXOsLength = utxos.multisigOwnedUTXOs.length;
+        for (uint i = 0; i < utxosMultisigOwnedUTXOsLength; i++) {
             UTXO memory dt = utxos.multisigOwnedUTXOs[i];
             dt.nonce = ++utxoNonceCounter;
             chainUTXOs[_chainID].multisigOwnedUTXOs.push(dt);
         }
 
-        for (uint i = 0; i < utxos.feePayerOwnedUTXOs.length; i++) {
+        uint256 utxosFeePayerOwnedUTXOs = utxos.multisigOwnedUTXOs.length;
+        for (uint i = 0; i < utxosFeePayerOwnedUTXOs; i++) {
             UTXO memory dt = utxos.feePayerOwnedUTXOs[i];
             dt.nonce = ++utxoNonceCounter;
             chainUTXOs[_chainID].feePayerOwnedUTXOs.push(dt);

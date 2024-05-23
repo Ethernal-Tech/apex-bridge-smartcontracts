@@ -63,7 +63,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
-        for (uint i = 0; i < _claims.bridgingRequestClaims.length; i++) {
+        uint256 bridgingRequestClaimsLength = _claims.bridgingRequestClaims.length;
+        for (uint i = 0; i < bridgingRequestClaimsLength; i++) {
             BridgingRequestClaim calldata _claim = _claims.bridgingRequestClaims[i];
             if (!isChainRegistered[_claim.sourceChainID]) {
                 revert ChainIsNotRegistered(_claim.sourceChainID);
@@ -87,7 +88,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             _submitClaimsBRC(_claims, i, _caller);
         }
-        for (uint i = 0; i < _claims.batchExecutedClaims.length; i++) {
+
+        uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
+        for (uint i = 0; i < batchExecutedClaimsLength; i++) {
             BatchExecutedClaim calldata _claim = _claims.batchExecutedClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
@@ -103,7 +106,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             _submitClaimsBEC(_claims, i, _caller);
         }
-        for (uint i = 0; i < _claims.batchExecutionFailedClaims.length; i++) {
+
+        uint256 batchExecutionFailedClaimsLength = _claims.batchExecutionFailedClaims.length;
+        for (uint i = 0; i < batchExecutionFailedClaimsLength; i++) {
             BatchExecutionFailedClaim calldata _claim = _claims.batchExecutionFailedClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
@@ -119,7 +124,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             _submitClaimsBEFC(_claims, i, _caller);
         }
-        for (uint i = 0; i < _claims.refundRequestClaims.length; i++) {
+
+        uint256 refundRequestClaimsLength = _claims.refundRequestClaims.length;
+        for (uint i = 0; i < refundRequestClaimsLength; i++) {
             RefundRequestClaim calldata _claim = _claims.refundRequestClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
@@ -135,7 +142,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             _submitClaimsRRC(_claims, i, _caller);
         }
-        for (uint i = 0; i < _claims.refundExecutedClaims.length; i++) {
+
+        uint256 refundExecutedClaimsLength = _claims.refundExecutedClaims.length;
+        for (uint i = 0; i < refundExecutedClaimsLength; i++) {
             RefundExecutedClaim calldata _claim = _claims.refundExecutedClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
@@ -246,7 +255,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         confirmedTransactions[_claim.destinationChainID][nextNonce].sourceChainID = _claim.sourceChainID;
         confirmedTransactions[_claim.destinationChainID][nextNonce].nonce = nextNonce;
 
-        for (uint i = 0; i < _claim.receivers.length; i++) {
+        uint256 receiversLength = _claim.receivers.length;
+        for (uint i = 0; i < receiversLength; i++) {
             confirmedTransactions[_claim.destinationChainID][nextNonce].receivers.push(_claim.receivers[i]);
         }
 
@@ -326,7 +336,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function getNeededTokenQuantity(Receiver[] memory _receivers) internal pure returns (uint256) {
         uint256 tokenQuantity;
 
-        for (uint256 i = 0; i < _receivers.length; i++) {
+        uint256 receiversLength = _receivers.length;
+        for (uint256 i = 0; i < receiversLength; i++) {
             tokenQuantity += _receivers[i].amount;
         }
 

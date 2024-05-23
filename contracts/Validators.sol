@@ -112,18 +112,19 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     function _updateValidatorCardanoData(string calldata _chainId) internal {
         // validatorsCardanoDataPerAddress must be set for all the validator addresses
         uint cnt = 0;
-        for (uint i = 0; i < validatorsAddresses.length; i++) {
+        uint256 validatorsAddressesLength = validatorsAddresses.length;
+        for (uint i = 0; i < validatorsAddressesLength; i++) {
             if (bytes(validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]].verifyingKey).length > 0) {
                 cnt++;
             }
         }
 
-        if (cnt != validatorsAddresses.length) {
+        if (cnt != validatorsAddressesLength) {
             return;
         }
 
         delete validatorsCardanoData[_chainId];
-        for (uint i = 0; i < validatorsAddresses.length; i++) {
+        for (uint i = 0; i < validatorsAddressesLength; i++) {
             validatorsCardanoData[_chainId].push(validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]]);
         }
     }
