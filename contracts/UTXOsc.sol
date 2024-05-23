@@ -57,7 +57,7 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         while (i < lenu) {
             bool shouldDelete = false;
             uint256 utxosLength = utxos.length;
-            for (uint j = 0; j < utxosLength; j++) {
+            for (uint j; j < utxosLength; j++) {
                 if (equalUTXO(utxos[j], chainUTXOs[_chainID].multisigOwnedUTXOs[i])) {
                     shouldDelete = true;
                     break;
@@ -81,7 +81,7 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         while (i < lenu) {
             bool shouldDelete = false;
             uint256 utxosLength = utxos.length;
-            for (uint j = 0; j < utxosLength; j++) {
+            for (uint j; j < utxosLength; j++) {
                 if (equalUTXO(utxos[j], chainUTXOs[_chainID].feePayerOwnedUTXOs[i])) {
                     shouldDelete = true;
                     break;
