@@ -44,10 +44,12 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     ) external onlyBridge {
         // Check if the caller has already voted for this claim
         uint256 blockLength = blocks.length;
-        for (uint i; i < blockLength; i++) {
+        for (uint i; i < blockLength; ) {
             CardanoBlock calldata cblock = blocks[i];
             bytes32 chash = keccak256(abi.encodePacked(cblock.blockHash, cblock.blockSlot));
             if (slotValidatorVotedPerChain[chainID][chash][_caller]) {
+                //prettier-ignore
+                unchecked { i++; }
                 continue;
             }
             slotValidatorVotedPerChain[chainID][chash][_caller] = true;
@@ -58,6 +60,9 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
             ) {
                 lastObservedBlock[chainID] = cblock;
             }
+
+            //prettier-ignore
+            unchecked { i++; }
         }
     }
 

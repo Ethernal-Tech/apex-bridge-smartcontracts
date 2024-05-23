@@ -172,8 +172,10 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint256 counterConfirmedTransactions = claims.getBatchingTxsCount(_destinationChain);
         _confirmedTransactions = new ConfirmedTransaction[](counterConfirmedTransactions);
 
-        for (uint i; i < counterConfirmedTransactions; i++) {
+        for (uint i; i < counterConfirmedTransactions; ) {
             _confirmedTransactions[i] = claims.getConfirmedTransaction(_destinationChain, firstTxNonce + i);
+            //prettier-ignore
+            unchecked { i++; }
         }
 
         return _confirmedTransactions;

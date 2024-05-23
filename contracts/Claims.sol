@@ -64,7 +64,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
         uint256 bridgingRequestClaimsLength = _claims.bridgingRequestClaims.length;
-        for (uint i; i < bridgingRequestClaimsLength; i++) {
+        for (uint i; i < bridgingRequestClaimsLength; ) {
             BridgingRequestClaim calldata _claim = _claims.bridgingRequestClaims[i];
             if (!isChainRegistered[_claim.sourceChainID]) {
                 revert ChainIsNotRegistered(_claim.sourceChainID);
@@ -75,90 +75,124 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
+                //prettier-ignore
+                unchecked { i++; }
                 continue;
             }
 
             if (claimsHelper.isClaimConfirmed(_claim.destinationChainID, _claim.observedTransactionHash)) {
+                //prettier-ignore
+                unchecked { i++; }
                 continue;
             }
 
             if (chainTokenQuantity[_claim.sourceChainID] < getNeededTokenQuantity(_claim.receivers)) {
+                //prettier-ignore
+                unchecked { i++; }
                 continue;
             }
 
             _submitClaimsBRC(_claims, i, _caller);
+
+            //prettier-ignore
+            unchecked { i++; }
         }
 
         uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
-        for (uint i; i < batchExecutedClaimsLength; i++) {
+        for (uint i; i < batchExecutedClaimsLength; ) {
             BatchExecutedClaim calldata _claim = _claims.batchExecutedClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
+                //prettier-ignore
+                unchecked { i++; }
                 continue;
             }
 
             if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
+                //prettier-ignore
+                unchecked { i++; }
                 continue;
             }
 
             _submitClaimsBEC(_claims, i, _caller);
+
+            //prettier-ignore
+            unchecked { i++; }
         }
 
         uint256 batchExecutionFailedClaimsLength = _claims.batchExecutionFailedClaims.length;
-        for (uint i; i < batchExecutionFailedClaimsLength; i++) {
+        for (uint i; i < batchExecutionFailedClaimsLength; ) {
             BatchExecutionFailedClaim calldata _claim = _claims.batchExecutionFailedClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
+                //prettier-ignore
+                unchecked { i++; }
                 continue;
             }
 
             if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
+                //prettier-ignore
+                unchecked { i++; }
                 continue;
             }
 
             _submitClaimsBEFC(_claims, i, _caller);
+            //prettier-ignore
+            unchecked { i++; }
         }
 
         uint256 refundRequestClaimsLength = _claims.refundRequestClaims.length;
-        for (uint i; i < refundRequestClaimsLength; i++) {
+        for (uint i; i < refundRequestClaimsLength; ) {
             RefundRequestClaim calldata _claim = _claims.refundRequestClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
+                //prettier-ignore
+                unchecked { i++; }
                 continue;
             }
 
             if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
+                //prettier-ignore
+                unchecked { i++; }
                 continue;
             }
 
             _submitClaimsRRC(_claims, i, _caller);
+            //prettier-ignore
+            unchecked { i++; }
         }
 
         uint256 refundExecutedClaimsLength = _claims.refundExecutedClaims.length;
-        for (uint i; i < refundExecutedClaimsLength; i++) {
+        for (uint i; i < refundExecutedClaimsLength; ) {
             RefundExecutedClaim calldata _claim = _claims.refundExecutedClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
             if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
+                //prettier-ignore
+                unchecked { i++; }
                 continue;
             }
 
             if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
+                //prettier-ignore
+                unchecked { i++; }
                 continue;
             }
 
             _submitClaimsREC(_claims, i, _caller);
+            //prettier-ignore
+            unchecked { i++; }
         }
     }
 
@@ -256,8 +290,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         confirmedTransactions[_claim.destinationChainID][nextNonce].nonce = nextNonce;
 
         uint256 receiversLength = _claim.receivers.length;
-        for (uint i; i < receiversLength; i++) {
+        for (uint i; i < receiversLength; ) {
             confirmedTransactions[_claim.destinationChainID][nextNonce].receivers.push(_claim.receivers[i]);
+
+            //prettier-ignore
+            unchecked { i++; }
         }
 
         confirmedTransactions[_claim.destinationChainID][nextNonce].blockHeight = block.number;
@@ -322,8 +359,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint256 _firstTxNounce = confirmedSignedBatchData.firstTxNonceId;
         uint256 _lastTxNounce = confirmedSignedBatchData.lastTxNonceId;
 
-        for (uint i = _firstTxNounce; i <= _lastTxNounce; i++) {
+        for (uint i = _firstTxNounce; i <= _lastTxNounce; ) {
             bridgedAmount += getNeededTokenQuantity(confirmedTransactions[_destinationChain][i].receivers);
+
+            //prettier-ignore
+            unchecked { i++; }
         }
 
         return bridgedAmount;
@@ -337,8 +377,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint256 tokenQuantity;
 
         uint256 receiversLength = _receivers.length;
-        for (uint256 i = 0; i < receiversLength; i++) {
+        for (uint256 i = 0; i < receiversLength; ) {
             tokenQuantity += _receivers[i].amount;
+
+            //prettier-ignore
+            unchecked { i++; }
         }
 
         return tokenQuantity;
