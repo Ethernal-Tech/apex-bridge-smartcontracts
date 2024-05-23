@@ -64,7 +64,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
         uint256 bridgingRequestClaimsLength = _claims.bridgingRequestClaims.length;
-        for (uint i = 0; i < bridgingRequestClaimsLength; i++) {
+        for (uint i; i < bridgingRequestClaimsLength; i++) {
             BridgingRequestClaim calldata _claim = _claims.bridgingRequestClaims[i];
             if (!isChainRegistered[_claim.sourceChainID]) {
                 revert ChainIsNotRegistered(_claim.sourceChainID);
@@ -90,7 +90,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
-        for (uint i = 0; i < batchExecutedClaimsLength; i++) {
+        for (uint i; i < batchExecutedClaimsLength; i++) {
             BatchExecutedClaim calldata _claim = _claims.batchExecutedClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
@@ -108,7 +108,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         uint256 batchExecutionFailedClaimsLength = _claims.batchExecutionFailedClaims.length;
-        for (uint i = 0; i < batchExecutionFailedClaimsLength; i++) {
+        for (uint i; i < batchExecutionFailedClaimsLength; i++) {
             BatchExecutionFailedClaim calldata _claim = _claims.batchExecutionFailedClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
@@ -126,7 +126,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         uint256 refundRequestClaimsLength = _claims.refundRequestClaims.length;
-        for (uint i = 0; i < refundRequestClaimsLength; i++) {
+        for (uint i; i < refundRequestClaimsLength; i++) {
             RefundRequestClaim calldata _claim = _claims.refundRequestClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
@@ -144,7 +144,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         uint256 refundExecutedClaimsLength = _claims.refundExecutedClaims.length;
-        for (uint i = 0; i < refundExecutedClaimsLength; i++) {
+        for (uint i; i < refundExecutedClaimsLength; i++) {
             RefundExecutedClaim calldata _claim = _claims.refundExecutedClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
@@ -256,7 +256,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         confirmedTransactions[_claim.destinationChainID][nextNonce].nonce = nextNonce;
 
         uint256 receiversLength = _claim.receivers.length;
-        for (uint i = 0; i < receiversLength; i++) {
+        for (uint i; i < receiversLength; i++) {
             confirmedTransactions[_claim.destinationChainID][nextNonce].receivers.push(_claim.receivers[i]);
         }
 
