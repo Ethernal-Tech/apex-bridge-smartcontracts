@@ -116,22 +116,23 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     function _registerChain(Chain calldata _chain, UTXOs calldata _initialUTXOs, uint256 _tokenQuantity) internal {
-        claims.setChainRegistered(_chain.id);
+        string calldata chainId = _chain.id;
+        claims.setChainRegistered(chainId);
         chains.push();
         uint256 chainIndex = chains.length - 1;
-        chains[chainIndex].id = _chain.id;
+        chains[chainIndex].id = chainId;
         chains[chainIndex].addressMultisig = _chain.addressMultisig;
         chains[chainIndex].addressFeePayer = _chain.addressFeePayer;
 
-        utxosc.setInitialUTxOs(_chain.id, _initialUTXOs);
+        utxosc.setInitialUTxOs(chainId, _initialUTXOs);
 
-        claims.setTokenQuantity(_chain.id, _tokenQuantity);
+        claims.setTokenQuantity(chainId, _tokenQuantity);
 
-        claims.resetCurrentBatchBlock(_chain.id);
+        claims.resetCurrentBatchBlock(chainId);
 
-        claims.setNextTimeoutBlock(_chain.id, block.number);
+        claims.setNextTimeoutBlock(chainId, block.number);
 
-        emit newChainRegistered(_chain.id);
+        emit newChainRegistered(chainId);
     }
 
     // Queries
