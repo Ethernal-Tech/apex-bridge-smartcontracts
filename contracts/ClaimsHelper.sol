@@ -66,11 +66,12 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
 
     function setConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
         // because of UnimplementedFeatureError: Copying of type struct IBridgeStructs.UTXO memory[] memory to storage not yet supported.
-        confirmedSignedBatches[_signedBatch.destinationChainId][_signedBatch.id].firstTxNonceId = _signedBatch
-            .firstTxNonceId;
-        confirmedSignedBatches[_signedBatch.destinationChainId][_signedBatch.id].lastTxNonceId = _signedBatch
-            .lastTxNonceId;
-        confirmedSignedBatches[_signedBatch.destinationChainId][_signedBatch.id].usedUTXOs = _signedBatch.usedUTXOs;
+        string calldata destinationChainId = _signedBatch.destinationChainId;
+        uint256 signedBatchID = _signedBatch.id;
+
+        confirmedSignedBatches[destinationChainId][signedBatchID].firstTxNonceId = _signedBatch.firstTxNonceId;
+        confirmedSignedBatches[destinationChainId][signedBatchID].lastTxNonceId = _signedBatch.lastTxNonceId;
+        confirmedSignedBatches[destinationChainId][signedBatchID].usedUTXOs = _signedBatch.usedUTXOs;
     }
 
     function setVoted(
