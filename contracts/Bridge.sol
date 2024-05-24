@@ -96,21 +96,22 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint256 _tokenQuantity,
         ValidatorCardanoData calldata _validatorCardanoData
     ) external override onlyValidator {
-        if (claims.isChainRegistered(_chain.id)) {
-            revert ChainAlreadyRegistered(_chain.id);
+        string calldata chainId = _chain.id;
+        if (claims.isChainRegistered(chainId)) {
+            revert ChainAlreadyRegistered(chainId);
         }
-        if (claims.hasVoted(_chain.id, msg.sender)) {
-            revert AlreadyProposed(_chain.id);
+        if (claims.hasVoted(chainId, msg.sender)) {
+            revert AlreadyProposed(chainId);
         }
 
         bytes32 chainHash = keccak256(abi.encode(_chain, _initialUTXOs, _tokenQuantity));
 
-        validators.addValidatorCardanoData(_chain.id, msg.sender, _validatorCardanoData);
+        validators.addValidatorCardanoData(chainId, msg.sender, _validatorCardanoData);
 
-        if (claims.setVoted(_chain.id, msg.sender, chainHash) == validators.getValidatorsCount()) {
+        if (claims.setVoted(chainId, msg.sender, chainHash) == validators.getValidatorsCount()) {
             _registerChain(_chain, _initialUTXOs, _tokenQuantity);
         } else {
-            emit newChainProposal(_chain.id, msg.sender);
+            emit newChainProposal(chainId, msg.sender);
         }
     }
 
