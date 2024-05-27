@@ -112,10 +112,13 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         uint256 utxosFeePayerOwnedUTXOs = utxos.multisigOwnedUTXOs.length;
-        for (uint i; i < utxosFeePayerOwnedUTXOs; i++) {
+        for (uint i; i < utxosFeePayerOwnedUTXOs; ) {
             UTXO memory dt = utxos.feePayerOwnedUTXOs[i];
             dt.nonce = ++utxoNonceCounter;
             chainUTXOs[_chainID].feePayerOwnedUTXOs.push(dt);
+
+            //prettier-ignore
+            unchecked { i++; }
         }
     }
 
