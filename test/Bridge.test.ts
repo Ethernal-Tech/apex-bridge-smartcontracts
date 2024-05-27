@@ -629,13 +629,7 @@ describe("Bridge Contract", function () {
 
       expect(await claims.isChainRegistered("chainID1")).to.be.false;
 
-      // await bridge.connect(validators[4]).registerChainGovernance(chain, UTXOs, 100, validatorsCardanoData[4].data);
-
-      const tx = await bridge
-        .connect(validators[4])
-        .registerChainGovernance(chain, UTXOs, 100, validatorsCardanoData[4].data);
-      const receipt = await tx.wait();
-      console.log("GASUSED=====>", receipt.cumulativeGasUsed);
+      await bridge.connect(validators[4]).registerChainGovernance(chain, UTXOs, 100, validatorsCardanoData[4].data);
 
       expect(await claims.isChainRegistered("chainID1")).to.be.true;
 

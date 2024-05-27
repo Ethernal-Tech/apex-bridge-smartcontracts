@@ -36,10 +36,9 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return chainUTXOs[_chainID];
     }
 
-    function addNewBridgingUTXO(string calldata _chainID, UTXO calldata _utxo) public onlyClaims {
-        UTXO memory tempUtxo = _utxo;
-        tempUtxo.nonce = ++utxoNonceCounter;
-        chainUTXOs[_chainID].multisigOwnedUTXOs.push(tempUtxo);
+    function addNewBridgingUTXO(string calldata _chainID, UTXO memory _utxo) public onlyClaims {
+        _utxo.nonce = ++utxoNonceCounter;
+        chainUTXOs[_chainID].multisigOwnedUTXOs.push(_utxo);
     }
 
     function addUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external onlyClaims {
