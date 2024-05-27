@@ -10,14 +10,14 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     address private claimsAddress;
     address private signedBatchesAddress;
 
-    // blockchain -> claimHash -> queued
-    mapping(string => mapping(string => bool)) public isClaimConfirmed;
+    // blockchainId -> claimHash -> queued
+    mapping(uint8 => mapping(string => bool)) public isClaimConfirmed;
 
-    // BlockchainID -> batchId -> SignedBatch
-    mapping(string => mapping(uint256 => ConfirmedSignedBatchData)) public confirmedSignedBatches;
+    // BlockchainId -> batchId -> SignedBatch
+    mapping(uint8 => mapping(uint256 => ConfirmedSignedBatchData)) public confirmedSignedBatches;
 
-    // Blochchain ID -> blockNumber
-    mapping(string => int256) public currentBatchBlock;
+    // BlochchainId -> blockNumber
+    mapping(uint8 => int256) public currentBatchBlock;
 
     // TansactionHash -> Voter -> Voted
     mapping(string => mapping(address => bool)) public hasVoted;
@@ -43,35 +43,32 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     }
 
     function getConfirmedSignedBatchData(
-        string calldata _chainId,
+        uint8 _chainId,
         uint256 _batchId
     ) external view returns (ConfirmedSignedBatchData memory) {
         return confirmedSignedBatches[_chainId][_batchId];
     }
 
-    function updateCurrentBatchBlock(string calldata _chainId) external onlySignedBatches {
+    function updateCurrentBatchBlock(uint8 _chainId) external onlySignedBatches {
         currentBatchBlock[_chainId] = int256(block.number);
     }
 
-    function resetCurrentBatchBlock(string calldata _chainId) external onlyClaims {
+    function resetCurrentBatchBlock(uint8 _chainId) external onlyClaims {
         currentBatchBlock[_chainId] = int256(-1);
     }
 
-    function setClaimConfirmed(
-        string calldata _chain,
-        string calldata _observerHash
-    ) external onlySignedBatchesOrClaims {
-        isClaimConfirmed[_chain][_observerHash] = true;
+    function setClaimConfirmed(uint8 _chainId, string calldata _observerHash) external onlySignedBatchesOrClaims {
+        isClaimConfirmed[_chainId][_observerHash] = true;
     }
 
     function setConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
         // because of UnimplementedFeatureError: Copying of type struct IBridgeStructs.UTXO memory[] memory to storage not yet supported.
-        string calldata destinationChainId = _signedBatch.destinationChainId;
-        uint256 signedBatchID = _signedBatch.id;
+        uint8 destinationChainId = _signedBatch.destinationChainId;
+        uint256 signedBatchId = _signedBatch.id;
 
-        confirmedSignedBatches[destinationChainId][signedBatchID].firstTxNonceId = _signedBatch.firstTxNonceId;
-        confirmedSignedBatches[destinationChainId][signedBatchID].lastTxNonceId = _signedBatch.lastTxNonceId;
-        confirmedSignedBatches[destinationChainId][signedBatchID].usedUTXOs = _signedBatch.usedUTXOs;
+        confirmedSignedBatches[destinationChainId][signedBatchId].firstTxNonceId = _signedBatch.firstTxNonceId;
+        confirmedSignedBatches[destinationChainId][signedBatchId].lastTxNonceId = _signedBatch.lastTxNonceId;
+        confirmedSignedBatches[destinationChainId][signedBatchId].usedUTXOs = _signedBatch.usedUTXOs;
     }
 
     function setVoted(

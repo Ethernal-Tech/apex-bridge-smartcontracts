@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 interface IBridgeStructs {
     struct SignedBatch {
         uint256 id;
-        string destinationChainId;
+        uint8 destinationChainId;
         string rawTransaction;
         string multisigSignature;
         string feePayerMultisigSignature;
@@ -15,7 +15,7 @@ interface IBridgeStructs {
 
     struct SignedBatchWithoutSignatures {
         uint256 id;
-        string destinationChainId;
+        uint8 destinationChainId;
         string rawTransaction;
         uint256 firstTxNonceId;
         uint256 lastTxNonceId;
@@ -39,7 +39,7 @@ interface IBridgeStructs {
         string observedTransactionHash;
         uint256 nonce;
         uint256 blockHeight;
-        string sourceChainID;
+        uint8 sourceChainId;
         Receiver[] receivers;
     }
 
@@ -74,16 +74,16 @@ interface IBridgeStructs {
         // key is the address on destination UTXO chain; value is the amount of tokens
         Receiver[] receivers;
         UTXO outputUTXO;
-        string sourceChainID;
-        string destinationChainID;
+        uint8 sourceChainId;
+        uint8 destinationChainId;
     }
 
     struct BatchExecutedClaim {
         // hash of tx on the source chain
         string observedTransactionHash;
         // where the batch was executed
-        string chainID;
-        uint256 batchNonceID;
+        uint8 chainId;
+        uint256 batchNonceId;
         UTXOs outputUTXOs;
     }
 
@@ -91,8 +91,8 @@ interface IBridgeStructs {
         // hash of tx on the source chain
         string observedTransactionHash;
         // where the batch execution failed
-        string chainID;
-        uint256 batchNonceID;
+        uint8 chainId;
+        uint256 batchNonceId;
     }
 
     struct RefundRequestClaim {
@@ -101,7 +101,7 @@ interface IBridgeStructs {
         // hash of the previous refund transaction; only set in case of retry
         string previousRefundTxHash;
         // chain id where the refund tx will be executed
-        string chainID;
+        uint8 chainId;
         string receiver;
         // UTXO that multisig received in invalid transaction
         UTXO utxo;
@@ -118,7 +118,7 @@ interface IBridgeStructs {
         // hash of tx on the source chain
         string observedTransactionHash;
         // chain id where the refund was executed
-        string chainID;
+        uint8 chainId;
         // hash of the refund transaction
         string refundTxHash;
         // UTXO that multisig received as change after paying network fee
@@ -131,7 +131,7 @@ interface IBridgeStructs {
     }
 
     struct Chain {
-        string id;
+        uint8 id;
         string addressMultisig;
         string addressFeePayer;
     }
@@ -153,7 +153,7 @@ interface IBridgeStructs {
 
     error AlreadyConfirmed(string _claimTransactionHash);
     error AlreadyProposed(string _claimTransactionHash);
-    error ChainAlreadyRegistered(string _claimId);
+    error ChainAlreadyRegistered(uint8 _chainId);
     error NotOwner();
     error NotValidator();
     error NotBridge();
@@ -161,12 +161,12 @@ interface IBridgeStructs {
     error NotSignedBatches();
     error NotSignedBatchesOrBridge();
     error NotEnoughBridgingTokensAvailable(string _claimTransactionHash);
-    error CanNotCreateBatchYet(string _blockchainID);
+    error CanNotCreateBatchYet(uint8 _blockchainId);
     error InvalidData(string data);
-    error ChainIsNotRegistered(string _chainId);
-    error WrongBatchNonce(string _chainId, uint256 _nonce);
+    error ChainIsNotRegistered(uint8 _chainId);
+    error WrongBatchNonce(uint8 _chainId, uint256 _nonce);
     error InvalidSignature();
 
-    event newChainProposal(string indexed chainId, address indexed sender);
-    event newChainRegistered(string indexed chainId);
+    event newChainProposal(uint8 indexed _chainId, address indexed sender);
+    event newChainRegistered(uint8 indexed _chainId);
 }

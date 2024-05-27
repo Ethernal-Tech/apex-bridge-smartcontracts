@@ -72,11 +72,8 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     // Slots
-    function submitLastObservedBlocks(
-        string calldata chainID,
-        CardanoBlock[] calldata blocks
-    ) external override onlyValidator {
-        slots.updateBlocks(chainID, blocks, msg.sender);
+    function submitLastObservedBlocks(uint8 chainId, CardanoBlock[] calldata blocks) external override onlyValidator {
+        slots.updateBlocks(chainId, blocks, msg.sender);
     }
 
     // Chain registration by Owner
@@ -96,19 +93,19 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint256 _tokenQuantity,
         ValidatorCardanoData calldata _validatorCardanoData
     ) external override onlyValidator {
-        string calldata chainId = _chain.id;
+        uint8 chainId = _chain.id;
         if (claims.isChainRegistered(chainId)) {
             revert ChainAlreadyRegistered(chainId);
         }
-        if (claims.hasVoted(chainId, msg.sender)) {
-            revert AlreadyProposed(chainId);
+        if (claims.hasVoted(Strings.toString(chainId), msg.sender)) {
+            revert AlreadyProposed(Strings.toString(chainId));
         }
 
         bytes32 chainHash = keccak256(abi.encode(_chain, _initialUTXOs, _tokenQuantity));
 
         validators.addValidatorCardanoData(chainId, msg.sender, _validatorCardanoData);
 
-        if (claims.setVoted(chainId, msg.sender, chainHash) == validators.getValidatorsCount()) {
+        if (claims.setVoted(Strings.toString(chainId), msg.sender, chainHash) == validators.getValidatorsCount()) {
             _registerChain(_chain, _initialUTXOs, _tokenQuantity);
         } else {
             emit newChainProposal(chainId, msg.sender);
@@ -116,7 +113,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     function _registerChain(Chain calldata _chain, UTXOs calldata _initialUTXOs, uint256 _tokenQuantity) internal {
-        string calldata chainId = _chain.id;
+        uint8 chainId = _chain.id;
         claims.setChainRegistered(chainId);
         chains.push();
         uint256 chainIndex = chains.length - 1;
@@ -139,7 +136,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     // Will determine if enough transactions are confirmed, or the timeout between two batches is exceeded.
     // It will also check if the given validator already submitted a signed batch and return the response accordingly.
-    function shouldCreateBatch(string calldata _destinationChain) public view override returns (bool batch) {
+    function shouldCreateBatch(uint8 _destinationChain) public view override returns (bool batch) {
         if (
             claims.isBatchCreated(_destinationChain) ||
             signedBatches.isBatchAlreadySubmittedBy(_destinationChain, msg.sender)
@@ -150,7 +147,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         return claims.shouldCreateBatch(_destinationChain);
     }
 
-    function getNextBatchId(string calldata _destinationChain) external view override returns (uint256 result) {
+    function getNextBatchId(uint8 _destinationChain) external view override returns (uint256 result) {
         if (!shouldCreateBatch(_destinationChain)) {
             return 0;
         }
@@ -163,7 +160,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     // Will return confirmed transactions until NEXT_BATCH_TIMEOUT_BLOCK or maximum number of transactions that
     // can be included in the batch, if the maximum number of transactions in a batch has been exceeded
     function getConfirmedTransactions(
-        string calldata _destinationChain
+        uint8 _destinationChain
     ) external view override returns (ConfirmedTransaction[] memory _confirmedTransactions) {
         if (!shouldCreateBatch(_destinationChain)) {
             revert CanNotCreateBatchYet(_destinationChain);
@@ -183,27 +180,21 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         return _confirmedTransactions;
     }
 
-    function getAvailableUTXOs(
-        string calldata _destinationChain
-    ) external view override returns (UTXOs memory availableUTXOs) {
+    function getAvailableUTXOs(uint8 _destinationChain) external view override returns (UTXOs memory availableUTXOs) {
         return utxosc.getChainUTXOs(_destinationChain);
     }
 
-    function getConfirmedBatch(
-        string calldata _destinationChain
-    ) external view override returns (ConfirmedBatch memory batch) {
+    function getConfirmedBatch(uint8 _destinationChain) external view override returns (ConfirmedBatch memory batch) {
         return signedBatches.getConfirmedBatch(_destinationChain);
     }
 
     function getValidatorsCardanoData(
-        string calldata _chainId
+        uint8 _chainId
     ) external view override returns (ValidatorCardanoData[] memory validatorCardanoData) {
         return validators.getValidatorsCardanoData(_chainId);
     }
 
-    function getLastObservedBlock(
-        string calldata _sourceChain
-    ) external view override returns (CardanoBlock memory cblock) {
+    function getLastObservedBlock(uint8 _sourceChain) external view override returns (CardanoBlock memory cblock) {
         return slots.getLastObservedBlock(_sourceChain);
     }
 
@@ -211,9 +202,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         return chains;
     }
 
-    function getRawTransactionFromLastBatch(
-        string calldata _destinationChain
-    ) external view override returns (string memory) {
+    function getRawTransactionFromLastBatch(uint8 _destinationChain) external view override returns (string memory) {
         (, string memory _rawTransaction) = signedBatches.lastConfirmedBatch(_destinationChain);
         return _rawTransaction;
     }

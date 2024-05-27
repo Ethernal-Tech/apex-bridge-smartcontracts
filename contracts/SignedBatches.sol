@@ -14,14 +14,14 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     ClaimsHelper private claimsHelper;
     Validators private validators;
 
-    // BlockchanID -> hash -> multisigSignatures
-    mapping(string => mapping(bytes32 => string[])) private multisigSignatures;
+    // BlockchanId -> hash -> multisigSignatures
+    mapping(uint8 => mapping(bytes32 => string[])) private multisigSignatures;
 
-    // BlockchanID -> hash -> multisigSignatures
-    mapping(string => mapping(bytes32 => string[])) private feePayerMultisigSignatures;
+    // BlockchanId -> hash -> multisigSignatures
+    mapping(uint8 => mapping(bytes32 => string[])) private feePayerMultisigSignatures;
 
-    // BlockchainID -> ConfirmedBatch
-    mapping(string => ConfirmedBatch) public lastConfirmedBatch;
+    // BlockchainId -> ConfirmedBatch
+    mapping(uint256 => ConfirmedBatch) public lastConfirmedBatch;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -46,7 +46,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     }
 
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
-        string calldata _destinationChainId = _signedBatch.destinationChainId;
+        uint8 _destinationChainId = _signedBatch.destinationChainId;
         string memory _batchIdStr = Strings.toString(_signedBatch.id);
 
         uint256 sbId = lastConfirmedBatch[_destinationChainId].id;
@@ -63,10 +63,10 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             return;
         }
 
-        _submitSignedBatch(_signedBatch, _batchIdStr);
+        _submitSignedBatch(_signedBatch, _signedBatch.id);
     }
 
-    function _submitSignedBatch(SignedBatch calldata _signedBatch, string memory _batchId) internal {
+    function _submitSignedBatch(SignedBatch calldata _signedBatch, uint256 _batchId) internal {
         SignedBatchWithoutSignatures memory _signedBatchWithoutSignatures = SignedBatchWithoutSignatures(
             _signedBatch.id,
             _signedBatch.destinationChainId,
@@ -82,12 +82,12 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             _signedBatch.feePayerMultisigSignature
         );
 
-        uint256 votesCount = claimsHelper.setVoted(_batchId, msg.sender, signedBatchHash);
+        uint256 votesCount = claimsHelper.setVoted(Strings.toString(_batchId), msg.sender, signedBatchHash);
 
         if (votesCount >= validators.getQuorumNumberOfValidators()) {
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
 
-            claimsHelper.setClaimConfirmed(_signedBatch.destinationChainId, _batchId);
+            claimsHelper.setClaimConfirmed(_signedBatch.destinationChainId, Strings.toString(_batchId));
 
             lastConfirmedBatch[_signedBatch.destinationChainId] = ConfirmedBatch(
                 lastConfirmedBatch[_signedBatch.destinationChainId].id + 1,
@@ -100,11 +100,11 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         }
     }
 
-    function isBatchAlreadySubmittedBy(string calldata _destinationChain, address addr) public view returns (bool ok) {
+    function isBatchAlreadySubmittedBy(uint8 _destinationChain, address addr) public view returns (bool ok) {
         return claimsHelper.hasVoted(Strings.toString(lastConfirmedBatch[_destinationChain].id + 1), addr);
     }
 
-    function getConfirmedBatch(string calldata _destinationChain) external view returns (ConfirmedBatch memory batch) {
+    function getConfirmedBatch(uint8 _destinationChain) external view returns (ConfirmedBatch memory batch) {
         return lastConfirmedBatch[_destinationChain];
     }
 

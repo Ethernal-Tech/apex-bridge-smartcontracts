@@ -11,14 +11,14 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     address private bridgeAddress;
     Validators private validators;
 
-    // BlockChainID -> CardanoBlock
-    mapping(string => CardanoBlock) private lastObservedBlock;
+    // BlockChainId -> CardanoBlock
+    mapping(uint8 => CardanoBlock) private lastObservedBlock;
 
-    // BlockchanID -> hash(slot, hash) -> number of votes
-    mapping(string => mapping(bytes32 => uint64)) private slotVotesPerChain;
+    // BlockchanId -> hash(slot, hash) -> number of votes
+    mapping(uint8 => mapping(bytes32 => uint64)) private slotVotesPerChain;
 
-    // BlockchanID -> hash(slot, hash) -> bool - validator voted already or not
-    mapping(string => mapping(bytes32 => mapping(address => bool))) private slotValidatorVotedPerChain;
+    // BlockchanId -> hash(slot, hash) -> bool - validator voted already or not
+    mapping(uint8 => mapping(bytes32 => mapping(address => bool))) private slotValidatorVotedPerChain;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -37,28 +37,24 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         validators = Validators(_validatorsAddress);
     }
 
-    function updateBlocks(
-        string calldata chainID,
-        CardanoBlock[] calldata blocks,
-        address _caller
-    ) external onlyBridge {
+    function updateBlocks(uint8 chainId, CardanoBlock[] calldata blocks, address _caller) external onlyBridge {
         // Check if the caller has already voted for this claim
         uint256 blockLength = blocks.length;
         for (uint i; i < blockLength; ) {
             CardanoBlock calldata cblock = blocks[i];
             bytes32 chash = keccak256(abi.encodePacked(cblock.blockHash, cblock.blockSlot));
-            if (slotValidatorVotedPerChain[chainID][chash][_caller]) {
+            if (slotValidatorVotedPerChain[chainId][chash][_caller]) {
                 //prettier-ignore
                 unchecked { i++; }
                 continue;
             }
-            slotValidatorVotedPerChain[chainID][chash][_caller] = true;
-            slotVotesPerChain[chainID][chash]++;
+            slotValidatorVotedPerChain[chainId][chash][_caller] = true;
+            slotVotesPerChain[chainId][chash]++;
             if (
-                slotVotesPerChain[chainID][chash] >= validators.getQuorumNumberOfValidators() &&
-                cblock.blockSlot > lastObservedBlock[chainID].blockSlot
+                slotVotesPerChain[chainId][chash] >= validators.getQuorumNumberOfValidators() &&
+                cblock.blockSlot > lastObservedBlock[chainId].blockSlot
             ) {
-                lastObservedBlock[chainID] = cblock;
+                lastObservedBlock[chainId] = cblock;
             }
 
             //prettier-ignore
@@ -66,8 +62,8 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         }
     }
 
-    function getLastObservedBlock(string calldata chainID) external view returns (CardanoBlock memory cb) {
-        return lastObservedBlock[chainID];
+    function getLastObservedBlock(uint8 chainId) external view returns (CardanoBlock memory cb) {
+        return lastObservedBlock[chainId];
     }
 
     modifier onlyBridge() {

@@ -13,10 +13,10 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
 
     address private bridgeAddress;
 
-    // BlockchainID -> validator address -> ValidatorCardanoData
-    mapping(string => mapping(address => ValidatorCardanoData)) private validatorsCardanoDataPerAddress;
-    // BlockchainID -> ValidatorCardanoData[]
-    mapping(string => ValidatorCardanoData[]) private validatorsCardanoData;
+    // BlockchainId -> validator address -> ValidatorCardanoData
+    mapping(uint8 => mapping(address => ValidatorCardanoData)) private validatorsCardanoDataPerAddress;
+    // BlockchainId -> ValidatorCardanoData[]
+    mapping(uint8 => ValidatorCardanoData[]) private validatorsCardanoData;
 
     // keep validatorsArrayAddresses because maybe
     address[] private validatorsAddresses;
@@ -54,7 +54,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     }
 
     function isSignatureValid(
-        string calldata _chainId,
+        uint8 _chainId,
         string calldata _txRaw,
         string calldata _signature,
         string calldata _signatureFee,
@@ -67,7 +67,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     }
 
     function setValidatorsCardanoData(
-        string calldata _chainId,
+        uint8 _chainId,
         ValidatorAddressCardanoData[] calldata validatorAddressCardanoData
     ) external onlyBridge {
         if (validatorsCount != validatorAddressCardanoData.length) {
@@ -85,7 +85,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     }
 
     function addValidatorCardanoData(
-        string calldata _chainId,
+        uint8 _chainId,
         address addr,
         ValidatorCardanoData calldata data
     ) external onlyBridge {
@@ -102,7 +102,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         _updateValidatorCardanoData(_chainId);
     }
 
-    function getValidatorsCardanoData(string calldata _chainId) external view returns (ValidatorCardanoData[] memory) {
+    function getValidatorsCardanoData(uint8 _chainId) external view returns (ValidatorCardanoData[] memory) {
         return validatorsCardanoData[_chainId];
     }
 
@@ -115,7 +115,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         return validatorsCount;
     }
 
-    function _updateValidatorCardanoData(string calldata _chainId) internal {
+    function _updateValidatorCardanoData(uint8 _chainId) internal {
         // validatorsCardanoDataPerAddress must be set for all the validator addresses
         uint cnt = 0;
         uint256 validatorsAddressesLength = validatorsAddresses.length;
