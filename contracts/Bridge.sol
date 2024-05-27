@@ -92,10 +92,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     function registerChainGovernance(
         Chain calldata _chain,
-        Chain calldata _chain,
         UTXOs calldata _initialUTXOs,
-        uint256 _tokenQuantity,
-        ValidatorCardanoData calldata _validatorCardanoData
         uint256 _tokenQuantity,
         ValidatorCardanoData calldata _validatorCardanoData
     ) external override onlyValidator {
