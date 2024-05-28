@@ -11,7 +11,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     address private signedBatchesAddress;
 
     // blockchainId -> claimHash -> queued
-    mapping(uint8 => mapping(string => bool)) public isClaimConfirmed;
+    mapping(uint8 => mapping(bytes32 => bool)) public isClaimConfirmed;
 
     // BlockchainId -> batchId -> SignedBatch
     mapping(uint8 => mapping(uint256 => ConfirmedSignedBatchData)) public confirmedSignedBatches;
@@ -20,7 +20,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     mapping(uint8 => int256) public currentBatchBlock;
 
     // TansactionHash -> Voter -> Voted
-    mapping(string => mapping(address => bool)) public hasVoted;
+    mapping(bytes32 => mapping(address => bool)) public hasVoted;
 
     // ClaimHash -> numberOfVotes
     mapping(bytes32 => uint8) public numberOfVotes;
@@ -57,8 +57,8 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         currentBatchBlock[_chainId] = int256(-1);
     }
 
-    function setClaimConfirmed(uint8 _chainId, string calldata _observerHash) external onlySignedBatchesOrClaims {
-        isClaimConfirmed[_chainId][_observerHash] = true;
+    function setClaimConfirmed(uint8 _chainId, bytes32 _observedHash) external onlySignedBatchesOrClaims {
+        isClaimConfirmed[_chainId][_observedHash] = true;
     }
 
     function setConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
@@ -71,11 +71,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         confirmedSignedBatches[destinationChainId][signedBatchId].usedUTXOs = _signedBatch.usedUTXOs;
     }
 
-    function setVoted(
-        string calldata _id,
-        address _voter,
-        bytes32 _hash
-    ) external onlySignedBatchesOrClaims returns (uint256) {
+    function setVoted(bytes32 _id, address _voter, bytes32 _hash) external onlySignedBatchesOrClaims returns (uint256) {
         hasVoted[_id][_voter] = true;
         uint256 v = ++numberOfVotes[_hash]; // v is numberOfVotes[_hash] + 1
         return v;

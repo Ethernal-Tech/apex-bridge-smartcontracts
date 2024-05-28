@@ -47,7 +47,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
 
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
         uint8 _destinationChainId = _signedBatch.destinationChainId;
-        string memory _batchIdStr = Strings.toString(_signedBatch.id);
+        bytes32 _batchIdBytes = bytes32(_signedBatch.id);
 
         uint256 sbId = lastConfirmedBatch[_destinationChainId].id;
 
@@ -55,11 +55,11 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             return; // do not revert! batcher can lag a little bit. revert WrongBatchNonce(_destinationChainId, _signedBatch.id);
         }
 
-        if (claimsHelper.hasVoted(_batchIdStr, _caller)) {
+        if (claimsHelper.hasVoted(_batchIdBytes, _caller)) {
             return;
         }
 
-        if (claimsHelper.isClaimConfirmed(_destinationChainId, _batchIdStr)) {
+        if (claimsHelper.isClaimConfirmed(_destinationChainId, _batchIdBytes)) {
             return;
         }
 
@@ -82,12 +82,12 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             _signedBatch.feePayerMultisigSignature
         );
 
-        uint256 votesCount = claimsHelper.setVoted(Strings.toString(_batchId), msg.sender, signedBatchHash);
+        uint256 votesCount = claimsHelper.setVoted(bytes32(_batchId), msg.sender, signedBatchHash);
 
         if (votesCount >= validators.getQuorumNumberOfValidators()) {
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
 
-            claimsHelper.setClaimConfirmed(_signedBatch.destinationChainId, Strings.toString(_batchId));
+            claimsHelper.setClaimConfirmed(_signedBatch.destinationChainId, bytes32(_batchId));
 
             lastConfirmedBatch[_signedBatch.destinationChainId] = ConfirmedBatch(
                 lastConfirmedBatch[_signedBatch.destinationChainId].id + 1,
@@ -101,7 +101,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     }
 
     function isBatchAlreadySubmittedBy(uint8 _destinationChain, address _addr) public view returns (bool ok) {
-        return claimsHelper.hasVoted(Strings.toString(lastConfirmedBatch[_destinationChain].id + 1), _addr);
+        return claimsHelper.hasVoted(bytes32(lastConfirmedBatch[_destinationChain].id + 1), _addr);
     }
 
     function getConfirmedBatch(uint8 _destinationChain) external view returns (ConfirmedBatch memory batch) {

@@ -36,7 +36,7 @@ interface IBridgeStructs {
     }
 
     struct ConfirmedTransaction {
-        string observedTransactionHash;
+        bytes32 observedTransactionHash;
         uint256 nonce;
         uint256 blockHeight;
         uint8 sourceChainId;
@@ -70,7 +70,7 @@ interface IBridgeStructs {
 
     struct BridgingRequestClaim {
         // hash of tx on the source chain
-        string observedTransactionHash;
+        bytes32 observedTransactionHash;
         // key is the address on destination UTXO chain; value is the amount of tokens
         Receiver[] receivers;
         UTXO outputUTXO;
@@ -80,7 +80,7 @@ interface IBridgeStructs {
 
     struct BatchExecutedClaim {
         // hash of tx on the source chain
-        string observedTransactionHash;
+        bytes32 observedTransactionHash;
         // where the batch was executed
         uint8 chainId;
         uint256 batchNonceId;
@@ -89,7 +89,7 @@ interface IBridgeStructs {
 
     struct BatchExecutionFailedClaim {
         // hash of tx on the source chain
-        string observedTransactionHash;
+        bytes32 observedTransactionHash;
         // where the batch execution failed
         uint8 chainId;
         uint256 batchNonceId;
@@ -97,7 +97,7 @@ interface IBridgeStructs {
 
     struct RefundRequestClaim {
         // hash of tx on the source chain
-        string observedTransactionHash;
+        bytes32 observedTransactionHash;
         // hash of the previous refund transaction; only set in case of retry
         string previousRefundTxHash;
         // chain id where the refund tx will be executed
@@ -116,7 +116,7 @@ interface IBridgeStructs {
 
     struct RefundExecutedClaim {
         // hash of tx on the source chain
-        string observedTransactionHash;
+        bytes32 observedTransactionHash;
         // chain id where the refund was executed
         uint8 chainId;
         // hash of the refund transaction

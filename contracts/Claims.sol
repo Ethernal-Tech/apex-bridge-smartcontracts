@@ -269,7 +269,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         confirmedTransactions[destinationChainId][nextNonce].blockHeight = block.number;
     }
 
-    function setVoted(string calldata _id, address _voter, bytes32 _hash) external onlyBridge returns (uint256) {
+    function setVoted(bytes32 _id, address _voter, bytes32 _hash) external onlyBridge returns (uint256) {
         return claimsHelper.setVoted(_id, _voter, _hash);
     }
 
@@ -355,7 +355,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         nextTimeoutBlock[_chainId] = _blockNumber + timeoutBlocksNumber;
     }
 
-    function hasVoted(string calldata _id, address _voter) external view returns (bool) {
+    function hasVoted(bytes32 _id, address _voter) external view returns (bool) {
         return claimsHelper.hasVoted(_id, _voter);
     }
 
