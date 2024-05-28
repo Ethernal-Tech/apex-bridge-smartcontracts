@@ -47,7 +47,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
 
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
         uint8 _destinationChainId = _signedBatch.destinationChainId;
-        bytes32 _batchIdBytes = bytes32(_signedBatch.id);
+        bytes32 _batchIdBytes = bytes32(uint256(_signedBatch.id));
 
         uint256 sbId = lastConfirmedBatch[_destinationChainId].id;
 
@@ -69,10 +69,10 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     function _submitSignedBatch(SignedBatch calldata _signedBatch, uint256 _batchId) internal {
         SignedBatchWithoutSignatures memory _signedBatchWithoutSignatures = SignedBatchWithoutSignatures(
             _signedBatch.id,
-            _signedBatch.destinationChainId,
-            _signedBatch.rawTransaction,
             _signedBatch.firstTxNonceId,
             _signedBatch.lastTxNonceId,
+            _signedBatch.destinationChainId,
+            _signedBatch.rawTransaction,
             _signedBatch.usedUTXOs
         );
         bytes32 signedBatchHash = keccak256(abi.encode(_signedBatchWithoutSignatures));
@@ -101,7 +101,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     }
 
     function isBatchAlreadySubmittedBy(uint8 _destinationChain, address _addr) public view returns (bool ok) {
-        return claimsHelper.hasVoted(bytes32(lastConfirmedBatch[_destinationChain].id + 1), _addr);
+        return claimsHelper.hasVoted(bytes32(uint256(lastConfirmedBatch[_destinationChain].id + 1)), _addr);
     }
 
     function getConfirmedBatch(uint8 _destinationChain) external view returns (ConfirmedBatch memory batch) {

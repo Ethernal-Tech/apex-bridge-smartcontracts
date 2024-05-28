@@ -121,8 +121,8 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function equalUTXO(UTXO calldata _a, UTXO memory _b) public pure returns (bool) {
         // for UTXO comparing nonce is not important
         return
-            bytes(_a.txHash).length == bytes(_b.txHash).length &&
-            keccak256(bytes(_a.txHash)) == keccak256(bytes(_b.txHash)) &&
+            _a.txHash.length == _b.txHash.length &&
+            keccak256(bytes.concat(_a.txHash)) == keccak256(bytes.concat(_b.txHash)) &&
             _a.txIndex == _b.txIndex &&
             _a.amount == _b.amount;
     }

@@ -31,10 +31,10 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     mapping(uint8 => mapping(uint256 => ConfirmedTransaction)) private confirmedTransactions;
 
     // chainId -> nonce (nonce of the last confirmed transaction)
-    mapping(uint8 => uint256) public lastConfirmedTxNonce;
+    mapping(uint8 => uint64) public lastConfirmedTxNonce;
 
     // chainId -> nonce (nonce of the last transaction from the executed batch)
-    mapping(uint8 => uint256) public lastBatchedTxNonce;
+    mapping(uint8 => uint64) public lastBatchedTxNonce;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -257,7 +257,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function _setConfirmedTransactions(BridgingRequestClaim calldata _claim) internal {
         uint8 destinationChainId = _claim.destinationChainId;
-        uint256 nextNonce = ++lastConfirmedTxNonce[destinationChainId];
+        uint64 nextNonce = ++lastConfirmedTxNonce[destinationChainId];
         confirmedTransactions[destinationChainId][nextNonce].observedTransactionHash = _claim.observedTransactionHash;
         confirmedTransactions[destinationChainId][nextNonce].sourceChainId = _claim.sourceChainId;
         confirmedTransactions[destinationChainId][nextNonce].nonce = nextNonce;

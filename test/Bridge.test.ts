@@ -163,19 +163,19 @@ describe("Bridge Contract", function () {
     const UTXOs = {
       multisigOwnedUTXOs: [
         {
-          txHash: "0xdef...",
+          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           txIndex: 0,
           nonce: 0,
           amount: 200,
         },
         {
-          txHash: "0xdef...",
+          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           txIndex: 1,
           nonce: 0,
           amount: 100,
         },
         {
-          txHash: "0xdef...",
+          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           txIndex: 2,
           nonce: 0,
           amount: 50,
@@ -183,19 +183,19 @@ describe("Bridge Contract", function () {
       ],
       feePayerOwnedUTXOs: [
         {
-          txHash: "0xdef...",
+          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           txIndex: 0,
           nonce: 0,
           amount: 100,
         },
         {
-          txHash: "0xdef...",
+          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           txIndex: 1,
           nonce: 0,
           amount: 50,
         },
         {
-          txHash: "0xdef...",
+          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           txIndex: 2,
           nonce: 0,
           amount: 25,
@@ -219,7 +219,7 @@ describe("Bridge Contract", function () {
             },
           ],
           outputUTXO: {
-            txHash: "0xef1...",
+            txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
             txIndex: 1,
             nonce: 0,
             amount: 400,
@@ -244,7 +244,7 @@ describe("Bridge Contract", function () {
             },
           ],
           outputUTXO: {
-            txHash: "0xfed...",
+            txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
             txIndex: 0,
             nonce: 1,
             amount: 200,
@@ -270,7 +270,7 @@ describe("Bridge Contract", function () {
             },
           ],
           outputUTXO: {
-            txHash: "0xdef...",
+            txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
             txIndex: 0,
             nonce: 0,
             amount: 200,
@@ -295,7 +295,7 @@ describe("Bridge Contract", function () {
           outputUTXOs: {
             multisigOwnedUTXOs: [
               {
-                txHash: "0xdef...",
+                txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
                 txIndex: 0,
                 nonce: 0,
                 amount: 201,
@@ -303,7 +303,7 @@ describe("Bridge Contract", function () {
             ],
             feePayerOwnedUTXOs: [
               {
-                txHash: "0xdef...",
+                txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
                 txIndex: 2,
                 nonce: 0,
                 amount: 51,
@@ -327,7 +327,7 @@ describe("Bridge Contract", function () {
           outputUTXOs: {
             multisigOwnedUTXOs: [
               {
-                txHash: "0xdef...",
+                txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
                 txIndex: 0,
                 nonce: 0,
                 amount: 201,
@@ -335,7 +335,7 @@ describe("Bridge Contract", function () {
             ],
             feePayerOwnedUTXOs: [
               {
-                txHash: "0xdef...",
+                txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
                 txIndex: 2,
                 nonce: 0,
                 amount: 51,
@@ -388,7 +388,7 @@ describe("Bridge Contract", function () {
           chainId: 2,
           receiver: "receiver1",
           utxo: {
-            txHash: "0xdef...",
+            txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
             txIndex: 0,
             nonce: 0,
             amount: 200,
@@ -412,7 +412,7 @@ describe("Bridge Contract", function () {
           chainId: 2,
           receiver: "receiver1111111111",
           utxo: {
-            txHash: "0xdef...",
+            txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
             txIndex: 0,
             nonce: 0,
             amount: 200,
@@ -436,7 +436,7 @@ describe("Bridge Contract", function () {
           chainId: 2,
           refundTxHash: "refundTxHash1",
           utxo: {
-            txHash: "0xdef...",
+            txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
             txIndex: 0,
             nonce: 0,
             amount: 200,
@@ -456,7 +456,7 @@ describe("Bridge Contract", function () {
           chainId: 2,
           refundTxHash: "refundTxHash11111111111",
           utxo: {
-            txHash: "0xdef...",
+            txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
             txIndex: 0,
             nonce: 0,
             amount: 200,
@@ -476,7 +476,7 @@ describe("Bridge Contract", function () {
           chainId: 2,
           refundTxHash: "refundTxHash1",
           utxo: {
-            txHash: "0xdef...",
+            txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
             txIndex: 0,
             nonce: 0,
             amount: 200,
@@ -496,13 +496,13 @@ describe("Bridge Contract", function () {
       usedUTXOs: {
         multisigOwnedUTXOs: [
           {
-            txHash: "0xdef...",
+            txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
             txIndex: 0,
             nonce: 0,
             amount: 200,
           },
           {
-            txHash: "0xdef...",
+            txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
             txIndex: 2,
             nonce: 0,
             amount: 50,
@@ -510,7 +510,7 @@ describe("Bridge Contract", function () {
         ],
         feePayerOwnedUTXOs: [
           {
-            txHash: "0xdef...",
+            txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
             txIndex: 1,
             nonce: 0,
             amount: 50,
@@ -1977,13 +1977,13 @@ describe("Bridge Contract", function () {
         usedUTXOs: {
           multisigOwnedUTXOs: [
             {
-              txHash: "0xdef...",
+              txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
               txIndex: 0,
               nonce: 0,
               amount: 200,
             },
             {
-              txHash: "0xdef...",
+              txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
               txIndex: 2,
               nonce: 0,
               amount: 50,
@@ -1991,7 +1991,7 @@ describe("Bridge Contract", function () {
           ],
           feePayerOwnedUTXOs: [
             {
-              txHash: "0xdef...",
+              txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
               txIndex: 1,
               nonce: 0,
               amount: 50,
