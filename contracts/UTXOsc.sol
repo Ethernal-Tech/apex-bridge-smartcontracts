@@ -69,8 +69,7 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 chainUTXOs[_chainID].multisigOwnedUTXOs[i] = chainUTXOs[_chainID].multisigOwnedUTXOs[lenu];
                 chainUTXOs[_chainID].multisigOwnedUTXOs.pop();
             } else {
-                //prettier-ignore
-                unchecked { i++; }
+                i++;
             }
         }
     }
@@ -94,31 +93,24 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 chainUTXOs[_chainID].feePayerOwnedUTXOs[i] = chainUTXOs[_chainID].feePayerOwnedUTXOs[lenu];
                 chainUTXOs[_chainID].feePayerOwnedUTXOs.pop();
             } else {
-                //prettier-ignore
-                unchecked { i++; }
+                i++;
             }
         }
     }
 
     function _addNewUTXOs(string calldata _chainID, UTXOs calldata utxos) internal {
         uint256 utxosMultisigOwnedUTXOsLength = utxos.multisigOwnedUTXOs.length;
-        for (uint i; i < utxosMultisigOwnedUTXOsLength; ) {
+        for (uint i; i < utxosMultisigOwnedUTXOsLength; i++) {
             UTXO memory dt = utxos.multisigOwnedUTXOs[i];
             dt.nonce = ++utxoNonceCounter;
             chainUTXOs[_chainID].multisigOwnedUTXOs.push(dt);
-
-            //prettier-ignore
-            unchecked { i++; }
         }
 
         uint256 utxosFeePayerOwnedUTXOs = utxos.multisigOwnedUTXOs.length;
-        for (uint i; i < utxosFeePayerOwnedUTXOs; ) {
+        for (uint i; i < utxosFeePayerOwnedUTXOs; i++) {
             UTXO memory dt = utxos.feePayerOwnedUTXOs[i];
             dt.nonce = ++utxoNonceCounter;
             chainUTXOs[_chainID].feePayerOwnedUTXOs.push(dt);
-
-            //prettier-ignore
-            unchecked { i++; }
         }
     }
 
