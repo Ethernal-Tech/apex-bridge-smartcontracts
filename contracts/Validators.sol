@@ -33,12 +33,9 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     function initialize(address[] calldata _validators) public initializer {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
-        for (uint i; i < _validators.length; ) {
+        for (uint i; i < _validators.length; i++) {
             isAddressValidator[_validators[i]] = true;
             validatorsAddresses.push(_validators[i]);
-
-            //prettier-ignore
-            unchecked { i++; }
         }
         validatorsCount = uint8(_validators.length);
     }
@@ -74,12 +71,9 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
             revert InvalidData("validators count");
         }
         // set validator cardano data for each validator
-        for (uint i; i < validatorAddressCardanoData.length; ) {
+        for (uint i; i < validatorAddressCardanoData.length; i++) {
             ValidatorAddressCardanoData calldata dt = validatorAddressCardanoData[i];
             validatorsCardanoDataPerAddress[_chainId][dt.addr] = dt.data;
-
-            //prettier-ignore
-            unchecked { i++; }
         }
         _updateValidatorCardanoData(_chainId);
     }
@@ -119,12 +113,10 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         // validatorsCardanoDataPerAddress must be set for all the validator addresses
         uint cnt = 0;
         uint256 validatorsAddressesLength = validatorsAddresses.length;
-        for (uint i; i < validatorsAddressesLength; ) {
+        for (uint i; i < validatorsAddressesLength; i++) {
             if (bytes(validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]].verifyingKey).length > 0) {
                 cnt++;
             }
-            //prettier-ignore
-            unchecked { i++; }
         }
 
         if (cnt != validatorsAddressesLength) {
@@ -132,10 +124,8 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         }
 
         delete validatorsCardanoData[_chainId];
-        for (uint i; i < validatorsAddressesLength; ) {
+        for (uint i; i < validatorsAddressesLength; i++) {
             validatorsCardanoData[_chainId].push(validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]]);
-            //prettier-ignore
-            unchecked { i++; }
         }
     }
 
