@@ -37,28 +37,28 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         validators = Validators(_validatorsAddress);
     }
 
-    function updateBlocks(uint8 chainId, CardanoBlock[] calldata blocks, address _caller) external onlyBridge {
+    function updateBlocks(uint8 _chainId, CardanoBlock[] calldata _blocks, address _caller) external onlyBridge {
         // Check if the caller has already voted for this claim
-        uint256 blockLength = blocks.length;
+        uint256 blockLength = _blocks.length;
         for (uint i; i < blockLength; i++) {
-            CardanoBlock calldata cblock = blocks[i];
+            CardanoBlock calldata cblock = _blocks[i];
             bytes32 chash = keccak256(abi.encodePacked(cblock.blockHash, cblock.blockSlot));
-            if (slotValidatorVotedPerChain[chainID][chash][_caller]) {
+            if (slotValidatorVotedPerChain[_chainId][chash][_caller]) {
                 continue;
             }
-            slotValidatorVotedPerChain[chainId][chash][_caller] = true;
-            slotVotesPerChain[chainId][chash]++;
+            slotValidatorVotedPerChain[_chainId][chash][_caller] = true;
+            slotVotesPerChain[_chainId][chash]++;
             if (
-                slotVotesPerChain[chainId][chash] >= validators.getQuorumNumberOfValidators() &&
-                cblock.blockSlot > lastObservedBlock[chainId].blockSlot
+                slotVotesPerChain[_chainId][chash] >= validators.getQuorumNumberOfValidators() &&
+                cblock.blockSlot > lastObservedBlock[_chainId].blockSlot
             ) {
-                lastObservedBlock[chainId] = cblock;
+                lastObservedBlock[_chainId] = cblock;
             }
         }
     }
 
-    function getLastObservedBlock(uint8 chainId) external view returns (CardanoBlock memory cb) {
-        return lastObservedBlock[chainId];
+    function getLastObservedBlock(uint8 _chainId) external view returns (CardanoBlock memory cb) {
+        return lastObservedBlock[_chainId];
     }
 
     modifier onlyBridge() {

@@ -74,14 +74,14 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _removeFeeUTXOs(uint8 _chainId, UTXO[] calldata utxos) internal {
+    function _removeFeeUTXOs(uint8 _chainId, UTXO[] calldata _utxos) internal {
         uint lenu = chainUTXOs[_chainId].feePayerOwnedUTXOs.length;
         uint i;
         while (i < lenu) {
             bool shouldDelete = false;
-            uint256 utxosLength = utxos.length;
+            uint256 utxosLength = _utxos.length;
             for (uint j; j < utxosLength; j++) {
-                if (equalUTXO(utxos[j], chainUTXOs[_chainId].feePayerOwnedUTXOs[i])) {
+                if (equalUTXO(_utxos[j], chainUTXOs[_chainId].feePayerOwnedUTXOs[i])) {
                     shouldDelete = true;
                     break;
                 }
@@ -98,19 +98,19 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _addNewUTXOs(uint8 _chainId, UTXOs calldata utxos) internal {
-        uint256 utxosMultisigOwnedUTXOsLength = utxos.multisigOwnedUTXOs.length;
+    function _addNewUTXOs(uint8 _chainId, UTXOs calldata _utxos) internal {
+        uint256 utxosMultisigOwnedUTXOsLength = _utxos.multisigOwnedUTXOs.length;
         for (uint i; i < utxosMultisigOwnedUTXOsLength; i++) {
-            UTXO memory dt = utxos.multisigOwnedUTXOs[i];
+            UTXO memory dt = _utxos.multisigOwnedUTXOs[i];
             dt.nonce = ++utxoNonceCounter;
-            chainUTXOs[_chainID].multisigOwnedUTXOs.push(dt);
+            chainUTXOs[_chainId].multisigOwnedUTXOs.push(dt);
         }
 
-        uint256 utxosFeePayerOwnedUTXOs = utxos.multisigOwnedUTXOs.length;
-        for (uint i; i < utxosFeePayerOwnedUTXOs; i++) {
-            UTXO memory dt = utxos.feePayerOwnedUTXOs[i];
+        uint256 utxosFeePayerOwnedUTXOslength = _utxos.feePayerOwnedUTXOs.length;
+        for (uint i; i < utxosFeePayerOwnedUTXOslength; i++) {
+            UTXO memory dt = _utxos.feePayerOwnedUTXOs[i];
             dt.nonce = ++utxoNonceCounter;
-            chainUTXOs[_chainID].feePayerOwnedUTXOs.push(dt);
+            chainUTXOs[_chainId].feePayerOwnedUTXOs.push(dt);
         }
     }
 
@@ -118,13 +118,13 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         _addNewUTXOs(_chainId, _UTXOs);
     }
 
-    function equalUTXO(UTXO calldata a, UTXO memory b) public pure returns (bool) {
+    function equalUTXO(UTXO calldata _a, UTXO memory _b) public pure returns (bool) {
         // for UTXO comparing nonce is not important
         return
-            bytes(a.txHash).length == bytes(b.txHash).length &&
-            keccak256(bytes(a.txHash)) == keccak256(bytes(b.txHash)) &&
-            a.txIndex == b.txIndex &&
-            a.amount == b.amount;
+            bytes(_a.txHash).length == bytes(_b.txHash).length &&
+            keccak256(bytes(_a.txHash)) == keccak256(bytes(_b.txHash)) &&
+            _a.txIndex == _b.txIndex &&
+            _a.amount == _b.amount;
     }
 
     modifier onlyBridge() {

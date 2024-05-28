@@ -46,8 +46,8 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         bridgeAddress = _bridgeAddress;
     }
 
-    function isValidator(address addr) public view returns (bool) {
-        return isAddressValidator[addr];
+    function isValidator(address _addr) public view returns (bool) {
+        return isAddressValidator[_addr];
     }
 
     function isSignatureValid(
@@ -65,14 +65,14 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
 
     function setValidatorsCardanoData(
         uint8 _chainId,
-        ValidatorAddressCardanoData[] calldata validatorAddressCardanoData
+        ValidatorAddressCardanoData[] calldata _validatorAddressCardanoData
     ) external onlyBridge {
-        if (validatorsCount != validatorAddressCardanoData.length) {
+        if (validatorsCount != _validatorAddressCardanoData.length) {
             revert InvalidData("validators count");
         }
         // set validator cardano data for each validator
-        for (uint i; i < validatorAddressCardanoData.length; i++) {
-            ValidatorAddressCardanoData calldata dt = validatorAddressCardanoData[i];
+        for (uint i; i < _validatorAddressCardanoData.length; i++) {
+            ValidatorAddressCardanoData calldata dt = _validatorAddressCardanoData[i];
             validatorsCardanoDataPerAddress[_chainId][dt.addr] = dt.data;
         }
         _updateValidatorCardanoData(_chainId);
@@ -80,8 +80,8 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
 
     function addValidatorCardanoData(
         uint8 _chainId,
-        address addr,
-        ValidatorCardanoData calldata data
+        address _addr,
+        ValidatorCardanoData calldata _data
     ) external onlyBridge {
         // We dont have enough stack to validate signatures bellow
         // but if validator does not provide valid keys he will not be able to send batches
@@ -92,7 +92,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         // if (!_isSignatureValid(REGISTRATION_MESSAGE, _validationSignatureFee, data.verifyingKeyFee, false)) {
         //     revert InvalidSignature();
         // }
-        validatorsCardanoDataPerAddress[_chainId][addr] = data;
+        validatorsCardanoDataPerAddress[_chainId][_addr] = _data;
         _updateValidatorCardanoData(_chainId);
     }
 
@@ -130,14 +130,14 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     }
 
     function _isSignatureValid(
-        string calldata message,
-        string calldata signature,
-        string memory verifyingKey,
-        bool isTx
+        string calldata _message,
+        string calldata _signature,
+        string memory _verifyingKey,
+        bool _isTx
     ) internal view returns (bool) {
         // solhint-disable-line avoid-low-level-calls
         (bool callSuccess, bytes memory returnData) = PRECOMPILE.staticcall{gas: PRECOMPILE_GAS}(
-            abi.encode(message, signature, verifyingKey, isTx)
+            abi.encode(_message, _signature, _verifyingKey, _isTx)
         );
 
         return callSuccess && abi.decode(returnData, (bool));

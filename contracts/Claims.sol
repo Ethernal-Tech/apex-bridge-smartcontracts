@@ -81,11 +81,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 continue;
             }
 
-            if (claimsHelper.isClaimConfirmed(destinationChainID, _claim.observedTransactionHash)) {
+            if (claimsHelper.isClaimConfirmed(destinationChainId, _claim.observedTransactionHash)) {
                 continue;
             }
 
-            if (chainTokenQuantity[sourceChainID] < getNeededTokenQuantity(_claim.receivers)) {
+            if (chainTokenQuantity[sourceChainId] < getNeededTokenQuantity(_claim.receivers)) {
                 continue;
             }
 
@@ -103,7 +103,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 continue;
             }
 
-            if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
+            if (claimsHelper.isClaimConfirmed(_claim.chainId, _claim.observedTransactionHash)) {
                 continue;
             }
 
@@ -121,7 +121,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 continue;
             }
 
-            if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
+            if (claimsHelper.isClaimConfirmed(_claim.chainId, _claim.observedTransactionHash)) {
                 continue;
             }
 
@@ -139,7 +139,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 continue;
             }
 
-            if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
+            if (claimsHelper.isClaimConfirmed(_claim.chainId, _claim.observedTransactionHash)) {
                 continue;
             }
 
@@ -157,7 +157,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 continue;
             }
 
-            if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
+            if (claimsHelper.isClaimConfirmed(_claim.chainId, _claim.observedTransactionHash)) {
                 continue;
             }
 
@@ -165,8 +165,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _submitClaimsBRC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        BridgingRequestClaim calldata _claim = _claims.bridgingRequestClaims[index];
+    function _submitClaimsBRC(ValidatorClaims calldata _claims, uint256 _index, address _caller) internal {
+        BridgingRequestClaim calldata _claim = _claims.bridgingRequestClaims[_index];
         bytes32 claimHash = keccak256(abi.encode(_claim));
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 
@@ -192,8 +192,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _submitClaimsBEC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        BatchExecutedClaim calldata _claim = _claims.batchExecutedClaims[index];
+    function _submitClaimsBEC(ValidatorClaims calldata _claims, uint256 _index, address _caller) internal {
+        BatchExecutedClaim calldata _claim = _claims.batchExecutedClaims[_index];
         bytes32 claimHash = keccak256(abi.encode(_claim));
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
         uint8 chainId = _claim.chainId;
@@ -219,8 +219,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _submitClaimsBEFC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        BatchExecutionFailedClaim calldata _claim = _claims.batchExecutionFailedClaims[index];
+    function _submitClaimsBEFC(ValidatorClaims calldata _claims, uint256 _index, address _caller) internal {
+        BatchExecutionFailedClaim calldata _claim = _claims.batchExecutionFailedClaims[_index];
         bytes32 claimHash = keccak256(abi.encode(_claim));
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
         uint8 chainId = _claim.chainId;
@@ -234,8 +234,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _submitClaimsRRC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        RefundRequestClaim calldata _claim = _claims.refundRequestClaims[index];
+    function _submitClaimsRRC(ValidatorClaims calldata _claims, uint256 _index, address _caller) internal {
+        RefundRequestClaim calldata _claim = _claims.refundRequestClaims[_index];
         bytes32 claimHash = keccak256(abi.encode(_claim));
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 
@@ -244,8 +244,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _submitClaimsREC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        RefundExecutedClaim calldata _claim = _claims.refundExecutedClaims[index];
+    function _submitClaimsREC(ValidatorClaims calldata _claims, uint256 _index, address _caller) internal {
+        RefundExecutedClaim calldata _claim = _claims.refundExecutedClaims[_index];
         bytes32 claimHash = keccak256(abi.encode(_claim));
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 
@@ -263,7 +263,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         uint256 receiversLength = _claim.receivers.length;
         for (uint i; i < receiversLength; i++) {
-            confirmedTransactions[destinationChainID][nextNonce].receivers.push(_claim.receivers[i]);
+            confirmedTransactions[destinationChainId][nextNonce].receivers.push(_claim.receivers[i]);
         }
 
         confirmedTransactions[destinationChainId][nextNonce].blockHeight = block.number;
