@@ -384,7 +384,7 @@ describe("Bridge Contract", function () {
       refundRequestClaims: [
         {
           observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          previousRefundTxHash: "previousRefundTxHash1",
+          previousRefundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
           chainId: 2,
           receiver: "receiver1",
           utxo: {
@@ -408,7 +408,7 @@ describe("Bridge Contract", function () {
       refundRequestClaims: [
         {
           observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          previousRefundTxHash: "previousRefundTxHash1",
+          previousRefundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
           chainId: 2,
           receiver: "receiver1111111111",
           utxo: {
@@ -434,7 +434,7 @@ describe("Bridge Contract", function () {
         {
           observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           chainId: 2,
-          refundTxHash: "refundTxHash1",
+          refundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
           utxo: {
             txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
             txIndex: 0,
@@ -454,7 +454,7 @@ describe("Bridge Contract", function () {
         {
           observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           chainId: 2,
-          refundTxHash: "refundTxHash11111111111",
+          refundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
           utxo: {
             txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
             txIndex: 0,
@@ -474,7 +474,7 @@ describe("Bridge Contract", function () {
         {
           observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           chainId: 2,
-          refundTxHash: "refundTxHash1",
+          refundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
           utxo: {
             txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
             txIndex: 0,

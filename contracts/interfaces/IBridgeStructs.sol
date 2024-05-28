@@ -57,7 +57,7 @@ interface IBridgeStructs {
 
     struct CardanoBlock {
         uint256 blockSlot;
-        string blockHash;
+        bytes32 blockHash;
     }
 
     struct ValidatorClaims {
@@ -103,7 +103,7 @@ interface IBridgeStructs {
         // chain id where the refund tx will be executed
         uint8 chainId;
         // hash of the previous refund transaction; only set in case of retry
-        string previousRefundTxHash;
+        bytes32 previousRefundTxHash;
         string receiver;
         // the refund transaction itself
         string rawTransaction;
@@ -117,10 +117,10 @@ interface IBridgeStructs {
     struct RefundExecutedClaim {
         // hash of tx on the source chain
         bytes32 observedTransactionHash;
+        // hash of the refund transaction
+        bytes refundTxHash;
         // chain id where the refund was executed
         uint8 chainId;
-        // hash of the refund transaction
-        string refundTxHash;
         // UTXO that multisig received as change after paying network fee
         UTXO utxo;
     }
