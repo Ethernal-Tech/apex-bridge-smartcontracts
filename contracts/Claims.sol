@@ -28,7 +28,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     mapping(uint8 => uint256) public chainTokenQuantity;
 
     // BlockchainId -> nonce -> ConfirmedTransaction
-    mapping(uint8 => mapping(uint256 => ConfirmedTransaction)) private confirmedTransactions;
+    mapping(uint8 => mapping(uint64 => ConfirmedTransaction)) private confirmedTransactions;
 
     // chainId -> nonce (nonce of the last confirmed transaction)
     mapping(uint8 => uint64) public lastConfirmedTxNonce;
@@ -290,14 +290,14 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function getConfirmedTransaction(
         uint8 _destinationChain,
-        uint256 _nonce
+        uint64 _nonce
     ) public view returns (ConfirmedTransaction memory) {
         return confirmedTransactions[_destinationChain][_nonce];
     }
 
-    function getBatchingTxsCount(uint8 _chainId) public view returns (uint256 counterConfirmedTransactions) {
-        uint256 lastConfirmedTxNonceForChain = lastConfirmedTxNonce[_chainId];
-        uint256 lastBatchedTxNonceForChain = lastBatchedTxNonce[_chainId];
+    function getBatchingTxsCount(uint8 _chainId) public view returns (uint64 counterConfirmedTransactions) {
+        uint64 lastConfirmedTxNonceForChain = lastConfirmedTxNonce[_chainId];
+        uint64 lastBatchedTxNonceForChain = lastBatchedTxNonce[_chainId];
 
         uint256 txsToProcess = ((lastConfirmedTxNonceForChain - lastBatchedTxNonceForChain) >= maxNumberOfTransactions)
             ? maxNumberOfTransactions
@@ -323,11 +323,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             _destinationChain,
             _nonce
         );
-        uint256 _firstTxNounce = confirmedSignedBatchData.firstTxNonceId;
-        uint256 _lastTxNounce = confirmedSignedBatchData.lastTxNonceId;
+        uint64 _firstTxNounce = confirmedSignedBatchData.firstTxNonceId;
+        uint64 _lastTxNounce = confirmedSignedBatchData.lastTxNonceId;
 
-        for (uint i = _firstTxNounce; i <= _lastTxNounce; i++) {
-            bridgedAmount += getNeededTokenQuantity(confirmedTransactions[_destinationChain][i].receivers);
+        for (_firstTxNounce; _firstTxNounce <= _lastTxNounce; _firstTxNounce++) {
+            bridgedAmount += getNeededTokenQuantity(confirmedTransactions[_destinationChain][_firstTxNounce].receivers);
         }
 
         return bridgedAmount;

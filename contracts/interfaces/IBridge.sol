@@ -35,7 +35,7 @@ abstract contract IBridge is IBridgeStructs {
     function shouldCreateBatch(uint8 _destinationChain) external view virtual returns (bool);
 
     // Calls shouldCreateBatch and returns next batch id if batch should be created of 0 if not
-    function getNextBatchId(uint8 _destinationChain) external view virtual returns (uint256);
+    function getNextBatchId(uint8 _destinationChain) external view virtual returns (uint64);
 
     // Will return confirmed transactions until NEXT_BATCH_TIMEOUT_BLOCK or maximum number of transactions that
     // can be included in the batch, if the maximum number of transactions in a batch has been exceeded

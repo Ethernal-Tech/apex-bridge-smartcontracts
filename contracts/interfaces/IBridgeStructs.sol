@@ -91,7 +91,7 @@ interface IBridgeStructs {
         // hash of tx on the source chain
         bytes32 observedTransactionHash;
         // where the batch execution failed
-        uint256 batchNonceId;
+        uint64 batchNonceId;
         uint8 chainId;
     }
 
@@ -118,7 +118,7 @@ interface IBridgeStructs {
         // hash of tx on the source chain
         bytes32 observedTransactionHash;
         // hash of the refund transaction
-        bytes refundTxHash;
+        bytes32 refundTxHash;
         // chain id where the refund was executed
         uint8 chainId;
         // UTXO that multisig received as change after paying network fee

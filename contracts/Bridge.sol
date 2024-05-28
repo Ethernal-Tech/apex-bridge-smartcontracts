@@ -148,12 +148,12 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         return claims.shouldCreateBatch(_destinationChain);
     }
 
-    function getNextBatchId(uint8 _destinationChain) external view override returns (uint256 result) {
+    function getNextBatchId(uint8 _destinationChain) external view override returns (uint64 result) {
         if (!shouldCreateBatch(_destinationChain)) {
             return 0;
         }
 
-        (uint256 batchId, ) = signedBatches.lastConfirmedBatch(_destinationChain);
+        (uint64 batchId, ) = signedBatches.lastConfirmedBatch(_destinationChain);
 
         return batchId + 1;
     }
@@ -167,12 +167,12 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
             revert CanNotCreateBatchYet(_destinationChain);
         }
 
-        uint256 firstTxNonce = claims.lastBatchedTxNonce(_destinationChain) + 1;
+        uint64 firstTxNonce = claims.lastBatchedTxNonce(_destinationChain) + 1;
 
-        uint256 counterConfirmedTransactions = claims.getBatchingTxsCount(_destinationChain);
+        uint64 counterConfirmedTransactions = claims.getBatchingTxsCount(_destinationChain);
         _confirmedTransactions = new ConfirmedTransaction[](counterConfirmedTransactions);
 
-        for (uint i; i < counterConfirmedTransactions; i++) {
+        for (uint64 i; i < counterConfirmedTransactions; i++) {
             _confirmedTransactions[i] = claims.getConfirmedTransaction(_destinationChain, firstTxNonce + i);
         }
 
