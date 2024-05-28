@@ -211,7 +211,7 @@ describe("Bridge Contract", function () {
     const validatorClaimsBRC = {
       bridgingRequestClaims: [
         {
-          observedTransactionHash: "0xabc...",
+          observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           receivers: [
             {
               destinationAddress: "0x123...",
@@ -236,7 +236,7 @@ describe("Bridge Contract", function () {
     const validatorClaimsBRC_ConfirmedTransactions = {
       bridgingRequestClaims: [
         {
-          observedTransactionHash: "0xbcd...",
+          observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           receivers: [
             {
               destinationAddress: "0x234...",
@@ -262,7 +262,7 @@ describe("Bridge Contract", function () {
     const validatorClaimsBRCerror = {
       bridgingRequestClaims: [
         {
-          observedTransactionHash: "0xabc...",
+          observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           receivers: [
             {
               destinationAddress: "0x123...11111111",
@@ -289,7 +289,7 @@ describe("Bridge Contract", function () {
       bridgingRequestClaims: [],
       batchExecutedClaims: [
         {
-          observedTransactionHash: "0xbac...",
+          observedTransactionHash: "0x7465737500000000000000000000000000000000000000000000000000000000",
           chainId: 2,
           batchNonceId: 1,
           outputUTXOs: {
@@ -321,7 +321,7 @@ describe("Bridge Contract", function () {
       bridgingRequestClaims: [],
       batchExecutedClaims: [
         {
-          observedTransactionHash: "0xabc...",
+          observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           chainId: 2,
           batchNonceId: 1111111111,
           outputUTXOs: {
@@ -354,7 +354,7 @@ describe("Bridge Contract", function () {
       batchExecutedClaims: [],
       batchExecutionFailedClaims: [
         {
-          observedTransactionHash: "0xabc...",
+          observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           chainId: 2,
           batchNonceId: 1,
         },
@@ -368,7 +368,7 @@ describe("Bridge Contract", function () {
       batchExecutedClaims: [],
       batchExecutionFailedClaims: [
         {
-          observedTransactionHash: "0xabc...",
+          observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           chainId: 2,
           batchNonceId: 111111,
         },
@@ -383,7 +383,7 @@ describe("Bridge Contract", function () {
       batchExecutionFailedClaims: [],
       refundRequestClaims: [
         {
-          observedTransactionHash: "0xabc...",
+          observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           previousRefundTxHash: "previousRefundTxHash1",
           chainId: 2,
           receiver: "receiver1",
@@ -407,7 +407,7 @@ describe("Bridge Contract", function () {
       batchExecutionFailedClaims: [],
       refundRequestClaims: [
         {
-          observedTransactionHash: "0xabc...",
+          observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           previousRefundTxHash: "previousRefundTxHash1",
           chainId: 2,
           receiver: "receiver1111111111",
@@ -432,7 +432,7 @@ describe("Bridge Contract", function () {
       refundRequestClaims: [],
       refundExecutedClaims: [
         {
-          observedTransactionHash: "0xabc...",
+          observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           chainId: 2,
           refundTxHash: "refundTxHash1",
           utxo: {
@@ -452,7 +452,7 @@ describe("Bridge Contract", function () {
       refundRequestClaims: [],
       refundExecutedClaims: [
         {
-          observedTransactionHash: "0xabc...",
+          observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           chainId: 2,
           refundTxHash: "refundTxHash11111111111",
           utxo: {
@@ -472,7 +472,7 @@ describe("Bridge Contract", function () {
       refundRequestClaims: [],
       refundExecutedClaims: [
         {
-          observedTransactionHash: "0xabc...",
+          observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           chainId: 2,
           refundTxHash: "refundTxHash1",
           utxo: {
@@ -1283,7 +1283,6 @@ describe("Bridge Contract", function () {
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
-
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
@@ -1782,7 +1781,7 @@ describe("Bridge Contract", function () {
         bridgingRequestClaims: [
           {
             ...validatorClaimsBRC.bridgingRequestClaims[0],
-            observedTransactionHash: "0x676732344",
+            observedTransactionHash: "0x7465737500000000000000000000000000000000000000000000000000000000",
           },
         ],
       };
@@ -1792,7 +1791,7 @@ describe("Bridge Contract", function () {
         bridgingRequestClaims: [
           {
             ...validatorClaimsBRC.bridgingRequestClaims[0],
-            observedTransactionHash: "0x782748343",
+            observedTransactionHash: "0x7465737600000000000000000000000000000000000000000000000000000000",
           },
         ],
       };
@@ -1880,7 +1879,7 @@ describe("Bridge Contract", function () {
         bridgingRequestClaims: [
           {
             ...validatorClaimsBRC.bridgingRequestClaims[0],
-            observedTransactionHash: "0x676732344",
+            observedTransactionHash: "0x7465737700000000000000000000000000000000000000000000000000000000",
           },
         ],
       };
@@ -1890,7 +1889,7 @@ describe("Bridge Contract", function () {
         bridgingRequestClaims: [
           {
             ...validatorClaimsBRC.bridgingRequestClaims[0],
-            observedTransactionHash: "0x782748343",
+            observedTransactionHash: "0x7465737800000000000000000000000000000000000000000000000000000000",
           },
         ],
       };
@@ -2106,7 +2105,7 @@ describe("Bridge Contract", function () {
         bridgingRequestClaims: [
           {
             ...validatorClaimsBRC.bridgingRequestClaims[0],
-            observedTransactionHash: "0x676732344",
+            observedTransactionHash: "0x7465737900000000000000000000000000000000000000000000000000000000",
           },
         ],
       };

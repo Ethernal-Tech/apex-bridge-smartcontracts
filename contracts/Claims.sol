@@ -195,6 +195,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function _submitClaimsBEC(ValidatorClaims calldata _claims, uint256 _index, address _caller) internal {
         BatchExecutedClaim calldata _claim = _claims.batchExecutedClaims[_index];
         bytes32 claimHash = keccak256(abi.encode(_claim));
+
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
         uint8 chainId = _claim.chainId;
 
