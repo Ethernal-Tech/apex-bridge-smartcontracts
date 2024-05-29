@@ -15,10 +15,10 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     Validators private validators;
 
     // BlockchanId -> hash -> multisigSignatures
-    mapping(uint8 => mapping(bytes32 => string[])) private multisigSignatures;
+    mapping(uint8 => mapping(bytes32 => bytes32[])) private multisigSignatures;
 
     // BlockchanId -> hash -> multisigSignatures
-    mapping(uint8 => mapping(bytes32 => string[])) private feePayerMultisigSignatures;
+    mapping(uint8 => mapping(bytes32 => bytes32[])) private feePayerMultisigSignatures;
 
     // BlockchainId -> ConfirmedBatch
     mapping(uint8 => ConfirmedBatch) public lastConfirmedBatch;
@@ -90,10 +90,10 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             claimsHelper.setClaimConfirmed(_signedBatch.destinationChainId, bytes32(_batchId));
 
             lastConfirmedBatch[_signedBatch.destinationChainId] = ConfirmedBatch(
-                lastConfirmedBatch[_signedBatch.destinationChainId].id + 1,
-                _signedBatch.rawTransaction,
                 multisigSignatures[_signedBatch.destinationChainId][signedBatchHash],
-                feePayerMultisigSignatures[_signedBatch.destinationChainId][signedBatchHash]
+                feePayerMultisigSignatures[_signedBatch.destinationChainId][signedBatchHash],
+                lastConfirmedBatch[_signedBatch.destinationChainId].id + 1,
+                _signedBatch.rawTransaction
             );
 
             claimsHelper.updateCurrentBatchBlock(_signedBatch.destinationChainId);

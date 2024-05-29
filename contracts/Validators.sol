@@ -53,8 +53,8 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     function isSignatureValid(
         uint8 _chainId,
         string calldata _txRaw,
-        string calldata _signature,
-        string calldata _signatureFee,
+        bytes32 _signature,
+        bytes32 _signatureFee,
         address _validatorAddr
     ) public view returns (bool) {
         ValidatorCardanoData memory dt = validatorsCardanoDataPerAddress[_chainId][_validatorAddr];
@@ -130,7 +130,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
 
     function _isSignatureValid(
         string calldata _message,
-        string calldata _signature,
+        bytes32 _signature,
         bytes32 _verifyingKey,
         bool _isTx
     ) internal view returns (bool) {

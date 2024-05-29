@@ -394,7 +394,7 @@ describe("Bridge Contract", function () {
             amount: 200,
           },
           rawTransaction: "rawTransaction1",
-          multisigSignature: "multisigSignature1",
+          multisigSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
           retryCounter: 1,
         },
       ],
@@ -418,7 +418,7 @@ describe("Bridge Contract", function () {
             amount: 200,
           },
           rawTransaction: "rawTransaction1",
-          multisigSignature: "multisigSignature1",
+          multisigSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
           retryCounter: 1,
         },
       ],
@@ -489,8 +489,8 @@ describe("Bridge Contract", function () {
       id: 1,
       destinationChainId: 2,
       rawTransaction: "rawTransaction1",
-      multisigSignature: "multisigSignature1",
-      feePayerMultisigSignature: "feePayerMultisigSignature1",
+      multisigSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
+      feePayerMultisigSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
       firstTxNonceId: 1,
       lastTxNonceId: 1,
       usedUTXOs: {
@@ -1934,8 +1934,8 @@ describe("Bridge Contract", function () {
         id: 1,
         destinationChainId: "unregisteredChainId1",
         rawTransaction: "rawTransaction1",
-        multisigSignature: "multisigSignature1",
-        feePayerMultisigSignature: "feePayerMultisigSignature1",
+        multisigSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        feePayerMultisigSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
         firstTxNonceId: 1,
         lastTxNonceId: 1,
         usedUTXOs: {
@@ -2001,8 +2001,8 @@ describe("Bridge Contract", function () {
         id: 2,
         destinationChainId: 2,
         rawTransaction: "rawTransaction1",
-        multisigSignature: "multisigSignature1",
-        feePayerMultisigSignature: "feePayerMultisigSignature1",
+        multisigSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        feePayerMultisigSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
         firstTxNonceId: 1,
         lastTxNonceId: 1,
         usedUTXOs: {
@@ -2237,16 +2237,16 @@ describe("Bridge Contract", function () {
 
       expect(
         (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).multisigSignatures[0]
-      ).to.equal("multisigSignature1");
+      ).to.equal("0x7465737400000000000000000000000000000000000000000000000000000000");
       expect(
         (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).multisigSignatures[1]
-      ).to.equal("multisigSignature1");
+      ).to.equal("0x7465737400000000000000000000000000000000000000000000000000000000");
       expect(
         (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).multisigSignatures[2]
-      ).to.equal("multisigSignature1");
+      ).to.equal("0x7465737400000000000000000000000000000000000000000000000000000000");
       expect(
         (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).multisigSignatures[3]
-      ).to.equal("multisigSignature1");
+      ).to.equal("0x7465737400000000000000000000000000000000000000000000000000000000");
     });
 
     it("Should create and execute batch after transactions are confirmed", async function () {

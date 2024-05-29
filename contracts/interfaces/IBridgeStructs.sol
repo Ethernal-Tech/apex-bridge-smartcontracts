@@ -7,8 +7,8 @@ interface IBridgeStructs {
         uint64 firstTxNonceId;
         uint64 lastTxNonceId;
         uint8 destinationChainId;
-        string multisigSignature;
-        string feePayerMultisigSignature;
+        bytes32 multisigSignature;
+        bytes32 feePayerMultisigSignature;
         string rawTransaction;
         UTXOs usedUTXOs;
     }
@@ -29,10 +29,10 @@ interface IBridgeStructs {
     }
 
     struct ConfirmedBatch {
+        bytes32[] multisigSignatures;
+        bytes32[] feePayerMultisigSignatures;
         uint64 id;
         string rawTransaction;
-        string[] multisigSignatures;
-        string[] feePayerMultisigSignatures;
     }
 
     struct ConfirmedTransaction {
@@ -98,18 +98,18 @@ interface IBridgeStructs {
     struct RefundRequestClaim {
         // hash of tx on the source chain
         bytes32 observedTransactionHash;
+        // hash of the previous refund transaction; only set in case of retry
+        bytes32 previousRefundTxHash;
+        // validatorsArray signature over raw transaction
+        // note: only multisig signs refund txs
+        bytes32 multisigSignature;
         // retry attempt counter
         uint64 retryCounter;
         // chain id where the refund tx will be executed
         uint8 chainId;
-        // hash of the previous refund transaction; only set in case of retry
-        bytes32 previousRefundTxHash;
         string receiver;
         // the refund transaction itself
         string rawTransaction;
-        // validatorsArray signature over raw transaction
-        // note: only multisig signs refund txs
-        string multisigSignature;
         // UTXO that multisig received in invalid transaction
         UTXO utxo;
     }
@@ -126,8 +126,8 @@ interface IBridgeStructs {
     }
 
     struct Receiver {
-        string destinationAddress;
         uint64 amount;
+        string destinationAddress;
     }
 
     struct Chain {
