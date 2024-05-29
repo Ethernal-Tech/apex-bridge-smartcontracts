@@ -316,7 +316,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function getTokenAmountFromSignedBatch(uint8 _destinationChain, uint256 _nonce) public view returns (uint256) {
+    function getTokenAmountFromSignedBatch(uint8 _destinationChain, uint64 _nonce) public view returns (uint256) {
         uint256 bridgedAmount;
 
         ConfirmedSignedBatchData memory confirmedSignedBatchData = claimsHelper.getConfirmedSignedBatchData(

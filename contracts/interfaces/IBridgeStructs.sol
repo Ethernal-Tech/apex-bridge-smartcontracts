@@ -164,7 +164,7 @@ interface IBridgeStructs {
     error CanNotCreateBatchYet(uint8 _blockchainId);
     error InvalidData(string data);
     error ChainIsNotRegistered(uint8 _chainId);
-    error WrongBatchNonce(uint8 _chainId, uint256 _nonce);
+    error WrongBatchNonce(uint8 _chainId, uint64 _nonce);
     error InvalidSignature();
 
     event newChainProposal(uint8 indexed _chainId, address indexed sender);

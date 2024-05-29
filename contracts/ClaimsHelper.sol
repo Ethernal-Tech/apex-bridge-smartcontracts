@@ -14,7 +14,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     mapping(uint8 => mapping(bytes32 => bool)) public isClaimConfirmed;
 
     // BlockchainId -> batchId -> SignedBatch
-    mapping(uint8 => mapping(uint256 => ConfirmedSignedBatchData)) public confirmedSignedBatches;
+    mapping(uint8 => mapping(uint64 => ConfirmedSignedBatchData)) public confirmedSignedBatches;
 
     // BlochchainId -> blockNumber
     mapping(uint8 => int256) public currentBatchBlock;
@@ -44,7 +44,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
 
     function getConfirmedSignedBatchData(
         uint8 _chainId,
-        uint256 _batchId
+        uint64 _batchId
     ) external view returns (ConfirmedSignedBatchData memory) {
         return confirmedSignedBatches[_chainId][_batchId];
     }
@@ -64,7 +64,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     function setConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
         // because of UnimplementedFeatureError: Copying of type struct IBridgeStructs.UTXO memory[] memory to storage not yet supported.
         uint8 destinationChainId = _signedBatch.destinationChainId;
-        uint256 signedBatchId = _signedBatch.id;
+        uint64 signedBatchId = _signedBatch.id;
 
         confirmedSignedBatches[destinationChainId][signedBatchId].firstTxNonceId = _signedBatch.firstTxNonceId;
         confirmedSignedBatches[destinationChainId][signedBatchId].lastTxNonceId = _signedBatch.lastTxNonceId;

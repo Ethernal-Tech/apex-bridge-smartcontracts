@@ -21,7 +21,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     mapping(uint8 => mapping(bytes32 => string[])) private feePayerMultisigSignatures;
 
     // BlockchainId -> ConfirmedBatch
-    mapping(uint256 => ConfirmedBatch) public lastConfirmedBatch;
+    mapping(uint8 => ConfirmedBatch) public lastConfirmedBatch;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -49,7 +49,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         uint8 _destinationChainId = _signedBatch.destinationChainId;
         bytes32 _batchIdBytes = bytes32(uint256(_signedBatch.id));
 
-        uint256 sbId = lastConfirmedBatch[_destinationChainId].id;
+        uint64 sbId = lastConfirmedBatch[_destinationChainId].id;
 
         if (_signedBatch.id != sbId + 1) {
             return; // do not revert! batcher can lag a little bit. revert WrongBatchNonce(_destinationChainId, _signedBatch.id);
