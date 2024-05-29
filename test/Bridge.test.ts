@@ -1148,47 +1148,6 @@ describe("Bridge Contract", function () {
 
       // for some reason there is no receivers field inside confirmedTx structure
     });
-
-    it("Should add confirmed transaction to the map after Bridging Request Claim is confirmed", async function () {
-      const { bridge, claims, owner, validators, UTXOs, validatorClaimsBRC, validatorsCardanoData } = await loadFixture(
-        deployBridgeFixture
-      );
-      const sourceChain = {
-        id: validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
-        addressMultisig: "0x",
-        addressFeePayer: "0x",
-      };
-
-      const destinationChain = {
-        id: validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
-        addressMultisig: "0x",
-        addressFeePayer: "0x",
-      };
-
-      await bridge.connect(owner).registerChain(sourceChain, UTXOs, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(destinationChain, UTXOs, 1000, validatorsCardanoData);
-
-      const oldNonce = Number(
-        await claims.lastConfirmedTxNonce(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)
-      );
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
-
-      const nonce = Number(
-        await claims.lastConfirmedTxNonce(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)
-      );
-      const confirmedTx = await claims.getConfirmedTransaction(
-        validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
-        oldNonce
-      );
-      expect(confirmedTx.nonce).to.equal(oldNonce);
-      expect(nonce).to.equal(Number(oldNonce) + 1);
-
-      // for some reason there is no receivers field inside confirmedTx structure
-    });
   });
 
   describe("Submit new Batch Executed Claim", function () {
