@@ -114,11 +114,10 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         uint cnt = 0;
         uint256 validatorsAddressesLength = validatorsAddresses.length;
         for (uint i; i < validatorsAddressesLength; i++) {
-            if (bytes(validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]].verifyingKey).length > 0) {
+            if (validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]].verifyingKey != "") {
                 cnt++;
             }
         }
-
         if (cnt != validatorsAddressesLength) {
             return;
         }
@@ -132,7 +131,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     function _isSignatureValid(
         string calldata _message,
         string calldata _signature,
-        string memory _verifyingKey,
+        bytes32 _verifyingKey,
         bool _isTx
     ) internal view returns (bool) {
         // solhint-disable-line avoid-low-level-calls

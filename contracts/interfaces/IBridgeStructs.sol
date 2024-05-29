@@ -147,8 +147,8 @@ interface IBridgeStructs {
     }
 
     struct ValidatorCardanoData {
-        string verifyingKey;
-        string verifyingKeyFee;
+        bytes32 verifyingKey;
+        bytes32 verifyingKeyFee;
     }
 
     error AlreadyConfirmed(string _claimTransactionHash);

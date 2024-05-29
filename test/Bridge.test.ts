@@ -204,8 +204,8 @@ describe("Bridge Contract", function () {
     };
 
     const validatorCardanoData = {
-      verifyingKey: "0x0123456789abcdef",
-      verifyingKeyFee: "0xabcdef0123456789",
+      verifyingKey: "0x7465737600000000000000000000000000000000000000000000000000000000",
+      verifyingKeyFee: "0x7465737600000000000000000000000000000000000000000000000000000002",
     };
 
     const validatorClaimsBRC = {
@@ -526,8 +526,8 @@ describe("Bridge Contract", function () {
       validatorsCardanoData.push({
         addr: val.address,
         data: {
-          verifyingKey: "0x" + ind,
-          verifyingKeyFee: "0x" + ind + "a",
+          verifyingKey: "0x746573760000000000000000000000000000000000000000000000000000000" + ind,
+          verifyingKeyFee: "0x74657376000000000000000000000000000000000000000000000000000000" + ind + "2",
         },
       });
     }
@@ -805,21 +805,26 @@ describe("Bridge Contract", function () {
       const bridgeAddress = await bridge.getAddress();
 
       var signer = await impersonateAsContractAndMintFunds(bridgeAddress);
+      const data1 = await validatorsc.connect(validators[0]).getValidatorsCardanoData(1);
 
       await validatorsc
         .connect(signer)
         .addValidatorCardanoData(1, validatorsCardanoData[0].addr, validatorsCardanoData[0].data);
+
       await validatorsc
         .connect(signer)
         .addValidatorCardanoData(1, validatorsCardanoData[1].addr, validatorsCardanoData[1].data);
+
       await validatorsc
         .connect(signer)
         .addValidatorCardanoData(1, validatorsCardanoData[2].addr, validatorsCardanoData[2].data);
+
       await validatorsc
         .connect(signer)
         .addValidatorCardanoData(1, validatorsCardanoData[3].addr, validatorsCardanoData[3].data);
 
       const data = await validatorsc.connect(validators[0]).getValidatorsCardanoData(1);
+
       expect(data.length).to.equal(0);
 
       await validatorsc
@@ -852,8 +857,8 @@ describe("Bridge Contract", function () {
       validatorsCardanoData.push({
         addr: validator6.address,
         data: {
-          verifyingKey: "0x" + 5,
-          verifyingKeyFee: "0x" + 5 + "a",
+          verifyingKey: "0x746573760000000000000000000000000000000000000000000000000000000" + 5,
+          verifyingKeyFee: "0x74657376000000000000000000000000000000000000000000000000000000" + 5 + "2",
         },
       });
 
