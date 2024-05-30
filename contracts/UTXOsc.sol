@@ -32,7 +32,7 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         claimsAddress = _claimsAddress;
     }
 
-    function getChainUTXOs(uint8 _chainId) external view returns (UTXOs memory) {
+    function getChainUTXOs(uint8 _chainId) external view returns (UTXOs memory _chainUTXOs) {
         return chainUTXOs[_chainId];
     }
 
@@ -118,7 +118,7 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         _addNewUTXOs(_chainId, _UTXOs);
     }
 
-    function equalUTXO(UTXO calldata _a, UTXO memory _b) public pure returns (bool) {
+    function equalUTXO(UTXO calldata _a, UTXO memory _b) public pure returns (bool _equal) {
         // for UTXO comparing nonce is not important
         return
             _a.txHash.length == _b.txHash.length &&

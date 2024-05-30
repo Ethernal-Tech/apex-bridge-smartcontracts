@@ -270,15 +270,15 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         confirmedTransactions[destinationChainId][nextNonce].blockHeight = block.number;
     }
 
-    function setVoted(bytes32 _id, address _voter, bytes32 _hash) external onlyBridge returns (uint256) {
+    function setVoted(bytes32 _id, address _voter, bytes32 _hash) external onlyBridge returns (uint256 _numberOfVotes) {
         return claimsHelper.setVoted(_id, _voter, _hash);
     }
 
-    function isBatchCreated(uint8 _destinationChain) public view returns (bool batch) {
+    function isBatchCreated(uint8 _destinationChain) public view returns (bool _batch) {
         return claimsHelper.currentBatchBlock(_destinationChain) != int(-1);
     }
 
-    function shouldCreateBatch(uint8 _destinationChain) public view returns (bool) {
+    function shouldCreateBatch(uint8 _destinationChain) public view returns (bool _shouldCreateBatch) {
         uint256 cnt = getBatchingTxsCount(_destinationChain);
 
         return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
@@ -291,7 +291,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function getConfirmedTransaction(
         uint8 _destinationChain,
         uint64 _nonce
-    ) public view returns (ConfirmedTransaction memory) {
+    ) public view returns (ConfirmedTransaction memory _confirmedTransaction) {
         return confirmedTransactions[_destinationChain][_nonce];
     }
 
@@ -356,7 +356,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         nextTimeoutBlock[_chainId] = _blockNumber + timeoutBlocksNumber;
     }
 
-    function hasVoted(bytes32 _id, address _voter) external view returns (bool) {
+    function hasVoted(bytes32 _id, address _voter) external view returns (bool _hasVoted) {
         return claimsHelper.hasVoted(_id, _voter);
     }
 

@@ -45,7 +45,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     function getConfirmedSignedBatchData(
         uint8 _chainId,
         uint64 _batchId
-    ) external view returns (ConfirmedSignedBatchData memory) {
+    ) external view returns (ConfirmedSignedBatchData memory _confirmedSignedBatchData) {
         return confirmedSignedBatches[_chainId][_batchId];
     }
 

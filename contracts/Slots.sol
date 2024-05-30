@@ -57,7 +57,7 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         }
     }
 
-    function getLastObservedBlock(uint8 _chainId) external view returns (CardanoBlock memory cb) {
+    function getLastObservedBlock(uint8 _chainId) external view returns (CardanoBlock memory _cb) {
         return lastObservedBlock[_chainId];
     }
 

@@ -32,16 +32,16 @@ abstract contract IBridge is IBridgeStructs {
 
     // Will determine if enough transactions are confirmed, or the timeout between two batches is exceeded.
     // It will also check if the given validator already submitted a signed batch and return the response accordingly.
-    function shouldCreateBatch(uint8 _destinationChain) external view virtual returns (bool);
+    function shouldCreateBatch(uint8 _destinationChain) external view virtual returns (bool _shouldCreateBatch);
 
     // Calls shouldCreateBatch and returns next batch id if batch should be created of 0 if not
-    function getNextBatchId(uint8 _destinationChain) external view virtual returns (uint64);
+    function getNextBatchId(uint8 _destinationChain) external view virtual returns (uint64 _result);
 
     // Will return confirmed transactions until NEXT_BATCH_TIMEOUT_BLOCK or maximum number of transactions that
     // can be included in the batch, if the maximum number of transactions in a batch has been exceeded
     function getConfirmedTransactions(
         uint8 _destinationChain
-    ) external view virtual returns (ConfirmedTransaction[] memory confirmedTransactions);
+    ) external view virtual returns (ConfirmedTransaction[] memory _confirmedTransactions);
 
     // Will return available UTXOs that can cover the cost of bridging transactions included in some batch.
     // Each Batcher will first call the GetConfirmedTransactions() and then calculate (off-chain) how many tokens
@@ -49,15 +49,15 @@ abstract contract IBridge is IBridgeStructs {
     // number of UTXOs that need to be consolidated, the smart contract will return UTXOs belonging to the multisig
     // address that can cover the expenses. Additionaly, this method will return available UTXOs belonging to fee payer
     // multisig address that will cover the network fees (see chapter "2.2.2.3 Batcher" for more details)
-    function getAvailableUTXOs(uint8 _destinationChain) external view virtual returns (UTXOs memory availableUTXOs);
+    function getAvailableUTXOs(uint8 _destinationChain) external view virtual returns (UTXOs memory _availableUTXOs);
 
-    function getConfirmedBatch(uint8 _destinationChain) external view virtual returns (ConfirmedBatch memory batch);
+    function getConfirmedBatch(uint8 _destinationChain) external view virtual returns (ConfirmedBatch memory _batch);
 
     function getValidatorsCardanoData(
         uint8 _chainId
-    ) external view virtual returns (ValidatorCardanoData[] memory validatorsArray);
+    ) external view virtual returns (ValidatorCardanoData[] memory _validatorCardanoData);
 
-    function getLastObservedBlock(uint8 _sourceChain) external view virtual returns (CardanoBlock memory cblock);
+    function getLastObservedBlock(uint8 _sourceChain) external view virtual returns (CardanoBlock memory _cblock);
 
     function getAllRegisteredChains() external view virtual returns (Chain[] memory _chains);
 

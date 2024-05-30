@@ -46,7 +46,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         bridgeAddress = _bridgeAddress;
     }
 
-    function isValidator(address _addr) public view returns (bool) {
+    function isValidator(address _addr) public view returns (bool _isValidator) {
         return isAddressValidator[_addr];
     }
 
@@ -96,11 +96,13 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         _updateValidatorCardanoData(_chainId);
     }
 
-    function getValidatorsCardanoData(uint8 _chainId) external view returns (ValidatorCardanoData[] memory) {
+    function getValidatorsCardanoData(
+        uint8 _chainId
+    ) external view returns (ValidatorCardanoData[] memory _validatorsCardanoData) {
         return validatorsCardanoData[_chainId];
     }
 
-    function getQuorumNumberOfValidators() external view returns (uint8) {
+    function getQuorumNumberOfValidators() external view returns (uint8 _quorum) {
         // return (validatorsCount * 2) / 3 + ((validatorsCount * 2) % 3 == 0 ? 0 : 1); is same as (A + B - 1) / B
         return (validatorsCount * 2 + 2) / 3;
     }

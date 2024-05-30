@@ -137,7 +137,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     // Will determine if enough transactions are confirmed, or the timeout between two batches is exceeded.
     // It will also check if the given validator already submitted a signed batch and return the response accordingly.
-    function shouldCreateBatch(uint8 _destinationChain) public view override returns (bool batch) {
+    function shouldCreateBatch(uint8 _destinationChain) public view override returns (bool _batch) {
         if (
             claims.isBatchCreated(_destinationChain) ||
             signedBatches.isBatchAlreadySubmittedBy(_destinationChain, msg.sender)
@@ -148,7 +148,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         return claims.shouldCreateBatch(_destinationChain);
     }
 
-    function getNextBatchId(uint8 _destinationChain) external view override returns (uint64 result) {
+    function getNextBatchId(uint8 _destinationChain) external view override returns (uint64 _result) {
         if (!shouldCreateBatch(_destinationChain)) {
             return 0;
         }
@@ -179,11 +179,11 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         return _confirmedTransactions;
     }
 
-    function getAvailableUTXOs(uint8 _destinationChain) external view override returns (UTXOs memory availableUTXOs) {
+    function getAvailableUTXOs(uint8 _destinationChain) external view override returns (UTXOs memory _availableUTXOs) {
         return utxosc.getChainUTXOs(_destinationChain);
     }
 
-    function getConfirmedBatch(uint8 _destinationChain) external view override returns (ConfirmedBatch memory batch) {
+    function getConfirmedBatch(uint8 _destinationChain) external view override returns (ConfirmedBatch memory _batch) {
         return signedBatches.getConfirmedBatch(_destinationChain);
     }
 
@@ -193,7 +193,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         return validators.getValidatorsCardanoData(_chainId);
     }
 
-    function getLastObservedBlock(uint8 _sourceChain) external view override returns (CardanoBlock memory cblock) {
+    function getLastObservedBlock(uint8 _sourceChain) external view override returns (CardanoBlock memory _cblock) {
         return slots.getLastObservedBlock(_sourceChain);
     }
 
