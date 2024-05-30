@@ -217,6 +217,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             utxosc.addUTXOs(chainId, _claim.outputUTXOs);
             utxosc.removeUsedUTXOs(chainId, confirmedSignedBatch.usedUTXOs);
+
+            _removeExecutedConfirmedTransactions(chainId, _claim.batchNonceId);
         }
     }
 
@@ -268,6 +270,20 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         confirmedTransactions[destinationChainId][nextNonce].blockHeight = block.number;
+    }
+
+    function _removeExecutedConfirmedTransactions(uint8 _chainId, uint64 _batchNonceId) internal {
+        ConfirmedSignedBatchData memory confirmedSignedBatchData = claimsHelper.getConfirmedSignedBatchData(
+            _chainId,
+            _batchNonceId
+        );
+
+        uint64 firstTxNonce = confirmedSignedBatchData.firstTxNonceId;
+        uint64 lastTxNonceId = confirmedSignedBatchData.lastTxNonceId;
+
+        for (uint64 i = firstTxNonce; i <= lastTxNonceId; i++) {
+            delete confirmedTransactions[_chainId][i];
+        }
     }
 
     function setVoted(bytes32 _id, address _voter, bytes32 _hash) external onlyBridge returns (uint256 _numberOfVotes) {
