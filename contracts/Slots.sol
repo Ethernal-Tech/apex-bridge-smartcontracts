@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -43,7 +43,8 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         address _caller
     ) external onlyBridge {
         // Check if the caller has already voted for this claim
-        for (uint i = 0; i < blocks.length; i++) {
+        uint256 blockLength = blocks.length;
+        for (uint i; i < blockLength; i++) {
             CardanoBlock calldata cblock = blocks[i];
             bytes32 chash = keccak256(abi.encodePacked(cblock.blockHash, cblock.blockSlot));
             if (slotValidatorVotedPerChain[chainID][chash][_caller]) {

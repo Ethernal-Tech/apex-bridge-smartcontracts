@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -33,7 +33,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     function initialize(address[] calldata _validators) public initializer {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
-        for (uint i = 0; i < _validators.length; i++) {
+        for (uint i; i < _validators.length; i++) {
             isAddressValidator[_validators[i]] = true;
             validatorsAddresses.push(_validators[i]);
         }
@@ -71,7 +71,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
             revert InvalidData("validators count");
         }
         // set validator cardano data for each validator
-        for (uint i = 0; i < validatorAddressCardanoData.length; i++) {
+        for (uint i; i < validatorAddressCardanoData.length; i++) {
             ValidatorAddressCardanoData calldata dt = validatorAddressCardanoData[i];
             validatorsCardanoDataPerAddress[_chainId][dt.addr] = dt.data;
         }
@@ -112,18 +112,19 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     function _updateValidatorCardanoData(string calldata _chainId) internal {
         // validatorsCardanoDataPerAddress must be set for all the validator addresses
         uint cnt = 0;
-        for (uint i = 0; i < validatorsAddresses.length; i++) {
+        uint256 validatorsAddressesLength = validatorsAddresses.length;
+        for (uint i; i < validatorsAddressesLength; i++) {
             if (bytes(validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]].verifyingKey).length > 0) {
                 cnt++;
             }
         }
 
-        if (cnt != validatorsAddresses.length) {
+        if (cnt != validatorsAddressesLength) {
             return;
         }
 
         delete validatorsCardanoData[_chainId];
-        for (uint i = 0; i < validatorsAddresses.length; i++) {
+        for (uint i; i < validatorsAddressesLength; i++) {
             validatorsCardanoData[_chainId].push(validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]]);
         }
     }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -36,10 +36,9 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return chainUTXOs[_chainID];
     }
 
-    function addNewBridgingUTXO(string calldata _chainID, UTXO calldata _utxo) public onlyClaims {
-        UTXO memory tempUtxo = _utxo;
-        tempUtxo.nonce = ++utxoNonceCounter;
-        chainUTXOs[_chainID].multisigOwnedUTXOs.push(tempUtxo);
+    function addNewBridgingUTXO(string calldata _chainID, UTXO memory _utxo) public onlyClaims {
+        _utxo.nonce = ++utxoNonceCounter;
+        chainUTXOs[_chainID].multisigOwnedUTXOs.push(_utxo);
     }
 
     function addUTXOs(string calldata _chainID, UTXOs calldata _outputUTXOs) external onlyClaims {
@@ -52,11 +51,12 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _removeMultisigUTXOs(string calldata _chainID, UTXO[] calldata utxos) internal {
-        uint i = 0;
         uint lenu = chainUTXOs[_chainID].multisigOwnedUTXOs.length;
+        uint i;
         while (i < lenu) {
             bool shouldDelete = false;
-            for (uint j = 0; j < utxos.length; j++) {
+            uint256 utxosLength = utxos.length;
+            for (uint j; j < utxosLength; j++) {
                 if (equalUTXO(utxos[j], chainUTXOs[_chainID].multisigOwnedUTXOs[i])) {
                     shouldDelete = true;
                     break;
@@ -76,10 +76,11 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function _removeFeeUTXOs(string calldata _chainID, UTXO[] calldata utxos) internal {
         uint lenu = chainUTXOs[_chainID].feePayerOwnedUTXOs.length;
-        uint i = 0;
+        uint i;
         while (i < lenu) {
             bool shouldDelete = false;
-            for (uint j = 0; j < utxos.length; j++) {
+            uint256 utxosLength = utxos.length;
+            for (uint j; j < utxosLength; j++) {
                 if (equalUTXO(utxos[j], chainUTXOs[_chainID].feePayerOwnedUTXOs[i])) {
                     shouldDelete = true;
                     break;
@@ -98,13 +99,15 @@ contract UTXOsc is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _addNewUTXOs(string calldata _chainID, UTXOs calldata utxos) internal {
-        for (uint i = 0; i < utxos.multisigOwnedUTXOs.length; i++) {
+        uint256 utxosMultisigOwnedUTXOsLength = utxos.multisigOwnedUTXOs.length;
+        for (uint i; i < utxosMultisigOwnedUTXOsLength; i++) {
             UTXO memory dt = utxos.multisigOwnedUTXOs[i];
             dt.nonce = ++utxoNonceCounter;
             chainUTXOs[_chainID].multisigOwnedUTXOs.push(dt);
         }
 
-        for (uint i = 0; i < utxos.feePayerOwnedUTXOs.length; i++) {
+        uint256 utxosFeePayerOwnedUTXOs = utxos.feePayerOwnedUTXOs.length;
+        for (uint i; i < utxosFeePayerOwnedUTXOs; i++) {
             UTXO memory dt = utxos.feePayerOwnedUTXOs[i];
             dt.nonce = ++utxoNonceCounter;
             chainUTXOs[_chainID].feePayerOwnedUTXOs.push(dt);

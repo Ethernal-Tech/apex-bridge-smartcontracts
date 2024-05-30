@@ -4,11 +4,11 @@ import "@nomiclabs/hardhat-solhint";
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.23",
+    version: "0.8.24",
     settings: {
       optimizer: {
         enabled: true,
-        runs: 55,
+        runs: 1000,
       },
     },
   },

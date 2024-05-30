@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -96,40 +96,43 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint256 _tokenQuantity,
         ValidatorCardanoData calldata _validatorCardanoData
     ) external override onlyValidator {
-        if (claims.isChainRegistered(_chain.id)) {
-            revert ChainAlreadyRegistered(_chain.id);
+        string calldata chainId = _chain.id;
+        if (claims.isChainRegistered(chainId)) {
+            revert ChainAlreadyRegistered(chainId);
         }
-        if (claims.hasVoted(_chain.id, msg.sender)) {
-            revert AlreadyProposed(_chain.id);
+        if (claims.hasVoted(chainId, msg.sender)) {
+            revert AlreadyProposed(chainId);
         }
 
         bytes32 chainHash = keccak256(abi.encode(_chain, _initialUTXOs, _tokenQuantity));
 
-        validators.addValidatorCardanoData(_chain.id, msg.sender, _validatorCardanoData);
+        validators.addValidatorCardanoData(chainId, msg.sender, _validatorCardanoData);
 
-        if (claims.setVoted(_chain.id, msg.sender, chainHash) == validators.getValidatorsCount()) {
+        if (claims.setVoted(chainId, msg.sender, chainHash) == validators.getValidatorsCount()) {
             _registerChain(_chain, _initialUTXOs, _tokenQuantity);
         } else {
-            emit newChainProposal(_chain.id, msg.sender);
+            emit newChainProposal(chainId, msg.sender);
         }
     }
 
     function _registerChain(Chain calldata _chain, UTXOs calldata _initialUTXOs, uint256 _tokenQuantity) internal {
-        claims.setChainRegistered(_chain.id);
+        string calldata chainId = _chain.id;
+        claims.setChainRegistered(chainId);
         chains.push();
-        chains[chains.length - 1].id = _chain.id;
-        chains[chains.length - 1].addressMultisig = _chain.addressMultisig;
-        chains[chains.length - 1].addressFeePayer = _chain.addressFeePayer;
+        uint256 chainIndex = chains.length - 1;
+        chains[chainIndex].id = chainId;
+        chains[chainIndex].addressMultisig = _chain.addressMultisig;
+        chains[chainIndex].addressFeePayer = _chain.addressFeePayer;
 
-        utxosc.setInitialUTxOs(_chain.id, _initialUTXOs);
+        utxosc.setInitialUTxOs(chainId, _initialUTXOs);
 
-        claims.setTokenQuantity(_chain.id, _tokenQuantity);
+        claims.setTokenQuantity(chainId, _tokenQuantity);
 
-        claims.resetCurrentBatchBlock(_chain.id);
+        claims.resetCurrentBatchBlock(chainId);
 
-        claims.setNextTimeoutBlock(_chain.id, block.number);
+        claims.setNextTimeoutBlock(chainId, block.number);
 
-        emit newChainRegistered(_chain.id);
+        emit newChainRegistered(chainId);
     }
 
     // Queries
@@ -171,7 +174,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint256 counterConfirmedTransactions = claims.getBatchingTxsCount(_destinationChain);
         _confirmedTransactions = new ConfirmedTransaction[](counterConfirmedTransactions);
 
-        for (uint i = 0; i < counterConfirmedTransactions; i++) {
+        for (uint i; i < counterConfirmedTransactions; i++) {
             _confirmedTransactions[i] = claims.getConfirmedTransaction(_destinationChain, firstTxNonce + i);
         }
 
