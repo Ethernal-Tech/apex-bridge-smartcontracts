@@ -573,6 +573,111 @@ describe("Bridge Contract", function () {
     });
   });
 
+  describe("Performance", function () {
+    it("registerChain", async function () {
+      const { bridge, chain1, owner, UTXOs, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+
+      
+      const tx = await bridge.connect(owner).registerChain(chain1, UTXOs, 100, validatorsCardanoData);
+      const receipt = await tx.wait();
+      console.log("Gas spent: " + parseInt(receipt.gasUsed));
+    });
+
+    it("registerChainGovernance", async function () {
+      const { bridge, chain1, validators, UTXOs, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+
+      
+      const tx = await bridge.connect(validators[0]).registerChainGovernance(chain1, UTXOs, 100, validatorsCardanoData[0].data)
+      const receipt = await tx.wait();
+      console.log("Gas spent: " + parseInt(receipt.gasUsed));
+    });
+
+    it("submitClaims BRC", async function () {
+      const { bridge, chain1, validators, validatorClaimsBRC, UTXOs, validatorsCardanoData, owner } = await loadFixture(deployBridgeFixture);
+
+      const sourceChain = {
+        id: validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
+        addressMultisig: "0x",
+        addressFeePayer: "0x",
+      };
+
+      const destinationChain = {
+        id: validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
+        addressMultisig: "0x",
+        addressFeePayer: "0x",
+      };
+
+      await bridge.connect(owner).registerChain(sourceChain, UTXOs, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(destinationChain, UTXOs, 10000, validatorsCardanoData);
+
+      const tx = await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      const receipt = await tx.wait();
+      console.log("Gas spent: " + parseInt(receipt.gasUsed));
+    });
+
+    it("submitSignedBatch", async function () {
+      const {
+        bridge,
+        owner,
+        validators,
+        UTXOs,
+        validatorClaimsBRC,
+        signedBatch,
+        validatorsCardanoData,
+      } = await loadFixture(deployBridgeFixture);
+      const sourceChain = {
+        id: validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
+        addressMultisig: "0x",
+        addressFeePayer: "0x",
+      };
+
+      const destinationChain = {
+        id: validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
+        addressMultisig: "0x",
+        addressFeePayer: "0x",
+      };
+
+      await bridge.connect(owner).registerChain(sourceChain, UTXOs, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(destinationChain, UTXOs, 100, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
+
+      // wait for next timeout
+      for (let i = 0; i < 3; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      const tx = await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      const receipt = await tx.wait();
+      console.log("Gas spent: " + parseInt(receipt.gasUsed));
+    });
+
+    it("submitClaims RRC", async function () {
+      const { bridge, owner, validators, chain2, UTXOs, validatorClaimsRRC, validatorsCardanoData } =
+      await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain2, UTXOs, 100, validatorsCardanoData);
+
+      const tx = await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
+      const receipt = await tx.wait();
+      console.log("Gas spent: " + parseInt(receipt.gasUsed));
+    });
+
+    it("submitClaims REC", async function () {
+      const { bridge, owner, validators, chain2, UTXOs, validatorClaimsREC, validatorsCardanoData } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain2, UTXOs, 100, validatorsCardanoData);
+
+      const tx = await bridge.connect(validators[0]).submitClaims(validatorClaimsREC);
+      const receipt = await tx.wait();
+      console.log("Gas spent: " + parseInt(receipt.gasUsed));
+    });
+  });
+
   describe("Registering new chain with Owner", function () {
     it("Should reject new chain if not set by owner", async function () {
       const { bridge, validators, chain1, UTXOs, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
