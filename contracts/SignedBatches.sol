@@ -20,6 +20,8 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     // BlockchanID -> hash -> multisigSignatures
     mapping(string => mapping(bytes32 => string[])) private feePayerMultisigSignatures;
 
+    mapping(string => mapping(bytes32 => mapping(address => uint256))) private signaturePos; // for resubmit
+
     // BlockchainID -> ConfirmedBatch
     mapping(string => ConfirmedBatch) public lastConfirmedBatch;
 
@@ -55,18 +57,14 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             return; // do not revert! batcher can lag a little bit. revert WrongBatchNonce(_destinationChainId, _signedBatch.id);
         }
 
-        if (claimsHelper.hasVoted(_batchIdStr, _caller)) {
-            return;
-        }
-
         if (claimsHelper.isClaimConfirmed(_destinationChainId, _batchIdStr)) {
             return;
         }
 
-        _submitSignedBatch(_signedBatch, _batchIdStr);
+        _submitSignedBatch(_signedBatch, _batchIdStr, _caller);
     }
 
-    function _submitSignedBatch(SignedBatch calldata _signedBatch, string memory _batchId) internal {
+    function _submitSignedBatch(SignedBatch calldata _signedBatch, string memory _batchId, address _caller) internal {
         SignedBatchWithoutSignatures memory _signedBatchWithoutSignatures = SignedBatchWithoutSignatures(
             _signedBatch.id,
             _signedBatch.destinationChainId,
@@ -77,12 +75,25 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         );
         bytes32 signedBatchHash = keccak256(abi.encode(_signedBatchWithoutSignatures));
 
+        uint256 pos = signaturePos[_signedBatch.destinationChainId][signedBatchHash][_caller];
+
+        if (pos > 0) {
+            // replace signatures
+            pos--;
+            multisigSignatures[_signedBatch.destinationChainId][signedBatchHash][pos] = _signedBatch.multisigSignature;
+            feePayerMultisigSignatures[_signedBatch.destinationChainId][signedBatchHash][pos] = _signedBatch
+                .feePayerMultisigSignature;
+            return;
+        }
+
+        signaturePos[_signedBatch.destinationChainId][signedBatchHash][_caller] =
+            multisigSignatures[_signedBatch.destinationChainId][signedBatchHash].length +
+            1;
         multisigSignatures[_signedBatch.destinationChainId][signedBatchHash].push(_signedBatch.multisigSignature);
         feePayerMultisigSignatures[_signedBatch.destinationChainId][signedBatchHash].push(
             _signedBatch.feePayerMultisigSignature
         );
-
-        uint256 votesCount = claimsHelper.setVoted(_batchId, msg.sender, signedBatchHash);
+        uint256 votesCount = claimsHelper.setVoted(_batchId, _caller, signedBatchHash);
 
         if (votesCount >= validators.getQuorumNumberOfValidators()) {
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);

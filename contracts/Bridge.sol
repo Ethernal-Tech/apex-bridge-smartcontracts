@@ -140,13 +140,6 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     // Will determine if enough transactions are confirmed, or the timeout between two batches is exceeded.
     // It will also check if the given validator already submitted a signed batch and return the response accordingly.
     function shouldCreateBatch(string calldata _destinationChain) public view override returns (bool batch) {
-        if (
-            claims.isBatchCreated(_destinationChain) ||
-            signedBatches.isBatchAlreadySubmittedBy(_destinationChain, msg.sender)
-        ) {
-            return false;
-        }
-
         return claims.shouldCreateBatch(_destinationChain);
     }
 

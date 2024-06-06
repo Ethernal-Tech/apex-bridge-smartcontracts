@@ -273,11 +273,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return claimsHelper.setVoted(_id, _voter, _hash);
     }
 
-    function isBatchCreated(string calldata _destinationChain) public view returns (bool batch) {
-        return claimsHelper.currentBatchBlock(_destinationChain) != int(-1);
-    }
-
     function shouldCreateBatch(string calldata _destinationChain) public view returns (bool) {
+        // if batch is already created, return false
+        if (claimsHelper.currentBatchBlock(_destinationChain) != int(-1)) {
+            return false;
+        }
+
         uint256 cnt = getBatchingTxsCount(_destinationChain);
 
         return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
