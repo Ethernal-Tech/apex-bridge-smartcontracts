@@ -86,16 +86,14 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             return;
         }
 
-        signaturePos[_signedBatch.destinationChainId][signedBatchHash][_caller] =
-            multisigSignatures[_signedBatch.destinationChainId][signedBatchHash].length +
-            1;
+        uint256 currVotes = multisigSignatures[_signedBatch.destinationChainId][signedBatchHash].length + 1;
+        signaturePos[_signedBatch.destinationChainId][signedBatchHash][_caller] = currVotes;
         multisigSignatures[_signedBatch.destinationChainId][signedBatchHash].push(_signedBatch.multisigSignature);
         feePayerMultisigSignatures[_signedBatch.destinationChainId][signedBatchHash].push(
             _signedBatch.feePayerMultisigSignature
         );
-        uint256 votesCount = claimsHelper.setVoted(_batchId, _caller, signedBatchHash);
 
-        if (votesCount >= validators.getQuorumNumberOfValidators()) {
+        if (currVotes >= validators.getQuorumNumberOfValidators()) {
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
 
             claimsHelper.setClaimConfirmed(_signedBatch.destinationChainId, _batchId);
