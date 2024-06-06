@@ -49,10 +49,6 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         return confirmedSignedBatches[_chainId][_batchId];
     }
 
-    function updateCurrentBatchBlock(string calldata _chainId) external onlySignedBatches {
-        currentBatchBlock[_chainId] = int256(block.number);
-    }
-
     function resetCurrentBatchBlock(string calldata _chainId) external onlyClaims {
         currentBatchBlock[_chainId] = int256(-1);
     }
@@ -64,7 +60,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         isClaimConfirmed[_chain][_observerHash] = true;
     }
 
-    function setConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
+    function updateCurrentBatchBlock(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
         // because of UnimplementedFeatureError: Copying of type struct IBridgeStructs.UTXO memory[] memory to storage not yet supported.
         string calldata destinationChainId = _signedBatch.destinationChainId;
         uint256 signedBatchID = _signedBatch.id;
@@ -72,6 +68,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         confirmedSignedBatches[destinationChainId][signedBatchID].firstTxNonceId = _signedBatch.firstTxNonceId;
         confirmedSignedBatches[destinationChainId][signedBatchID].lastTxNonceId = _signedBatch.lastTxNonceId;
         confirmedSignedBatches[destinationChainId][signedBatchID].usedUTXOs = _signedBatch.usedUTXOs;
+        currentBatchBlock[destinationChainId] = int256(block.number);
     }
 
     function setVoted(
