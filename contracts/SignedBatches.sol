@@ -94,7 +94,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
                 feePayerMultisigSignatures[_destinationChainId][_sbHash]
             );
 
-            claimsHelper.updateCurrentBatchBlock(_signedBatch);
+            claimsHelper.setConfirmedSignedBatchData(_signedBatch);
         }
     }
 
