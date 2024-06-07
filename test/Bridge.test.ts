@@ -2192,6 +2192,14 @@ describe("Bridge Contract", function () {
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch); // resubmit
+      const confBatchNothing = await claimsHelper
+        .connect(validators[0])
+        .getConfirmedSignedBatchData(signedBatch.destinationChainId, signedBatch.id);
+      expect(confBatchNothing.firstTxNonceId + confBatchNothing.lastTxNonceId).to.equal(0);
+
+      // consensus
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
       const confBatch = await claimsHelper

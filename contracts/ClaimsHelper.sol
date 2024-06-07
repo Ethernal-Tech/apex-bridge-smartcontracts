@@ -49,10 +49,6 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         return confirmedSignedBatches[_chainId][_batchId];
     }
 
-    function updateCurrentBatchBlock(string calldata _chainId) external onlySignedBatches {
-        currentBatchBlock[_chainId] = int256(block.number);
-    }
-
     function resetCurrentBatchBlock(string calldata _chainId) external onlyClaims {
         currentBatchBlock[_chainId] = int256(-1);
     }
@@ -72,6 +68,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         confirmedSignedBatches[destinationChainId][signedBatchID].firstTxNonceId = _signedBatch.firstTxNonceId;
         confirmedSignedBatches[destinationChainId][signedBatchID].lastTxNonceId = _signedBatch.lastTxNonceId;
         confirmedSignedBatches[destinationChainId][signedBatchID].usedUTXOs = _signedBatch.usedUTXOs;
+        currentBatchBlock[destinationChainId] = int256(block.number);
     }
 
     function setVoted(
