@@ -2395,7 +2395,9 @@ describe("Bridge Contract", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      const tokenAmount = await claims.getTokenAmountFromSignedBatch(signedBatch.destinationChainId, signedBatch.id);
+      let tokenAmount = await claims.getTokensQuantity(
+        signedBatch.destinationChainId
+      );
 
       let sumAmounts = 0;
       for (let i = 0; i < validatorClaimsBRC.bridgingRequestClaims[0].receivers.length; i++) {
