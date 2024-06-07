@@ -302,7 +302,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return claimsHelper.hasVoted(_hash, _voter);
     }
 
-    function getTokensQuantity(string calldata _chainId) view external returns (uint256) {
+    function getTokenQuantity(string calldata _chainId) view external returns (uint256) {
         return chainTokenQuantity[_chainId];
     }
 
