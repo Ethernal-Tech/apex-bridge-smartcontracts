@@ -14,13 +14,14 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     ClaimsHelper private claimsHelper;
     Validators private validators;
 
-    // BlockchanID -> hash -> multisigSignatures
-    mapping(string => mapping(bytes32 => string[])) private multisigSignatures;
+    // hash -> multisigSignatures
+    mapping(bytes32 => string[]) private multisigSignatures;
 
-    // BlockchanID -> hash -> multisigSignatures
-    mapping(string => mapping(bytes32 => string[])) private feePayerMultisigSignatures;
+    // hash -> multisigSignatures
+    mapping(bytes32 => string[]) private feePayerMultisigSignatures;
 
-    mapping(string => mapping(bytes32 => mapping(address => bool))) private hasVoted; // for resubmit
+    // hash -> user address -> true/false
+    mapping(bytes32 => mapping(address => bool)) private hasVoted; // for resubmit
 
     // BlockchainID -> ConfirmedBatch
     mapping(string => ConfirmedBatch) public lastConfirmedBatch;
@@ -69,29 +70,29 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         );
 
         // check if caller already voted for same hash
-        if (hasVoted[_destinationChainId][_sbHash][_caller]) {
+        if (hasVoted[_sbHash][_caller]) {
             return;
         }
 
         uint256 _quorumCount = validators.getQuorumNumberOfValidators();
-        uint256 _numberOfVotes = multisigSignatures[_destinationChainId][_sbHash].length;
+        uint256 _numberOfVotes = multisigSignatures[_sbHash].length;
 
         // check if consensus is already reached for this batch
         if (_numberOfVotes >= _quorumCount) {
             return;
         }
 
-        hasVoted[_destinationChainId][_sbHash][_caller] = true;
-        multisigSignatures[_destinationChainId][_sbHash].push(_signedBatch.multisigSignature);
-        feePayerMultisigSignatures[_destinationChainId][_sbHash].push(_signedBatch.feePayerMultisigSignature);
+        hasVoted[_sbHash][_caller] = true;
+        multisigSignatures[_sbHash].push(_signedBatch.multisigSignature);
+        feePayerMultisigSignatures[_sbHash].push(_signedBatch.feePayerMultisigSignature);
 
         // check if quorum reached (+1 is last vote)
         if (_numberOfVotes + 1 >= _quorumCount) {
             lastConfirmedBatch[_destinationChainId] = ConfirmedBatch(
                 _sbId,
                 _signedBatch.rawTransaction,
-                multisigSignatures[_destinationChainId][_sbHash],
-                feePayerMultisigSignatures[_destinationChainId][_sbHash]
+                multisigSignatures[_sbHash],
+                feePayerMultisigSignatures[_sbHash]
             );
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
