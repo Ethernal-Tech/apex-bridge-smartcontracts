@@ -77,11 +77,13 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 revert ChainIsNotRegistered(destinationChainID);
             }
 
-            if (chainTokenQuantity[sourceChainID] < getNeededTokenQuantity(_claim.receivers)) {
+            uint256 receiversSum = getNeededTokenQuantity(_claim.receivers);
+
+            if (chainTokenQuantity[sourceChainID] < receiversSum) {
                 continue;
             }
 
-            _submitClaimsBRC(_claim, _caller);
+            _submitClaimsBRC(_claim, _caller, receiversSum);
         }
 
         uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
@@ -125,7 +127,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _submitClaimsBRC(BridgingRequestClaim calldata _claim, address _caller) internal {
+    function _submitClaimsBRC(BridgingRequestClaim calldata _claim, address _caller, uint256 receiversSum) internal {
         bytes32 claimHash = keccak256(abi.encode(_claim));
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
@@ -135,9 +137,10 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         if (_quorumReached) {
             string calldata destinationChainID = _claim.destinationChainID;
-            chainTokenQuantity[_claim.sourceChainID] -= getNeededTokenQuantity(_claim.receivers);
+            string calldata sourceChainID = _claim.sourceChainID;
 
-            utxosc.addNewBridgingUTXO(_claim.sourceChainID, _claim.outputUTXO);
+            chainTokenQuantity[sourceChainID] -= receiversSum;
+            utxosc.addNewBridgingUTXO(sourceChainID, _claim.outputUTXO);
 
             uint256 confirmedTxCount = getBatchingTxsCount(destinationChainID);
 
