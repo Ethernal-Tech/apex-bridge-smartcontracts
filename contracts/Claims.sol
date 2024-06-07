@@ -89,7 +89,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 continue;
             }
 
-            _submitClaimsBRC(_claims, i, _caller);
+            _submitClaimsBRC(_claim, _caller);
         }
 
         uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
@@ -107,7 +107,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 continue;
             }
 
-            _submitClaimsBEC(_claims, i, _caller);
+            _submitClaimsBEC(_claim, _caller);
         }
 
         uint256 batchExecutionFailedClaimsLength = _claims.batchExecutionFailedClaims.length;
@@ -125,7 +125,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 continue;
             }
 
-            _submitClaimsBEFC(_claims, i, _caller);
+            _submitClaimsBEFC(_claim, _caller);
         }
 
         uint256 refundRequestClaimsLength = _claims.refundRequestClaims.length;
@@ -143,7 +143,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 continue;
             }
 
-            _submitClaimsRRC(_claims, i, _caller);
+            _submitClaimsRRC(_claim, _caller);
         }
 
         uint256 refundExecutedClaimsLength = _claims.refundExecutedClaims.length;
@@ -161,12 +161,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 continue;
             }
 
-            _submitClaimsREC(_claims, i, _caller);
+            _submitClaimsREC(_claim, _caller);
         }
     }
 
-    function _submitClaimsBRC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        BridgingRequestClaim calldata _claim = _claims.bridgingRequestClaims[index];
+    function _submitClaimsBRC(BridgingRequestClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode(_claim));
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 
@@ -192,8 +191,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _submitClaimsBEC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        BatchExecutedClaim calldata _claim = _claims.batchExecutedClaims[index];
+    function _submitClaimsBEC(BatchExecutedClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode(_claim));
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
         string calldata chainID = _claim.chainID;
@@ -219,8 +217,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _submitClaimsBEFC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        BatchExecutionFailedClaim calldata _claim = _claims.batchExecutionFailedClaims[index];
+    function _submitClaimsBEFC(BatchExecutionFailedClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode(_claim));
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
         string calldata chainID = _claim.chainID;
@@ -234,8 +231,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _submitClaimsRRC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        RefundRequestClaim calldata _claim = _claims.refundRequestClaims[index];
+    function _submitClaimsRRC(RefundRequestClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode(_claim));
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 
@@ -244,8 +240,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _submitClaimsREC(ValidatorClaims calldata _claims, uint256 index, address _caller) internal {
-        RefundExecutedClaim calldata _claim = _claims.refundExecutedClaims[index];
+    function _submitClaimsREC(RefundExecutedClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode(_claim));
         uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
 

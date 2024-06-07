@@ -98,10 +98,6 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         }
     }
 
-    function isBatchAlreadySubmittedBy(string calldata _destinationChain, address addr) public view returns (bool ok) {
-        return claimsHelper.hasVoted(Strings.toString(lastConfirmedBatch[_destinationChain].id + 1), addr);
-    }
-
     function getConfirmedBatch(string calldata _destinationChain) external view returns (ConfirmedBatch memory batch) {
         return lastConfirmedBatch[_destinationChain];
     }
