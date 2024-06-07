@@ -100,15 +100,16 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         if (claims.isChainRegistered(chainId)) {
             revert ChainAlreadyRegistered(chainId);
         }
-        if (claims.hasVoted(chainId, msg.sender)) {
-            revert AlreadyProposed(chainId);
-        }
 
         bytes32 chainHash = keccak256(abi.encode(_chain, _initialUTXOs, _tokenQuantity));
 
+        if (claims.hasVoted(chainHash, msg.sender)) {
+            revert AlreadyProposed(chainId);
+        }
+
         validators.addValidatorCardanoData(chainId, msg.sender, _validatorCardanoData);
 
-        if (claims.setVoted(chainId, msg.sender, chainHash) == validators.getValidatorsCount()) {
+        if (claims.setVoted(msg.sender, chainHash) == validators.getValidatorsCount()) {
             _registerChain(_chain, _initialUTXOs, _tokenQuantity);
         } else {
             emit newChainProposal(chainId, msg.sender);
