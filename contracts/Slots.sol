@@ -14,11 +14,11 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     // BlockChainID -> CardanoBlock
     mapping(string => CardanoBlock) private lastObservedBlock;
 
-    // BlockchanID -> hash(slot, hash) -> number of votes
-    mapping(string => mapping(bytes32 => uint64)) private slotVotesPerChain;
+    // hash(slot, hash) -> number of votes
+    mapping(bytes32 => uint64) private votes;
 
-    // BlockchanID -> hash(slot, hash) -> bool - validator voted already or not
-    mapping(string => mapping(bytes32 => mapping(address => bool))) private slotValidatorVotedPerChain;
+    // hash(slot, hash) -> bool - validator voted already or not
+    mapping(bytes32 => mapping(address => bool)) private validatorVote;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -38,31 +38,30 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     }
 
     function updateBlocks(
-        string calldata chainID,
-        CardanoBlock[] calldata blocks,
+        string calldata _chainID,
+        CardanoBlock[] calldata _blocks,
         address _caller
     ) external onlyBridge {
         // Check if the caller has already voted for this claim
-        uint256 blockLength = blocks.length;
-        for (uint i; i < blockLength; i++) {
-            CardanoBlock calldata cblock = blocks[i];
-            bytes32 chash = keccak256(abi.encodePacked(cblock.blockHash, cblock.blockSlot));
-            if (slotValidatorVotedPerChain[chainID][chash][_caller]) {
+        uint256 _quorumCnt = validators.getQuorumNumberOfValidators();
+        uint256 _blocksLength = _blocks.length;
+        for (uint i; i < _blocksLength; i++) {
+            CardanoBlock calldata _cblock = _blocks[i];
+            bytes32 _chash = keccak256(abi.encodePacked(_chainID, _cblock.blockHash, _cblock.blockSlot));
+            if (validatorVote[_chash][_caller]) {
+                // no need for additional check: || slotVotesPerChain[_chash] >= _quorumCnt
                 continue;
             }
-            slotValidatorVotedPerChain[chainID][chash][_caller] = true;
-            slotVotesPerChain[chainID][chash]++;
-            if (
-                slotVotesPerChain[chainID][chash] >= validators.getQuorumNumberOfValidators() &&
-                cblock.blockSlot > lastObservedBlock[chainID].blockSlot
-            ) {
-                lastObservedBlock[chainID] = cblock;
+            validatorVote[_chash][_caller] = true;
+            uint256 _votesNum = ++votes[_chash];
+            if (_votesNum >= _quorumCnt && _cblock.blockSlot > lastObservedBlock[_chainID].blockSlot) {
+                lastObservedBlock[_chainID] = _cblock;
             }
         }
     }
 
-    function getLastObservedBlock(string calldata chainID) external view returns (CardanoBlock memory cb) {
-        return lastObservedBlock[chainID];
+    function getLastObservedBlock(string calldata _chainID) external view returns (CardanoBlock memory cb) {
+        return lastObservedBlock[_chainID];
     }
 
     modifier onlyBridge() {
