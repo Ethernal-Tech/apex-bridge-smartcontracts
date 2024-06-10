@@ -10,9 +10,6 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     address private claimsAddress;
     address private signedBatchesAddress;
 
-    // blockchain -> claimHash -> queued
-    mapping(string => mapping(string => bool)) public isClaimConfirmed;
-
     // BlockchainID -> batchId -> SignedBatch
     mapping(string => mapping(uint256 => ConfirmedSignedBatchData)) public confirmedSignedBatches;
 
@@ -20,7 +17,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     mapping(string => int256) public currentBatchBlock;
 
     // TansactionHash -> Voter -> Voted
-    mapping(string => mapping(address => bool)) public hasVoted;
+    mapping(bytes32 => mapping(address => bool)) public hasVoted;
 
     // ClaimHash -> numberOfVotes
     mapping(bytes32 => uint8) public numberOfVotes;
@@ -53,13 +50,6 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         currentBatchBlock[_chainId] = int256(-1);
     }
 
-    function setClaimConfirmed(
-        string calldata _chain,
-        string calldata _observerHash
-    ) external onlySignedBatchesOrClaims {
-        isClaimConfirmed[_chain][_observerHash] = true;
-    }
-
     function setConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
         // because of UnimplementedFeatureError: Copying of type struct IBridgeStructs.UTXO memory[] memory to storage not yet supported.
         string calldata destinationChainId = _signedBatch.destinationChainId;
@@ -71,12 +61,22 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         currentBatchBlock[destinationChainId] = int256(block.number);
     }
 
-    function setVoted(
-        string calldata _id,
+    // update vote only if _hash is not already confiremed or _voter not already voted
+    function setVotedOnlyIfNeeded(
         address _voter,
-        bytes32 _hash
-    ) external onlySignedBatchesOrClaims returns (uint256) {
-        hasVoted[_id][_voter] = true;
+        bytes32 _hash,
+        uint256 _quorumCnt
+    ) external onlySignedBatchesOrClaims returns (bool) {
+        if (hasVoted[_hash][_voter] || numberOfVotes[_hash] >= _quorumCnt) {
+            return false;
+        }
+
+        hasVoted[_hash][_voter] = true;
+        return ++numberOfVotes[_hash] >= _quorumCnt;
+    }
+
+    function setVoted(address _voter, bytes32 _hash) external onlySignedBatchesOrClaims returns (uint256) {
+        hasVoted[_hash][_voter] = true;
         uint256 v = ++numberOfVotes[_hash]; // v is numberOfVotes[_hash] + 1
         return v;
     }

@@ -77,19 +77,13 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 revert ChainIsNotRegistered(destinationChainID);
             }
 
-            if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
+            uint256 receiversSum = getNeededTokenQuantity(_claim.receivers);
+
+            if (chainTokenQuantity[sourceChainID] < receiversSum) {
                 continue;
             }
 
-            if (claimsHelper.isClaimConfirmed(destinationChainID, _claim.observedTransactionHash)) {
-                continue;
-            }
-
-            if (chainTokenQuantity[sourceChainID] < getNeededTokenQuantity(_claim.receivers)) {
-                continue;
-            }
-
-            _submitClaimsBRC(_claim, _caller);
+            _submitClaimsBRC(_claim, _caller, receiversSum);
         }
 
         uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
@@ -97,14 +91,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             BatchExecutedClaim calldata _claim = _claims.batchExecutedClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
-            }
-
-            if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
-                continue;
-            }
-
-            if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
-                continue;
             }
 
             _submitClaimsBEC(_claim, _caller);
@@ -117,14 +103,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
-            if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
-                continue;
-            }
-
-            if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
-                continue;
-            }
-
             _submitClaimsBEFC(_claim, _caller);
         }
 
@@ -133,14 +111,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             RefundRequestClaim calldata _claim = _claims.refundRequestClaims[i];
             if (!isChainRegistered[_claim.chainID]) {
                 revert ChainIsNotRegistered(_claim.chainID);
-            }
-
-            if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
-                continue;
-            }
-
-            if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
-                continue;
             }
 
             _submitClaimsRRC(_claim, _caller);
@@ -153,32 +123,28 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 revert ChainIsNotRegistered(_claim.chainID);
             }
 
-            if (claimsHelper.hasVoted(_claim.observedTransactionHash, _caller)) {
-                continue;
-            }
-
-            if (claimsHelper.isClaimConfirmed(_claim.chainID, _claim.observedTransactionHash)) {
-                continue;
-            }
-
             _submitClaimsREC(_claim, _caller);
         }
     }
 
-    function _submitClaimsBRC(BridgingRequestClaim calldata _claim, address _caller) internal {
+    function _submitClaimsBRC(BridgingRequestClaim calldata _claim, address _caller, uint256 receiversSum) internal {
         bytes32 claimHash = keccak256(abi.encode(_claim));
-        uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
+            _caller,
+            claimHash,
+            validators.getQuorumNumberOfValidators()
+        );
 
-        if (votesCnt >= validators.getQuorumNumberOfValidators()) {
+        if (_quorumReached) {
             string calldata destinationChainID = _claim.destinationChainID;
-            chainTokenQuantity[_claim.sourceChainID] -= getNeededTokenQuantity(_claim.receivers);
+            string calldata sourceChainID = _claim.sourceChainID;
 
-            utxosc.addNewBridgingUTXO(_claim.sourceChainID, _claim.outputUTXO);
+            chainTokenQuantity[sourceChainID] -= receiversSum;
+            utxosc.addNewBridgingUTXO(sourceChainID, _claim.outputUTXO);
 
             uint256 confirmedTxCount = getBatchingTxsCount(destinationChainID);
 
             _setConfirmedTransactions(_claim);
-            claimsHelper.setClaimConfirmed(destinationChainID, _claim.observedTransactionHash);
 
             if (
                 (claimsHelper.currentBatchBlock(destinationChainID) == -1) && // there is no batch in progress
@@ -193,13 +159,14 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function _submitClaimsBEC(BatchExecutedClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode(_claim));
-        uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
-        string calldata chainID = _claim.chainID;
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
+            _caller,
+            claimHash,
+            validators.getQuorumNumberOfValidators()
+        );
 
-        if (votesCnt >= validators.getQuorumNumberOfValidators()) {
-            chainTokenQuantity[chainID] += getTokenAmountFromSignedBatch(chainID, _claim.batchNonceID);
-
-            claimsHelper.setClaimConfirmed(chainID, _claim.observedTransactionHash);
+        if (_quorumReached) {
+            string calldata chainID = _claim.chainID;
 
             claimsHelper.resetCurrentBatchBlock(chainID);
 
@@ -207,7 +174,13 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 chainID,
                 _claim.batchNonceID
             );
+            uint256 _firstTxNounce = confirmedSignedBatch.firstTxNonceId;
+            uint256 _lastTxNounce = confirmedSignedBatch.lastTxNonceId;
 
+            for (uint i = _firstTxNounce; i <= _lastTxNounce; i++) {
+                chainTokenQuantity[chainID] += getNeededTokenQuantity(confirmedTransactions[chainID][i].receivers);
+            }
+        
             lastBatchedTxNonce[chainID] = confirmedSignedBatch.lastTxNonceId;
 
             nextTimeoutBlock[chainID] = block.number + timeoutBlocksNumber;
@@ -219,12 +192,14 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function _submitClaimsBEFC(BatchExecutionFailedClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode(_claim));
-        uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
-        string calldata chainID = _claim.chainID;
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
+            _caller,
+            claimHash,
+            validators.getQuorumNumberOfValidators()
+        );
 
-        if (votesCnt >= validators.getQuorumNumberOfValidators()) {
-            claimsHelper.setClaimConfirmed(chainID, _claim.observedTransactionHash);
-
+        if (_quorumReached) {
+            string calldata chainID = _claim.chainID;
             claimsHelper.resetCurrentBatchBlock(chainID);
 
             nextTimeoutBlock[chainID] = block.number + timeoutBlocksNumber;
@@ -233,20 +208,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function _submitClaimsRRC(RefundRequestClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode(_claim));
-        uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
-
-        if (votesCnt >= validators.getQuorumNumberOfValidators()) {
-            claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
-        }
+        claimsHelper.setVotedOnlyIfNeeded(_caller, claimHash, validators.getQuorumNumberOfValidators());
     }
 
     function _submitClaimsREC(RefundExecutedClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode(_claim));
-        uint256 votesCnt = claimsHelper.setVoted(_claim.observedTransactionHash, _caller, claimHash);
-
-        if (votesCnt >= validators.getQuorumNumberOfValidators()) {
-            claimsHelper.setClaimConfirmed(_claim.chainID, _claim.observedTransactionHash);
-        }
+        claimsHelper.setVotedOnlyIfNeeded(_caller, claimHash, validators.getQuorumNumberOfValidators());
     }
 
     function _setConfirmedTransactions(BridgingRequestClaim calldata _claim) internal {
@@ -264,8 +231,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         confirmedTransactions[destinationChainID][nextNonce].blockHeight = block.number;
     }
 
-    function setVoted(string calldata _id, address _voter, bytes32 _hash) external onlyBridge returns (uint256) {
-        return claimsHelper.setVoted(_id, _voter, _hash);
+    function setVoted(address _voter, bytes32 _hash) external onlyBridge returns (uint256) {
+        return claimsHelper.setVoted(_voter, _hash);
     }
 
     function shouldCreateBatch(string calldata _destinationChain) public view returns (bool) {
@@ -311,26 +278,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function getTokenAmountFromSignedBatch(
-        string calldata _destinationChain,
-        uint256 _nonce
-    ) public view returns (uint256) {
-        uint256 bridgedAmount;
-
-        ConfirmedSignedBatchData memory confirmedSignedBatchData = claimsHelper.getConfirmedSignedBatchData(
-            _destinationChain,
-            _nonce
-        );
-        uint256 _firstTxNounce = confirmedSignedBatchData.firstTxNonceId;
-        uint256 _lastTxNounce = confirmedSignedBatchData.lastTxNonceId;
-
-        for (uint i = _firstTxNounce; i <= _lastTxNounce; i++) {
-            bridgedAmount += getNeededTokenQuantity(confirmedTransactions[_destinationChain][i].receivers);
-        }
-
-        return bridgedAmount;
-    }
-
     function resetCurrentBatchBlock(string calldata _chainId) external onlyBridge {
         claimsHelper.resetCurrentBatchBlock(_chainId);
     }
@@ -354,8 +301,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         nextTimeoutBlock[_chainId] = _blockNumber + timeoutBlocksNumber;
     }
 
-    function hasVoted(string calldata _id, address _voter) external view returns (bool) {
-        return claimsHelper.hasVoted(_id, _voter);
+    function hasVoted(bytes32 _hash, address _voter) external view returns (bool) {
+        return claimsHelper.hasVoted(_hash, _voter);
+    }
+
+    function getTokenQuantity(string calldata _chainId) view external returns (uint256) {
+        return chainTokenQuantity[_chainId];
     }
 
     modifier onlyBridge() {

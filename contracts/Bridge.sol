@@ -54,7 +54,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     // Batches
     function submitSignedBatch(SignedBatch calldata _signedBatch) external override onlyValidator {
-        if (!shouldCreateBatch(_signedBatch.destinationChainId)) {
+        if (!claims.shouldCreateBatch(_signedBatch.destinationChainId)) {
             return;
         }
         if (
@@ -100,15 +100,16 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         if (claims.isChainRegistered(chainId)) {
             revert ChainAlreadyRegistered(chainId);
         }
-        if (claims.hasVoted(chainId, msg.sender)) {
-            revert AlreadyProposed(chainId);
-        }
 
         bytes32 chainHash = keccak256(abi.encode(_chain, _initialUTXOs, _tokenQuantity));
 
+        if (claims.hasVoted(chainHash, msg.sender)) {
+            revert AlreadyProposed(chainId);
+        }
+
         validators.addValidatorCardanoData(chainId, msg.sender, _validatorCardanoData);
 
-        if (claims.setVoted(chainId, msg.sender, chainHash) == validators.getValidatorsCount()) {
+        if (claims.setVoted(msg.sender, chainHash) == validators.getValidatorsCount()) {
             _registerChain(_chain, _initialUTXOs, _tokenQuantity);
         } else {
             emit newChainProposal(chainId, msg.sender);
@@ -137,14 +138,13 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     // Queries
 
-    // Will determine if enough transactions are confirmed, or the timeout between two batches is exceeded.
-    // It will also check if the given validator already submitted a signed batch and return the response accordingly.
+    // True if there are enough confirmed transactions or the timeout between two batches is exceeded.
     function shouldCreateBatch(string calldata _destinationChain) public view override returns (bool batch) {
         return claims.shouldCreateBatch(_destinationChain);
     }
 
     function getNextBatchId(string calldata _destinationChain) external view override returns (uint256 result) {
-        if (!shouldCreateBatch(_destinationChain)) {
+        if (!claims.shouldCreateBatch(_destinationChain)) {
             return 0;
         }
 
@@ -158,7 +158,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     function getConfirmedTransactions(
         string calldata _destinationChain
     ) external view override returns (ConfirmedTransaction[] memory _confirmedTransactions) {
-        if (!shouldCreateBatch(_destinationChain)) {
+        if (!claims.shouldCreateBatch(_destinationChain)) {
             revert CanNotCreateBatchYet(_destinationChain);
         }
 
