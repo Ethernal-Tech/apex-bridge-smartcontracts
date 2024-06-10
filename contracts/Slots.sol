@@ -38,30 +38,30 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     }
 
     function updateBlocks(
-        string calldata chainID,
-        CardanoBlock[] calldata blocks,
+        string calldata _chainID,
+        CardanoBlock[] calldata _blocks,
         address _caller
     ) external onlyBridge {
         // Check if the caller has already voted for this claim
         uint256 _quorumCnt = validators.getQuorumNumberOfValidators();
-        uint256 blockLength = blocks.length;
-        for (uint i; i < blockLength; i++) {
-            CardanoBlock calldata _cblock = blocks[i];
-            bytes32 _chash = keccak256(abi.encodePacked(chainID, _cblock.blockHash, _cblock.blockSlot));
+        uint256 _blocksLength = _blocks.length;
+        for (uint i; i < _blocksLength; i++) {
+            CardanoBlock calldata _cblock = _blocks[i];
+            bytes32 _chash = keccak256(abi.encodePacked(_chainID, _cblock.blockHash, _cblock.blockSlot));
             if (validatorVote[_chash][_caller]) {
                 // no need for additional check: || slotVotesPerChain[_chash] >= _quorumCnt
                 continue;
             }
             validatorVote[_chash][_caller] = true;
             uint256 _votesNum = ++votes[_chash];
-            if (_votesNum >= _quorumCnt && _cblock.blockSlot > lastObservedBlock[chainID].blockSlot) {
-                lastObservedBlock[chainID] = _cblock;
+            if (_votesNum >= _quorumCnt && _cblock.blockSlot > lastObservedBlock[_chainID].blockSlot) {
+                lastObservedBlock[_chainID] = _cblock;
             }
         }
     }
 
-    function getLastObservedBlock(string calldata chainID) external view returns (CardanoBlock memory cb) {
-        return lastObservedBlock[chainID];
+    function getLastObservedBlock(string calldata _chainID) external view returns (CardanoBlock memory cb) {
+        return lastObservedBlock[_chainID];
     }
 
     modifier onlyBridge() {
