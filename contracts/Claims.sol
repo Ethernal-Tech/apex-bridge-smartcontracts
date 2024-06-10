@@ -64,7 +64,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
         uint256 bridgingRequxestClaimsLength = _claims.bridgingRequestClaims.length;
-        for (uint i; i < bridgingRequestClaimsLength; i++) {
+        for (uint i; i < bridgingRequxestClaimsLength; i++) {
             BridgingRequestClaim calldata _claim = _claims.bridgingRequestClaims[i];
             string calldata sourceChainID = _claim.sourceChainID;
             string calldata destinationChainID = _claim.destinationChainID;
@@ -181,8 +181,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 chainTokenQuantity[chainID] += getNeededTokenQuantity(confirmedTransactions[chainID][i].receivers);
             }
 
-            _deleteConfirmedTransactions(chainID, _firstTxNounce, _lastTxNounce)
-        
+            _deleteConfirmedTransactions(chainID, _firstTxNounce, _lastTxNounce);
+
             lastBatchedTxNonce[chainID] = confirmedSignedBatch.lastTxNonceId;
 
             nextTimeoutBlock[chainID] = block.number + timeoutBlocksNumber;
@@ -317,7 +317,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return claimsHelper.hasVoted(_hash, _voter);
     }
 
-    function getTokenQuantity(string calldata _chainId) view external returns (uint256) {
+    function getTokenQuantity(string calldata _chainId) external view returns (uint256) {
         return chainTokenQuantity[_chainId];
     }
 
