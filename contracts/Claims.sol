@@ -63,7 +63,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
-        uint256 bridgingRequestClaimsLength = _claims.bridgingRequestClaims.length;
+        uint256 bridgingRequxestClaimsLength = _claims.bridgingRequestClaims.length;
         for (uint i; i < bridgingRequestClaimsLength; i++) {
             BridgingRequestClaim calldata _claim = _claims.bridgingRequestClaims[i];
             string calldata sourceChainID = _claim.sourceChainID;
@@ -180,6 +180,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             for (uint i = _firstTxNounce; i <= _lastTxNounce; i++) {
                 chainTokenQuantity[chainID] += getNeededTokenQuantity(confirmedTransactions[chainID][i].receivers);
             }
+
+            _deleteConfirmedTransactions(chainID, _firstTxNounce, _lastTxNounce)
         
             lastBatchedTxNonce[chainID] = confirmedSignedBatch.lastTxNonceId;
 
@@ -291,6 +293,16 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         return tokenQuantity;
+    }
+
+    function _deleteConfirmedTransactions(
+        string calldata _chainID,
+        uint256 _firstTxNounce,
+        uint256 _lastTxNounce
+    ) internal {
+        for (uint i = _firstTxNounce; i <= _lastTxNounce; i++) {
+            delete confirmedTransactions[_chainID][i];
+        }
     }
 
     function setChainRegistered(string calldata _chainId) external onlyBridge {
