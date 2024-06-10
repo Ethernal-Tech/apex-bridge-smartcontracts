@@ -28,7 +28,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     mapping(string => uint256) public chainTokenQuantity;
 
     // BlockchainID -> nonce -> ConfirmedTransaction
-    mapping(string => mapping(uint256 => ConfirmedTransaction)) private confirmedTransactions;
+    mapping(uint256 => ConfirmedTransaction) private confirmedTransactions;
 
     // chainID -> nonce (nonce of the last confirmed transaction)
     mapping(string => uint256) public lastConfirmedTxNonce;
@@ -178,9 +178,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             uint256 _lastTxNounce = confirmedSignedBatch.lastTxNonceId;
 
             for (uint i = _firstTxNounce; i <= _lastTxNounce; i++) {
-                chainTokenQuantity[chainID] += getNeededTokenQuantity(confirmedTransactions[chainID][i].receivers);
+                chainTokenQuantity[chainID] += getNeededTokenQuantity(confirmedTransactions[i].receivers);
             }
-        
+
             lastBatchedTxNonce[chainID] = confirmedSignedBatch.lastTxNonceId;
 
             nextTimeoutBlock[chainID] = block.number + timeoutBlocksNumber;
@@ -217,18 +217,17 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _setConfirmedTransactions(BridgingRequestClaim calldata _claim) internal {
-        string calldata destinationChainID = _claim.destinationChainID;
-        uint256 nextNonce = ++lastConfirmedTxNonce[destinationChainID];
-        confirmedTransactions[destinationChainID][nextNonce].observedTransactionHash = _claim.observedTransactionHash;
-        confirmedTransactions[destinationChainID][nextNonce].sourceChainID = _claim.sourceChainID;
-        confirmedTransactions[destinationChainID][nextNonce].nonce = nextNonce;
+        uint256 nextNonce = ++lastConfirmedTxNonce[_claim.destinationChainID];
+        confirmedTransactions[nextNonce].observedTransactionHash = _claim.observedTransactionHash;
+        confirmedTransactions[nextNonce].sourceChainID = _claim.sourceChainID;
+        confirmedTransactions[nextNonce].nonce = nextNonce;
 
         uint256 receiversLength = _claim.receivers.length;
         for (uint i; i < receiversLength; i++) {
-            confirmedTransactions[destinationChainID][nextNonce].receivers.push(_claim.receivers[i]);
+            confirmedTransactions[nextNonce].receivers.push(_claim.receivers[i]);
         }
 
-        confirmedTransactions[destinationChainID][nextNonce].blockHeight = block.number;
+        confirmedTransactions[nextNonce].blockHeight = block.number;
     }
 
     function setVoted(address _voter, bytes32 _hash) external onlyBridge returns (uint256) {
@@ -254,7 +253,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         string calldata _destinationChain,
         uint256 _nonce
     ) public view returns (ConfirmedTransaction memory) {
-        return confirmedTransactions[_destinationChain][_nonce];
+        return confirmedTransactions[_nonce];
     }
 
     function getBatchingTxsCount(string calldata _chainId) public view returns (uint256 counterConfirmedTransactions) {
@@ -268,9 +267,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         counterConfirmedTransactions = 0;
 
         while (counterConfirmedTransactions < txsToProcess) {
-            uint256 blockHeight = confirmedTransactions[_chainId][
-                lastBatchedTxNonceForChain + counterConfirmedTransactions + 1
-            ].blockHeight;
+            uint256 blockHeight = confirmedTransactions[lastBatchedTxNonceForChain + counterConfirmedTransactions + 1]
+                .blockHeight;
             if (blockHeight >= nextTimeoutBlock[_chainId]) {
                 break;
             }
@@ -305,7 +303,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return claimsHelper.hasVoted(_hash, _voter);
     }
 
-    function getTokenQuantity(string calldata _chainId) view external returns (uint256) {
+    function getTokenQuantity(string calldata _chainId) external view returns (uint256) {
         return chainTokenQuantity[_chainId];
     }
 
