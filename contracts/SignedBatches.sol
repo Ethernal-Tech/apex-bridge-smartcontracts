@@ -91,8 +91,8 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             lastConfirmedBatch[_destinationChainId] = ConfirmedBatch(
                 multisigSignatures[_sbHash],
                 feePayerMultisigSignatures[_sbHash],
-                _sbId,
-                _signedBatch.rawTransaction
+                _signedBatch.rawTransaction,
+                _sbId
             );
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);

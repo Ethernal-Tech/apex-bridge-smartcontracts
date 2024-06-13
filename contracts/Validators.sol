@@ -52,7 +52,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
 
     function isSignatureValid(
         uint8 _chainId,
-        string calldata _txRaw,
+        bytes32 _txRaw,
         bytes32 _signature,
         bytes32 _signatureFee,
         address _validatorAddr
@@ -131,14 +131,14 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     }
 
     function _isSignatureValid(
-        string calldata _message,
+        bytes32 _txRaw,
         bytes32 _signature,
         bytes32 _verifyingKey,
         bool _isTx
     ) internal view returns (bool) {
         // solhint-disable-line avoid-low-level-calls
         (bool callSuccess, bytes memory returnData) = PRECOMPILE.staticcall{gas: PRECOMPILE_GAS}(
-            abi.encode(_message, _signature, _verifyingKey, _isTx)
+            abi.encode(_txRaw, _signature, _verifyingKey, _isTx)
         );
 
         return callSuccess && abi.decode(returnData, (bool));
