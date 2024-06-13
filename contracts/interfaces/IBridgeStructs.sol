@@ -37,6 +37,7 @@ interface IBridgeStructs {
 
     struct ConfirmedTransaction {
         uint256 blockHeight;
+        uint256 totalAmount;
         uint64 nonce;
         uint8 sourceChainId;
         bytes32 observedTransactionHash;

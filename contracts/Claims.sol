@@ -178,7 +178,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             uint64 _lastTxNounce = confirmedSignedBatch.lastTxNonceId;
 
             for (uint64 i = _firstTxNounce; i <= _lastTxNounce; i++) {
-                chainTokenQuantity[chainId] += getNeededTokenQuantity(confirmedTransactions[chainId][i].receivers);
+                chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
             }
 
             lastBatchedTxNonce[chainId] = confirmedSignedBatch.lastTxNonceId;
@@ -224,9 +224,13 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         confirmedTransactions[destinationChainId][nextNonce].nonce = nextNonce;
 
         uint256 receiversLength = _claim.receivers.length;
+        uint256 tokenQuantity;
         for (uint i; i < receiversLength; i++) {
             confirmedTransactions[destinationChainId][nextNonce].receivers.push(_claim.receivers[i]);
+            tokenQuantity += _claim.receivers[i].amount;
         }
+
+        confirmedTransactions[destinationChainId][nextNonce].totalAmount = tokenQuantity;
 
         confirmedTransactions[destinationChainId][nextNonce].blockHeight = block.number;
     }
@@ -280,17 +284,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function resetCurrentBatchBlock(uint8 _chainId) external onlyBridge {
         claimsHelper.resetCurrentBatchBlock(_chainId);
-    }
-
-    function getNeededTokenQuantity(Receiver[] memory _receivers) internal pure returns (uint256) {
-        uint256 tokenQuantity;
-
-        uint256 receiversLength = _receivers.length;
-        for (uint256 i = 0; i < receiversLength; i++) {
-            tokenQuantity += _receivers[i].amount;
-        }
-
-        return tokenQuantity;
     }
 
     function setChainRegistered(uint8 _chainId) external onlyBridge {
