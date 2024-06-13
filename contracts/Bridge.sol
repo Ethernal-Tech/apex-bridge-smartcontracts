@@ -73,6 +73,9 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     // Slots
     function submitLastObservedBlocks(uint8 _chainId, CardanoBlock[] calldata _blocks) external override onlyValidator {
+        if (!claims.isChainRegistered(_chainId)) {
+            revert ChainIsNotRegistered(_chainId);
+        }
         slots.updateBlocks(_chainId, _blocks, msg.sender);
     }
 

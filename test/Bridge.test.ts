@@ -521,6 +521,17 @@ describe("Bridge Contract", function () {
       },
     };
 
+    const cardanoBlocks = [
+      {
+        blockSlot: 1,
+        blockHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+      },
+      {
+        blockSlot: 2,
+        blockHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+      },
+    ];
+
     const validatorsCardanoData = [];
     let ind = 0;
     for (let val of validators) {
@@ -563,6 +574,7 @@ describe("Bridge Contract", function () {
       signedBatch,
       validatorsCardanoData,
       validators,
+      cardanoBlocks,
     };
   }
 
@@ -2570,6 +2582,95 @@ describe("Bridge Contract", function () {
       expect(feePayer[2].txIndex).to.equal(
         validatorClaimsBEC.batchExecutedClaims[0].outputUTXOs.feePayerOwnedUTXOs[0].txIndex
       );
+    });
+  });
+  describe("Slot management", function () {
+    it("Should revert if chain is not registered", async function () {
+      const { bridge, validators, cardanoBlocks } = await loadFixture(deployBridgeFixture);
+
+      await expect(
+        bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks)
+      ).to.be.revertedWithCustomError(bridge, "ChainIsNotRegistered");
+    });
+
+    it("Should revert if not called by validator", async function () {
+      const { bridge, owner, cardanoBlocks } = await loadFixture(deployBridgeFixture);
+
+      await expect(bridge.connect(owner).submitLastObservedBlocks(1, cardanoBlocks)).to.be.revertedWithCustomError(
+        bridge,
+        "NotValidator"
+      );
+    });
+
+    it("Should skip if validator submitted the same CardanoBlocks twice", async function () {
+      const { bridge, owner, validators, chain1, validatorsCardanoData, cardanoBlocks, UTXOs } = await loadFixture(
+        deployBridgeFixture
+      );
+
+      const tx = await bridge.connect(owner).registerChain(chain1, UTXOs, 100, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
+      await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
+      await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
+
+      var blockSlot = (await bridge.getLastObservedBlock(1)).blockSlot;
+      expect(blockSlot).to.equal(0);
+
+      await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
+
+      blockSlot = (await bridge.getLastObservedBlock(1)).blockSlot;
+      expect(blockSlot).to.equal(0);
+    });
+
+    it("Should update CardanoBlock when there is quorum", async function () {
+      const { bridge, owner, validators, chain1, validatorsCardanoData, cardanoBlocks, UTXOs } = await loadFixture(
+        deployBridgeFixture
+      );
+
+      const tx = await bridge.connect(owner).registerChain(chain1, UTXOs, 100, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
+      await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
+      await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
+
+      var blockSlot = (await bridge.getLastObservedBlock(1)).blockSlot;
+      expect(blockSlot).to.equal(0);
+
+      await bridge.connect(validators[3]).submitLastObservedBlocks(1, cardanoBlocks);
+
+      blockSlot = (await bridge.getLastObservedBlock(1)).blockSlot;
+      expect(blockSlot).to.equal(cardanoBlocks[1].blockSlot);
+    });
+
+    it("Should nor CardanoBlock when slot is not newer", async function () {
+      const { bridge, owner, validators, chain1, validatorsCardanoData, cardanoBlocks, UTXOs } = await loadFixture(
+        deployBridgeFixture
+      );
+
+      const tx = await bridge.connect(owner).registerChain(chain1, UTXOs, 100, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
+      await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
+      await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
+      await bridge.connect(validators[3]).submitLastObservedBlocks(1, cardanoBlocks);
+
+      var blockSlot = (await bridge.getLastObservedBlock(1)).blockSlot;
+      expect(blockSlot).to.equal(cardanoBlocks[1].blockSlot);
+
+      const cardanoBlocksOld = [
+        {
+          blockSlot: 0,
+          blockHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        },
+      ];
+
+      await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocksOld);
+      await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocksOld);
+      await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocksOld);
+      await bridge.connect(validators[3]).submitLastObservedBlocks(1, cardanoBlocksOld);
+
+      blockSlot = (await bridge.getLastObservedBlock(1)).blockSlot;
+      expect(blockSlot).to.equal(cardanoBlocks[1].blockSlot);
     });
   });
 });
