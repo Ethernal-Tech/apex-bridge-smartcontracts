@@ -8,7 +8,6 @@ import "./interfaces/IBridgeStructs.sol";
 import "./ClaimsHelper.sol";
 import "./UTXOsc.sol";
 import "./Validators.sol";
-import "hardhat/console.sol";
 
 contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private bridgeAddress;
@@ -78,7 +77,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 revert ChainIsNotRegistered(destinationChainId);
             }
 
-            uint256 receiversSum = getNeededTokenQuantity(_claim.receivers);
+            uint256 receiversSum = _claim.totalAmount;
 
             if (chainTokenQuantity[sourceChainId] < receiversSum) {
                 continue;
@@ -181,8 +180,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             for (uint64 i = _firstTxNounce; i <= _lastTxNounce; i++) {
                 chainTokenQuantity[chainId] += getNeededTokenQuantity(confirmedTransactions[chainId][i].receivers);
             }
-
-            console.log("lastTxNonceId: %s", confirmedSignedBatch.lastTxNonceId);
 
             lastBatchedTxNonce[chainId] = confirmedSignedBatch.lastTxNonceId;
 

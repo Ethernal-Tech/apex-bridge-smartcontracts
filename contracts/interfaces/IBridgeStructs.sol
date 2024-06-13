@@ -74,6 +74,7 @@ interface IBridgeStructs {
         // key is the address on destination UTXO chain; value is the amount of tokens
         Receiver[] receivers;
         UTXO outputUTXO;
+        uint256 totalAmount;
         uint8 sourceChainId;
         uint8 destinationChainId;
     }
