@@ -14,11 +14,14 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     ClaimsHelper private claimsHelper;
     Validators private validators;
 
-    // BlockchanId -> hash -> multisigSignatures
-    mapping(uint8 => mapping(bytes32 => bytes32[])) private multisigSignatures;
+    // hash -> multisigSignatures
+    mapping(bytes32 => bytes32[]) private multisigSignatures;
 
-    // BlockchanId -> hash -> multisigSignatures
-    mapping(uint8 => mapping(bytes32 => bytes32[])) private feePayerMultisigSignatures;
+    // hash -> multisigSignatures
+    mapping(bytes32 => bytes32[]) private feePayerMultisigSignatures;
+
+    // hash -> user address -> true/false
+    mapping(bytes32 => mapping(address => bool)) private hasVoted; // for resubmit
 
     // BlockchainId -> ConfirmedBatch
     mapping(uint8 => ConfirmedBatch) public lastConfirmedBatch;
@@ -51,57 +54,51 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
 
         uint64 sbId = lastConfirmedBatch[_destinationChainId].id;
 
-        if (_signedBatch.id != sbId + 1) {
-            return; // do not revert! batcher can lag a little bit. revert WrongBatchNonce(_destinationChainId, _signedBatch.id);
+        if (_signedBatch.id != _sbId) {
+            return; // skip if this is not batch we are expecting
         }
 
-        if (claimsHelper.hasVoted(_batchIdBytes, _caller)) {
+        bytes32 _sbHash = keccak256(
+            abi.encode(
+                SignedBatchWithoutSignatures(
+                    _signedBatch.id,
+                    _destinationChainId,
+                    _signedBatch.rawTransaction,
+                    _signedBatch.firstTxNonceId,
+                    _signedBatch.lastTxNonceId,
+                    _signedBatch.usedUTXOs
+                )
+            )
+        );
+
+        // check if caller already voted for same hash
+        if (hasVoted[_sbHash][_caller]) {
             return;
         }
 
-        if (claimsHelper.isClaimConfirmed(_destinationChainId, _batchIdBytes)) {
+        uint256 _quorumCount = validators.getQuorumNumberOfValidators();
+        uint256 _numberOfVotes = multisigSignatures[_sbHash].length;
+
+        // check if consensus is already reached for this batch
+        if (_numberOfVotes >= _quorumCount) {
             return;
         }
 
-        _submitSignedBatch(_signedBatch, _signedBatch.id);
-    }
+        hasVoted[_sbHash][_caller] = true;
+        multisigSignatures[_sbHash].push(_signedBatch.multisigSignature);
+        feePayerMultisigSignatures[_sbHash].push(_signedBatch.feePayerMultisigSignature);
 
-    function _submitSignedBatch(SignedBatch calldata _signedBatch, uint256 _batchId) internal {
-        SignedBatchWithoutSignatures memory _signedBatchWithoutSignatures = SignedBatchWithoutSignatures(
-            _signedBatch.id,
-            _signedBatch.firstTxNonceId,
-            _signedBatch.lastTxNonceId,
-            _signedBatch.destinationChainId,
-            _signedBatch.rawTransaction,
-            _signedBatch.usedUTXOs
-        );
-        bytes32 signedBatchHash = keccak256(abi.encode(_signedBatchWithoutSignatures));
-
-        multisigSignatures[_signedBatch.destinationChainId][signedBatchHash].push(_signedBatch.multisigSignature);
-        feePayerMultisigSignatures[_signedBatch.destinationChainId][signedBatchHash].push(
-            _signedBatch.feePayerMultisigSignature
-        );
-
-        uint256 votesCount = claimsHelper.setVoted(bytes32(_batchId), msg.sender, signedBatchHash);
-
-        if (votesCount >= validators.getQuorumNumberOfValidators()) {
-            claimsHelper.setConfirmedSignedBatchData(_signedBatch);
-
-            claimsHelper.setClaimConfirmed(_signedBatch.destinationChainId, bytes32(_batchId));
-
-            lastConfirmedBatch[_signedBatch.destinationChainId] = ConfirmedBatch(
-                multisigSignatures[_signedBatch.destinationChainId][signedBatchHash],
-                feePayerMultisigSignatures[_signedBatch.destinationChainId][signedBatchHash],
-                lastConfirmedBatch[_signedBatch.destinationChainId].id + 1,
-                _signedBatch.rawTransaction
+        // check if quorum reached (+1 is last vote)
+        if (_numberOfVotes + 1 >= _quorumCount) {
+            lastConfirmedBatch[_destinationChainId] = ConfirmedBatch(
+                _sbId,
+                _signedBatch.rawTransaction,
+                multisigSignatures[_sbHash],
+                feePayerMultisigSignatures[_sbHash]
             );
 
-            claimsHelper.updateCurrentBatchBlock(_signedBatch.destinationChainId);
+            claimsHelper.setConfirmedSignedBatchData(_signedBatch);
         }
-    }
-
-    function isBatchAlreadySubmittedBy(uint8 _destinationChain, address _addr) public view returns (bool _ok) {
-        return claimsHelper.hasVoted(bytes32(uint256(lastConfirmedBatch[_destinationChain].id + 1)), _addr);
     }
 
     function getConfirmedBatch(uint8 _destinationChain) external view returns (ConfirmedBatch memory _batch) {

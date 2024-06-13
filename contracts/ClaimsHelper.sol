@@ -10,9 +10,6 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     address private claimsAddress;
     address private signedBatchesAddress;
 
-    // blockchainId -> claimHash -> queued
-    mapping(uint8 => mapping(bytes32 => bool)) public isClaimConfirmed;
-
     // BlockchainId -> batchId -> SignedBatch
     mapping(uint8 => mapping(uint64 => ConfirmedSignedBatchData)) public confirmedSignedBatches;
 
@@ -49,30 +46,37 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         return confirmedSignedBatches[_chainId][_batchId];
     }
 
-    function updateCurrentBatchBlock(uint8 _chainId) external onlySignedBatches {
-        currentBatchBlock[_chainId] = int256(block.number);
-    }
-
     function resetCurrentBatchBlock(uint8 _chainId) external onlyClaims {
         currentBatchBlock[_chainId] = int256(-1);
     }
 
-    function setClaimConfirmed(uint8 _chainId, bytes32 _observedHash) external onlySignedBatchesOrClaims {
-        isClaimConfirmed[_chainId][_observedHash] = true;
-    }
-
     function setConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
         // because of UnimplementedFeatureError: Copying of type struct IBridgeStructs.UTXO memory[] memory to storage not yet supported.
-        uint8 destinationChainId = _signedBatch.destinationChainId;
-        uint64 signedBatchId = _signedBatch.id;
+        string calldata destinationChainId = _signedBatch.destinationChainId;
+        uint256 signedBatchID = _signedBatch.id;
 
-        confirmedSignedBatches[destinationChainId][signedBatchId].firstTxNonceId = _signedBatch.firstTxNonceId;
-        confirmedSignedBatches[destinationChainId][signedBatchId].lastTxNonceId = _signedBatch.lastTxNonceId;
-        confirmedSignedBatches[destinationChainId][signedBatchId].usedUTXOs = _signedBatch.usedUTXOs;
+        confirmedSignedBatches[destinationChainId][signedBatchID].firstTxNonceId = _signedBatch.firstTxNonceId;
+        confirmedSignedBatches[destinationChainId][signedBatchID].lastTxNonceId = _signedBatch.lastTxNonceId;
+        confirmedSignedBatches[destinationChainId][signedBatchID].usedUTXOs = _signedBatch.usedUTXOs;
+        currentBatchBlock[destinationChainId] = int256(block.number);
     }
 
-    function setVoted(bytes32 _id, address _voter, bytes32 _hash) external onlySignedBatchesOrClaims returns (uint256) {
-        hasVoted[_id][_voter] = true;
+    // update vote only if _hash is not already confiremed or _voter not already voted
+    function setVotedOnlyIfNeeded(
+        address _voter,
+        bytes32 _hash,
+        uint256 _quorumCnt
+    ) external onlySignedBatchesOrClaims returns (bool) {
+        if (hasVoted[_hash][_voter] || numberOfVotes[_hash] >= _quorumCnt) {
+            return false;
+        }
+
+        hasVoted[_hash][_voter] = true;
+        return ++numberOfVotes[_hash] >= _quorumCnt;
+    }
+
+    function setVoted(address _voter, bytes32 _hash) external onlySignedBatchesOrClaims returns (uint256) {
+        hasVoted[_hash][_voter] = true;
         uint256 v = ++numberOfVotes[_hash]; // v is numberOfVotes[_hash] + 1
         return v;
     }

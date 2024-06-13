@@ -14,11 +14,11 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     // BlockChainId -> CardanoBlock
     mapping(uint8 => CardanoBlock) private lastObservedBlock;
 
-    // BlockchanId -> hash(slot, hash) -> number of votes
-    mapping(uint8 => mapping(bytes32 => uint64)) private slotVotesPerChain;
+    // hash(slot, hash) -> number of votes
+    mapping(bytes32 => uint64) private votes;
 
-    // BlockchanId -> hash(slot, hash) -> bool - validator voted already or not
-    mapping(uint8 => mapping(bytes32 => mapping(address => bool))) private slotValidatorVotedPerChain;
+    // hash(slot, hash) -> bool - validator voted already or not
+    mapping(bytes32 => mapping(address => bool)) private validatorVote;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -39,20 +39,19 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
 
     function updateBlocks(uint8 _chainId, CardanoBlock[] calldata _blocks, address _caller) external onlyBridge {
         // Check if the caller has already voted for this claim
-        uint256 blockLength = _blocks.length;
-        for (uint i; i < blockLength; i++) {
-            CardanoBlock calldata cblock = _blocks[i];
-            bytes32 chash = keccak256(abi.encodePacked(cblock.blockHash, cblock.blockSlot));
-            if (slotValidatorVotedPerChain[_chainId][chash][_caller]) {
+        uint256 _quorumCnt = validators.getQuorumNumberOfValidators();
+        uint256 _blocksLength = _blocks.length;
+        for (uint i; i < _blocksLength; i++) {
+            CardanoBlock calldata _cblock = _blocks[i];
+            bytes32 _chash = keccak256(abi.encodePacked(_chainID, _cblock.blockHash, _cblock.blockSlot));
+            if (validatorVote[_chash][_caller]) {
+                // no need for additional check: || slotVotesPerChain[_chash] >= _quorumCnt
                 continue;
             }
-            slotValidatorVotedPerChain[_chainId][chash][_caller] = true;
-            slotVotesPerChain[_chainId][chash]++;
-            if (
-                slotVotesPerChain[_chainId][chash] >= validators.getQuorumNumberOfValidators() &&
-                cblock.blockSlot > lastObservedBlock[_chainId].blockSlot
-            ) {
-                lastObservedBlock[_chainId] = cblock;
+            validatorVote[_chash][_caller] = true;
+            uint256 _votesNum = ++votes[_chash];
+            if (_votesNum >= _quorumCnt && _cblock.blockSlot > lastObservedBlock[_chainID].blockSlot) {
+                lastObservedBlock[_chainID] = _cblock;
             }
         }
     }

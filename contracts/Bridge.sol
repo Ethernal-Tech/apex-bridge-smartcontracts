@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -54,7 +54,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     // Batches
     function submitSignedBatch(SignedBatch calldata _signedBatch) external override onlyValidator {
-        if (!shouldCreateBatch(_signedBatch.destinationChainId)) {
+        if (!claims.shouldCreateBatch(_signedBatch.destinationChainId)) {
             return;
         }
         if (
@@ -93,20 +93,20 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint256 _tokenQuantity,
         ValidatorCardanoData calldata _validatorCardanoData
     ) external override onlyValidator {
-        uint8 chainId = _chain.id;
-        bytes32 chainIdBytes = bytes32(uint256(_chain.id));
+        string calldata chainId = _chain.id;
         if (claims.isChainRegistered(chainId)) {
             revert ChainAlreadyRegistered(chainId);
-        }
-        if (claims.hasVoted(chainIdBytes, msg.sender)) {
-            revert AlreadyProposed(Strings.toString(chainId));
         }
 
         bytes32 chainHash = keccak256(abi.encode(_chain, _initialUTXOs, _tokenQuantity));
 
+        if (claims.hasVoted(chainHash, msg.sender)) {
+            revert AlreadyProposed(chainId);
+        }
+
         validators.addValidatorCardanoData(chainId, msg.sender, _validatorCardanoData);
 
-        if (claims.setVoted(chainIdBytes, msg.sender, chainHash) == validators.getValidatorsCount()) {
+        if (claims.setVoted(msg.sender, chainHash) == validators.getValidatorsCount()) {
             _registerChain(_chain, _initialUTXOs, _tokenQuantity);
         } else {
             emit newChainProposal(chainId, msg.sender);
@@ -135,16 +135,8 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     // Queries
 
-    // Will determine if enough transactions are confirmed, or the timeout between two batches is exceeded.
-    // It will also check if the given validator already submitted a signed batch and return the response accordingly.
+    // True if there are enough confirmed transactions or the timeout between two batches is exceeded.
     function shouldCreateBatch(uint8 _destinationChain) public view override returns (bool _batch) {
-        if (
-            claims.isBatchCreated(_destinationChain) ||
-            signedBatches.isBatchAlreadySubmittedBy(_destinationChain, msg.sender)
-        ) {
-            return false;
-        }
-
         return claims.shouldCreateBatch(_destinationChain);
     }
 
@@ -163,7 +155,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     function getConfirmedTransactions(
         uint8 _destinationChain
     ) external view override returns (ConfirmedTransaction[] memory _confirmedTransactions) {
-        if (!shouldCreateBatch(_destinationChain)) {
+        if (!claims.shouldCreateBatch(_destinationChain)) {
             revert CanNotCreateBatchYet(_destinationChain);
         }
 
