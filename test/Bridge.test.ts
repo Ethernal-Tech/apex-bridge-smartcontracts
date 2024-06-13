@@ -1305,7 +1305,6 @@ describe("Bridge Contract", function () {
     it("Should add new Batch Executed Claim if there are enough votes", async function () {
       const {
         bridge,
-        claimsHelper,
         claims,
         owner,
         validators,
@@ -1348,7 +1347,7 @@ describe("Bridge Contract", function () {
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
 
-      const chainId = validatorClaimsBEC.batchExecutedClaims[0].chainID;
+      const chainId = validatorClaimsBEC.batchExecutedClaims[0].chainId;
 
       const lastNonceBefore = await claims.lastBatchedTxNonce(chainId);
       expect(lastNonceBefore).to.equal(0);
@@ -1508,15 +1507,15 @@ describe("Bridge Contract", function () {
         claimsHelper,
         owner,
         validators,
-        chain,
+        chain2,
         UTXOs,
         validatorClaimsBEFC,
         validatorsCardanoData,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain, UTXOs, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, UTXOs, 100, validatorsCardanoData);
 
-      const chainId = validatorClaimsBEFC.batchExecutionFailedClaims[0].chainID;
+      const chainId = validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId;
 
       const nextTimeoutBlockBefore = await claims.nextTimeoutBlock(chainId);
 
@@ -1606,7 +1605,7 @@ describe("Bridge Contract", function () {
     });
 
     it("Should add new Refund Request Claims if there are enough votes", async function () {
-      const { bridge, owner, validators, chain, UTXOs, validatorClaimsRRC, validatorsCardanoData } = await loadFixture(
+      const { bridge, owner, validators, chain2, UTXOs, validatorClaimsRRC, validatorsCardanoData } = await loadFixture(
         deployBridgeFixture
       );
 
@@ -1661,7 +1660,7 @@ describe("Bridge Contract", function () {
     });
 
     it("Should add new Refund Executed Claim if there are enough votes", async function () {
-      const { bridge, owner, validators, chain, UTXOs, validatorClaimsREC, validatorsCardanoData } = await loadFixture(
+      const { bridge, owner, validators, chain2, UTXOs, validatorClaimsREC, validatorsCardanoData } = await loadFixture(
         deployBridgeFixture
       );
 

@@ -8,6 +8,7 @@ import "./interfaces/IBridgeStructs.sol";
 import "./ClaimsHelper.sol";
 import "./UTXOsc.sol";
 import "./Validators.sol";
+import "hardhat/console.sol";
 
 contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private bridgeAddress;
@@ -77,13 +78,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 revert ChainIsNotRegistered(destinationChainId);
             }
 
-            if (!isChainRegistered[destinationChainID]) {
-                revert ChainIsNotRegistered(destinationChainID);
-            }
-
             uint256 receiversSum = getNeededTokenQuantity(_claim.receivers);
 
-            if (chainTokenQuantity[sourceChainID] < receiversSum) {
+            if (chainTokenQuantity[sourceChainId] < receiversSum) {
                 continue;
             }
 
@@ -131,8 +128,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _submitClaimsBRC(ValidatorClaims calldata _claims, uint256 _index, address _caller) internal {
-        BridgingRequestClaim calldata _claim = _claims.bridgingRequestClaims[_index];
+    function _submitClaimsBRC(BridgingRequestClaim calldata _claim, address _caller, uint256 receiversSum) internal {
         bytes32 claimHash = keccak256(abi.encode(_claim));
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
@@ -141,8 +137,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
-            string calldata destinationChainID = _claim.destinationChainID;
-            string calldata sourceChainID = _claim.sourceChainID;
+            uint8 destinationChainID = _claim.destinationChainId;
+            uint8 sourceChainID = _claim.sourceChainId;
 
             chainTokenQuantity[sourceChainID] -= receiversSum;
             utxosc.addNewBridgingUTXO(sourceChainID, _claim.outputUTXO);
@@ -171,7 +167,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
-            string calldata chainID = _claim.chainID;
+            uint8 chainId = _claim.chainId;
 
             claimsHelper.resetCurrentBatchBlock(chainId);
 
@@ -179,19 +175,21 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 chainId,
                 _claim.batchNonceId
             );
-            uint256 _firstTxNounce = confirmedSignedBatch.firstTxNonceId;
-            uint256 _lastTxNounce = confirmedSignedBatch.lastTxNonceId;
+            uint64 _firstTxNounce = confirmedSignedBatch.firstTxNonceId;
+            uint64 _lastTxNounce = confirmedSignedBatch.lastTxNonceId;
 
-            for (uint i = _firstTxNounce; i <= _lastTxNounce; i++) {
-                chainTokenQuantity[chainID] += getNeededTokenQuantity(confirmedTransactions[chainID][i].receivers);
+            for (uint64 i = _firstTxNounce; i <= _lastTxNounce; i++) {
+                chainTokenQuantity[chainId] += getNeededTokenQuantity(confirmedTransactions[chainId][i].receivers);
             }
 
-            lastBatchedTxNonce[chainID] = confirmedSignedBatch.lastTxNonceId;
+            console.log("lastTxNonceId: %s", confirmedSignedBatch.lastTxNonceId);
 
-            nextTimeoutBlock[chainID] = block.number + timeoutBlocksNumber;
+            lastBatchedTxNonce[chainId] = confirmedSignedBatch.lastTxNonceId;
 
-            utxosc.addUTXOs(chainID, _claim.outputUTXOs);
-            utxosc.removeUsedUTXOs(chainID, confirmedSignedBatch.usedUTXOs);
+            nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
+
+            utxosc.addUTXOs(chainId, _claim.outputUTXOs);
+            utxosc.removeUsedUTXOs(chainId, confirmedSignedBatch.usedUTXOs);
         }
     }
 
@@ -204,8 +202,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
-            string calldata chainID = _claim.chainID;
-            claimsHelper.resetCurrentBatchBlock(chainID);
+            uint8 chainId = _claim.chainId;
+            claimsHelper.resetCurrentBatchBlock(chainId);
 
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
         }
@@ -240,7 +238,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return claimsHelper.setVoted(_voter, _hash);
     }
 
-    function shouldCreateBatch(string calldata _destinationChain) public view returns (bool) {
+    function shouldCreateBatch(uint8 _destinationChain) public view returns (bool) {
         // if batch is already created, return false
         if (claimsHelper.currentBatchBlock(_destinationChain) != int(-1)) {
             return false;
@@ -310,7 +308,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return claimsHelper.hasVoted(_hash, _voter);
     }
 
-    function getTokenQuantity(string calldata _chainId) external view returns (uint256) {
+    function getTokenQuantity(uint8 _chainId) external view returns (uint256) {
         return chainTokenQuantity[_chainId];
     }
 

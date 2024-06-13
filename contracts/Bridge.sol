@@ -93,7 +93,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint256 _tokenQuantity,
         ValidatorCardanoData calldata _validatorCardanoData
     ) external override onlyValidator {
-        string calldata chainId = _chain.id;
+        uint8 chainId = _chain.id;
         if (claims.isChainRegistered(chainId)) {
             revert ChainAlreadyRegistered(chainId);
         }

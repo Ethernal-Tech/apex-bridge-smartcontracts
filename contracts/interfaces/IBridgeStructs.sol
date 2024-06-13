@@ -151,8 +151,8 @@ interface IBridgeStructs {
         bytes32 verifyingKeyFee;
     }
 
-    error AlreadyConfirmed(string _claimTransactionHash);
-    error AlreadyProposed(string _claimTransactionHash);
+    error AlreadyConfirmed(bytes32 _claimTransactionHash);
+    error AlreadyProposed(uint8 _claimTransactionHash);
     error ChainAlreadyRegistered(uint8 _chainId);
     error NotOwner();
     error NotValidator();
@@ -160,7 +160,7 @@ interface IBridgeStructs {
     error NotClaims();
     error NotSignedBatches();
     error NotSignedBatchesOrBridge();
-    error NotEnoughBridgingTokensAvailable(string _claimTransactionHash);
+    error NotEnoughBridgingTokensAvailable(bytes32 _claimTransactionHash);
     error CanNotCreateBatchYet(uint8 _blockchainId);
     error InvalidData(string data);
     error ChainIsNotRegistered(uint8 _chainId);

@@ -50,9 +50,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
 
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
         uint8 _destinationChainId = _signedBatch.destinationChainId;
-        bytes32 _batchIdBytes = bytes32(uint256(_signedBatch.id));
-
-        uint64 sbId = lastConfirmedBatch[_destinationChainId].id;
+        uint64 _sbId = lastConfirmedBatch[_destinationChainId].id + 1;
 
         if (_signedBatch.id != _sbId) {
             return; // skip if this is not batch we are expecting
@@ -62,10 +60,10 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             abi.encode(
                 SignedBatchWithoutSignatures(
                     _signedBatch.id,
-                    _destinationChainId,
-                    _signedBatch.rawTransaction,
                     _signedBatch.firstTxNonceId,
                     _signedBatch.lastTxNonceId,
+                    _destinationChainId,
+                    _signedBatch.rawTransaction,
                     _signedBatch.usedUTXOs
                 )
             )
@@ -91,10 +89,10 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         // check if quorum reached (+1 is last vote)
         if (_numberOfVotes + 1 >= _quorumCount) {
             lastConfirmedBatch[_destinationChainId] = ConfirmedBatch(
-                _sbId,
-                _signedBatch.rawTransaction,
                 multisigSignatures[_sbHash],
-                feePayerMultisigSignatures[_sbHash]
+                feePayerMultisigSignatures[_sbHash],
+                _sbId,
+                _signedBatch.rawTransaction
             );
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
