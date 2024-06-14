@@ -9,14 +9,14 @@ import "./interfaces/IBridgeStructs.sol";
 contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     // slither-disable too-many-digits
     address constant PRECOMPILE = 0x0000000000000000000000000000000000002050;
-    uint256 constant PRECOMPILE_GAS = 150000;
+    uint32 constant PRECOMPILE_GAS = 50000;
 
     address private bridgeAddress;
 
-    // BlockchainID -> validator address -> ValidatorCardanoData
-    mapping(string => mapping(address => ValidatorCardanoData)) private validatorsCardanoDataPerAddress;
-    // BlockchainID -> ValidatorCardanoData[]
-    mapping(string => ValidatorCardanoData[]) private validatorsCardanoData;
+    // BlockchainId -> validator address -> ValidatorCardanoData
+    mapping(uint8 => mapping(address => ValidatorCardanoData)) private validatorsCardanoDataPerAddress;
+    // BlockchainId -> ValidatorCardanoData[]
+    mapping(uint8 => ValidatorCardanoData[]) private validatorsCardanoData;
 
     // keep validatorsArrayAddresses because maybe
     address[] private validatorsAddresses;
@@ -46,15 +46,15 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         bridgeAddress = _bridgeAddress;
     }
 
-    function isValidator(address addr) public view returns (bool) {
-        return isAddressValidator[addr];
+    function isValidator(address _addr) public view returns (bool _isValidator) {
+        return isAddressValidator[_addr];
     }
 
     function isSignatureValid(
-        string calldata _chainId,
-        string calldata _txRaw,
-        string calldata _signature,
-        string calldata _signatureFee,
+        uint8 _chainId,
+        bytes memory _txRaw,
+        bytes memory _signature,
+        bytes memory _signatureFee,
         address _validatorAddr
     ) public view returns (bool) {
         ValidatorCardanoData memory dt = validatorsCardanoDataPerAddress[_chainId][_validatorAddr];
@@ -64,24 +64,24 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     }
 
     function setValidatorsCardanoData(
-        string calldata _chainId,
-        ValidatorAddressCardanoData[] calldata validatorAddressCardanoData
+        uint8 _chainId,
+        ValidatorAddressCardanoData[] calldata _validatorAddressCardanoData
     ) external onlyBridge {
-        if (validatorsCount != validatorAddressCardanoData.length) {
+        if (validatorsCount != _validatorAddressCardanoData.length) {
             revert InvalidData("validators count");
         }
         // set validator cardano data for each validator
-        for (uint i; i < validatorAddressCardanoData.length; i++) {
-            ValidatorAddressCardanoData calldata dt = validatorAddressCardanoData[i];
+        for (uint i; i < _validatorAddressCardanoData.length; i++) {
+            ValidatorAddressCardanoData calldata dt = _validatorAddressCardanoData[i];
             validatorsCardanoDataPerAddress[_chainId][dt.addr] = dt.data;
         }
         _updateValidatorCardanoData(_chainId);
     }
 
     function addValidatorCardanoData(
-        string calldata _chainId,
-        address addr,
-        ValidatorCardanoData calldata data
+        uint8 _chainId,
+        address _addr,
+        ValidatorCardanoData calldata _data
     ) external onlyBridge {
         // We dont have enough stack to validate signatures bellow
         // but if validator does not provide valid keys he will not be able to send batches
@@ -92,15 +92,17 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         // if (!_isSignatureValid(REGISTRATION_MESSAGE, _validationSignatureFee, data.verifyingKeyFee, false)) {
         //     revert InvalidSignature();
         // }
-        validatorsCardanoDataPerAddress[_chainId][addr] = data;
+        validatorsCardanoDataPerAddress[_chainId][_addr] = _data;
         _updateValidatorCardanoData(_chainId);
     }
 
-    function getValidatorsCardanoData(string calldata _chainId) external view returns (ValidatorCardanoData[] memory) {
+    function getValidatorsCardanoData(
+        uint8 _chainId
+    ) external view returns (ValidatorCardanoData[] memory _validatorsCardanoData) {
         return validatorsCardanoData[_chainId];
     }
 
-    function getQuorumNumberOfValidators() external view returns (uint8) {
+    function getQuorumNumberOfValidators() external view returns (uint8 _quorum) {
         // return (validatorsCount * 2) / 3 + ((validatorsCount * 2) % 3 == 0 ? 0 : 1); is same as (A + B - 1) / B
         return (validatorsCount * 2 + 2) / 3;
     }
@@ -109,16 +111,15 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         return validatorsCount;
     }
 
-    function _updateValidatorCardanoData(string calldata _chainId) internal {
+    function _updateValidatorCardanoData(uint8 _chainId) internal {
         // validatorsCardanoDataPerAddress must be set for all the validator addresses
         uint cnt = 0;
         uint256 validatorsAddressesLength = validatorsAddresses.length;
         for (uint i; i < validatorsAddressesLength; i++) {
-            if (bytes(validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]].verifyingKey).length > 0) {
+            if (validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]].verifyingKey != "") {
                 cnt++;
             }
         }
-
         if (cnt != validatorsAddressesLength) {
             return;
         }
@@ -130,14 +131,14 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     }
 
     function _isSignatureValid(
-        string calldata message,
-        string calldata signature,
-        string memory verifyingKey,
-        bool isTx
+        bytes memory _txRaw,
+        bytes memory _signature,
+        bytes32 _verifyingKey,
+        bool _isTx
     ) internal view returns (bool) {
         // solhint-disable-line avoid-low-level-calls
         (bool callSuccess, bytes memory returnData) = PRECOMPILE.staticcall{gas: PRECOMPILE_GAS}(
-            abi.encode(message, signature, verifyingKey, isTx)
+            abi.encode(_txRaw, _signature, _verifyingKey, _isTx)
         );
 
         return callSuccess && abi.decode(returnData, (bool));

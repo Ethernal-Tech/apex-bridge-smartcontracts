@@ -15,16 +15,16 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     Validators private validators;
 
     // hash -> multisigSignatures
-    mapping(bytes32 => string[]) private multisigSignatures;
+    mapping(bytes32 => bytes[]) private multisigSignatures;
 
     // hash -> multisigSignatures
-    mapping(bytes32 => string[]) private feePayerMultisigSignatures;
+    mapping(bytes32 => bytes[]) private feePayerMultisigSignatures;
 
     // hash -> user address -> true/false
     mapping(bytes32 => mapping(address => bool)) private hasVoted; // for resubmit
 
-    // BlockchainID -> ConfirmedBatch
-    mapping(string => ConfirmedBatch) public lastConfirmedBatch;
+    // BlockchainId -> ConfirmedBatch
+    mapping(uint8 => ConfirmedBatch) public lastConfirmedBatch;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -49,8 +49,8 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     }
 
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
-        string calldata _destinationChainId = _signedBatch.destinationChainId;
-        uint256 _sbId = lastConfirmedBatch[_destinationChainId].id + 1;
+        uint8 _destinationChainId = _signedBatch.destinationChainId;
+        uint64 _sbId = lastConfirmedBatch[_destinationChainId].id + 1;
 
         if (_signedBatch.id != _sbId) {
             return; // skip if this is not batch we are expecting
@@ -60,10 +60,10 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             abi.encode(
                 SignedBatchWithoutSignatures(
                     _signedBatch.id,
-                    _destinationChainId,
-                    _signedBatch.rawTransaction,
                     _signedBatch.firstTxNonceId,
                     _signedBatch.lastTxNonceId,
+                    _destinationChainId,
+                    _signedBatch.rawTransaction,
                     _signedBatch.usedUTXOs
                 )
             )
@@ -89,17 +89,17 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         // check if quorum reached (+1 is last vote)
         if (_numberOfVotes + 1 >= _quorumCount) {
             lastConfirmedBatch[_destinationChainId] = ConfirmedBatch(
-                _sbId,
-                _signedBatch.rawTransaction,
                 multisigSignatures[_sbHash],
-                feePayerMultisigSignatures[_sbHash]
+                feePayerMultisigSignatures[_sbHash],
+                _signedBatch.rawTransaction,
+                _sbId
             );
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
         }
     }
 
-    function getConfirmedBatch(string calldata _destinationChain) external view returns (ConfirmedBatch memory batch) {
+    function getConfirmedBatch(uint8 _destinationChain) external view returns (ConfirmedBatch memory _batch) {
         return lastConfirmedBatch[_destinationChain];
     }
 

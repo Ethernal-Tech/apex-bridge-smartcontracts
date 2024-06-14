@@ -10,11 +10,11 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     address private claimsAddress;
     address private signedBatchesAddress;
 
-    // BlockchainID -> batchId -> SignedBatch
-    mapping(string => mapping(uint256 => ConfirmedSignedBatchData)) public confirmedSignedBatches;
+    // BlockchainId -> batchId -> SignedBatch
+    mapping(uint8 => mapping(uint64 => ConfirmedSignedBatchData)) public confirmedSignedBatches;
 
-    // Blochchain ID -> blockNumber
-    mapping(string => int256) public currentBatchBlock;
+    // BlochchainId -> blockNumber
+    mapping(uint8 => int256) public currentBatchBlock;
 
     // TansactionHash -> Voter -> Voted
     mapping(bytes32 => mapping(address => bool)) public hasVoted;
@@ -40,20 +40,20 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     }
 
     function getConfirmedSignedBatchData(
-        string calldata _chainId,
-        uint256 _batchId
-    ) external view returns (ConfirmedSignedBatchData memory) {
+        uint8 _chainId,
+        uint64 _batchId
+    ) external view returns (ConfirmedSignedBatchData memory _confirmedSignedBatchData) {
         return confirmedSignedBatches[_chainId][_batchId];
     }
 
-    function resetCurrentBatchBlock(string calldata _chainId) external onlyClaims {
+    function resetCurrentBatchBlock(uint8 _chainId) external onlyClaims {
         currentBatchBlock[_chainId] = int256(-1);
     }
 
     function setConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
         // because of UnimplementedFeatureError: Copying of type struct IBridgeStructs.UTXO memory[] memory to storage not yet supported.
-        string calldata destinationChainId = _signedBatch.destinationChainId;
-        uint256 signedBatchID = _signedBatch.id;
+        uint8 destinationChainId = _signedBatch.destinationChainId;
+        uint64 signedBatchID = _signedBatch.id;
 
         confirmedSignedBatches[destinationChainId][signedBatchID].firstTxNonceId = _signedBatch.firstTxNonceId;
         confirmedSignedBatches[destinationChainId][signedBatchID].lastTxNonceId = _signedBatch.lastTxNonceId;

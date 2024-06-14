@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -72,11 +72,11 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     // Slots
-    function submitLastObservedBlocks(
-        string calldata chainID,
-        CardanoBlock[] calldata blocks
-    ) external override onlyValidator {
-        slots.updateBlocks(chainID, blocks, msg.sender);
+    function submitLastObservedBlocks(uint8 _chainId, CardanoBlock[] calldata _blocks) external override onlyValidator {
+        if (!claims.isChainRegistered(_chainId)) {
+            revert ChainIsNotRegistered(_chainId);
+        }
+        slots.updateBlocks(_chainId, _blocks, msg.sender);
     }
 
     // Chain registration by Owner
@@ -96,7 +96,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint256 _tokenQuantity,
         ValidatorCardanoData calldata _validatorCardanoData
     ) external override onlyValidator {
-        string calldata chainId = _chain.id;
+        uint8 chainId = _chain.id;
         if (claims.isChainRegistered(chainId)) {
             revert ChainAlreadyRegistered(chainId);
         }
@@ -117,7 +117,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     function _registerChain(Chain calldata _chain, UTXOs calldata _initialUTXOs, uint256 _tokenQuantity) internal {
-        string calldata chainId = _chain.id;
+        uint8 chainId = _chain.id;
         claims.setChainRegistered(chainId);
         chains.push();
         uint256 chainIndex = chains.length - 1;
@@ -139,16 +139,16 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     // Queries
 
     // True if there are enough confirmed transactions or the timeout between two batches is exceeded.
-    function shouldCreateBatch(string calldata _destinationChain) public view override returns (bool batch) {
+    function shouldCreateBatch(uint8 _destinationChain) public view override returns (bool _batch) {
         return claims.shouldCreateBatch(_destinationChain);
     }
 
-    function getNextBatchId(string calldata _destinationChain) external view override returns (uint256 result) {
-        if (!claims.shouldCreateBatch(_destinationChain)) {
+    function getNextBatchId(uint8 _destinationChain) external view override returns (uint64 _result) {
+        if (!shouldCreateBatch(_destinationChain)) {
             return 0;
         }
 
-        (uint256 batchId, ) = signedBatches.lastConfirmedBatch(_destinationChain);
+        (, uint64 batchId) = signedBatches.lastConfirmedBatch(_destinationChain);
 
         return batchId + 1;
     }
@@ -156,45 +156,39 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     // Will return confirmed transactions until NEXT_BATCH_TIMEOUT_BLOCK or maximum number of transactions that
     // can be included in the batch, if the maximum number of transactions in a batch has been exceeded
     function getConfirmedTransactions(
-        string calldata _destinationChain
+        uint8 _destinationChain
     ) external view override returns (ConfirmedTransaction[] memory _confirmedTransactions) {
         if (!claims.shouldCreateBatch(_destinationChain)) {
             revert CanNotCreateBatchYet(_destinationChain);
         }
 
-        uint256 firstTxNonce = claims.lastBatchedTxNonce(_destinationChain) + 1;
+        uint64 firstTxNonce = claims.lastBatchedTxNonce(_destinationChain) + 1;
 
-        uint256 counterConfirmedTransactions = claims.getBatchingTxsCount(_destinationChain);
+        uint64 counterConfirmedTransactions = claims.getBatchingTxsCount(_destinationChain);
         _confirmedTransactions = new ConfirmedTransaction[](counterConfirmedTransactions);
 
-        for (uint i; i < counterConfirmedTransactions; i++) {
+        for (uint64 i; i < counterConfirmedTransactions; i++) {
             _confirmedTransactions[i] = claims.getConfirmedTransaction(_destinationChain, firstTxNonce + i);
         }
 
         return _confirmedTransactions;
     }
 
-    function getAvailableUTXOs(
-        string calldata _destinationChain
-    ) external view override returns (UTXOs memory availableUTXOs) {
+    function getAvailableUTXOs(uint8 _destinationChain) external view override returns (UTXOs memory _availableUTXOs) {
         return utxosc.getChainUTXOs(_destinationChain);
     }
 
-    function getConfirmedBatch(
-        string calldata _destinationChain
-    ) external view override returns (ConfirmedBatch memory batch) {
+    function getConfirmedBatch(uint8 _destinationChain) external view override returns (ConfirmedBatch memory _batch) {
         return signedBatches.getConfirmedBatch(_destinationChain);
     }
 
     function getValidatorsCardanoData(
-        string calldata _chainId
+        uint8 _chainId
     ) external view override returns (ValidatorCardanoData[] memory validatorCardanoData) {
         return validators.getValidatorsCardanoData(_chainId);
     }
 
-    function getLastObservedBlock(
-        string calldata _sourceChain
-    ) external view override returns (CardanoBlock memory cblock) {
+    function getLastObservedBlock(uint8 _sourceChain) external view override returns (CardanoBlock memory _cblock) {
         return slots.getLastObservedBlock(_sourceChain);
     }
 
@@ -202,10 +196,8 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         return chains;
     }
 
-    function getRawTransactionFromLastBatch(
-        string calldata _destinationChain
-    ) external view override returns (string memory) {
-        (, string memory _rawTransaction) = signedBatches.lastConfirmedBatch(_destinationChain);
+    function getRawTransactionFromLastBatch(uint8 _destinationChain) external view override returns (bytes memory) {
+        (bytes memory _rawTransaction, ) = signedBatches.lastConfirmedBatch(_destinationChain);
         return _rawTransaction;
     }
 
