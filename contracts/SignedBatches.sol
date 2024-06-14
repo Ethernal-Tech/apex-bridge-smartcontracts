@@ -15,10 +15,10 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     Validators private validators;
 
     // hash -> multisigSignatures
-    mapping(bytes32 => bytes32[]) private multisigSignatures;
+    mapping(bytes32 => bytes[]) private multisigSignatures;
 
     // hash -> multisigSignatures
-    mapping(bytes32 => bytes32[]) private feePayerMultisigSignatures;
+    mapping(bytes32 => bytes[]) private feePayerMultisigSignatures;
 
     // hash -> user address -> true/false
     mapping(bytes32 => mapping(address => bool)) private hasVoted; // for resubmit

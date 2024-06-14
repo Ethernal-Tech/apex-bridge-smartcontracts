@@ -7,8 +7,8 @@ interface IBridgeStructs {
         uint64 firstTxNonceId;
         uint64 lastTxNonceId;
         uint8 destinationChainId;
-        bytes32 multisigSignature;
-        bytes32 feePayerMultisigSignature;
+        bytes multisigSignature;
+        bytes feePayerMultisigSignature;
         bytes32 rawTransaction;
         UTXOs usedUTXOs;
     }
@@ -29,8 +29,8 @@ interface IBridgeStructs {
     }
 
     struct ConfirmedBatch {
-        bytes32[] multisigSignatures;
-        bytes32[] feePayerMultisigSignatures;
+        bytes[] multisigSignatures;
+        bytes[] feePayerMultisigSignatures;
         bytes32 rawTransaction;
         uint64 id;
     }
@@ -104,7 +104,7 @@ interface IBridgeStructs {
         bytes32 previousRefundTxHash;
         // validatorsArray signature over raw transaction
         // note: only multisig signs refund txs
-        bytes32 multisigSignature;
+        bytes multisigSignature;
         // the refund transaction itself
         bytes32 rawTransaction;
         // retry attempt counter
