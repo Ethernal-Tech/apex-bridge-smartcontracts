@@ -9,7 +9,7 @@ import "./interfaces/IBridgeStructs.sol";
 contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     // slither-disable too-many-digits
     address constant PRECOMPILE = 0x0000000000000000000000000000000000002050;
-    uint32 constant PRECOMPILE_GAS = 150000;
+    uint32 constant PRECOMPILE_GAS = 50000;
 
     address private bridgeAddress;
 
