@@ -52,7 +52,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
 
     function isSignatureValid(
         uint8 _chainId,
-        bytes32 _txRaw,
+        bytes memory _txRaw,
         bytes memory _signature,
         bytes memory _signatureFee,
         address _validatorAddr
@@ -131,7 +131,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     }
 
     function _isSignatureValid(
-        bytes32 _txRaw,
+        bytes memory _txRaw,
         bytes memory _signature,
         bytes32 _verifyingKey,
         bool _isTx
