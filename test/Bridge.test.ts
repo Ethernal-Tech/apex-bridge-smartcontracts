@@ -150,6 +150,26 @@ describe("Bridge Contract", function () {
       verifyingKeyFee: "0x7465737600000000000000000000000000000000000000000000000000000002",
     };
 
+    const batchProposerData = {
+      multisigUTXOs: [
+        {
+          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+          txIndex: 0,
+          nonce: 0,
+          amount: 201,
+        },
+      ],
+      feePayerUTXOs: [
+        {
+          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+          txIndex: 2,
+          nonce: 0,
+          amount: 51,
+        },
+      ],
+      slot: 1,
+    };
+
     const validatorClaimsBRC = {
       bridgingRequestClaims: [
         {
@@ -461,6 +481,7 @@ describe("Bridge Contract", function () {
           },
         ],
       },
+      proposerData: batchProposerData,
     };
 
     const cardanoBlocks = [
@@ -2093,32 +2114,6 @@ describe("Bridge Contract", function () {
 
       expect(confBatch.firstTxNonceId).to.equal(signedBatch.firstTxNonceId);
       expect(confBatch.lastTxNonceId).to.equal(signedBatch.lastTxNonceId);
-      expect(confBatch.usedUTXOs.feePayerOwnedUTXOs.length).to.equal(signedBatch.usedUTXOs.feePayerOwnedUTXOs.length);
-      expect(confBatch.usedUTXOs.multisigOwnedUTXOs.length).to.equal(signedBatch.usedUTXOs.multisigOwnedUTXOs.length);
-
-      for (let i = 0; i < confBatch.usedUTXOs.multisigOwnedUTXOs.length; i++) {
-        expect(confBatch.usedUTXOs.multisigOwnedUTXOs[i].txHash).to.equal(
-          signedBatch.usedUTXOs.multisigOwnedUTXOs[i].txHash
-        );
-        expect(confBatch.usedUTXOs.multisigOwnedUTXOs[i].txIndex).to.equal(
-          signedBatch.usedUTXOs.multisigOwnedUTXOs[i].txIndex
-        );
-        expect(confBatch.usedUTXOs.multisigOwnedUTXOs[i].amount).to.equal(
-          signedBatch.usedUTXOs.multisigOwnedUTXOs[i].amount
-        );
-      }
-
-      for (let i = 0; i < confBatch.usedUTXOs.feePayerOwnedUTXOs.length; i++) {
-        expect(confBatch.usedUTXOs.feePayerOwnedUTXOs[i].txHash).to.equal(
-          signedBatch.usedUTXOs.feePayerOwnedUTXOs[i].txHash
-        );
-        expect(confBatch.usedUTXOs.feePayerOwnedUTXOs[i].txIndex).to.equal(
-          signedBatch.usedUTXOs.feePayerOwnedUTXOs[i].txIndex
-        );
-        expect(confBatch.usedUTXOs.feePayerOwnedUTXOs[i].amount).to.equal(
-          signedBatch.usedUTXOs.feePayerOwnedUTXOs[i].amount
-        );
-      }
 
       expect(confBatch.firstTxNonceId).to.equal(signedBatch.firstTxNonceId);
       expect(confBatch.lastTxNonceId).to.equal(signedBatch.lastTxNonceId);
