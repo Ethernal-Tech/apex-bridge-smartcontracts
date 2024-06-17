@@ -43,6 +43,7 @@ interface IBridgeStructs {
     struct UTXO {
         bytes32 txHash;
         uint64 txIndex;
+        uint64 amount;
     }
 
     struct CardanoBlock {
