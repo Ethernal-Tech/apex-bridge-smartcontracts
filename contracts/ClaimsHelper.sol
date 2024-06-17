@@ -51,13 +51,13 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     }
 
     function setConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
-        // because of UnimplementedFeatureError: Copying of type struct IBridgeStructs.UTXO memory[] memory to storage not yet supported.
         uint8 destinationChainId = _signedBatch.destinationChainId;
         uint64 signedBatchID = _signedBatch.id;
 
-        confirmedSignedBatches[destinationChainId][signedBatchID].firstTxNonceId = _signedBatch.firstTxNonceId;
-        confirmedSignedBatches[destinationChainId][signedBatchID].lastTxNonceId = _signedBatch.lastTxNonceId;
-        confirmedSignedBatches[destinationChainId][signedBatchID].usedUTXOs = _signedBatch.usedUTXOs;
+        confirmedSignedBatches[destinationChainId][signedBatchID] = ConfirmedSignedBatchData(
+            _signedBatch.firstTxNonceId,
+            _signedBatch.lastTxNonceId
+        );
         currentBatchBlock[destinationChainId] = int256(block.number);
     }
 

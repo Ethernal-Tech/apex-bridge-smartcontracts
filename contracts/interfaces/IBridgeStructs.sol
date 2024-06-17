@@ -2,6 +2,12 @@
 pragma solidity ^0.8.24;
 
 interface IBridgeStructs {
+    struct BatchProposerData {
+        UTXO[] multisigUTXOs;
+        UTXO[] feePayerUTXOs;
+        uint64 slot;
+    }
+
     struct SignedBatch {
         uint64 id;
         uint64 firstTxNonceId;
@@ -10,22 +16,12 @@ interface IBridgeStructs {
         bytes multisigSignature;
         bytes feePayerMultisigSignature;
         bytes rawTransaction;
-        UTXOs usedUTXOs;
-    }
-
-    struct SignedBatchWithoutSignatures {
-        uint64 id;
-        uint64 firstTxNonceId;
-        uint64 lastTxNonceId;
-        uint8 destinationChainId;
-        bytes rawTransaction;
-        UTXOs usedUTXOs;
+        BatchProposerData proposerData;
     }
 
     struct ConfirmedSignedBatchData {
         uint64 firstTxNonceId;
         uint64 lastTxNonceId;
-        UTXOs usedUTXOs;
     }
 
     struct ConfirmedBatch {
@@ -44,16 +40,9 @@ interface IBridgeStructs {
         Receiver[] receivers;
     }
 
-    struct UTXOs {
-        UTXO[] multisigOwnedUTXOs;
-        UTXO[] feePayerOwnedUTXOs;
-    }
-
     struct UTXO {
-        uint64 nonce; // this is set by smart contract - order of confirmed UTXOs
-        uint64 txIndex;
-        uint64 amount;
         bytes32 txHash;
+        uint64 txIndex;
     }
 
     struct CardanoBlock {
@@ -74,7 +63,6 @@ interface IBridgeStructs {
         bytes32 observedTransactionHash;
         // key is the address on destination UTXO chain; value is the amount of tokens
         Receiver[] receivers;
-        UTXO outputUTXO;
         uint256 totalAmount;
         uint8 sourceChainId;
         uint8 destinationChainId;
@@ -86,7 +74,6 @@ interface IBridgeStructs {
         uint64 batchNonceId;
         // where the batch was executed
         uint8 chainId;
-        UTXOs outputUTXOs;
     }
 
     struct BatchExecutionFailedClaim {
@@ -112,8 +99,6 @@ interface IBridgeStructs {
         // chain id where the refund tx will be executed
         uint8 chainId;
         string receiver;
-        // UTXO that multisig received in invalid transaction
-        UTXO utxo;
     }
 
     struct RefundExecutedClaim {
@@ -123,8 +108,6 @@ interface IBridgeStructs {
         bytes32 refundTxHash;
         // chain id where the refund was executed
         uint8 chainId;
-        // UTXO that multisig received as change after paying network fee
-        UTXO utxo;
     }
 
     struct Receiver {

@@ -6,13 +6,11 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
 import "./ClaimsHelper.sol";
-import "./UTXOsc.sol";
 import "./Validators.sol";
 
 contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
-    UTXOsc private utxosc;
     Validators private validators;
 
     // BlockchainId -> bool
@@ -53,12 +51,10 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function setDependencies(
         address _bridgeAddress,
         address _claimsHelperAddress,
-        address _utxosc,
         address _validatorsAddress
     ) external onlyOwner {
         bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
-        utxosc = UTXOsc(_utxosc);
         validators = Validators(_validatorsAddress);
     }
 
@@ -140,7 +136,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             uint8 sourceChainID = _claim.sourceChainId;
 
             chainTokenQuantity[sourceChainID] -= receiversSum;
-            utxosc.addNewBridgingUTXO(sourceChainID, _claim.outputUTXO);
 
             uint256 confirmedTxCount = getBatchingTxsCount(destinationChainID);
 
@@ -184,9 +179,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             lastBatchedTxNonce[chainId] = confirmedSignedBatch.lastTxNonceId;
 
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
-
-            utxosc.addUTXOs(chainId, _claim.outputUTXOs);
-            utxosc.removeUsedUTXOs(chainId, confirmedSignedBatch.usedUTXOs);
         }
     }
 
