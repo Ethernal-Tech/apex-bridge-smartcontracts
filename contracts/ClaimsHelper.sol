@@ -92,6 +92,10 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         return lastProposedBatchData[_destinationChain];
     }
 
+    function resetLastProposedBatchData(uint8 _chainId) external onlyClaims {
+        lastProposedBatchData[_chainId].slot = 0;
+    }
+
     modifier onlySignedBatchesOrClaims() {
         if (msg.sender != signedBatchesAddress && msg.sender != claimsAddress) revert NotSignedBatchesOrBridge();
         _;
