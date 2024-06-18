@@ -135,14 +135,14 @@ describe("Bridge Contract", function () {
 
     const chain1 = {
       id: 1,
-      addressMultisig: "0x",
-      addressFeePayer: "0x",
+      addressMultisig: "addr_test1vqeux7xwusdju9dvsj8h7mca9aup2k439kfmwy773xxc2hcu7zy99",
+      addressFeePayer: "addr_test1vrqaf07rkulldmr68nxktctsycs4wlj6urzlvpecwf37fmgc38xc6",
     };
 
     const chain2 = {
       id: 2,
-      addressMultisig: "0x",
-      addressFeePayer: "0x",
+      addressMultisig: "addr_test1vr8zy7jk35n9yyw4jg0r4z98eygmrqxvz5sch4dva9c8s2qjv2edc",
+      addressFeePayer: "addr_test1vz8g63va7qat4ajyja4sndp06rv3penf3htqcwt6x4znyacfpea75",
     };
 
     const validatorCardanoData = {
@@ -155,16 +155,12 @@ describe("Bridge Contract", function () {
         {
           txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           txIndex: 0,
-          nonce: 0,
-          amount: 201,
         },
       ],
       feePayerUTXOs: [
         {
           txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           txIndex: 2,
-          nonce: 0,
-          amount: 51,
         },
       ],
       slot: 1,
@@ -456,31 +452,7 @@ describe("Bridge Contract", function () {
       multisigSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
       feePayerMultisigSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
       firstTxNonceId: 1,
-      lastTxNonceId: 1,
-      usedUTXOs: {
-        multisigOwnedUTXOs: [
-          {
-            txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-            txIndex: 0,
-            nonce: 0,
-            amount: 200,
-          },
-          {
-            txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-            txIndex: 2,
-            nonce: 0,
-            amount: 50,
-          },
-        ],
-        feePayerOwnedUTXOs: [
-          {
-            txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-            txIndex: 1,
-            nonce: 0,
-            amount: 50,
-          },
-        ],
-      },
+      lastTxNonceId: 1,     
       proposerData: batchProposerData,
     };
 
