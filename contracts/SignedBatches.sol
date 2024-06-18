@@ -15,7 +15,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
     Validators private validators;
-    
+
     // hash -> multisigSignatures
     mapping(bytes32 => bytes[]) private multisigSignatures;
 
@@ -27,9 +27,6 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
 
     // BlockchainId -> ConfirmedBatch
     mapping(uint8 => ConfirmedBatch) public lastConfirmedBatch;
-
-    // BlockchainId -> BatchProposerData
-    mapping(uint8 => BatchProposerData) public lastProposedBatchData;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -86,7 +83,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
 
         // if this validator is proposer -> update lastProposedBatchData
         if (validators.isValidatorProposer(_caller, block.number / proposerEpochBlocksCount)) {
-            lastProposedBatchData[_destinationChainId] = _signedBatch.proposerData;
+            claimsHelper.setLastProposedBatchData(_destinationChainId, _signedBatch.proposerData);
         }
 
         hasVoted[_sbHash][_caller] = true;
@@ -111,7 +108,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     }
 
     function getBatcherProposedData(uint8 _destinationChain) external view returns (BatchProposerData memory) {
-        return lastProposedBatchData[_destinationChain];
+        return claimsHelper.getBatcherProposedData(_destinationChain);
     }
 
     modifier onlyBridge() {
