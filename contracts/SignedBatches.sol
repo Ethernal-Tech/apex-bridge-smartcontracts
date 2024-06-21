@@ -76,11 +76,6 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         uint256 _quorumCount = validators.getQuorumNumberOfValidators();
         uint256 _numberOfVotes = multisigSignatures[_sbHash].length;
 
-        // check if consensus is already reached for this batch
-        if (_numberOfVotes >= _quorumCount) {
-            return;
-        }
-
         // if this validator is proposer -> update lastProposedBatchData
         if (validators.isValidatorProposer(_caller, block.number / proposerEpochBlocksCount)) {
             claimsHelper.setLastProposedBatchData(_destinationChainId, _signedBatch.proposerData);

@@ -145,6 +145,7 @@ interface IBridgeStructs {
     error NotClaims();
     error NotSignedBatches();
     error NotSignedBatchesOrBridge();
+    error NotSignedBatchesOrClaims();
     error NotEnoughBridgingTokensAvailable(bytes32 _claimTransactionHash);
     error CanNotCreateBatchYet(uint8 _blockchainId);
     error InvalidData(string data);
