@@ -121,11 +121,6 @@ interface IBridgeStructs {
         string addressFeePayer;
     }
 
-    struct LastObservedBlockInfo {
-        bytes32 blockHash;
-        uint256 slot;
-    }
-
     struct ValidatorAddressCardanoData {
         address addr;
         ValidatorCardanoData data;
