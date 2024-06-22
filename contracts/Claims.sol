@@ -26,7 +26,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     mapping(uint8 => uint256) public chainTokenQuantity;
 
     // BlockchainId -> nonce -> ConfirmedTransaction
-    mapping(uint8 => mapping(uint64 => ConfirmedTransaction)) private confirmedTransactions;
+    mapping(uint8 => mapping(uint64 => ConfirmedTransaction)) public confirmedTransactions;
 
     // chainId -> nonce (nonce of the last confirmed transaction)
     mapping(uint8 => uint64) public lastConfirmedTxNonce;

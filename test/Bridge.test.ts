@@ -1083,26 +1083,95 @@ describe("Bridge Contract", function () {
       );
     });
 
-    it("Should add new Bridging Request Claim if there are enough votes", async function () {
+    it("Should increase lastConfirmedTxNonce when consensus is reached on Bridging Request Claim", async function () {
       const { bridge, claims, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
       await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
 
-      const tokenAmountFirst = await claims.getTokenQuantity(chain1.id);
-
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
 
-      const tokenAmountAfterSomeSubmits = await claims.getTokenQuantity(chain1.id);
-      expect(tokenAmountAfterSomeSubmits).to.equal(tokenAmountFirst);
+      expect(
+        await claims.lastConfirmedTxNonce(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)
+      ).to.equal(0);
 
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-      const tokenAmountFinal = await claims.getTokenQuantity(chain1.id);
-      expect(tokenAmountFinal).to.equal(tokenAmountFirst - BigInt("100"));
+      expect(
+        await claims.lastConfirmedTxNonce(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)
+      ).to.equal(1);
+    });
+
+    it("Should store new confirmedTransactions when consensus is reached on Bridging Request Claim", async function () {
+      const { bridge, claims, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      const destinationChainId = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
+      const nounce = await claims.lastConfirmedTxNonce(destinationChainId);
+
+      expect((await claims.confirmedTransactions(destinationChainId, nounce)).observedTransactionHash).to.equal(
+        validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash
+      );
+      expect((await claims.confirmedTransactions(destinationChainId, nounce)).sourceChainId).to.equal(
+        validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId
+      );
+      expect((await claims.confirmedTransactions(destinationChainId, nounce)).nonce).to.equal(nounce);
+      expect((await claims.confirmedTransactions(destinationChainId, nounce)).totalAmount).to.equal(
+        validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount
+      );
+      expect((await claims.confirmedTransactions(destinationChainId, nounce)).blockHeight).to.equal(
+        await ethers.provider.getBlockNumber()
+      );
+    });
+
+    it("Should set voted on Bridging Request Claim", async function () {
+      const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      const abiCoder = new ethers.AbiCoder();
+      const encoded = abiCoder.encode(
+        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint8", "uint8"],
+        [
+          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
+          [
+            [
+              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount,
+              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
+            ],
+          ],
+          validatorClaimsBRC.bridgingRequestClaims[0].totalAmount,
+          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
+          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
+        ]
+      );
+
+      const encoded20 = "0x0000000000000000000000000000000000000000000000000000000000000020" + encoded.substring(2);
+
+      const hash = ethers.keccak256(encoded20);
+
+      expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.true;
+      expect(await claimsHelper.hasVoted(hash, validators[1].address)).to.be.true;
+      expect(await claimsHelper.hasVoted(hash, validators[2].address)).to.be.true;
+      expect(await claimsHelper.hasVoted(hash, validators[3].address)).to.be.true;
     });
 
     it("Should update next timeout block with Bridging Request Claim if requirements are met", async function () {
