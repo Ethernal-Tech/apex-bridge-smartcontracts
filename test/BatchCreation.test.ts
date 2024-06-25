@@ -27,16 +27,8 @@ describe("Batch Creation", function () {
 
   describe("Batch creation", function () {
     it("SignedBatch submition should return imediatelly if chain is not registered", async function () {
-      const {
-        bridge,
-        validators,
-        owner,
-        chain1,
-        chain2,
-        validatorClaimsBRC,
-        validatorsCardanoData,
-        batchProposerData,
-      } = await loadFixture(deployBridgeFixture);
+      const { bridge, validators, owner, chain1, chain2, validatorClaimsBRC, validatorsCardanoData } =
+        await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
@@ -59,7 +51,6 @@ describe("Batch Creation", function () {
         feePayerMultisigSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
         firstTxNonceId: 1,
         lastTxNonceId: 1,
-        proposerData: batchProposerData,
       };
 
       await expect(bridge.connect(validators[0]).submitSignedBatch(signedBatch_UnregisteredChain)); // submitSignedBatch should return for unregistered chain
@@ -429,51 +420,6 @@ describe("Batch Creation", function () {
       }
 
       expect(tokenAmount).to.equal(sumAmounts);
-    });
-
-    it("Should not store Proposed Data if not sent by proposer", async function () {
-      const { bridge, owner, chain1, chain2, validators, signedBatch, validatorsCardanoData, validatorClaimsBRC } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
-
-      // wait for next timeout
-      for (let i = 0; i < 3; i++) {
-        await ethers.provider.send("evm_mine");
-      }
-
-      //not validator
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
-
-      expect((await bridge.getBatcherProposedData(signedBatch.destinationChainId)).slot).to.equal(0);
-    });
-
-    it("Should store Proposed Data if proposed by proposer", async function () {
-      const { bridge, owner, chain1, chain2, validators, signedBatch, validatorsCardanoData, validatorClaimsBRC } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
-
-      // wait for next timeout
-      for (let i = 0; i < 3; i++) {
-        await ethers.provider.send("evm_mine");
-      }
-
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
-
-      expect((await bridge.getBatcherProposedData(signedBatch.destinationChainId)).slot).to.equal(1);
     });
   });
 });

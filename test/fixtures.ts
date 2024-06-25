@@ -147,22 +147,6 @@ export async function deployBridgeFixture() {
     },
   ];
 
-  const batchProposerData = {
-    multisigUTXOs: [
-      {
-        txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        txIndex: 0,
-      },
-    ],
-    feePayerUTXOs: [
-      {
-        txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        txIndex: 2,
-      },
-    ],
-    slot: 1,
-  };
-
   const validatorClaimsBRC = {
     bridgingRequestClaims: [
       {
@@ -173,6 +157,12 @@ export async function deployBridgeFixture() {
             destinationAddress: "0x123...",
           },
         ],
+        outputUTXO: {
+          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+          txIndex: 1,
+          nonce: 0,
+          amount: 400,
+        },
         totalAmount: 100,
         sourceChainId: 1,
         destinationChainId: 2,
@@ -420,7 +410,30 @@ export async function deployBridgeFixture() {
     feePayerMultisigSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
     firstTxNonceId: 1,
     lastTxNonceId: 1,
-    proposerData: batchProposerData,
+    usedUTXOs: {
+      multisigOwnedUTXOs: [
+        {
+          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+          txIndex: 0,
+          nonce: 0,
+          amount: 200,
+        },
+        {
+          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+          txIndex: 2,
+          nonce: 0,
+          amount: 50,
+        },
+      ],
+      feePayerOwnedUTXOs: [
+        {
+          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+          txIndex: 1,
+          nonce: 0,
+          amount: 50,
+        },
+      ],
+    },
   };
 
   const cardanoBlocks = [
@@ -457,7 +470,6 @@ export async function deployBridgeFixture() {
     owner,
     chain1,
     chain2,
-    batchProposerData,
     validatorsc,
     validator6,
     validatorCardanoData,

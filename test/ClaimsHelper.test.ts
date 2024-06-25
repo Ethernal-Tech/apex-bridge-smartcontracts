@@ -41,22 +41,5 @@ describe("ClaimsHelper Contract", function () {
           .setVoted(owner.address, "0x7465737600000000000000000000000000000000000000000000000000000000")
       ).to.be.revertedWithCustomError(bridge, "NotSignedBatchesOrClaims");
     });
-
-    it("Should revert if ClaimsHelper SC setLastProposedBatchData is not called by SignedBatches SC", async function () {
-      const { bridge, claimsHelper, owner, batchProposerData } = await loadFixture(deployBridgeFixture);
-
-      await expect(
-        claimsHelper.connect(owner).setLastProposedBatchData(1, batchProposerData)
-      ).to.be.revertedWithCustomError(bridge, "NotSignedBatches");
-    });
-
-    it("Should revert if ClaimsHelper SC resetLastProposedBatchData is not called by Claims SC", async function () {
-      const { bridge, claimsHelper, owner } = await loadFixture(deployBridgeFixture);
-
-      await expect(claimsHelper.connect(owner).resetLastProposedBatchData(1)).to.be.revertedWithCustomError(
-        bridge,
-        "NotClaims"
-      );
-    });
   });
 });
