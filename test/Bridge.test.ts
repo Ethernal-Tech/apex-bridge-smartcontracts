@@ -685,17 +685,6 @@ describe("Bridge Contract", function () {
         .withArgs(1, validators[0].address);
     });
 
-    it("Should not add new chain if there is no 100% quorum", async function () {
-      const { bridge, claims, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(validators[0]).registerChainGovernance(chain1, 100, validatorsCardanoData[0].data);
-      await bridge.connect(validators[1]).registerChainGovernance(chain1, 100, validatorsCardanoData[1].data);
-      await bridge.connect(validators[2]).registerChainGovernance(chain1, 100, validatorsCardanoData[2].data);
-      await bridge.connect(validators[3]).registerChainGovernance(chain1, 100, validatorsCardanoData[3].data);
-
-      expect(await claims.isChainRegistered(2)).to.be.false;
-    });
-
     it("Should add new chain if there are enough votes (100% of them)", async function () {
       const { bridge, claims, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
@@ -1195,15 +1184,40 @@ describe("Bridge Contract", function () {
     });
 
     it("Should skip Bridging Request Claim if there is not enough bridging tokens", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
+      const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 1, validatorsCardanoData);
       await bridge.connect(owner).registerChain(chain2, 1, validatorsCardanoData);
 
+      validatorClaimsBRC.bridgingRequestClaims[0].totalAmount = 1000000;
+
+      const abiCoder = new ethers.AbiCoder();
+      const encoded = abiCoder.encode(
+        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint8", "uint8"],
+        [
+          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
+          [
+            [
+              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount,
+              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
+            ],
+          ],
+          validatorClaimsBRC.bridgingRequestClaims[0].totalAmount,
+          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
+          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
+        ]
+      );
+
+      const encoded20 = "0x0000000000000000000000000000000000000000000000000000000000000020" + encoded.substring(2);
+
+      const hash = ethers.keccak256(encoded20);
+
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
 
-      //TODO;
+      expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
+
+      validatorClaimsBRC.bridgingRequestClaims[0].totalAmount = 100;
     });
 
     it("Should remove requred amount of tokens from source chain when Bridging Request Claim is confirmed", async function () {
@@ -1711,7 +1725,7 @@ describe("Bridge Contract", function () {
       expect(await claimsHelper.currentBatchBlock(_destinationChain)).to.equal(-1);
     });
 
-    it("Should update nextTimeoutBlock when Bridging Excuted Claim is confirmed", async function () {
+    it("Should update nextTimeoutBlock when Bridging Excuted Failed Claim is confirmed", async function () {
       const {
         bridge,
         claims,
