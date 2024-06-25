@@ -181,8 +181,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             lastBatchedTxNonce[chainId] = confirmedSignedBatch.lastTxNonceId;
 
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
-
-            claimsHelper.resetLastProposedBatchData(chainId);
         }
     }
 
@@ -200,8 +198,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             claimsHelper.resetCurrentBatchBlock(chainId);
 
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
-
-            claimsHelper.resetLastProposedBatchData(chainId);
         }
     }
 

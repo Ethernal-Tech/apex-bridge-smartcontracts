@@ -2,12 +2,6 @@
 pragma solidity ^0.8.24;
 
 interface IBridgeStructs {
-    struct BatchProposerData {
-        UTXO[] multisigUTXOs;
-        UTXO[] feePayerUTXOs;
-        uint64 slot;
-    }
-
     struct SignedBatch {
         uint64 id;
         uint64 firstTxNonceId;
@@ -16,7 +10,16 @@ interface IBridgeStructs {
         bytes multisigSignature;
         bytes feePayerMultisigSignature;
         bytes rawTransaction;
-        BatchProposerData proposerData;
+        UTXOs usedUTXOs;
+    }
+
+    struct SignedBatchWithoutSignatures {
+        uint64 id;
+        uint64 firstTxNonceId;
+        uint64 lastTxNonceId;
+        uint8 destinationChainId;
+        bytes rawTransaction;
+        UTXOs usedUTXOs;
     }
 
     struct ConfirmedSignedBatchData {
@@ -38,6 +41,11 @@ interface IBridgeStructs {
         uint8 sourceChainId;
         bytes32 observedTransactionHash;
         Receiver[] receivers;
+    }
+
+    struct UTXOs {
+        UTXO[] multisigOwnedUTXOs;
+        UTXO[] feePayerOwnedUTXOs;
     }
 
     struct UTXO {

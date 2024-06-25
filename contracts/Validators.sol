@@ -50,11 +50,6 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         return addressValidatorIndex[_addr] != 0;
     }
 
-    function isValidatorProposer(address _addr, uint256 number) public view returns (bool _isProposer) {
-        uint256 idx = addressValidatorIndex[_addr] - 1;
-        return number % validatorsAddresses.length == idx;
-    }
-
     function isSignatureValid(
         uint8 _chainId,
         bytes memory _txRaw,

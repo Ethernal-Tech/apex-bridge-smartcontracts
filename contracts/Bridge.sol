@@ -166,12 +166,6 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         return _confirmedTransactions;
     }
 
-    function getBatcherProposedData(
-        uint8 _destinationChain
-    ) external view override returns (BatchProposerData memory _data) {
-        return signedBatches.getBatcherProposedData(_destinationChain);
-    }
-
     function getConfirmedBatch(uint8 _destinationChain) external view override returns (ConfirmedBatch memory _batch) {
         return signedBatches.getConfirmedBatch(_destinationChain);
     }

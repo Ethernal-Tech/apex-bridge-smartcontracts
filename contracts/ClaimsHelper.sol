@@ -13,9 +13,6 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     // BlockchainId -> batchId -> SignedBatch
     mapping(uint8 => mapping(uint64 => ConfirmedSignedBatchData)) public confirmedSignedBatches;
 
-    // BlockchainId -> BatchProposerData
-    mapping(uint8 => BatchProposerData) public lastProposedBatchData;
-
     // BlochchainId -> blockNumber
     mapping(uint8 => int256) public currentBatchBlock;
 
@@ -82,18 +79,6 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         hasVoted[_hash][_voter] = true;
         uint256 v = ++numberOfVotes[_hash]; // v is numberOfVotes[_hash] + 1
         return v;
-    }
-
-    function setLastProposedBatchData(uint8 _chainId, BatchProposerData calldata _data) external onlySignedBatches {
-        lastProposedBatchData[_chainId] = _data;
-    }
-
-    function getBatcherProposedData(uint8 _destinationChain) external view returns (BatchProposerData memory) {
-        return lastProposedBatchData[_destinationChain];
-    }
-
-    function resetLastProposedBatchData(uint8 _chainId) external onlyClaims {
-        lastProposedBatchData[_chainId].slot = 0;
     }
 
     modifier onlySignedBatchesOrClaims() {

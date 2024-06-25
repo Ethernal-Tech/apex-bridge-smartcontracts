@@ -41,10 +41,6 @@ abstract contract IBridge is IBridgeStructs {
         uint8 _destinationChain
     ) external view virtual returns (ConfirmedTransaction[] memory _confirmedTransactions);
 
-    function getBatcherProposedData(
-        uint8 _destinationChain
-    ) external view virtual returns (BatchProposerData memory _data);
-
     function getConfirmedBatch(uint8 _destinationChain) external view virtual returns (ConfirmedBatch memory _batch);
 
     function getValidatorsCardanoData(
