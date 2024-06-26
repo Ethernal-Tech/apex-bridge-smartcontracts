@@ -19,7 +19,8 @@ interface IBridgeStructs {
         uint64 lastTxNonceId;
         uint8 destinationChainId;
         bytes rawTransaction;
-        UTXOs usedUTXOs;
+        UTXO[] multisigOwnedUTXOs;
+        UTXO[] feePayerOwnedUTXOs;
     }
 
     struct ConfirmedSignedBatchData {

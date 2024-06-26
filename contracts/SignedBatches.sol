@@ -21,7 +21,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     mapping(bytes32 => bytes[]) private feePayerMultisigSignatures;
 
     // hash -> user address -> true/false
-    mapping(bytes32 => mapping(address => bool)) private hasVoted; // for resubmit
+    mapping(bytes32 => mapping(address => bool)) public hasVoted; // for resubmit
 
     // BlockchainId -> ConfirmedBatch
     mapping(uint8 => ConfirmedBatch) public lastConfirmedBatch;
@@ -64,7 +64,8 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
                     _signedBatch.lastTxNonceId,
                     _destinationChainId,
                     _signedBatch.rawTransaction,
-                    _signedBatch.usedUTXOs
+                    _signedBatch.usedUTXOs.multisigOwnedUTXOs,
+                    _signedBatch.usedUTXOs.feePayerOwnedUTXOs
                 )
             )
         );
@@ -78,6 +79,8 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         uint256 _numberOfVotes = multisigSignatures[_sbHash].length;
 
         hasVoted[_sbHash][_caller] = true;
+        bool result = hasVoted[_sbHash][_caller];
+
         multisigSignatures[_sbHash].push(_signedBatch.multisigSignature);
         feePayerMultisigSignatures[_sbHash].push(_signedBatch.feePayerMultisigSignature);
 

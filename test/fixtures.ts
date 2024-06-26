@@ -160,8 +160,6 @@ export async function deployBridgeFixture() {
         outputUTXO: {
           txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           txIndex: 1,
-          nonce: 0,
-          amount: 400,
         },
         totalAmount: 100,
         sourceChainId: 1,
@@ -186,8 +184,6 @@ export async function deployBridgeFixture() {
         outputUTXO: {
           txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           txIndex: 0,
-          nonce: 1,
-          amount: 200,
         },
         totalAmount: 100,
         sourceChainId: 1,
@@ -213,8 +209,6 @@ export async function deployBridgeFixture() {
         outputUTXO: {
           txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           txIndex: 0,
-          nonce: 0,
-          amount: 200,
         },
         sourceChainId: 1,
         destinationChainId: 2,
@@ -252,16 +246,12 @@ export async function deployBridgeFixture() {
             {
               txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
               txIndex: 0,
-              nonce: 0,
-              amount: 201,
             },
           ],
           feePayerOwnedUTXOs: [
             {
               txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
               txIndex: 2,
-              nonce: 0,
-              amount: 51,
             },
           ],
         },
@@ -331,8 +321,6 @@ export async function deployBridgeFixture() {
         utxo: {
           txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           txIndex: 0,
-          nonce: 0,
-          amount: 200,
         },
         rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
         multisigSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
@@ -355,8 +343,6 @@ export async function deployBridgeFixture() {
         utxo: {
           txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           txIndex: 0,
-          nonce: 0,
-          amount: 200,
         },
       },
     ],
@@ -375,8 +361,6 @@ export async function deployBridgeFixture() {
         utxo: {
           txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           txIndex: 0,
-          nonce: 0,
-          amount: 200,
         },
       },
     ],
@@ -395,8 +379,6 @@ export async function deployBridgeFixture() {
         utxo: {
           txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           txIndex: 0,
-          nonce: 0,
-          amount: 200,
         },
       },
     ],
@@ -415,22 +397,16 @@ export async function deployBridgeFixture() {
         {
           txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           txIndex: 0,
-          nonce: 0,
-          amount: 200,
         },
         {
           txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           txIndex: 2,
-          nonce: 0,
-          amount: 50,
         },
       ],
       feePayerOwnedUTXOs: [
         {
           txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
           txIndex: 1,
-          nonce: 0,
-          amount: 50,
         },
       ],
     },
