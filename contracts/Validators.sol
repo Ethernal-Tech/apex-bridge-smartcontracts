@@ -104,7 +104,10 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
 
     function getQuorumNumberOfValidators() external view returns (uint8 _quorum) {
         // return (validatorsCount * 2) / 3 + ((validatorsCount * 2) % 3 == 0 ? 0 : 1); is same as (A + B - 1) / B
-        return (validatorsCount * 2 + 2) / 3;
+        assembly {
+            _quorum := div(add(mul(sload(validatorsCount.slot), 2), 2), 3)
+        }
+        return _quorum;
     }
 
     function getValidatorsCount() external view returns (uint8) {
