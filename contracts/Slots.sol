@@ -12,7 +12,7 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     Validators private validators;
 
     // BlockChainId -> CardanoBlock
-    mapping(uint8 => CardanoBlock) public lastObservedBlock;
+    mapping(uint8 => CardanoBlock) private lastObservedBlock;
 
     // hash(slot, hash) -> number of votes
     mapping(bytes32 => uint64) private votes;
