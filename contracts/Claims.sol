@@ -128,7 +128,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _submitClaimsBRC(BridgingRequestClaim calldata _claim, address _caller, uint256 receiversSum) internal {
-        bytes32 claimHash = keccak256(abi.encode(_claim));
+        bytes32 claimHash = keccak256(abi.encode("BRC", _claim));
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
             claimHash,
@@ -158,7 +158,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _submitClaimsBEC(BatchExecutedClaim calldata _claim, address _caller) internal {
-        bytes32 claimHash = keccak256(abi.encode(_claim));
+        bytes32 claimHash = keccak256(abi.encode("BRC", _claim));
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
             claimHash,
@@ -191,7 +191,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _submitClaimsBEFC(BatchExecutionFailedClaim calldata _claim, address _caller) internal {
-        bytes32 claimHash = keccak256(abi.encode(_claim));
+        bytes32 claimHash = keccak256(abi.encode("BEFC", _claim));
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
             claimHash,
@@ -207,12 +207,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _submitClaimsRRC(RefundRequestClaim calldata _claim, address _caller) internal {
-        bytes32 claimHash = keccak256(abi.encode(_claim));
+        bytes32 claimHash = keccak256(abi.encode("RRC", _claim));
         claimsHelper.setVotedOnlyIfNeeded(_caller, claimHash, validators.getQuorumNumberOfValidators());
     }
 
     function _submitClaimsREC(RefundExecutedClaim calldata _claim, address _caller) internal {
-        bytes32 claimHash = keccak256(abi.encode(_claim));
+        bytes32 claimHash = keccak256(abi.encode("REC", _claim));
         claimsHelper.setVotedOnlyIfNeeded(_caller, claimHash, validators.getQuorumNumberOfValidators());
     }
 
