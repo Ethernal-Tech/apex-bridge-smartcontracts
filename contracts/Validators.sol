@@ -109,10 +109,6 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         return _quorum;
     }
 
-    function getValidatorsCount() external view returns (uint8) {
-        return validatorsCount;
-    }
-
     function _isSignatureValid(
         bytes memory _txRaw,
         bytes memory _signature,

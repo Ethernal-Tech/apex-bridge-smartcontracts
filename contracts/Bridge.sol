@@ -109,7 +109,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
         validators.addValidatorCardanoData(chainId, msg.sender, _validatorCardanoData);
 
-        if (claims.setVoted(msg.sender, chainHash) == validators.getValidatorsCount()) {
+        if (claims.setVoted(msg.sender, chainHash) == validators.validatorsCount()) {
             _registerChain(_chain, _initialUTXOs, _tokenQuantity);
         } else {
             emit newChainProposal(chainId, msg.sender);
