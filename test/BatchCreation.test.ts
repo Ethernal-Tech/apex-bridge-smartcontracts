@@ -4,11 +4,6 @@ import { ethers } from "hardhat";
 import { deployBridgeFixture } from "./fixtures";
 
 describe("Batch Creation", function () {
-  beforeEach(async () => {
-    // mock isSignatureValid precompile to always return true
-    await setCode("0x0000000000000000000000000000000000002050", "0x600160005260206000F3");
-  });
-
   async function impersonateAsContractAndMintFunds(contractAddress: string) {
     const hre = require("hardhat");
     const address = await contractAddress.toLowerCase();
