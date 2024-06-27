@@ -15,6 +15,8 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
 
     // BlockchainId -> validator address -> ValidatorCardanoData
     mapping(uint8 => mapping(address => ValidatorCardanoData)) private validatorsCardanoDataPerAddress;
+    // BlockchainId -> ValidatorCardanoData[]
+    mapping(uint8 => ValidatorCardanoData[]) private validatorsCardanoData;
 
     // keep validatorsArrayAddresses because maybe
     address[] private validatorsAddresses;
@@ -73,6 +75,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
             ValidatorAddressCardanoData calldata dt = _validatorAddressCardanoData[i];
             validatorsCardanoDataPerAddress[_chainId][dt.addr] = dt.data;
         }
+        _updateValidatorCardanoData(_chainId);
     }
 
     function addValidatorCardanoData(
@@ -90,15 +93,13 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         //     revert InvalidSignature();
         // }
         validatorsCardanoDataPerAddress[_chainId][_addr] = _data;
+        _updateValidatorCardanoData(_chainId);
     }
 
     function getValidatorsCardanoData(
         uint8 _chainId
     ) external view returns (ValidatorCardanoData[] memory _validatorsCardanoData) {
-        for (uint i; i < validatorsAddresses.length; i++) {
-            _validatorsCardanoData[i] = validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]];
-        }
-        return _validatorsCardanoData;
+        return validatorsCardanoData[_chainId];
     }
 
     function getQuorumNumberOfValidators() external view returns (uint8 _quorum) {
@@ -107,6 +108,25 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
             _quorum := div(add(mul(sload(validatorsCount.slot), 2), 2), 3)
         }
         return _quorum;
+    }
+
+    function _updateValidatorCardanoData(uint8 _chainId) internal {
+        // validatorsCardanoDataPerAddress must be set for all the validator addresses
+        uint cnt = 0;
+        uint256 validatorsAddressesLength = validatorsAddresses.length;
+        for (uint i; i < validatorsAddressesLength; i++) {
+            if (validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]].verifyingKey != "") {
+                cnt++;
+            }
+        }
+        if (cnt != validatorsAddressesLength) {
+            return;
+        }
+
+        delete validatorsCardanoData[_chainId];
+        for (uint i; i < validatorsAddressesLength; i++) {
+            validatorsCardanoData[_chainId].push(validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]]);
+        }
     }
 
     function _isSignatureValid(
