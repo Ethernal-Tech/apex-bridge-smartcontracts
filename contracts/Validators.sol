@@ -67,11 +67,12 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         uint8 _chainId,
         ValidatorAddressCardanoData[] calldata _validatorAddressCardanoData
     ) external onlyBridge {
-        if (validatorsCount != _validatorAddressCardanoData.length) {
+        uint256 _validatorAddressCardanoDataLength = _validatorAddressCardanoData.length;
+        if (validatorsCount != _validatorAddressCardanoDataLength) {
             revert InvalidData("validators count");
         }
         // set validator cardano data for each validator
-        for (uint i; i < _validatorAddressCardanoData.length; i++) {
+        for (uint i; i < _validatorAddressCardanoDataLength; i++) {
             ValidatorAddressCardanoData calldata dt = _validatorAddressCardanoData[i];
             validatorsCardanoDataPerAddress[_chainId][dt.addr] = dt.data;
         }
@@ -104,11 +105,10 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
 
     function getQuorumNumberOfValidators() external view returns (uint8 _quorum) {
         // return (validatorsCount * 2) / 3 + ((validatorsCount * 2) % 3 == 0 ? 0 : 1); is same as (A + B - 1) / B
-        return (validatorsCount * 2 + 2) / 3;
-    }
-
-    function getValidatorsCount() external view returns (uint8) {
-        return validatorsCount;
+        assembly {
+            _quorum := div(add(mul(sload(validatorsCount.slot), 2), 2), 3)
+        }
+        return _quorum;
     }
 
     function _updateValidatorCardanoData(uint8 _chainId) internal {
