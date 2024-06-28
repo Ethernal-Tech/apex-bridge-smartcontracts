@@ -79,7 +79,6 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         uint256 _numberOfVotes = multisigSignatures[_sbHash].length;
 
         hasVoted[_sbHash][_caller] = true;
-        bool result = hasVoted[_sbHash][_caller];
 
         multisigSignatures[_sbHash].push(_signedBatch.multisigSignature);
         feePayerMultisigSignatures[_sbHash].push(_signedBatch.feePayerMultisigSignature);

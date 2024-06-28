@@ -57,7 +57,7 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
             unchecked {
                 _votesNum = ++votes[_chash];
             }
-            if (_votesNum >= _quorumCnt && _cblock.blockSlot > lastObservedBlock[_chainId].blockSlot) {
+            if (_votesNum >= _quorumCnt) {
                 lastObservedBlock[_chainId] = _cblock;
             }
         }

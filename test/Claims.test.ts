@@ -91,8 +91,9 @@ describe("Claims Contract", function () {
 
       const abiCoder = new ethers.AbiCoder();
       const encoded = abiCoder.encode(
-        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint8", "uint8"],
+        ["string", "bytes32", "tuple(uint64, string)[]", "uint256", "uint8", "uint8"],
         [
+          "BRC",
           validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
           [
             [
