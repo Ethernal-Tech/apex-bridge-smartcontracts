@@ -43,6 +43,10 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         uint256 _blocksLength = _blocks.length;
         for (uint i; i < _blocksLength; i++) {
             CardanoBlock calldata _cblock = _blocks[i];
+            if (_cblock.blockSlot <= lastObservedBlock[_chainId].blockSlot) {
+                continue;
+            }
+
             bytes32 _chash = keccak256(abi.encodePacked(_chainId, _cblock.blockHash, _cblock.blockSlot));
             if (validatorVote[_chash][_caller]) {
                 // no need for additional check: || slotVotesPerChain[_chash] >= _quorumCnt
@@ -50,7 +54,7 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
             }
             validatorVote[_chash][_caller] = true;
             uint256 _votesNum = ++votes[_chash];
-            if (_votesNum >= _quorumCnt && _cblock.blockSlot > lastObservedBlock[_chainId].blockSlot) {
+            if (_votesNum >= _quorumCnt) {
                 lastObservedBlock[_chainId] = _cblock;
             }
         }

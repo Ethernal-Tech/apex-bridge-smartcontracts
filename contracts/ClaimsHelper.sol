@@ -13,6 +13,9 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     // BlockchainId -> batchId -> SignedBatch
     mapping(uint8 => mapping(uint64 => ConfirmedSignedBatchData)) public confirmedSignedBatches;
 
+    // BlockchainId -> BatchProposerData
+    mapping(uint8 => BatchProposerData) public lastProposedBatchData;
+
     // BlochchainId -> blockNumber
     mapping(uint8 => int256) public currentBatchBlock;
 
@@ -51,13 +54,13 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     }
 
     function setConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
-        // because of UnimplementedFeatureError: Copying of type struct IBridgeStructs.UTXO memory[] memory to storage not yet supported.
         uint8 destinationChainId = _signedBatch.destinationChainId;
         uint64 signedBatchID = _signedBatch.id;
 
-        confirmedSignedBatches[destinationChainId][signedBatchID].firstTxNonceId = _signedBatch.firstTxNonceId;
-        confirmedSignedBatches[destinationChainId][signedBatchID].lastTxNonceId = _signedBatch.lastTxNonceId;
-        confirmedSignedBatches[destinationChainId][signedBatchID].usedUTXOs = _signedBatch.usedUTXOs;
+        confirmedSignedBatches[destinationChainId][signedBatchID] = ConfirmedSignedBatchData(
+            _signedBatch.firstTxNonceId,
+            _signedBatch.lastTxNonceId
+        );
         currentBatchBlock[destinationChainId] = int256(block.number);
     }
 
@@ -81,8 +84,20 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         return v;
     }
 
+    function setLastProposedBatchData(uint8 _chainId, BatchProposerData calldata _data) external onlySignedBatches {
+        lastProposedBatchData[_chainId] = _data;
+    }
+
+    function getBatcherProposedData(uint8 _destinationChain) external view returns (BatchProposerData memory) {
+        return lastProposedBatchData[_destinationChain];
+    }
+
+    function resetLastProposedBatchData(uint8 _chainId) external onlyClaims {
+        lastProposedBatchData[_chainId].slot = 0;
+    }
+
     modifier onlySignedBatchesOrClaims() {
-        if (msg.sender != signedBatchesAddress && msg.sender != claimsAddress) revert NotSignedBatchesOrBridge();
+        if (msg.sender != signedBatchesAddress && msg.sender != claimsAddress) revert NotSignedBatchesOrClaims();
         _;
     }
 

@@ -10,6 +10,8 @@ import "./ClaimsHelper.sol";
 import "./Validators.sol";
 
 contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+    uint256 constant proposerEpochBlocksCount = 20;
+
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
     Validators private validators;
@@ -57,15 +59,12 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         }
 
         bytes32 _sbHash = keccak256(
-            abi.encode(
-                SignedBatchWithoutSignatures(
-                    _signedBatch.id,
-                    _signedBatch.firstTxNonceId,
-                    _signedBatch.lastTxNonceId,
-                    _destinationChainId,
-                    _signedBatch.rawTransaction,
-                    _signedBatch.usedUTXOs
-                )
+            abi.encodePacked(
+                _signedBatch.id,
+                _signedBatch.firstTxNonceId,
+                _signedBatch.lastTxNonceId,
+                _destinationChainId,
+                _signedBatch.rawTransaction
             )
         );
 
@@ -77,9 +76,9 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         uint256 _quorumCount = validators.getQuorumNumberOfValidators();
         uint256 _numberOfVotes = multisigSignatures[_sbHash].length;
 
-        // check if consensus is already reached for this batch
-        if (_numberOfVotes >= _quorumCount) {
-            return;
+        // if this validator is proposer -> update lastProposedBatchData
+        if (validators.isValidatorProposer(_caller, block.number / proposerEpochBlocksCount)) {
+            claimsHelper.setLastProposedBatchData(_destinationChainId, _signedBatch.proposerData);
         }
 
         hasVoted[_sbHash][_caller] = true;
@@ -101,6 +100,10 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
 
     function getConfirmedBatch(uint8 _destinationChain) external view returns (ConfirmedBatch memory _batch) {
         return lastConfirmedBatch[_destinationChain];
+    }
+
+    function getBatcherProposedData(uint8 _destinationChain) external view returns (BatchProposerData memory) {
+        return claimsHelper.getBatcherProposedData(_destinationChain);
     }
 
     modifier onlyBridge() {

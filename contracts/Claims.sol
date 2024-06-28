@@ -6,13 +6,11 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
 import "./ClaimsHelper.sol";
-import "./UTXOsc.sol";
 import "./Validators.sol";
 
 contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
-    UTXOsc private utxosc;
     Validators private validators;
 
     // BlockchainId -> bool
@@ -28,7 +26,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     mapping(uint8 => uint256) public chainTokenQuantity;
 
     // BlockchainId -> nonce -> ConfirmedTransaction
-    mapping(uint8 => mapping(uint64 => ConfirmedTransaction)) private confirmedTransactions;
+    mapping(uint8 => mapping(uint64 => ConfirmedTransaction)) public confirmedTransactions;
 
     // chainId -> nonce (nonce of the last confirmed transaction)
     mapping(uint8 => uint64) public lastConfirmedTxNonce;
@@ -53,12 +51,10 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function setDependencies(
         address _bridgeAddress,
         address _claimsHelperAddress,
-        address _utxosc,
         address _validatorsAddress
     ) external onlyOwner {
         bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
-        utxosc = UTXOsc(_utxosc);
         validators = Validators(_validatorsAddress);
     }
 
@@ -129,6 +125,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function _submitClaimsBRC(BridgingRequestClaim calldata _claim, address _caller, uint256 receiversSum) internal {
         bytes32 claimHash = keccak256(abi.encode(_claim));
+
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
             claimHash,
@@ -140,15 +137,14 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             uint8 sourceChainID = _claim.sourceChainId;
 
             chainTokenQuantity[sourceChainID] -= receiversSum;
-            utxosc.addNewBridgingUTXO(sourceChainID, _claim.outputUTXO);
 
-            uint256 confirmedTxCount = getBatchingTxsCount(destinationChainID);
+            uint256 _confirmedTxCount = getBatchingTxsCount(destinationChainID);
 
             _setConfirmedTransactions(_claim);
 
             if (
                 (claimsHelper.currentBatchBlock(destinationChainID) == -1) && // there is no batch in progress
-                (confirmedTxCount == 0) && // check if there is no other confirmed transactions
+                (_confirmedTxCount == 0) && // check if there is no other confirmed transactions
                 (block.number >= nextTimeoutBlock[destinationChainID])
             ) // check if the current block number is greater or equal than the NEXT_BATCH_TIMEOUT_BLOCK
             {
@@ -159,6 +155,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function _submitClaimsBEC(BatchExecutedClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode(_claim));
+
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
             claimHash,
@@ -185,13 +182,13 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
 
-            utxosc.addUTXOs(chainId, _claim.outputUTXOs);
-            utxosc.removeUsedUTXOs(chainId, confirmedSignedBatch.usedUTXOs);
+            claimsHelper.resetLastProposedBatchData(chainId);
         }
     }
 
     function _submitClaimsBEFC(BatchExecutionFailedClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode(_claim));
+
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
             claimHash,
@@ -203,16 +200,20 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             claimsHelper.resetCurrentBatchBlock(chainId);
 
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
+
+            claimsHelper.resetLastProposedBatchData(chainId);
         }
     }
 
     function _submitClaimsRRC(RefundRequestClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode(_claim));
+
         claimsHelper.setVotedOnlyIfNeeded(_caller, claimHash, validators.getQuorumNumberOfValidators());
     }
 
     function _submitClaimsREC(RefundExecutedClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode(_claim));
+
         claimsHelper.setVotedOnlyIfNeeded(_caller, claimHash, validators.getQuorumNumberOfValidators());
     }
 
