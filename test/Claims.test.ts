@@ -50,6 +50,7 @@ describe("Claims Contract", function () {
       await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
 
       const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
       const encoded = abiCoder.encode(
         ["bytes32", "tuple(uint64, string)[]", "uint256", "uint8", "uint8"],
         [
@@ -66,9 +67,12 @@ describe("Claims Contract", function () {
         ]
       );
 
-      const encoded20 = "0x0000000000000000000000000000000000000000000000000000000000000020" + encoded.substring(2);
+      const encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
 
-      const hash = ethers.keccak256(encoded20);
+      const hash = ethers.keccak256(encoded40);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -90,10 +94,10 @@ describe("Claims Contract", function () {
       await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
 
       const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
       const encoded = abiCoder.encode(
-        ["bytes32", "bytes32", "tuple(uint64, string)[]", "uint256", "uint8", "uint8"],
+        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint8", "uint8"],
         [
-          425243,
           validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
           [
             [
@@ -107,9 +111,12 @@ describe("Claims Contract", function () {
         ]
       );
 
-      const encoded20 = "0x0000000000000000000000000000000000000000000000000000000000000020" + encoded.substring(2);
+      const encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
 
-      const hash = ethers.keccak256(encoded20);
+      const hash = ethers.keccak256(encoded40);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
 
@@ -157,6 +164,7 @@ describe("Claims Contract", function () {
       validatorClaimsBRC.bridgingRequestClaims[0].totalAmount = 1000000;
 
       const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
       const encoded = abiCoder.encode(
         ["bytes32", "tuple(uint64, string)[]", "uint256", "uint8", "uint8"],
         [
@@ -173,9 +181,12 @@ describe("Claims Contract", function () {
         ]
       );
 
-      const encoded20 = "0x0000000000000000000000000000000000000000000000000000000000000020" + encoded.substring(2);
+      const encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
 
-      const hash = ethers.keccak256(encoded20);
+      const hash = ethers.keccak256(encoded40);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
 
@@ -223,6 +234,7 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
 
       const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["BEC"]);
       const encoded = abiCoder.encode(
         ["bytes32", "uint64", "uint8"],
         [
@@ -232,7 +244,12 @@ describe("Claims Contract", function () {
         ]
       );
 
-      const hash = ethers.keccak256(encoded);
+      const encoded40 =
+        "0x0000000000000000000000000000000000000000000000000000000000000080" +
+        encoded.substring(2) +
+        encodedPrefix.substring(66);
+
+      const hash = ethers.keccak256(encoded40);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
 
@@ -266,6 +283,7 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
 
       const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["BEFC"]);
       const encoded = abiCoder.encode(
         ["bytes32", "uint64", "uint8"],
         [
@@ -275,7 +293,12 @@ describe("Claims Contract", function () {
         ]
       );
 
-      const hash = ethers.keccak256(encoded);
+      const encoded40 =
+        "0x0000000000000000000000000000000000000000000000000000000000000080" +
+        encoded.substring(2) +
+        encodedPrefix.substring(66);
+
+      const hash = ethers.keccak256(encoded40);
 
       expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
 
@@ -291,6 +314,7 @@ describe("Claims Contract", function () {
       await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
 
       const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["BEFC"]);
       const encoded = abiCoder.encode(
         ["bytes32", "uint64", "uint8"],
         [
@@ -300,7 +324,12 @@ describe("Claims Contract", function () {
         ]
       );
 
-      const hash = ethers.keccak256(encoded);
+      const encoded40 =
+        "0x0000000000000000000000000000000000000000000000000000000000000080" +
+        encoded.substring(2) +
+        encodedPrefix.substring(66);
+
+      const hash = ethers.keccak256(encoded40);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
 
@@ -329,6 +358,7 @@ describe("Claims Contract", function () {
       await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
 
       const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
       const encoded = abiCoder.encode(
         ["bytes32", "bytes32", "bytes", "bytes", "uint64", "uint8", "string"],
         [
@@ -342,9 +372,12 @@ describe("Claims Contract", function () {
         ]
       );
 
-      const encoded20 = "0x0000000000000000000000000000000000000000000000000000000000000020" + encoded.substring(2);
+      const encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
 
-      const hash = ethers.keccak256(encoded20);
+      const hash = ethers.keccak256(encoded40);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
@@ -365,6 +398,7 @@ describe("Claims Contract", function () {
       await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
 
       const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
       const encoded = abiCoder.encode(
         ["bytes32", "bytes32", "bytes", "bytes", "uint64", "uint8", "string"],
         [
@@ -378,9 +412,12 @@ describe("Claims Contract", function () {
         ]
       );
 
-      const encoded20 = "0x0000000000000000000000000000000000000000000000000000000000000020" + encoded.substring(2);
+      const encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
 
-      const hash = ethers.keccak256(encoded20);
+      const hash = ethers.keccak256(encoded40);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
 
@@ -409,6 +446,7 @@ describe("Claims Contract", function () {
       await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
 
       const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["REC"]);
       const encoded = abiCoder.encode(
         ["bytes32", "bytes32", "uint8"],
         [
@@ -418,7 +456,12 @@ describe("Claims Contract", function () {
         ]
       );
 
-      const hash = ethers.keccak256(encoded);
+      const encoded40 =
+        "0x0000000000000000000000000000000000000000000000000000000000000080" +
+        encoded.substring(2) +
+        encodedPrefix.substring(66);
+
+      const hash = ethers.keccak256(encoded40);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsREC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsREC);
@@ -439,6 +482,7 @@ describe("Claims Contract", function () {
       await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
 
       const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["REC"]);
       const encoded = abiCoder.encode(
         ["bytes32", "bytes32", "uint8"],
         [
@@ -448,7 +492,12 @@ describe("Claims Contract", function () {
         ]
       );
 
-      const hash = ethers.keccak256(encoded);
+      const encoded40 =
+        "0x0000000000000000000000000000000000000000000000000000000000000080" +
+        encoded.substring(2) +
+        encodedPrefix.substring(66);
+
+      const hash = ethers.keccak256(encoded40);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsREC);
 

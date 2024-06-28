@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
+import "hardhat/console.sol";
 
 contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private bridgeAddress;
@@ -153,7 +154,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _submitClaimsBEC(BatchExecutedClaim calldata _claim, address _caller) internal {
-        bytes32 claimHash = keccak256(abi.encode("BRC", _claim));
+        bytes32 claimHash = keccak256(abi.encode("BEC", _claim));
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
             claimHash,
