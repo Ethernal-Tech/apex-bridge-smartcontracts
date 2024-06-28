@@ -67,11 +67,12 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         uint8 _chainId,
         ValidatorAddressCardanoData[] calldata _validatorAddressCardanoData
     ) external onlyBridge {
-        if (validatorsCount != _validatorAddressCardanoData.length) {
+        uint256 _validatorAddressCardanoDataLenght = _validatorAddressCardanoData.length;
+        if (validatorsCount != _validatorAddressCardanoDataLenght) {
             revert InvalidData("validators count");
         }
         // set validator cardano data for each validator
-        for (uint i; i < _validatorAddressCardanoData.length; i++) {
+        for (uint i; i < _validatorAddressCardanoDataLenght; i++) {
             ValidatorAddressCardanoData calldata dt = _validatorAddressCardanoData[i];
             validatorsCardanoDataPerAddress[_chainId][dt.addr] = dt.data;
         }
