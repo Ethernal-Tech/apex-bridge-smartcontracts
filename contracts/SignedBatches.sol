@@ -63,9 +63,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
                     _signedBatch.firstTxNonceId,
                     _signedBatch.lastTxNonceId,
                     _destinationChainId,
-                    _signedBatch.rawTransaction,
-                    _signedBatch.usedUTXOs.multisigOwnedUTXOs,
-                    _signedBatch.usedUTXOs.feePayerOwnedUTXOs
+                    _signedBatch.rawTransaction
                 )
             )
         );

@@ -78,18 +78,13 @@ describe("Batch Creation", function () {
 
       const abiCoder = new ethers.AbiCoder();
       const encoded = abiCoder.encode(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "tuple(bytes32, uint64)[]", "tuple(bytes32, uint64)[]"],
+        ["uint64", "uint64", "uint64", "uint8", "bytes"],
         [
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
-          [
-            [signedBatch.usedUTXOs.multisigOwnedUTXOs[0].txHash, signedBatch.usedUTXOs.multisigOwnedUTXOs[0].txIndex],
-            [signedBatch.usedUTXOs.multisigOwnedUTXOs[1].txHash, signedBatch.usedUTXOs.multisigOwnedUTXOs[1].txIndex],
-          ],
-          [[signedBatch.usedUTXOs.feePayerOwnedUTXOs[0].txHash, signedBatch.usedUTXOs.feePayerOwnedUTXOs[0].txIndex]],
         ]
       );
 

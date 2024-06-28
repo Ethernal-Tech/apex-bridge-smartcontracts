@@ -21,7 +21,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     // keep validatorsArrayAddresses because maybe
     address[] private validatorsAddresses;
     // mapping in case they could be added/removed
-    mapping(address => uint256) private addressValidatorIndex;
+    mapping(address => uint8) private addressValidatorIndex;
 
     uint8 public validatorsCount;
 
@@ -33,7 +33,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     function initialize(address[] calldata _validators) public initializer {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
-        for (uint i; i < _validators.length; i++) {
+        for (uint8 i; i < _validators.length; i++) {
             addressValidatorIndex[_validators[i]] = i + 1;
             validatorsAddresses.push(_validators[i]);
         }

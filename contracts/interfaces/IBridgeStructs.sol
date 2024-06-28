@@ -10,7 +10,6 @@ interface IBridgeStructs {
         bytes multisigSignature;
         bytes feePayerMultisigSignature;
         bytes rawTransaction;
-        UTXOs usedUTXOs;
     }
 
     struct SignedBatchWithoutSignatures {
@@ -19,8 +18,6 @@ interface IBridgeStructs {
         uint64 lastTxNonceId;
         uint8 destinationChainId;
         bytes rawTransaction;
-        UTXO[] multisigOwnedUTXOs;
-        UTXO[] feePayerOwnedUTXOs;
     }
 
     struct ConfirmedSignedBatchData {
@@ -42,16 +39,6 @@ interface IBridgeStructs {
         uint8 sourceChainId;
         bytes32 observedTransactionHash;
         Receiver[] receivers;
-    }
-
-    struct UTXOs {
-        UTXO[] multisigOwnedUTXOs;
-        UTXO[] feePayerOwnedUTXOs;
-    }
-
-    struct UTXO {
-        bytes32 txHash;
-        uint64 txIndex;
     }
 
     struct CardanoBlock {
