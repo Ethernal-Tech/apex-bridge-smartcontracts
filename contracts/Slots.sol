@@ -12,10 +12,10 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     Validators private validators;
 
     // BlockChainId -> CardanoBlock
-    mapping(uint8 => CardanoBlock) public lastObservedBlock;
+    mapping(uint8 => CardanoBlock) private lastObservedBlock;
 
     // hash(slot, hash) -> number of votes
-    mapping(bytes32 => uint64) private votes;
+    mapping(bytes32 => uint8) private votes;
 
     // hash(slot, hash) -> bool - validator voted already or not
     mapping(bytes32 => mapping(address => bool)) private validatorVote;
@@ -53,8 +53,11 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
                 continue;
             }
             validatorVote[_chash][_caller] = true;
-            uint256 _votesNum = ++votes[_chash];
-            if (_votesNum >= _quorumCnt) {
+            uint256 _votesNum;
+            unchecked {
+                _votesNum = ++votes[_chash];
+            }
+            if (_votesNum >= _quorumCnt && _cblock.blockSlot > lastObservedBlock[_chainId].blockSlot) {
                 lastObservedBlock[_chainId] = _cblock;
             }
         }
