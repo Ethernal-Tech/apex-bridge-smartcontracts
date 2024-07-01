@@ -13,10 +13,10 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
 
     address private bridgeAddress;
 
-    // BlockchainId -> validator address -> ValidatorCardanoData
-    mapping(uint8 => mapping(address => ValidatorCardanoData)) private validatorsCardanoDataPerAddress;
-    // BlockchainId -> ValidatorCardanoData[]
-    mapping(uint8 => ValidatorCardanoData[]) private validatorsCardanoData;
+    // BlockchainId -> validator address -> ValidatorChainData
+    mapping(uint8 => mapping(address => ValidatorChainData)) private chainDataPerAddress;
+    // BlockchainId -> ValidatorChainData[]
+    mapping(uint8 => ValidatorChainData[]) private chainData;
 
     // keep validatorsArrayAddresses because maybe
     address[] private validatorsAddresses;
@@ -57,50 +57,39 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         bytes memory _signatureFee,
         address _validatorAddr
     ) public view returns (bool) {
-        ValidatorCardanoData memory dt = validatorsCardanoDataPerAddress[_chainId][_validatorAddr];
+        ValidatorChainData memory dt = chainDataPerAddress[_chainId][_validatorAddr];
         return
             _isSignatureValid(_txRaw, _signature, dt.verifyingKey, true) &&
             _isSignatureValid(_txRaw, _signatureFee, dt.verifyingKeyFee, true);
     }
 
-    function setValidatorsCardanoData(
+    function setValidatorsChainData(
         uint8 _chainId,
-        ValidatorAddressCardanoData[] calldata _validatorAddressCardanoData
+        ValidatorAddressChainData[] calldata _chainDatas
     ) external onlyBridge {
-        uint256 _validatorAddressCardanoDataLength = _validatorAddressCardanoData.length;
-        if (validatorsCount != _validatorAddressCardanoDataLength) {
+        uint256 _length = _chainDatas.length;
+        if (validatorsCount != _length) {
             revert InvalidData("validators count");
         }
-        // set validator cardano data for each validator
-        for (uint i; i < _validatorAddressCardanoDataLength; i++) {
-            ValidatorAddressCardanoData calldata dt = _validatorAddressCardanoData[i];
-            validatorsCardanoDataPerAddress[_chainId][dt.addr] = dt.data;
+        // set validator chain data for each validator
+        for (uint i; i < _length; i++) {
+            ValidatorAddressChainData calldata dt = _chainDatas[i];
+            chainDataPerAddress[_chainId][dt.addr] = dt.data;
         }
-        _updateValidatorCardanoData(_chainId);
+        _updateValidatorChainData(_chainId);
     }
 
-    function addValidatorCardanoData(
+    function addValidatorChainData(
         uint8 _chainId,
         address _addr,
-        ValidatorCardanoData calldata _data
+        ValidatorChainData calldata _data
     ) external onlyBridge {
-        // We dont have enough stack to validate signatures bellow
-        // but if validator does not provide valid keys he will not be able to send batches
-        // so i think we are good without these checks. will left them for historical reason
-        // if (!_isSignatureValid(REGISTRATION_MESSAGE, _validationSignature, data.verifyingKey, false)) {
-        //     revert InvalidSignature();
-        // }
-        // if (!_isSignatureValid(REGISTRATION_MESSAGE, _validationSignatureFee, data.verifyingKeyFee, false)) {
-        //     revert InvalidSignature();
-        // }
-        validatorsCardanoDataPerAddress[_chainId][_addr] = _data;
-        _updateValidatorCardanoData(_chainId);
+        chainDataPerAddress[_chainId][_addr] = _data;
+        _updateValidatorChainData(_chainId);
     }
 
-    function getValidatorsCardanoData(
-        uint8 _chainId
-    ) external view returns (ValidatorCardanoData[] memory _validatorsCardanoData) {
-        return validatorsCardanoData[_chainId];
+    function getValidatorsChainData(uint8 _chainId) external view returns (ValidatorChainData[] memory) {
+        return chainData[_chainId];
     }
 
     function getQuorumNumberOfValidators() external view returns (uint8 _quorum) {
@@ -111,12 +100,12 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         return _quorum;
     }
 
-    function _updateValidatorCardanoData(uint8 _chainId) internal {
-        // validatorsCardanoDataPerAddress must be set for all the validator addresses
+    function _updateValidatorChainData(uint8 _chainId) internal {
+        // chainDataPerAddress must be set for all the validator addresses
         uint cnt = 0;
         uint256 validatorsAddressesLength = validatorsAddresses.length;
         for (uint i; i < validatorsAddressesLength; i++) {
-            if (validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]].verifyingKey != "") {
+            if (chainDataPerAddress[_chainId][validatorsAddresses[i]].verifyingKey != "") {
                 cnt++;
             }
         }
@@ -124,9 +113,9 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
             return;
         }
 
-        delete validatorsCardanoData[_chainId];
+        delete chainData[_chainId];
         for (uint i; i < validatorsAddressesLength; i++) {
-            validatorsCardanoData[_chainId].push(validatorsCardanoDataPerAddress[_chainId][validatorsAddresses[i]]);
+            chainData[_chainId].push(chainDataPerAddress[_chainId][validatorsAddresses[i]]);
         }
     }
 

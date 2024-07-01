@@ -79,16 +79,16 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     function registerChain(
         Chain calldata _chain,
         uint256 _tokenQuantity,
-        ValidatorAddressCardanoData[] calldata _validatorsAddressCardanoData
+        ValidatorAddressChainData[] calldata _chainDatas
     ) public override onlyOwner {
-        validators.setValidatorsCardanoData(_chain.id, _validatorsAddressCardanoData);
+        validators.setValidatorsChainData(_chain.id, _chainDatas);
         _registerChain(_chain, _tokenQuantity);
     }
 
     function registerChainGovernance(
         Chain calldata _chain,
         uint256 _tokenQuantity,
-        ValidatorCardanoData calldata _validatorCardanoData
+        ValidatorChainData calldata _validatorChainData
     ) external override onlyValidator {
         uint8 chainId = _chain.id;
         if (claims.isChainRegistered(chainId)) {
@@ -101,7 +101,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
             revert AlreadyProposed(chainId);
         }
 
-        validators.addValidatorCardanoData(chainId, msg.sender, _validatorCardanoData);
+        validators.addValidatorChainData(chainId, msg.sender, _validatorChainData);
 
         if (claims.setVoted(msg.sender, chainHash) == validators.validatorsCount()) {
             _registerChain(_chain, _tokenQuantity);
@@ -170,10 +170,8 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         return signedBatches.getConfirmedBatch(_destinationChain);
     }
 
-    function getValidatorsCardanoData(
-        uint8 _chainId
-    ) external view override returns (ValidatorCardanoData[] memory validatorCardanoData) {
-        return validators.getValidatorsCardanoData(_chainId);
+    function getValidatorsChainData(uint8 _chainId) external view override returns (ValidatorChainData[] memory) {
+        return validators.getValidatorsChainData(_chainId);
     }
 
     function getLastObservedBlock(uint8 _sourceChain) external view override returns (CardanoBlock memory _cblock) {

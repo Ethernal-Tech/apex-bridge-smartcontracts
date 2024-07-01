@@ -57,14 +57,12 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         }
 
         bytes32 _sbHash = keccak256(
-            abi.encode(
-                SignedBatchWithoutSignatures(
-                    _signedBatch.id,
-                    _signedBatch.firstTxNonceId,
-                    _signedBatch.lastTxNonceId,
-                    _destinationChainId,
-                    _signedBatch.rawTransaction
-                )
+            abi.encodePacked(
+                _signedBatch.id,
+                _signedBatch.firstTxNonceId,
+                _signedBatch.lastTxNonceId,
+                _destinationChainId,
+                _signedBatch.rawTransaction
             )
         );
 
