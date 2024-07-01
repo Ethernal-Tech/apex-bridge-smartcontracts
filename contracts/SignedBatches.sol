@@ -55,16 +55,15 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         if (_signedBatch.id != _sbId) {
             return; // skip if this is not batch we are expecting
         }
+        
 
         bytes32 _sbHash = keccak256(
-            abi.encode(
-                SignedBatchWithoutSignatures(
-                    _signedBatch.id,
-                    _signedBatch.firstTxNonceId,
-                    _signedBatch.lastTxNonceId,
-                    _destinationChainId,
-                    _signedBatch.rawTransaction
-                )
+            abi.encodePacked(
+                _signedBatch.id,
+                _signedBatch.firstTxNonceId,
+                _signedBatch.lastTxNonceId,
+                _destinationChainId,
+                _signedBatch.rawTransaction
             )
         );
 
