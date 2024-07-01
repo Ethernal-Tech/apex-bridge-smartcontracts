@@ -16,14 +16,12 @@ abstract contract IBridge is IBridgeStructs {
     // Chain registration through some kind of governance
     function registerChain(
         Chain calldata _chain,
-        UTXOs calldata _initialUTXOs,
         uint256 _tokenQuantity,
         ValidatorAddressCardanoData[] calldata _validatorData
     ) external virtual;
 
     function registerChainGovernance(
         Chain calldata _chain,
-        UTXOs calldata _initialUTXOs,
         uint256 _tokenQuantity,
         ValidatorCardanoData calldata _validatorData
     ) external virtual;
@@ -42,14 +40,6 @@ abstract contract IBridge is IBridgeStructs {
     function getConfirmedTransactions(
         uint8 _destinationChain
     ) external view virtual returns (ConfirmedTransaction[] memory _confirmedTransactions);
-
-    // Will return available UTXOs that can cover the cost of bridging transactions included in some batch.
-    // Each Batcher will first call the GetConfirmedTransactions() and then calculate (off-chain) how many tokens
-    // should be transfered to users and send this info through the 'txCost' parameter. Based on this input and
-    // number of UTXOs that need to be consolidated, the smart contract will return UTXOs belonging to the multisig
-    // address that can cover the expenses. Additionaly, this method will return available UTXOs belonging to fee payer
-    // multisig address that will cover the network fees (see chapter "2.2.2.3 Batcher" for more details)
-    function getAvailableUTXOs(uint8 _destinationChain) external view virtual returns (UTXOs memory _availableUTXOs);
 
     function getConfirmedBatch(uint8 _destinationChain) external view virtual returns (ConfirmedBatch memory _batch);
 

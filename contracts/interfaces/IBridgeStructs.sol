@@ -10,7 +10,6 @@ interface IBridgeStructs {
         bytes multisigSignature;
         bytes feePayerMultisigSignature;
         bytes rawTransaction;
-        UTXOs usedUTXOs;
     }
 
     struct SignedBatchWithoutSignatures {
@@ -19,13 +18,11 @@ interface IBridgeStructs {
         uint64 lastTxNonceId;
         uint8 destinationChainId;
         bytes rawTransaction;
-        UTXOs usedUTXOs;
     }
 
     struct ConfirmedSignedBatchData {
         uint64 firstTxNonceId;
         uint64 lastTxNonceId;
-        UTXOs usedUTXOs;
     }
 
     struct ConfirmedBatch {
@@ -42,18 +39,6 @@ interface IBridgeStructs {
         uint8 sourceChainId;
         bytes32 observedTransactionHash;
         Receiver[] receivers;
-    }
-
-    struct UTXOs {
-        UTXO[] multisigOwnedUTXOs;
-        UTXO[] feePayerOwnedUTXOs;
-    }
-
-    struct UTXO {
-        uint64 nonce; // this is set by smart contract - order of confirmed UTXOs
-        uint64 txIndex;
-        uint64 amount;
-        bytes32 txHash;
     }
 
     struct CardanoBlock {
@@ -74,7 +59,6 @@ interface IBridgeStructs {
         bytes32 observedTransactionHash;
         // key is the address on destination UTXO chain; value is the amount of tokens
         Receiver[] receivers;
-        UTXO outputUTXO;
         uint256 totalAmount;
         uint8 sourceChainId;
         uint8 destinationChainId;
@@ -86,7 +70,6 @@ interface IBridgeStructs {
         uint64 batchNonceId;
         // where the batch was executed
         uint8 chainId;
-        UTXOs outputUTXOs;
     }
 
     struct BatchExecutionFailedClaim {
@@ -112,8 +95,6 @@ interface IBridgeStructs {
         // chain id where the refund tx will be executed
         uint8 chainId;
         string receiver;
-        // UTXO that multisig received in invalid transaction
-        UTXO utxo;
     }
 
     struct RefundExecutedClaim {
@@ -123,8 +104,6 @@ interface IBridgeStructs {
         bytes32 refundTxHash;
         // chain id where the refund was executed
         uint8 chainId;
-        // UTXO that multisig received as change after paying network fee
-        UTXO utxo;
     }
 
     struct Receiver {
@@ -136,11 +115,6 @@ interface IBridgeStructs {
         uint8 id;
         string addressMultisig;
         string addressFeePayer;
-    }
-
-    struct LastObservedBlockInfo {
-        bytes32 blockHash;
-        uint256 slot;
     }
 
     struct ValidatorAddressCardanoData {
@@ -162,6 +136,7 @@ interface IBridgeStructs {
     error NotClaims();
     error NotSignedBatches();
     error NotSignedBatchesOrBridge();
+    error NotSignedBatchesOrClaims();
     error NotEnoughBridgingTokensAvailable(bytes32 _claimTransactionHash);
     error CanNotCreateBatchYet(uint8 _blockchainId);
     error InvalidData(string data);

@@ -9,14 +9,12 @@ import "./interfaces/IBridge.sol";
 import "./Claims.sol";
 import "./SignedBatches.sol";
 import "./Slots.sol";
-import "./UTXOsc.sol";
 import "./Validators.sol";
 
 contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     Claims private claims;
     SignedBatches private signedBatches;
     Slots private slots;
-    UTXOsc private utxosc;
     Validators private validators;
 
     Chain[] private chains;
@@ -37,13 +35,11 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         address _claimsAddress,
         address _signedBatchesAddress,
         address _slotsAddress,
-        address _utxoscAddress,
         address _validatorsAddress
     ) external onlyOwner {
         claims = Claims(_claimsAddress);
         signedBatches = SignedBatches(_signedBatchesAddress);
         slots = Slots(_slotsAddress);
-        utxosc = UTXOsc(_utxoscAddress);
         validators = Validators(_validatorsAddress);
     }
 
@@ -82,17 +78,15 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     // Chain registration by Owner
     function registerChain(
         Chain calldata _chain,
-        UTXOs calldata _initialUTXOs,
         uint256 _tokenQuantity,
         ValidatorAddressCardanoData[] calldata _validatorsAddressCardanoData
     ) public override onlyOwner {
         validators.setValidatorsCardanoData(_chain.id, _validatorsAddressCardanoData);
-        _registerChain(_chain, _initialUTXOs, _tokenQuantity);
+        _registerChain(_chain, _tokenQuantity);
     }
 
     function registerChainGovernance(
         Chain calldata _chain,
-        UTXOs calldata _initialUTXOs,
         uint256 _tokenQuantity,
         ValidatorCardanoData calldata _validatorCardanoData
     ) external override onlyValidator {
@@ -101,7 +95,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
             revert ChainAlreadyRegistered(chainId);
         }
 
-        bytes32 chainHash = keccak256(abi.encode(_chain, _initialUTXOs, _tokenQuantity));
+        bytes32 chainHash = keccak256(abi.encode(_chain, _tokenQuantity));
 
         if (claims.hasVoted(chainHash, msg.sender)) {
             revert AlreadyProposed(chainId);
@@ -110,13 +104,13 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         validators.addValidatorCardanoData(chainId, msg.sender, _validatorCardanoData);
 
         if (claims.setVoted(msg.sender, chainHash) == validators.validatorsCount()) {
-            _registerChain(_chain, _initialUTXOs, _tokenQuantity);
+            _registerChain(_chain, _tokenQuantity);
         } else {
             emit newChainProposal(chainId, msg.sender);
         }
     }
 
-    function _registerChain(Chain calldata _chain, UTXOs calldata _initialUTXOs, uint256 _tokenQuantity) internal {
+    function _registerChain(Chain calldata _chain, uint256 _tokenQuantity) internal {
         uint8 chainId = _chain.id;
         claims.setChainRegistered(chainId);
         chains.push();
@@ -124,8 +118,6 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         chains[chainIndex].id = chainId;
         chains[chainIndex].addressMultisig = _chain.addressMultisig;
         chains[chainIndex].addressFeePayer = _chain.addressFeePayer;
-
-        utxosc.setInitialUTxOs(chainId, _initialUTXOs);
 
         claims.setTokenQuantity(chainId, _tokenQuantity);
 
@@ -148,7 +140,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
             return 0;
         }
 
-        (, uint64 batchId) = signedBatches.lastConfirmedBatch(_destinationChain);
+        uint64 batchId = signedBatches.getConfirmedBatchId(_destinationChain);
 
         return batchId + 1;
     }
@@ -174,10 +166,6 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         return _confirmedTransactions;
     }
 
-    function getAvailableUTXOs(uint8 _destinationChain) external view override returns (UTXOs memory _availableUTXOs) {
-        return utxosc.getChainUTXOs(_destinationChain);
-    }
-
     function getConfirmedBatch(uint8 _destinationChain) external view override returns (ConfirmedBatch memory _batch) {
         return signedBatches.getConfirmedBatch(_destinationChain);
     }
@@ -197,8 +185,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     function getRawTransactionFromLastBatch(uint8 _destinationChain) external view override returns (bytes memory) {
-        (bytes memory _rawTransaction, ) = signedBatches.lastConfirmedBatch(_destinationChain);
-        return _rawTransaction;
+        return signedBatches.getConfirmedBatchTransaction(_destinationChain);
     }
 
     modifier onlyValidator() {
