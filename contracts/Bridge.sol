@@ -101,6 +101,10 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
             revert AlreadyProposed(chainId);
         }
 
+        // TODO:
+        // if _chain.chainType == 1 verify signatures for both verifyingKey and verifyingFeeKey
+        // if _chain.chainType == 2 verify signatures for BLS specified in verifyingKey
+
         validators.addValidatorChainData(chainId, msg.sender, _validatorChainData);
 
         if (claims.setVoted(msg.sender, chainHash) == validators.validatorsCount()) {
@@ -113,11 +117,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     function _registerChain(Chain calldata _chain, uint256 _tokenQuantity) internal {
         uint8 chainId = _chain.id;
         claims.setChainRegistered(chainId);
-        chains.push();
-        uint256 chainIndex = chains.length - 1;
-        chains[chainIndex].id = chainId;
-        chains[chainIndex].addressMultisig = _chain.addressMultisig;
-        chains[chainIndex].addressFeePayer = _chain.addressFeePayer;
+        chains.push(_chain);
 
         claims.setTokenQuantity(chainId, _tokenQuantity);
 

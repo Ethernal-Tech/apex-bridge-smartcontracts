@@ -105,6 +105,7 @@ interface IBridgeStructs {
 
     struct Chain {
         uint8 id;
+        uint8 chainType;
         string addressMultisig;
         string addressFeePayer;
     }
