@@ -140,7 +140,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
             return 0;
         }
 
-        (, uint64 batchId) = signedBatches.lastConfirmedBatch(_destinationChain);
+        uint64 batchId = signedBatches.getConfirmedBatchId(_destinationChain);
 
         return batchId + 1;
     }
@@ -185,8 +185,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     function getRawTransactionFromLastBatch(uint8 _destinationChain) external view override returns (bytes memory) {
-        (bytes memory _rawTransaction, ) = signedBatches.lastConfirmedBatch(_destinationChain);
-        return _rawTransaction;
+        return signedBatches.getConfirmedBatchTransaction(_destinationChain);
     }
 
     modifier onlyValidator() {

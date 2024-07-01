@@ -98,6 +98,14 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         return lastConfirmedBatch[_destinationChain];
     }
 
+    function getConfirmedBatchId(uint8 _destinationChain) external view returns (uint64) {
+        return lastConfirmedBatch[_destinationChain].id;
+    }
+
+    function getConfirmedBatchTransaction(uint8 _destinationChain) external view returns (bytes memory) {
+        return lastConfirmedBatch[_destinationChain].rawTransaction;
+    }
+
     modifier onlyBridge() {
         if (msg.sender != bridgeAddress) revert NotBridge();
         _;
