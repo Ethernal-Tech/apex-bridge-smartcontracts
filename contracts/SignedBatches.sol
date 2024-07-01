@@ -24,7 +24,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     mapping(bytes32 => mapping(address => bool)) public hasVoted; // for resubmit
 
     // BlockchainId -> ConfirmedBatch
-    mapping(uint8 => ConfirmedBatch) public lastConfirmedBatch;
+    mapping(uint8 => ConfirmedBatch) private lastConfirmedBatch;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
