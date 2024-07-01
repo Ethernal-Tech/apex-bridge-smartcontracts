@@ -27,9 +27,12 @@ describe("Performance", function () {
     await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
     await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
 
-    const tx = await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-    const receipt = await tx.wait();
-    console.log("Gas spent: " + parseInt(receipt.gasUsed));
+    for (let i = 0; i < validators.length; i++) {
+      // third one is quorum
+      const tx = await bridge.connect(validators[i]).submitClaims(validatorClaimsBRC);
+      const receipt = await tx.wait();
+      console.log(`Gas spent on (${i}): ${parseInt(receipt.gasUsed)}`);
+    }
   });
 
   it("submitSignedBatch", async function () {
@@ -49,9 +52,46 @@ describe("Performance", function () {
       await ethers.provider.send("evm_mine");
     }
 
-    const tx = await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
-    const receipt = await tx.wait();
-    console.log("Gas spent: " + parseInt(receipt.gasUsed));
+    for (let i = 0; i < validators.length; i++) {
+      // third one is quorum
+      const tx = await bridge.connect(validators[i]).submitSignedBatch(signedBatch);
+      const receipt = await tx.wait();
+      console.log(`Gas spent on (${i}): ${parseInt(receipt.gasUsed)}`);
+    }
+  });
+
+  it("submitClaims BEC", async function () {
+    const { bridge, chain1, chain2, owner, validators, validatorClaimsBRC, signedBatch, validatorsCardanoData, validatorClaimsBEC } =
+      await loadFixture(deployBridgeFixture);
+
+    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+    await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+
+    await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+    await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+    await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+    await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
+
+    // wait for next timeout
+    for (let i = 0; i < 3; i++) {
+      await ethers.provider.send("evm_mine");
+    }
+
+    for (let i = 0; i < (validators.length * 2) / 3 + 1; i++) {
+      await bridge.connect(validators[i]).submitSignedBatch(signedBatch);
+    }
+
+    // wait for next timeout
+    for (let i = 0; i < 3; i++) {
+      await ethers.provider.send("evm_mine");
+    }
+
+    for (let i = 0; i < validators.length; i++) {
+      // third one is quorum
+      const tx = await bridge.connect(validators[i]).submitClaims(validatorClaimsBEC);
+      const receipt = await tx.wait();
+      console.log(`Gas spent on (${i}): ${parseInt(receipt.gasUsed)}`);
+    }
   });
 
   it("submitClaims RRC", async function () {
