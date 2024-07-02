@@ -76,7 +76,8 @@ describe("Batch Creation", function () {
     it("If SignedBatch submition id is not expected submittion should be skipped", async function () {
       const { bridge, signedBatches, validators, signedBatch } = await loadFixture(deployBridgeFixture);
 
-      const encoded = ethers.solidityPacked(["uint64", "uint64", "uint64", "uint8", "bytes"],
+      const encoded = ethers.solidityPacked(
+        ["uint64", "uint64", "uint64", "uint8", "bytes"],
         [
           signedBatch.id,
           signedBatch.firstTxNonceId,
@@ -97,7 +98,8 @@ describe("Batch Creation", function () {
       const oldId = signedBatch.id;
       signedBatch.id = 1000; //invalid id
 
-      const encodedFalse = ethers.solidityPacked(["uint64", "uint64", "uint64", "uint8", "bytes"],
+      const encodedFalse = ethers.solidityPacked(
+        ["uint64", "uint64", "uint64", "uint8", "bytes"],
         [
           signedBatch.id,
           signedBatch.firstTxNonceId,
@@ -437,6 +439,63 @@ describe("Batch Creation", function () {
       }
 
       expect(tokenAmount).to.equal(sumAmounts);
+    });
+
+    it("Should delete multisigSignatures and feePayerMultisigSignatures for confirmed signed batches", async function () {
+      const {
+        bridge,
+        signedBatches,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        signedBatch,
+        validatorsCardanoData,
+        validatorClaimsBRC,
+        claims,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
+
+      // wait for next timeout
+      for (let i = 0; i < 3; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+
+      const encoded = ethers.solidityPacked(
+        ["uint64", "uint64", "uint64", "uint8", "bytes"],
+        [
+          signedBatch.id,
+          signedBatch.firstTxNonceId,
+          signedBatch.lastTxNonceId,
+          signedBatch.destinationChainId,
+          signedBatch.rawTransaction,
+        ]
+      );
+
+      const hash = ethers.keccak256(encoded);
+
+      var numberOfSignatures = await signedBatches.getNumberOfSignatures(hash);
+
+      expect(numberOfSignatures[0]).to.equal(3);
+      expect(numberOfSignatures[1]).to.equal(3);
+
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      numberOfSignatures = await signedBatches.getNumberOfSignatures(hash);
+
+      expect(numberOfSignatures[0]).to.equal(0);
+      expect(numberOfSignatures[1]).to.equal(0);
     });
   });
 });

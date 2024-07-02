@@ -89,6 +89,9 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             );
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
+
+            delete multisigSignatures[_sbHash];
+            delete feePayerMultisigSignatures[_sbHash];
         }
     }
 
@@ -102,6 +105,10 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
 
     function getConfirmedBatchTransaction(uint8 _destinationChain) external view returns (bytes memory) {
         return lastConfirmedBatch[_destinationChain].rawTransaction;
+    }
+
+    function getNumberOfSignatures(bytes32 _hash) external view returns (uint256, uint256) {
+        return (multisigSignatures[_hash].length, feePayerMultisigSignatures[_hash].length);
     }
 
     modifier onlyBridge() {
