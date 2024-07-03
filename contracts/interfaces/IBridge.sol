@@ -17,13 +17,13 @@ abstract contract IBridge is IBridgeStructs {
     function registerChain(
         Chain calldata _chain,
         uint256 _tokenQuantity,
-        ValidatorAddressCardanoData[] calldata _validatorData
+        ValidatorAddressChainData[] calldata _validatorData
     ) external virtual;
 
     function registerChainGovernance(
         Chain calldata _chain,
         uint256 _tokenQuantity,
-        ValidatorCardanoData calldata _validatorData
+        ValidatorChainData calldata _validatorData
     ) external virtual;
 
     // Queries
@@ -43,9 +43,7 @@ abstract contract IBridge is IBridgeStructs {
 
     function getConfirmedBatch(uint8 _destinationChain) external view virtual returns (ConfirmedBatch memory _batch);
 
-    function getValidatorsCardanoData(
-        uint8 _chainId
-    ) external view virtual returns (ValidatorCardanoData[] memory _validatorCardanoData);
+    function getValidatorsChainData(uint8 _chainId) external view virtual returns (ValidatorChainData[] memory);
 
     function getLastObservedBlock(uint8 _sourceChain) external view virtual returns (CardanoBlock memory _cblock);
 

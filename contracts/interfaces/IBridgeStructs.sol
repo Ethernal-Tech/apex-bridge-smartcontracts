@@ -12,14 +12,6 @@ interface IBridgeStructs {
         bytes rawTransaction;
     }
 
-    struct SignedBatchWithoutSignatures {
-        uint64 id;
-        uint64 firstTxNonceId;
-        uint64 lastTxNonceId;
-        uint8 destinationChainId;
-        bytes rawTransaction;
-    }
-
     struct ConfirmedSignedBatchData {
         uint64 firstTxNonceId;
         uint64 lastTxNonceId;
@@ -113,16 +105,17 @@ interface IBridgeStructs {
 
     struct Chain {
         uint8 id;
+        uint8 chainType;
         string addressMultisig;
         string addressFeePayer;
     }
 
-    struct ValidatorAddressCardanoData {
+    struct ValidatorAddressChainData {
         address addr;
-        ValidatorCardanoData data;
+        ValidatorChainData data;
     }
 
-    struct ValidatorCardanoData {
+    struct ValidatorChainData {
         bytes32 verifyingKey;
         bytes32 verifyingKeyFee;
     }

@@ -179,8 +179,8 @@ describe("Chain Registration", function () {
       expect(chains[0].id).to.equal(1);
       expect(chains[1].id).to.equal(2);
 
-      const valids1 = await bridge.getValidatorsCardanoData(1);
-      const valids2 = await bridge.getValidatorsCardanoData(2);
+      const valids1 = await bridge.getValidatorsChainData(1);
+      const valids2 = await bridge.getValidatorsChainData(2);
       expect(valids1.length).to.equal(5);
       expect(valids2.length).to.equal(5);
 
@@ -204,34 +204,34 @@ describe("Chain Registration", function () {
 
       await validatorsc
         .connect(signer)
-        .addValidatorCardanoData(1, validatorsCardanoData[0].addr, validatorsCardanoData[0].data);
+        .addValidatorChainData(1, validatorsCardanoData[0].addr, validatorsCardanoData[0].data);
 
       await validatorsc
         .connect(signer)
-        .addValidatorCardanoData(1, validatorsCardanoData[1].addr, validatorsCardanoData[1].data);
+        .addValidatorChainData(1, validatorsCardanoData[1].addr, validatorsCardanoData[1].data);
 
       await validatorsc
         .connect(signer)
-        .addValidatorCardanoData(1, validatorsCardanoData[2].addr, validatorsCardanoData[2].data);
+        .addValidatorChainData(1, validatorsCardanoData[2].addr, validatorsCardanoData[2].data);
 
       await validatorsc
         .connect(signer)
-        .addValidatorCardanoData(1, validatorsCardanoData[3].addr, validatorsCardanoData[3].data);
+        .addValidatorChainData(1, validatorsCardanoData[3].addr, validatorsCardanoData[3].data);
 
-      const data = await validatorsc.connect(validators[0]).getValidatorsCardanoData(1);
+      const data = await validatorsc.connect(validators[0]).getValidatorsChainData(1);
 
       expect(data.length).to.equal(0);
 
       await validatorsc
         .connect(signer)
-        .addValidatorCardanoData(1, validatorsCardanoData[4].addr, validatorsCardanoData[4].data);
+        .addValidatorChainData(1, validatorsCardanoData[4].addr, validatorsCardanoData[4].data);
 
-      const data2 = await validatorsc.connect(validators[0]).getValidatorsCardanoData(1);
+      const data2 = await validatorsc.connect(validators[0]).getValidatorsChainData(1);
       expect(data2.length).to.equal(await validatorsc.validatorsCount());
 
-      await validatorsc.connect(signer).addValidatorCardanoData(1, validator6, validatorsCardanoData[4].data);
+      await validatorsc.connect(signer).addValidatorChainData(1, validator6, validatorsCardanoData[4].data);
 
-      const data3 = await validatorsc.connect(validators[0]).getValidatorsCardanoData(1);
+      const data3 = await validatorsc.connect(validators[0]).getValidatorsChainData(1);
       expect(data3.length).to.equal(await validatorsc.validatorsCount());
 
       await hre.network.provider.request({
@@ -258,10 +258,10 @@ describe("Chain Registration", function () {
       });
 
       await expect(
-        validatorsc.connect(signer).setValidatorsCardanoData(1, validatorsCardanoData)
+        validatorsc.connect(signer).setValidatorsChainData(1, validatorsCardanoData)
       ).to.revertedWithCustomError(validatorsc, "InvalidData");
 
-      const data3 = await validatorsc.connect(validators[0]).getValidatorsCardanoData(1);
+      const data3 = await validatorsc.connect(validators[0]).getValidatorsChainData(1);
       expect(validatorsCardanoData.length).to.be.greaterThan(validators.length);
       expect(data3.length).to.equal(0);
 
