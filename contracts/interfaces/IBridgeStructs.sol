@@ -7,8 +7,8 @@ interface IBridgeStructs {
         uint64 firstTxNonceId;
         uint64 lastTxNonceId;
         uint8 destinationChainId;
-        bytes multisigSignature;
-        bytes feePayerMultisigSignature;
+        bytes signature;
+        bytes feeSignature;
         bytes rawTransaction;
     }
 
@@ -18,8 +18,9 @@ interface IBridgeStructs {
     }
 
     struct ConfirmedBatch {
-        bytes[] multisigSignatures;
-        bytes[] feePayerMultisigSignatures;
+        bytes[] signatures;
+        bytes[] feeSignatures;
+        uint256 bitmap;
         bytes rawTransaction;
         uint64 id;
     }
@@ -79,7 +80,7 @@ interface IBridgeStructs {
         bytes32 previousRefundTxHash;
         // validatorsArray signature over raw transaction
         // note: only multisig signs refund txs
-        bytes multisigSignature;
+        bytes signature;
         // the refund transaction itself
         bytes rawTransaction;
         // retry attempt counter
@@ -99,7 +100,7 @@ interface IBridgeStructs {
     }
 
     struct Receiver {
-        uint64 amount;
+        uint256 amount;
         string destinationAddress;
     }
 
@@ -116,8 +117,9 @@ interface IBridgeStructs {
     }
 
     struct ValidatorChainData {
-        bytes32 verifyingKey;
-        bytes32 verifyingKeyFee;
+        // verifying key, verifying Fee key for Cardano
+        // BLS for EVM
+        uint256[4] key;
     }
 
     error AlreadyConfirmed(bytes32 _claimTransactionHash);

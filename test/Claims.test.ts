@@ -364,7 +364,7 @@ describe("Claims Contract", function () {
         [
           validatorClaimsRRC.refundRequestClaims[0].observedTransactionHash,
           validatorClaimsRRC.refundRequestClaims[0].previousRefundTxHash,
-          validatorClaimsRRC.refundRequestClaims[0].multisigSignature,
+          validatorClaimsRRC.refundRequestClaims[0].signature,
           validatorClaimsRRC.refundRequestClaims[0].rawTransaction,
           validatorClaimsRRC.refundRequestClaims[0].retryCounter,
           validatorClaimsRRC.refundRequestClaims[0].chainId,
@@ -404,7 +404,7 @@ describe("Claims Contract", function () {
         [
           validatorClaimsRRC.refundRequestClaims[0].observedTransactionHash,
           validatorClaimsRRC.refundRequestClaims[0].previousRefundTxHash,
-          validatorClaimsRRC.refundRequestClaims[0].multisigSignature,
+          validatorClaimsRRC.refundRequestClaims[0].signature,
           validatorClaimsRRC.refundRequestClaims[0].rawTransaction,
           validatorClaimsRRC.refundRequestClaims[0].retryCounter,
           validatorClaimsRRC.refundRequestClaims[0].chainId,

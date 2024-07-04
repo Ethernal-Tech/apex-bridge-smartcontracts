@@ -1,4 +1,5 @@
 import { ethers } from "hardhat";
+import { Bridge, Claims, ClaimsHelper, IBridge, SignedBatches, Slots, Validators } from "../typechain-types";
 
 export async function deployBridgeFixture() {
   // Contracts are deployed using the first signer/account by default
@@ -73,22 +74,22 @@ export async function deployBridgeFixture() {
 
   //casting proxy contracts to contract logic
   const BridgeDeployed = await ethers.getContractFactory("Bridge");
-  const bridge = BridgeDeployed.attach(bridgeProxy.target);
+  const bridge = BridgeDeployed.attach(bridgeProxy.target) as Bridge;
 
   const ClaimsHelperDeployed = await ethers.getContractFactory("ClaimsHelper");
-  const claimsHelper = ClaimsHelperDeployed.attach(claimsHelperProxy.target);
+  const claimsHelper = ClaimsHelperDeployed.attach(claimsHelperProxy.target) as ClaimsHelper;
 
   const ClaimsDeployed = await ethers.getContractFactory("Claims");
-  const claims = ClaimsDeployed.attach(claimsProxy.target);
+  const claims = ClaimsDeployed.attach(claimsProxy.target) as Claims;
 
   const SignedBatchesDeployed = await ethers.getContractFactory("SignedBatches");
-  const signedBatches = SignedBatchesDeployed.attach(signedBatchesProxy.target);
+  const signedBatches = SignedBatchesDeployed.attach(signedBatchesProxy.target) as SignedBatches;
 
   const SlotsDeployed = await ethers.getContractFactory("Slots");
-  const slots = SlotsDeployed.attach(slotsProxy.target);
+  const slots = SlotsDeployed.attach(slotsProxy.target) as Slots;
 
   const ValidatorsDeployed = await ethers.getContractFactory("Validators");
-  const validatorsc = ValidatorsDeployed.attach(validatorsProxy.target);
+  const validatorsc = ValidatorsDeployed.attach(validatorsProxy.target) as Validators;
 
   await bridge.setDependencies(
     claimsProxy.target,
@@ -120,34 +121,6 @@ export async function deployBridgeFixture() {
     addressFeePayer: "addr_test1vz8g63va7qat4ajyja4sndp06rv3penf3htqcwt6x4znyacfpea75",
     chainType: 0,
   };
-
-  const validatorCardanoData = {
-    verifyingKey: "0x7465737600000000000000000000000000000000000000000000000000000000",
-    verifyingKeyFee: "0x7465737600000000000000000000000000000000000000000000000000000002",
-  };
-
-  const validatorAddressCardanoData = [
-    {
-      addr: validator1.address,
-      data: validatorCardanoData,
-    },
-    {
-      addr: validator2.address,
-      data: validatorCardanoData,
-    },
-    {
-      addr: validator3.address,
-      data: validatorCardanoData,
-    },
-    {
-      addr: validator4.address,
-      data: validatorCardanoData,
-    },
-    {
-      addr: validator5.address,
-      data: validatorCardanoData,
-    },
-  ];
 
   const validatorClaimsBRC = {
     bridgingRequestClaims: [
@@ -243,20 +216,6 @@ export async function deployBridgeFixture() {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
         chainId: 2,
         batchNonceId: 1111111111,
-        outputUTXOs: {
-          multisigOwnedUTXOs: [
-            {
-              txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-              txIndex: 0,
-            },
-          ],
-          feePayerOwnedUTXOs: [
-            {
-              txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-              txIndex: 2,
-            },
-          ],
-        },
       },
     ],
     batchExecutionFailedClaims: [],
@@ -300,7 +259,7 @@ export async function deployBridgeFixture() {
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
         previousRefundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
-        multisigSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        signature: "0x7465737400000000000000000000000000000000000000000000000000000000",
         rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
         retryCounter: 1,
         chainId: 2,
@@ -325,7 +284,7 @@ export async function deployBridgeFixture() {
           txIndex: 0,
         },
         rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        multisigSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        signature: "0x7465737400000000000000000000000000000000000000000000000000000000",
         retryCounter: 1,
       },
     ],
@@ -390,28 +349,10 @@ export async function deployBridgeFixture() {
     id: 1,
     destinationChainId: 2,
     rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    multisigSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    feePayerMultisigSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
+    signature: "0x7465737400000000000000000000000000000000000000000000000000000000",
+    feeSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
     firstTxNonceId: 1,
     lastTxNonceId: 1,
-    usedUTXOs: {
-      multisigOwnedUTXOs: [
-        {
-          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          txIndex: 0,
-        },
-        {
-          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          txIndex: 2,
-        },
-      ],
-      feePayerOwnedUTXOs: [
-        {
-          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          txIndex: 1,
-        },
-      ],
-    },
   };
 
   const cardanoBlocks = [
@@ -428,15 +369,16 @@ export async function deployBridgeFixture() {
   const validatorsCardanoData = [];
   let ind = 0;
   for (let val of validators) {
-    ind++;
     validatorsCardanoData.push({
       addr: val.address,
       data: {
-        verifyingKey: "0x746573760000000000000000000000000000000000000000000000000000000" + ind,
-        verifyingKeyFee: "0x74657376000000000000000000000000000000000000000000000000000000" + ind + "2",
-      },
+        key: [BigInt(4 * ind), BigInt(4 * ind + 1), BigInt(4 * ind + 2), BigInt(4 * ind + 3)]
+      }
     });
+    ind++
   }
+
+  const validatorCardanoData = validatorsCardanoData[0].data;
 
   return {
     hre,
@@ -467,6 +409,5 @@ export async function deployBridgeFixture() {
     validatorsCardanoData,
     validators,
     cardanoBlocks,
-    validatorAddressCardanoData,
   };
 }

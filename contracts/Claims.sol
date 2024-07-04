@@ -233,8 +233,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function shouldCreateBatch(uint8 _destinationChain) public view returns (bool) {
-        // if batch is already created, return false
-        if (claimsHelper.currentBatchBlock(_destinationChain) != int(-1)) {
+        // if not registered chain or batch is already created, return false
+        if (!isChainRegistered[_destinationChain] || claimsHelper.currentBatchBlock(_destinationChain) != int(-1)) {
             return false;
         }
 
