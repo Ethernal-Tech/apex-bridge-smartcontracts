@@ -8,15 +8,18 @@ describe("Performance", function () {
 
     const tx = await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
     const receipt = await tx.wait();
-    console.log("Gas spent: " + parseInt(receipt.gasUsed));
+    console.log(`Gas spent: ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
   });
 
   it("registerChainGovernance", async function () {
     const { bridge, chain1, validators, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
-    const tx = await bridge.connect(validators[0]).registerChainGovernance(chain1, 100, validatorsCardanoData[0].data);
-    const receipt = await tx.wait();
-    console.log("Gas spent: " + parseInt(receipt.gasUsed));
+    for (let i = 0; i < (validators.length * 2) / 3 + 1; i++) {
+      // fourth one is quorum
+      const tx = await bridge.connect(validators[i]).registerChainGovernance(chain1, 100, validatorsCardanoData[0].data);
+      const receipt = await tx.wait();
+      console.log(`Gas spent on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
+    }
   });
 
   it("submitClaims BRC", async function () {
@@ -28,10 +31,10 @@ describe("Performance", function () {
     await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
 
     for (let i = 0; i < validators.length; i++) {
-      // third one is quorum
+      // fourth one is quorum
       const tx = await bridge.connect(validators[i]).submitClaims(validatorClaimsBRC);
       const receipt = await tx.wait();
-      console.log(`Gas spent on (${i}): ${parseInt(receipt.gasUsed)}`);
+      console.log(`Gas spent on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
     }
   });
 
@@ -53,10 +56,10 @@ describe("Performance", function () {
     }
 
     for (let i = 0; i < validators.length; i++) {
-      // third one is quorum
+      // fourth one is quorum
       const tx = await bridge.connect(validators[i]).submitSignedBatch(signedBatch);
       const receipt = await tx.wait();
-      console.log(`Gas spent on (${i}): ${parseInt(receipt.gasUsed)}`);
+      console.log(`Gas spent on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
     }
   });
 
@@ -87,10 +90,10 @@ describe("Performance", function () {
     }
 
     for (let i = 0; i < validators.length; i++) {
-      // third one is quorum
+      // fourth one is quorum
       const tx = await bridge.connect(validators[i]).submitClaims(validatorClaimsBEC);
       const receipt = await tx.wait();
-      console.log(`Gas spent on (${i}): ${parseInt(receipt.gasUsed)}`);
+      console.log(`Gas spent on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
     }
   });
 
@@ -101,9 +104,12 @@ describe("Performance", function () {
 
     await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
 
-    const tx = await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
-    const receipt = await tx.wait();
-    console.log("Gas spent: " + parseInt(receipt.gasUsed));
+    for (let i = 0; i < validators.length; i++) {
+      // fourth one is quorum
+      const tx = await bridge.connect(validators[i]).submitClaims(validatorClaimsRRC);
+      const receipt = await tx.wait();
+      console.log(`Gas spent on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
+    }
   });
 
   it("submitClaims REC", async function () {
@@ -113,8 +119,11 @@ describe("Performance", function () {
 
     await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
 
-    const tx = await bridge.connect(validators[0]).submitClaims(validatorClaimsREC);
-    const receipt = await tx.wait();
-    console.log("Gas spent: " + parseInt(receipt.gasUsed));
+    for (let i = 0; i < validators.length; i++) {
+      // fourth one is quorum
+      const tx = await bridge.connect(validators[i]).submitClaims(validatorClaimsREC);
+      const receipt = await tx.wait();
+      console.log(`Gas spent on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
+    }
   });
 });
