@@ -47,8 +47,8 @@ describe("Batch Creation", function () {
         id: 1,
         destinationChainId: "unregisteredChainId1",
         rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        multisigSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        feePayerMultisigSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        signature: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        feeSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
         firstTxNonceId: 1,
         lastTxNonceId: 1,
       };
@@ -232,11 +232,12 @@ describe("Batch Creation", function () {
         await ethers.provider.send("evm_mine");
       }
 
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[4]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
 
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch); // resubmit
+
       const confBatchNothing = await claimsHelper
         .connect(validators[0])
         .getConfirmedSignedBatchData(signedBatch.destinationChainId, signedBatch.id);
@@ -246,6 +247,9 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
       expect(await claims.shouldCreateBatch(signedBatch.destinationChainId)).to.equal(false);
+
+      const confBatch = await bridge.connect(validators[1]).getConfirmedBatch(signedBatch.destinationChainId);
+      expect(confBatch.bitmap).to.equal(30)
     });
 
     it("SignedBatch should be added to signedBatches if there are enough votes", async function () {
@@ -315,34 +319,34 @@ describe("Batch Creation", function () {
         await ethers.provider.send("evm_mine");
       }
 
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[0]).submitSignedBatchEVM(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatchEVM(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatchEVM(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatchEVM(signedBatch);
 
       expect(
         (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).rawTransaction
       ).to.equal(signedBatch.rawTransaction);
       expect(
-        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).multisigSignatures
+        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).signatures
           .length
       ).to.equal(4);
       expect(
         (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId))
-          .feePayerMultisigSignatures.length
+          .feeSignatures.length
       ).to.equal(4);
 
       expect(
-        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).multisigSignatures[0]
+        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).signatures[0]
       ).to.equal("0x7465737400000000000000000000000000000000000000000000000000000000");
       expect(
-        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).multisigSignatures[1]
+        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).signatures[1]
       ).to.equal("0x7465737400000000000000000000000000000000000000000000000000000000");
       expect(
-        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).multisigSignatures[2]
+        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).signatures[2]
       ).to.equal("0x7465737400000000000000000000000000000000000000000000000000000000");
       expect(
-        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).multisigSignatures[3]
+        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).signatures[3]
       ).to.equal("0x7465737400000000000000000000000000000000000000000000000000000000");
       expect(
         await bridge.connect(validators[0]).getRawTransactionFromLastBatch(signedBatch.destinationChainId)

@@ -7,8 +7,11 @@ abstract contract IBridge is IBridgeStructs {
     // Claims
     function submitClaims(ValidatorClaims calldata _claims) external virtual;
 
-    // Batches
+    // Batches Cardano
     function submitSignedBatch(SignedBatch calldata _signedBatch) external virtual;
+
+    // Batches EVM
+    function submitSignedBatchEVM(SignedBatch calldata _signedBatch) external virtual;
 
     // Slots
     function submitLastObservedBlocks(uint8 chainId, CardanoBlock[] calldata blocks) external virtual;

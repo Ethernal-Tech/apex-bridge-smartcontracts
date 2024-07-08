@@ -46,8 +46,12 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         bridgeAddress = _bridgeAddress;
     }
 
-    function isValidator(address _addr) public view returns (bool _isValidator) {
+    function isValidator(address _addr) public view returns (bool) {
         return addressValidatorIndex[_addr] != 0;
+    }
+
+    function getValidatorIndex(address _addr) public view returns (uint8) {
+        return addressValidatorIndex[_addr];
     }
 
     function isSignatureValid(
@@ -57,10 +61,19 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         bytes calldata _signatureFee,
         address _validatorAddr
     ) public view returns (bool) {
-        ValidatorChainData memory dt = chainDataPerAddress[_chainId][_validatorAddr];
+        uint256[4] memory key = chainDataPerAddress[_chainId][_validatorAddr].key;
         return
-            _isSignatureValid(_txRaw, _signature, dt.verifyingKey, true) &&
-            _isSignatureValid(_txRaw, _signatureFee, dt.verifyingKeyFee, true);
+            _isSignatureValid(_txRaw, _signature, key[0], true) && // multisig verification key
+            _isSignatureValid(_txRaw, _signatureFee, key[1], true); // fee verification key
+    }
+
+    function isBlsSignatureValid(
+        uint8 _chainId,
+        bytes calldata _txRaw,
+        bytes calldata _signature,
+        address _validatorAddr
+    ) public view returns (bool) {
+        return _isBlsSignatureValid(_txRaw, _signature, chainDataPerAddress[_chainId][_validatorAddr].key, true);
     }
 
     function setValidatorsChainData(
@@ -105,7 +118,8 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         uint cnt = 0;
         uint256 validatorsAddressesLength = validatorsAddresses.length;
         for (uint i; i < validatorsAddressesLength; i++) {
-            if (chainDataPerAddress[_chainId][validatorsAddresses[i]].verifyingKey != "") {
+            ValidatorChainData memory vcd = chainDataPerAddress[_chainId][validatorsAddresses[i]];
+            if (vcd.key[0] != 0 || vcd.key[1] != 0 || vcd.key[2] != 0 || vcd.key[3] != 0) {
                 cnt++;
             }
         }
@@ -120,17 +134,29 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     }
 
     function _isSignatureValid(
-        bytes calldata _txRaw,
+        bytes calldata _data,
         bytes calldata _signature,
-        bytes32 _verifyingKey,
+        uint256 _verifyingKey,
         bool _isTx
     ) internal view returns (bool) {
         // solhint-disable-line avoid-low-level-calls
         (bool callSuccess, bytes memory returnData) = PRECOMPILE.staticcall{gas: PRECOMPILE_GAS}(
-            abi.encode(_txRaw, _signature, _verifyingKey, _isTx)
+            abi.encode(_data, _signature, _verifyingKey, _isTx)
         );
 
         return callSuccess && abi.decode(returnData, (bool));
+    }
+
+    function _isBlsSignatureValid(
+        bytes calldata _data,
+        bytes calldata _signature,
+        uint256[4] memory _verifyingKey,
+        bool _isTx
+    ) internal pure returns (bool) {
+        // TODO: call bls verification precompile
+        // just some random jiberish which should evaluate to true to silence compiler
+        uint256 a = _data.length + _signature.length + _verifyingKey[0] + (_isTx ? 1 : 0);
+        return a != 0;
     }
 
     modifier onlyBridge() {

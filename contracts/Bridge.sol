@@ -53,12 +53,31 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         if (!claims.shouldCreateBatch(_signedBatch.destinationChainId)) {
             return;
         }
+
         if (
             !validators.isSignatureValid(
                 _signedBatch.destinationChainId,
                 _signedBatch.rawTransaction,
-                _signedBatch.multisigSignature,
-                _signedBatch.feePayerMultisigSignature,
+                _signedBatch.signature,
+                _signedBatch.feeSignature,
+                msg.sender
+            )
+        ) {
+            revert InvalidSignature();
+        }
+        signedBatches.submitSignedBatch(_signedBatch, msg.sender);
+    }
+
+    // Batches
+    function submitSignedBatchEVM(SignedBatch calldata _signedBatch) external override onlyValidator {
+        if (!claims.shouldCreateBatch(_signedBatch.destinationChainId)) {
+            return;
+        }
+        if (
+            !validators.isBlsSignatureValid(
+                _signedBatch.destinationChainId,
+                _signedBatch.rawTransaction,
+                _signedBatch.signature,
                 msg.sender
             )
         ) {

@@ -184,12 +184,18 @@ describe("Chain Registration", function () {
       expect(valids1.length).to.equal(5);
       expect(valids2.length).to.equal(5);
 
-      for (let i = 0; i < validatorsCardanoData.length; i++) {
-        expect(valids1[i].verifyingKey).to.equal(validatorsCardanoData[i].data.verifyingKey);
-        expect(valids1[i].verifyingKeyFee).to.equal(validatorsCardanoData[i].data.verifyingKeyFee);
+      console.log(valids1[0]);
 
-        expect(valids2[i].verifyingKey).to.equal(validatorsCardanoData[i].data.verifyingKey);
-        expect(valids2[i].verifyingKeyFee).to.equal(validatorsCardanoData[i].data.verifyingKeyFee);
+      for (let i = 0; i < validatorsCardanoData.length; i++) {
+        expect(valids1[i].key[0]).to.equal(validatorsCardanoData[i].data.key[0]);
+        expect(valids1[i].key[1]).to.equal(validatorsCardanoData[i].data.key[1]);
+        expect(valids1[i].key[2]).to.equal(validatorsCardanoData[i].data.key[2]);
+        expect(valids1[i].key[3]).to.equal(validatorsCardanoData[i].data.key[3]);
+
+        expect(valids2[i].key[0]).to.equal(validatorsCardanoData[i].data.key[0]);
+        expect(valids2[i].key[1]).to.equal(validatorsCardanoData[i].data.key[1]);
+        expect(valids2[i].key[2]).to.equal(validatorsCardanoData[i].data.key[2]);
+        expect(valids2[i].key[3]).to.equal(validatorsCardanoData[i].data.key[3]);
       }
     });
 
@@ -252,8 +258,7 @@ describe("Chain Registration", function () {
       validatorsCardanoData.push({
         addr: validator6.address,
         data: {
-          verifyingKey: "0x746573760000000000000000000000000000000000000000000000000000000" + 5,
-          verifyingKeyFee: "0x74657376000000000000000000000000000000000000000000000000000000" + 5 + "2",
+          key: [BigInt(4*5), BigInt(4*5+1), BigInt(4*5+2), BigInt(4*5+3)]
         },
       });
 
