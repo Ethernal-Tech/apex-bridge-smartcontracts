@@ -199,53 +199,6 @@ describe("Chain Registration", function () {
       }
     });
 
-    it("Should not update Validators Cardano Data until all validators submit their data", async function () {
-      const { bridge, validatorsc, validatorsCardanoData, validators, hre, validator6 } = await loadFixture(
-        deployBridgeFixture
-      );
-
-      const bridgeAddress = await bridge.getAddress();
-
-      const signer = await impersonateAsContractAndMintFunds(bridgeAddress);
-
-      await validatorsc
-        .connect(signer)
-        .addValidatorChainData(1, validatorsCardanoData[0].addr, validatorsCardanoData[0].data);
-
-      await validatorsc
-        .connect(signer)
-        .addValidatorChainData(1, validatorsCardanoData[1].addr, validatorsCardanoData[1].data);
-
-      await validatorsc
-        .connect(signer)
-        .addValidatorChainData(1, validatorsCardanoData[2].addr, validatorsCardanoData[2].data);
-
-      await validatorsc
-        .connect(signer)
-        .addValidatorChainData(1, validatorsCardanoData[3].addr, validatorsCardanoData[3].data);
-
-      const data = await validatorsc.connect(validators[0]).getValidatorsChainData(1);
-
-      expect(data.length).to.equal(0);
-
-      await validatorsc
-        .connect(signer)
-        .addValidatorChainData(1, validatorsCardanoData[4].addr, validatorsCardanoData[4].data);
-
-      const data2 = await validatorsc.connect(validators[0]).getValidatorsChainData(1);
-      expect(data2.length).to.equal(await validatorsc.validatorsCount());
-
-      await validatorsc.connect(signer).addValidatorChainData(1, validator6, validatorsCardanoData[4].data);
-
-      const data3 = await validatorsc.connect(validators[0]).getValidatorsChainData(1);
-      expect(data3.length).to.equal(await validatorsc.validatorsCount());
-
-      await hre.network.provider.request({
-        method: "hardhat_stopImpersonatingAccount",
-        params: [bridgeAddress],
-      });
-    });
-
     it("Should not update Validators Cardano Data until length of the list with the new data doesn't match the number of validators", async function () {
       const { bridge, validatorsc, validatorsCardanoData, validators, hre, validator6 } = await loadFixture(
         deployBridgeFixture
