@@ -55,7 +55,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         }
 
         if (
-            !validators.isSignatureValid(
+            !validators.areSignaturesValid(
                 _signedBatch.destinationChainId,
                 _signedBatch.rawTransaction,
                 _signedBatch.signature,
@@ -73,10 +73,11 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         if (!claims.shouldCreateBatch(_signedBatch.destinationChainId)) {
             return;
         }
+        
         if (
-            !validators.isBlsSignatureValid(
+            !validators.isBlsSignatureValidByValidatorAddress(
                 _signedBatch.destinationChainId,
-                _signedBatch.rawTransaction,
+                keccak256(_signedBatch.rawTransaction),
                 _signedBatch.signature,
                 msg.sender
             )
@@ -134,16 +135,10 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     function _registerChain(Chain calldata _chain, uint256 _tokenQuantity) internal {
-        uint8 chainId = _chain.id;
-        claims.setChainRegistered(chainId);
         chains.push(_chain);
 
-        claims.setTokenQuantity(chainId, _tokenQuantity);
-
-        claims.resetCurrentBatchBlock(chainId);
-
-        claims.setNextTimeoutBlock(chainId, block.number);
-
+        uint8 chainId = _chain.id;
+        claims.setChainRegistered(chainId, _tokenQuantity);
         emit newChainRegistered(chainId);
     }
 

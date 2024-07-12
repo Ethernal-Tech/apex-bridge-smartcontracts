@@ -127,12 +127,6 @@ describe("Claims Contract", function () {
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
 
-    it("Should revert if Claims SC setTokenQuantity is not called by Bridge SC", async function () {
-      const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
-
-      await expect(claims.connect(owner).setTokenQuantity(1, 100)).to.be.revertedWithCustomError(bridge, "NotBridge");
-    });
-
     it("Should revert if Claims SC resetCurrentBatchBlock is not called by Bridge SC", async function () {
       const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
 
@@ -142,7 +136,7 @@ describe("Claims Contract", function () {
     it("Should revert if Claims SC setChainRegistered is not called by Bridge SC", async function () {
       const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
 
-      await expect(claims.connect(owner).setChainRegistered(1)).to.be.revertedWithCustomError(bridge, "NotBridge");
+      await expect(claims.connect(owner).setChainRegistered(1, 100)).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
 
     it("Should revert if Claims SC setNextTimeoutBlock is not called by Bridge SC", async function () {

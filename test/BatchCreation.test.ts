@@ -7,6 +7,7 @@ describe("Batch Creation", function () {
   beforeEach(async () => {
     // mock isSignatureValid precompile to always return true
     await setCode("0x0000000000000000000000000000000000002050", "0x600160005260206000F3");
+    await setCode("0x0000000000000000000000000000000000002060", "0x600160005260206000F3");
   });
 
   async function impersonateAsContractAndMintFunds(contractAddress: string) {
@@ -336,18 +337,13 @@ describe("Batch Creation", function () {
           .feeSignatures.length
       ).to.equal(4);
 
-      expect(
-        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).signatures[0]
-      ).to.equal("0x7465737400000000000000000000000000000000000000000000000000000000");
-      expect(
-        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).signatures[1]
-      ).to.equal("0x7465737400000000000000000000000000000000000000000000000000000000");
-      expect(
-        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).signatures[2]
-      ).to.equal("0x7465737400000000000000000000000000000000000000000000000000000000");
-      expect(
-        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).signatures[3]
-      ).to.equal("0x7465737400000000000000000000000000000000000000000000000000000000");
+      const confirmedBatch = await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId);
+      expect(confirmedBatch.signatures[0]).to.deep.equal(signedBatch.signature);
+      expect(confirmedBatch.signatures[1]).to.deep.equal(signedBatch.signature);
+      expect(confirmedBatch.signatures[2]).to.deep.equal(signedBatch.signature);
+      expect(confirmedBatch.signatures[3]).to.deep.equal(signedBatch.signature);
+      expect(confirmedBatch.feeSignatures[2]).to.deep.equal(signedBatch.feeSignature);
+
       expect(
         await bridge.connect(validators[0]).getRawTransactionFromLastBatch(signedBatch.destinationChainId)
       ).to.equal(signedBatch.rawTransaction);
