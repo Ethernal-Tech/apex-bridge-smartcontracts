@@ -78,8 +78,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         (bool callSuccess, bytes memory returnData) = VALIDATOR_BLS_PRECOMPILE.staticcall{
             gas: VALIDATOR_BLS_PRECOMPILE_GAS
         }(abi.encodePacked(uint8(0), abi.encode(_hash, _signature, _verifyingKey)));
-        bool verified = abi.decode(returnData, (bool));
-        return callSuccess && verified;
+        return callSuccess && abi.decode(returnData, (bool));
     }
 
     function areSignaturesValid(
