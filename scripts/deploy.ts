@@ -1,6 +1,9 @@
+import { Validators } from "./../typechain-types/contracts/Validators";
 import { ethers } from "hardhat";
 
 async function main() {
+  const config = require("./config.json");
+
   //deployment of contract logic
   const Bridge = await ethers.getContractFactory("Bridge");
   const bridgeLogic = await Bridge.deploy();
@@ -53,13 +56,12 @@ async function main() {
     Slots.interface.encodeFunctionData("initialize", [])
   );
 
-  const [validator1, validator2, validator3, validator4, validator5] = await ethers.getSigners();
   const validatorsAddresses = [
-    validator1.address,
-    validator2.address,
-    validator3.address,
-    validator4.address,
-    validator5.address,
+    config.Validators.validator1address,
+    config.Validators.validator2address,
+    config.Validators.validator3address,
+    config.Validators.validator4address,
+    config.Validators.validator5address,
   ];
 
   const validatorsProxy = await ValidatorsProxy.deploy(
@@ -104,46 +106,46 @@ async function main() {
   await validatorsc.setDependencies(bridge.target);
 
   const chain = {
-    id: 1,
-    chainType: 2,
-    addressMultisig: "0x1234567890abcdef1234567890abcdef12345678",
-    addressFeePayer: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+    id: config.Chain.id,
+    chainType: config.Chain.chainType,
+    addressMultisig: config.Chain.addressMultisig,
+    addressFeePayer: config.Chain.addressFeePayer,
   };
 
   const validatorsChainData = [
     {
-      addr: validator1.address,
+      addr: config.Validators.validator1address,
       data: {
-        key: [0n, 0n, 0n, 0n],
+        key: config.Validators.validator1key,
       },
     },
     {
-      addr: validator2.address,
+      addr: config.Validators.validator2address,
       data: {
-        key: [1n, 1n, 1n, 1n],
+        key: config.Validators.validator2key,
       },
     },
     {
-      addr: validator3.address,
+      addr: config.Validators.validator3address,
       data: {
-        key: [2n, 2n, 2n, 2n],
+        key: config.Validators.validator3key,
       },
     },
     {
-      addr: validator4.address,
+      addr: config.Validators.validator4address,
       data: {
-        key: [3n, 3n, 3n, 3n],
+        key: config.Validators.validator4key,
       },
     },
     {
-      addr: validator5.address,
+      addr: config.Validators.validator5address,
       data: {
-        key: [4n, 4n, 4n, 4n],
+        key: config.Validators.validator5key,
       },
     },
   ];
 
-  await bridge.registerChain(chain, 1000, validatorsChainData);
+  await bridge.registerChain(chain, config.Chain.totalSupply, validatorsChainData);
 
   console.log("BridgeLogic deployed at:", bridgeLogic.target);
   console.log("Bridge deployed at:", bridge.target);
