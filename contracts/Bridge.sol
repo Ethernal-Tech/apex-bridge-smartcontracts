@@ -53,12 +53,32 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         if (!claims.shouldCreateBatch(_signedBatch.destinationChainId)) {
             return;
         }
+
         if (
-            !validators.isSignatureValid(
+            !validators.areSignaturesValid(
                 _signedBatch.destinationChainId,
                 _signedBatch.rawTransaction,
-                _signedBatch.multisigSignature,
-                _signedBatch.feePayerMultisigSignature,
+                _signedBatch.signature,
+                _signedBatch.feeSignature,
+                msg.sender
+            )
+        ) {
+            revert InvalidSignature();
+        }
+        signedBatches.submitSignedBatch(_signedBatch, msg.sender);
+    }
+
+    // Batches
+    function submitSignedBatchEVM(SignedBatch calldata _signedBatch) external override onlyValidator {
+        if (!claims.shouldCreateBatch(_signedBatch.destinationChainId)) {
+            return;
+        }
+        
+        if (
+            !validators.isBlsSignatureValidByValidatorAddress(
+                _signedBatch.destinationChainId,
+                keccak256(_signedBatch.rawTransaction),
+                _signedBatch.signature,
                 msg.sender
             )
         ) {
@@ -115,16 +135,10 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     function _registerChain(Chain calldata _chain, uint256 _tokenQuantity) internal {
-        uint8 chainId = _chain.id;
-        claims.setChainRegistered(chainId);
         chains.push(_chain);
 
-        claims.setTokenQuantity(chainId, _tokenQuantity);
-
-        claims.resetCurrentBatchBlock(chainId);
-
-        claims.setNextTimeoutBlock(chainId, block.number);
-
+        uint8 chainId = _chain.id;
+        claims.setChainRegistered(chainId, _tokenQuantity);
         emit newChainRegistered(chainId);
     }
 

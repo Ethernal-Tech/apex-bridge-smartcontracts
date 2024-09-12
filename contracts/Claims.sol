@@ -233,19 +233,15 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function shouldCreateBatch(uint8 _destinationChain) public view returns (bool) {
-        // if batch is already created, return false
-        if (claimsHelper.currentBatchBlock(_destinationChain) != int(-1)) {
+        // if not registered chain or batch is already created, return false
+        if (!isChainRegistered[_destinationChain] || claimsHelper.currentBatchBlock(_destinationChain) != int(-1)) {
             return false;
         }
 
         uint256 cnt = getBatchingTxsCount(_destinationChain);
 
         return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
-    }
-
-    function setTokenQuantity(uint8 _chainId, uint256 _tokenQuantity) external onlyBridge {
-        chainTokenQuantity[_chainId] = _tokenQuantity;
-    }
+    }    
 
     function getConfirmedTransaction(
         uint8 _destinationChain,
@@ -279,8 +275,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         claimsHelper.resetCurrentBatchBlock(_chainId);
     }
 
-    function setChainRegistered(uint8 _chainId) external onlyBridge {
+    function setChainRegistered(uint8 _chainId, uint256 _initialTokenSupply) external onlyBridge {
         isChainRegistered[_chainId] = true;
+        chainTokenQuantity[_chainId] = _initialTokenSupply;
+        nextTimeoutBlock[_chainId] = block.number + timeoutBlocksNumber;
+        claimsHelper.resetCurrentBatchBlock(_chainId);
     }
 
     function setNextTimeoutBlock(uint8 _chainId, uint256 _blockNumber) external onlyBridge {

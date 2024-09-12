@@ -14,11 +14,14 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     ClaimsHelper private claimsHelper;
     Validators private validators;
 
-    // hash -> multisigSignatures
-    mapping(bytes32 => bytes[]) private multisigSignatures;
+    // hash -> multisig / bls signatures
+    mapping(bytes32 => bytes[]) private signatures;
 
-    // hash -> multisigSignatures
-    mapping(bytes32 => bytes[]) private feePayerMultisigSignatures;
+    // hash -> fee signatures
+    mapping(bytes32 => bytes[]) private feeSignatures;
+
+    // hash -> bls bitmap
+    mapping(bytes32 => uint256) private bitmap;
 
     // hash -> user address -> true/false
     mapping(bytes32 => mapping(address => bool)) public hasVoted; // for resubmit
@@ -72,26 +75,32 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         }
 
         uint256 _quorumCount = validators.getQuorumNumberOfValidators();
-        uint256 _numberOfVotes = multisigSignatures[_sbHash].length;
+        uint256 _numberOfVotes = signatures[_sbHash].length;
+        uint8 validatorIdx = validators.getValidatorIndex(_caller) - 1;
 
         hasVoted[_sbHash][_caller] = true;
 
-        multisigSignatures[_sbHash].push(_signedBatch.multisigSignature);
-        feePayerMultisigSignatures[_sbHash].push(_signedBatch.feePayerMultisigSignature);
+        signatures[_sbHash].push(_signedBatch.signature);
+        feeSignatures[_sbHash].push(_signedBatch.feeSignature);
+        unchecked {
+            bitmap[_sbHash] = bitmap[_sbHash] | (1 << validatorIdx);
+        }
 
         // check if quorum reached (+1 is last vote)
         if (_numberOfVotes + 1 >= _quorumCount) {
             lastConfirmedBatch[_destinationChainId] = ConfirmedBatch(
-                multisigSignatures[_sbHash],
-                feePayerMultisigSignatures[_sbHash],
+                signatures[_sbHash],
+                feeSignatures[_sbHash],
+                bitmap[_sbHash],
                 _signedBatch.rawTransaction,
                 _sbId
             );
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
 
-            delete multisigSignatures[_sbHash];
-            delete feePayerMultisigSignatures[_sbHash];
+            delete signatures[_sbHash];
+            delete feeSignatures[_sbHash];
+            delete bitmap[_sbHash];
         }
     }
 
@@ -108,7 +117,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     }
 
     function getNumberOfSignatures(bytes32 _hash) external view returns (uint256, uint256) {
-        return (multisigSignatures[_hash].length, feePayerMultisigSignatures[_hash].length);
+        return (signatures[_hash].length, feeSignatures[_hash].length);
     }
 
     modifier onlyBridge() {

@@ -12,10 +12,10 @@ describe("Validators Contract", function () {
   });
 
   it("setValidatorsChainData from Validators SC should revert if not called by Bridge SC", async function () {
-    const { bridge, validatorsc, owner, validatorAddressCardanoData } = await loadFixture(deployBridgeFixture);
+    const { bridge, validatorsc, owner, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
     await expect(
-      validatorsc.connect(owner).setValidatorsChainData(1, validatorAddressCardanoData)
+      validatorsc.connect(owner).setValidatorsChainData(1, validatorsCardanoData)
     ).to.be.revertedWithCustomError(bridge, "NotBridge");
   });
 });

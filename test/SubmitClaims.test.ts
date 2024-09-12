@@ -187,10 +187,13 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[4]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+      
+      const confBatch = await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId);
+      expect(confBatch.bitmap).to.equal(27)
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
@@ -273,10 +276,13 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[4]).submitSignedBatch(signedBatch);
+
+      const confBatch = await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId);
+      expect(confBatch.bitmap).to.equal(23)
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
@@ -314,9 +320,13 @@ describe("Submit Claims", function () {
       }
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      const confBatch = await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId);
+      expect(confBatch.bitmap).to.equal(15)
+
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
@@ -559,7 +569,7 @@ describe("Submit Claims", function () {
         [
           validatorClaimsRRC.refundRequestClaims[0].observedTransactionHash,
           validatorClaimsRRC.refundRequestClaims[0].previousRefundTxHash,
-          validatorClaimsRRC.refundRequestClaims[0].multisigSignature,
+          validatorClaimsRRC.refundRequestClaims[0].signature,
           validatorClaimsRRC.refundRequestClaims[0].rawTransaction,
           validatorClaimsRRC.refundRequestClaims[0].retryCounter,
           validatorClaimsRRC.refundRequestClaims[0].chainId,

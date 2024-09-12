@@ -184,60 +184,19 @@ describe("Chain Registration", function () {
       expect(valids1.length).to.equal(5);
       expect(valids2.length).to.equal(5);
 
+      console.log(valids1[0]);
+
       for (let i = 0; i < validatorsCardanoData.length; i++) {
-        expect(valids1[i].verifyingKey).to.equal(validatorsCardanoData[i].data.verifyingKey);
-        expect(valids1[i].verifyingKeyFee).to.equal(validatorsCardanoData[i].data.verifyingKeyFee);
+        expect(valids1[i].key[0]).to.equal(validatorsCardanoData[i].data.key[0]);
+        expect(valids1[i].key[1]).to.equal(validatorsCardanoData[i].data.key[1]);
+        expect(valids1[i].key[2]).to.equal(validatorsCardanoData[i].data.key[2]);
+        expect(valids1[i].key[3]).to.equal(validatorsCardanoData[i].data.key[3]);
 
-        expect(valids2[i].verifyingKey).to.equal(validatorsCardanoData[i].data.verifyingKey);
-        expect(valids2[i].verifyingKeyFee).to.equal(validatorsCardanoData[i].data.verifyingKeyFee);
+        expect(valids2[i].key[0]).to.equal(validatorsCardanoData[i].data.key[0]);
+        expect(valids2[i].key[1]).to.equal(validatorsCardanoData[i].data.key[1]);
+        expect(valids2[i].key[2]).to.equal(validatorsCardanoData[i].data.key[2]);
+        expect(valids2[i].key[3]).to.equal(validatorsCardanoData[i].data.key[3]);
       }
-    });
-
-    it("Should not update Validators Cardano Data until all validators submit their data", async function () {
-      const { bridge, validatorsc, validatorsCardanoData, validators, hre, validator6 } = await loadFixture(
-        deployBridgeFixture
-      );
-
-      const bridgeAddress = await bridge.getAddress();
-
-      const signer = await impersonateAsContractAndMintFunds(bridgeAddress);
-
-      await validatorsc
-        .connect(signer)
-        .addValidatorChainData(1, validatorsCardanoData[0].addr, validatorsCardanoData[0].data);
-
-      await validatorsc
-        .connect(signer)
-        .addValidatorChainData(1, validatorsCardanoData[1].addr, validatorsCardanoData[1].data);
-
-      await validatorsc
-        .connect(signer)
-        .addValidatorChainData(1, validatorsCardanoData[2].addr, validatorsCardanoData[2].data);
-
-      await validatorsc
-        .connect(signer)
-        .addValidatorChainData(1, validatorsCardanoData[3].addr, validatorsCardanoData[3].data);
-
-      const data = await validatorsc.connect(validators[0]).getValidatorsChainData(1);
-
-      expect(data.length).to.equal(0);
-
-      await validatorsc
-        .connect(signer)
-        .addValidatorChainData(1, validatorsCardanoData[4].addr, validatorsCardanoData[4].data);
-
-      const data2 = await validatorsc.connect(validators[0]).getValidatorsChainData(1);
-      expect(data2.length).to.equal(await validatorsc.validatorsCount());
-
-      await validatorsc.connect(signer).addValidatorChainData(1, validator6, validatorsCardanoData[4].data);
-
-      const data3 = await validatorsc.connect(validators[0]).getValidatorsChainData(1);
-      expect(data3.length).to.equal(await validatorsc.validatorsCount());
-
-      await hre.network.provider.request({
-        method: "hardhat_stopImpersonatingAccount",
-        params: [bridgeAddress],
-      });
     });
 
     it("Should not update Validators Cardano Data until length of the list with the new data doesn't match the number of validators", async function () {
@@ -252,8 +211,7 @@ describe("Chain Registration", function () {
       validatorsCardanoData.push({
         addr: validator6.address,
         data: {
-          verifyingKey: "0x746573760000000000000000000000000000000000000000000000000000000" + 5,
-          verifyingKeyFee: "0x74657376000000000000000000000000000000000000000000000000000000" + 5 + "2",
+          key: [BigInt(4*5), BigInt(4*5+1), BigInt(4*5+2), BigInt(4*5+3)]
         },
       });
 
