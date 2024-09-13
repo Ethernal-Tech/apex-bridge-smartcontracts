@@ -1,4 +1,3 @@
-import { Validators } from "./../typechain-types/contracts/Validators";
 import { ethers } from "hardhat";
 
 async function main() {
