@@ -107,7 +107,8 @@ interface IBridgeStructs {
     struct Chain {
         uint8 id;
         uint8 chainType;
-        bytes additionalData;
+        string addressMultisig;
+        string addressFeePayer;
     }
 
     struct ValidatorAddressChainData {

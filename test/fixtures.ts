@@ -110,14 +110,16 @@ export async function deployBridgeFixture() {
 
   const chain1 = {
     id: 1,
-    chainType: 0,
-    additionalData: "0x", // for cardano additional chain data should be empty bytes
+    addressMultisig: "addr_test1vqeux7xwusdju9dvsj8h7mca9aup2k439kfmwy773xxc2hcu7zy99",
+    addressFeePayer: "addr_test1vrqaf07rkulldmr68nxktctsycs4wlj6urzlvpecwf37fmgc38xc6",
+    chainType: 0, // cardano chain
   };
 
   const chain2 = {
     id: 2,
+    addressMultisig: "addr_test1vr8zy7jk35n9yyw4jg0r4z98eygmrqxvz5sch4dva9c8s2qjv2edc",
+    addressFeePayer: "addr_test1vz8g63va7qat4ajyja4sndp06rv3penf3htqcwt6x4znyacfpea75",
     chainType: 0,
-    additionalData: "0x",
   };
 
   const validatorClaimsBRC = {

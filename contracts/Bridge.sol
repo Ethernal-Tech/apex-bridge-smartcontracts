@@ -96,13 +96,18 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     // Chain registration by Owner
-    function setChainAdditionalData(uint8 _chainId, bytes calldata _additionalData) public override onlyOwner {
+    function setChainAdditionalData(
+        uint8 _chainId,
+        string calldata addressMultisig,
+        string calldata addressFeePayer
+    ) external override onlyOwner {
         if (!claims.isChainRegistered(_chainId)) {
             revert ChainIsNotRegistered(_chainId);
         }
         for (uint i = 0; i < chains.length; i++) {
             if (chains[i].id == _chainId) {
-                chains[i].additionalData = _additionalData;
+                chains[i].addressMultisig = addressMultisig;
+                chains[i].addressFeePayer = addressFeePayer;
                 break;
             }
         }
@@ -141,7 +146,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         validators.addValidatorChainData(_chainId, msg.sender, _validatorChainData);
 
         if (claims.setVoted(msg.sender, chainHash) == validators.validatorsCount()) {
-            _registerChain(Chain(_chainId, _chainType, new bytes(0)), _tokenQuantity);
+            _registerChain(Chain(_chainId, _chainType, "", ""), _tokenQuantity);
         } else {
             emit newChainProposal(_chainId, msg.sender);
         }
