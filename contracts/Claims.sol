@@ -201,7 +201,15 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function _submitClaimsRRC(RefundRequestClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode("RRC", _claim));
-        claimsHelper.setVotedOnlyIfNeeded(_caller, claimHash, validators.getQuorumNumberOfValidators());
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
+            _caller,
+            claimHash,
+            validators.getQuorumNumberOfValidators()
+        );
+
+        if (_quorumReached) {
+            uint8 chainId = _claim.chainId;
+        }
     }
 
     function _submitClaimsREC(RefundExecutedClaim calldata _claim, address _caller) internal {
@@ -241,7 +249,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint256 cnt = getBatchingTxsCount(_destinationChain);
 
         return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
-    }    
+    }
 
     function getConfirmedTransaction(
         uint8 _destinationChain,
