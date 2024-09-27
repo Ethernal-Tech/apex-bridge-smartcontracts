@@ -29,8 +29,8 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         _disableInitializers();
     }
 
-    function initialize(address[] calldata _validators) public initializer {
-        __Ownable_init(msg.sender);
+    function initialize(address _owner, address[] calldata _validators) public initializer {
+        __Ownable_init(_owner);
         __UUPSUpgradeable_init();
         for (uint8 i; i < _validators.length; i++) {
             addressValidatorIndex[_validators[i]] = i + 1;
@@ -72,7 +72,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         bytes calldata _signature,
         uint256[4] memory _verifyingKey
     ) public view returns (bool) {
-         // verify signatures` for provided sig data and sigs bytes
+        // verify signatures` for provided sig data and sigs bytes
         // solhint-disable-next-line avoid-low-level-calls
         // slither-disable-next-line low-level-calls,calls-loop
         (bool callSuccess, bytes memory returnData) = VALIDATOR_BLS_PRECOMPILE.staticcall{
@@ -90,9 +90,9 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     ) public view returns (bool) {
         uint256 indx = addressValidatorIndex[_validatorAddr] - 1;
         uint256[4] memory key = chainData[_chainId][indx].key;
+        // multisig and fee verification
         return
-            isSignatureValid(_txRaw, _signature, key[0], true) && // multisig verification key
-            isSignatureValid(_txRaw, _signatureFee, key[1], true); // fee verification key
+            isSignatureValid(_txRaw, _signature, key[0], true) && isSignatureValid(_txRaw, _signatureFee, key[1], true);
     }
 
     function isBlsSignatureValidByValidatorAddress(
@@ -119,7 +119,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         for (uint i; i < validatorsCount; i++) {
             chainData[_chainId].push();
         }
-        
+
         // set validator chain data for each validator
         for (uint i; i < validatorsCount; i++) {
             ValidatorAddressChainData calldata dt = _chainDatas[i];
@@ -128,7 +128,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
                 revert InvalidData("invalid address");
             }
 
-            chainData[_chainId][indx-1] = dt.data;
+            chainData[_chainId][indx - 1] = dt.data;
         }
     }
 
