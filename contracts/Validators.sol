@@ -139,7 +139,6 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     ) external onlyBridge {
         if (chainData[_chainId].length == 0) {
             // recreate array with n elements
-            delete chainData[_chainId];
             for (uint i; i < validatorsCount; i++) {
                 chainData[_chainId].push();
             }

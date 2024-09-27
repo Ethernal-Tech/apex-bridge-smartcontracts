@@ -24,8 +24,8 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         _disableInitializers();
     }
 
-    function initialize() public initializer {
-        __Ownable_init(msg.sender);
+    function initialize(address _owner) public initializer {
+        __Ownable_init(_owner);
         __UUPSUpgradeable_init();
     }
 
@@ -73,7 +73,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         if (!claims.shouldCreateBatch(_signedBatch.destinationChainId)) {
             return;
         }
-        
+
         if (
             !validators.isBlsSignatureValidByValidatorAddress(
                 _signedBatch.destinationChainId,
@@ -96,50 +96,66 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     // Chain registration by Owner
+    function setChainAdditionalData(
+        uint8 _chainId,
+        string calldata addressMultisig,
+        string calldata addressFeePayer
+    ) external override onlyOwner {
+        if (!claims.isChainRegistered(_chainId)) {
+            revert ChainIsNotRegistered(_chainId);
+        }
+        for (uint i = 0; i < chains.length; i++) {
+            if (chains[i].id == _chainId) {
+                chains[i].addressMultisig = addressMultisig;
+                chains[i].addressFeePayer = addressFeePayer;
+                break;
+            }
+        }
+    }
+
+    // Chain registration by Owner
     function registerChain(
         Chain calldata _chain,
         uint256 _tokenQuantity,
         ValidatorAddressChainData[] calldata _chainDatas
     ) public override onlyOwner {
-        validators.setValidatorsChainData(_chain.id, _chainDatas);
-        _registerChain(_chain, _tokenQuantity);
+        uint8 _chainId = _chain.id;
+        validators.setValidatorsChainData(_chainId, _chainDatas);
+        chains.push(_chain);
+        claims.setChainRegistered(_chainId, _tokenQuantity);
+        emit newChainRegistered(_chainId);
     }
 
     function registerChainGovernance(
-        Chain calldata _chain,
+        uint8 _chainId,
+        uint8 _chainType,
         uint256 _tokenQuantity,
         ValidatorChainData calldata _validatorChainData
     ) external override onlyValidator {
-        uint8 chainId = _chain.id;
-        if (claims.isChainRegistered(chainId)) {
-            revert ChainAlreadyRegistered(chainId);
+        if (claims.isChainRegistered(_chainId)) {
+            revert ChainAlreadyRegistered(_chainId);
         }
 
-        bytes32 chainHash = keccak256(abi.encode(_chain, _tokenQuantity));
+        bytes32 chainHash = keccak256(abi.encode(_chainId, _chainType, _tokenQuantity));
 
         if (claims.hasVoted(chainHash, msg.sender)) {
-            revert AlreadyProposed(chainId);
+            revert AlreadyProposed(_chainId);
         }
 
         // TODO:
         // if _chain.chainType == 1 verify signatures for both verifyingKey and verifyingFeeKey
         // if _chain.chainType == 2 verify signatures for BLS specified in verifyingKey
 
-        validators.addValidatorChainData(chainId, msg.sender, _validatorChainData);
+        validators.addValidatorChainData(_chainId, msg.sender, _validatorChainData);
 
         if (claims.setVoted(msg.sender, chainHash) == validators.validatorsCount()) {
-            _registerChain(_chain, _tokenQuantity);
+            chains.push(Chain(_chainId, _chainType, "", ""));
+
+            claims.setChainRegistered(_chainId, _tokenQuantity);
+            emit newChainRegistered(_chainId);
         } else {
-            emit newChainProposal(chainId, msg.sender);
+            emit newChainProposal(_chainId, msg.sender);
         }
-    }
-
-    function _registerChain(Chain calldata _chain, uint256 _tokenQuantity) internal {
-        chains.push(_chain);
-
-        uint8 chainId = _chain.id;
-        claims.setChainRegistered(chainId, _tokenQuantity);
-        emit newChainRegistered(chainId);
     }
 
     // Queries
