@@ -191,9 +191,9 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
-      
+
       const confBatch = await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId);
-      expect(confBatch.bitmap).to.equal(27)
+      expect(confBatch.bitmap).to.equal(27);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
@@ -282,7 +282,7 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[4]).submitSignedBatch(signedBatch);
 
       const confBatch = await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId);
-      expect(confBatch.bitmap).to.equal(23)
+      expect(confBatch.bitmap).to.equal(23);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
@@ -325,7 +325,7 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
       const confBatch = await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId);
-      expect(confBatch.bitmap).to.equal(15)
+      expect(confBatch.bitmap).to.equal(15);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
@@ -565,15 +565,15 @@ describe("Submit Claims", function () {
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
       const encoded = abiCoder.encode(
-        ["bytes32", "bytes32", "bytes", "bytes", "uint64", "uint8", "string"],
+        ["bytes32", "bytes", "uint8", "tuple(uint256, string)"],
         [
           validatorClaimsRRC.refundRequestClaims[0].observedTransactionHash,
-          validatorClaimsRRC.refundRequestClaims[0].previousRefundTxHash,
-          validatorClaimsRRC.refundRequestClaims[0].signature,
           validatorClaimsRRC.refundRequestClaims[0].rawTransaction,
-          validatorClaimsRRC.refundRequestClaims[0].retryCounter,
           validatorClaimsRRC.refundRequestClaims[0].chainId,
-          validatorClaimsRRC.refundRequestClaims[0].receiver,
+          [
+            validatorClaimsRRC.refundRequestClaims[0].receiver.amount,
+            validatorClaimsRRC.refundRequestClaims[0].receiver.destinationAddress,
+          ],
         ]
       );
 
@@ -619,69 +619,6 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
 
       // TODO: check some data that is changed after refund request claim consensus is reached
-    });
-  });
-
-  describe("Submit new Refund Executed Claim", function () {
-    it("Should set voted on Refund Executed Claim", async function () {
-      const { bridge, claimsHelper, owner, chain2, validators, validatorClaimsREC, validatorsCardanoData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
-
-      const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["REC"]);
-      const encoded = abiCoder.encode(
-        ["bytes32", "bytes32", "uint8"],
-        [
-          validatorClaimsREC.refundExecutedClaims[0].observedTransactionHash,
-          validatorClaimsREC.refundExecutedClaims[0].refundTxHash,
-          validatorClaimsREC.refundExecutedClaims[0].chainId,
-        ]
-      );
-
-      const encoded40 =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encoded.substring(2) +
-        encodedPrefix.substring(66);
-
-      const hash = ethers.keccak256(encoded40);
-
-      expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
-      expect(await claimsHelper.hasVoted(hash, validators[1].address)).to.be.false;
-      expect(await claimsHelper.hasVoted(hash, validators[2].address)).to.be.false;
-      expect(await claimsHelper.hasVoted(hash, validators[3].address)).to.be.false;
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsREC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsREC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsREC);
-      await bridge.connect(validators[3]).submitClaims(validatorClaimsREC);
-      await bridge.connect(validators[4]).submitClaims(validatorClaimsREC);
-
-      expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.true;
-      expect(await claimsHelper.hasVoted(hash, validators[1].address)).to.be.true;
-      expect(await claimsHelper.hasVoted(hash, validators[2].address)).to.be.true;
-      expect(await claimsHelper.hasVoted(hash, validators[3].address)).to.be.true;
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
-    });
-
-    it("Should TODO when Refund Executed Claim is confirmed", async function () {
-      const { bridge, owner, validators, chain2, validatorClaimsREC, validatorsCardanoData } = await loadFixture(
-        deployBridgeFixture
-      );
-
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsREC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsREC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsREC);
-
-      // TODO: check some data that is not changed after refund executed claim consensus is not reached
-
-      await bridge.connect(validators[3]).submitClaims(validatorClaimsREC);
-
-      // TODO: check some data that is changed after refund executed claim consensus is reached
     });
   });
 });

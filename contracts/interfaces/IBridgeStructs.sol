@@ -44,7 +44,6 @@ interface IBridgeStructs {
         BatchExecutedClaim[] batchExecutedClaims;
         BatchExecutionFailedClaim[] batchExecutionFailedClaims;
         RefundRequestClaim[] refundRequestClaims;
-        RefundExecutedClaim[] refundExecutedClaims;
     }
 
     struct BridgingRequestClaim {
@@ -76,27 +75,11 @@ interface IBridgeStructs {
     struct RefundRequestClaim {
         // hash of tx on the source chain
         bytes32 observedTransactionHash;
-        // hash of the previous refund transaction; only set in case of retry
-        bytes32 previousRefundTxHash;
-        // validatorsArray signature over raw transaction
-        // note: only multisig signs refund txs
-        bytes signature;
         // the refund transaction itself
         bytes rawTransaction;
-        // retry attempt counter
-        uint64 retryCounter;
         // chain id where the refund tx will be executed
         uint8 chainId;
-        string receiver;
-    }
-
-    struct RefundExecutedClaim {
-        // hash of tx on the source chain
-        bytes32 observedTransactionHash;
-        // hash of the refund transaction
-        bytes32 refundTxHash;
-        // chain id where the refund was executed
-        uint8 chainId;
+        Receiver receiver;
     }
 
     struct Receiver {

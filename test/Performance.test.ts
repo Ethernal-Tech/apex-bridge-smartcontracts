@@ -16,7 +16,9 @@ describe("Performance", function () {
 
     for (let i = 0; i < (validators.length * 2) / 3 + 1; i++) {
       // fourth one is quorum
-      const tx = await bridge.connect(validators[i]).registerChainGovernance(chain1, 100, validatorsCardanoData[0].data);
+      const tx = await bridge
+        .connect(validators[i])
+        .registerChainGovernance(chain1, 100, validatorsCardanoData[0].data);
       const receipt = await tx.wait();
       console.log(`Gas spent on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
     }
@@ -64,8 +66,17 @@ describe("Performance", function () {
   });
 
   it("submitClaims BEC", async function () {
-    const { bridge, chain1, chain2, owner, validators, validatorClaimsBRC, signedBatch, validatorsCardanoData, validatorClaimsBEC } =
-      await loadFixture(deployBridgeFixture);
+    const {
+      bridge,
+      chain1,
+      chain2,
+      owner,
+      validators,
+      validatorClaimsBRC,
+      signedBatch,
+      validatorsCardanoData,
+      validatorClaimsBEC,
+    } = await loadFixture(deployBridgeFixture);
 
     await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
     await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
@@ -107,21 +118,6 @@ describe("Performance", function () {
     for (let i = 0; i < validators.length; i++) {
       // fourth one is quorum
       const tx = await bridge.connect(validators[i]).submitClaims(validatorClaimsRRC);
-      const receipt = await tx.wait();
-      console.log(`Gas spent on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
-    }
-  });
-
-  it("submitClaims REC", async function () {
-    const { bridge, owner, validators, chain2, validatorClaimsREC, validatorsCardanoData } = await loadFixture(
-      deployBridgeFixture
-    );
-
-    await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
-
-    for (let i = 0; i < validators.length; i++) {
-      // fourth one is quorum
-      const tx = await bridge.connect(validators[i]).submitClaims(validatorClaimsREC);
       const receipt = await tx.wait();
       console.log(`Gas spent on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
     }

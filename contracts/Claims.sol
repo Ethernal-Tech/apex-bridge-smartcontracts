@@ -112,16 +112,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             _submitClaimsRRC(_claim, _caller);
         }
-
-        uint256 refundExecutedClaimsLength = _claims.refundExecutedClaims.length;
-        for (uint i; i < refundExecutedClaimsLength; i++) {
-            RefundExecutedClaim calldata _claim = _claims.refundExecutedClaims[i];
-            if (!isChainRegistered[_claim.chainId]) {
-                revert ChainIsNotRegistered(_claim.chainId);
-            }
-
-            _submitClaimsREC(_claim, _caller);
-        }
     }
 
     function _submitClaimsBRC(BridgingRequestClaim calldata _claim, address _caller, uint256 receiversSum) internal {
@@ -208,13 +198,21 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
-            uint8 chainId = _claim.chainId;
-        }
-    }
+            uint8 destinationChainID = _claim.chainId;
 
-    function _submitClaimsREC(RefundExecutedClaim calldata _claim, address _caller) internal {
-        bytes32 claimHash = keccak256(abi.encode("REC", _claim));
-        claimsHelper.setVotedOnlyIfNeeded(_caller, claimHash, validators.getQuorumNumberOfValidators());
+            uint256 _confirmedTxCount = getBatchingTxsCount(destinationChainID);
+
+            _setConfirmedTransactionsRRC(_claim);
+
+            if (
+                (claimsHelper.currentBatchBlock(destinationChainID) == -1) && // there is no batch in progress
+                (_confirmedTxCount == 0) && // check if there is no other confirmed transactions
+                (block.number >= nextTimeoutBlock[destinationChainID])
+            ) // check if the current block number is greater or equal than the NEXT_BATCH_TIMEOUT_BLOCK
+            {
+                nextTimeoutBlock[destinationChainID] = block.number + timeoutBlocksNumber;
+            }
+        }
     }
 
     function _setConfirmedTransactions(BridgingRequestClaim calldata _claim) internal {
@@ -233,6 +231,17 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         confirmedTransactions[destinationChainId][nextNonce].totalAmount = tokenQuantity;
 
+        confirmedTransactions[destinationChainId][nextNonce].blockHeight = block.number;
+    }
+
+    function _setConfirmedTransactionsRRC(RefundRequestClaim calldata _claim) internal {
+        uint8 destinationChainId = _claim.chainId;
+        uint64 nextNonce = ++lastConfirmedTxNonce[destinationChainId];
+        confirmedTransactions[destinationChainId][nextNonce].observedTransactionHash = _claim.observedTransactionHash;
+        confirmedTransactions[destinationChainId][nextNonce].sourceChainId = destinationChainId;
+        confirmedTransactions[destinationChainId][nextNonce].nonce = nextNonce;
+        confirmedTransactions[destinationChainId][nextNonce].receivers.push(_claim.receiver);
+        confirmedTransactions[destinationChainId][nextNonce].totalAmount = _claim.receiver.amount;
         confirmedTransactions[destinationChainId][nextNonce].blockHeight = block.number;
     }
 

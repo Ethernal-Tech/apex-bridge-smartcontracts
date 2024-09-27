@@ -132,10 +132,6 @@ export async function deployBridgeFixture() {
             destinationAddress: "0x123...",
           },
         ],
-        outputUTXO: {
-          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          txIndex: 1,
-        },
         totalAmount: 100,
         sourceChainId: 1,
         destinationChainId: 2,
@@ -144,7 +140,6 @@ export async function deployBridgeFixture() {
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
   };
   const validatorClaimsBRC_ConfirmedTransactions = {
     bridgingRequestClaims: [
@@ -156,10 +151,6 @@ export async function deployBridgeFixture() {
             amount: 100,
           },
         ],
-        outputUTXO: {
-          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          txIndex: 0,
-        },
         totalAmount: 100,
         sourceChainId: 1,
         destinationChainId: 2,
@@ -168,7 +159,6 @@ export async function deployBridgeFixture() {
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
   };
 
   const validatorClaimsBRCerror = {
@@ -181,10 +171,6 @@ export async function deployBridgeFixture() {
             amount: 100,
           },
         ],
-        outputUTXO: {
-          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          txIndex: 0,
-        },
         sourceChainId: 1,
         destinationChainId: 2,
       },
@@ -192,7 +178,6 @@ export async function deployBridgeFixture() {
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
   };
 
   const validatorClaimsBEC = {
@@ -206,7 +191,6 @@ export async function deployBridgeFixture() {
     ],
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
   };
 
   const validatorClaimsBECerror = {
@@ -220,7 +204,6 @@ export async function deployBridgeFixture() {
     ],
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
   };
 
   const validatorClaimsBEFC = {
@@ -234,7 +217,6 @@ export async function deployBridgeFixture() {
       },
     ],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
   };
 
   const validatorClaimsBEFCerror = {
@@ -248,7 +230,6 @@ export async function deployBridgeFixture() {
       },
     ],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
   };
 
   const validatorClaimsRRC = {
@@ -258,15 +239,14 @@ export async function deployBridgeFixture() {
     refundRequestClaims: [
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        previousRefundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
-        signature: "0x7465737400000000000000000000000000000000000000000000000000000000",
         rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        retryCounter: 1,
         chainId: 2,
-        receiver: "receiver1",
+        receiver: {
+          destinationAddress: "0x123...11111111",
+          amount: 100,
+        },
       },
     ],
-    refundExecutedClaims: [],
   };
 
   const validatorClaimsRRCerror = {
@@ -276,70 +256,11 @@ export async function deployBridgeFixture() {
     refundRequestClaims: [
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        previousRefundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
-        chainId: 2,
-        receiver: "receiver1111111111",
-        utxo: {
-          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          txIndex: 0,
-        },
         rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        signature: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        retryCounter: 1,
-      },
-    ],
-    refundExecutedClaims: [],
-  };
-
-  const validatorClaimsREC = {
-    bridgingRequestClaims: [],
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [],
-    refundExecutedClaims: [
-      {
-        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
         chainId: 2,
-        refundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
-        utxo: {
-          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          txIndex: 0,
-        },
-      },
-    ],
-  };
-
-  const validatorClaimsRECerror = {
-    bridgingRequestClaims: [],
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [],
-    refundExecutedClaims: [
-      {
-        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        chainId: 2,
-        refundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
-        utxo: {
-          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          txIndex: 0,
-        },
-      },
-    ],
-  };
-
-  const validatorClaimsRECObserverdFalse = {
-    bridgingRequestClaims: [],
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [],
-    refundExecutedClaims: [
-      {
-        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        chainId: 2,
-        refundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
-        utxo: {
-          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          txIndex: 0,
+        receiver: {
+          destinationAddress: "0x123...11111111",
+          amount: 100,
         },
       },
     ],
@@ -372,10 +293,10 @@ export async function deployBridgeFixture() {
     validatorsCardanoData.push({
       addr: val.address,
       data: {
-        key: [BigInt(4 * ind), BigInt(4 * ind + 1), BigInt(4 * ind + 2), BigInt(4 * ind + 3)]
-      }
+        key: [BigInt(4 * ind), BigInt(4 * ind + 1), BigInt(4 * ind + 2), BigInt(4 * ind + 3)],
+      },
     });
-    ind++
+    ind++;
   }
 
   const validatorCardanoData = validatorsCardanoData[0].data;
@@ -397,13 +318,10 @@ export async function deployBridgeFixture() {
     validatorClaimsBEC,
     validatorClaimsBEFC,
     validatorClaimsRRC,
-    validatorClaimsREC,
     validatorClaimsBRCerror,
     validatorClaimsBECerror,
     validatorClaimsBEFCerror,
     validatorClaimsRRCerror,
-    validatorClaimsRECerror,
-    validatorClaimsRECObserverdFalse,
     validatorClaimsBRC_ConfirmedTransactions,
     signedBatch,
     validatorsCardanoData,
