@@ -40,8 +40,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         _disableInitializers();
     }
 
-    function initialize(uint16 _maxNumberOfTransactions, uint8 _timeoutBlocksNumber) public initializer {
-        __Ownable_init(msg.sender);
+    function initialize(
+        address _owner,
+        uint16 _maxNumberOfTransactions,
+        uint8 _timeoutBlocksNumber
+    ) public initializer {
+        __Ownable_init(_owner);
         __UUPSUpgradeable_init();
         maxNumberOfTransactions = _maxNumberOfTransactions;
         timeoutBlocksNumber = _timeoutBlocksNumber;
@@ -241,7 +245,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint256 cnt = getBatchingTxsCount(_destinationChain);
 
         return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
-    }    
+    }
 
     function getConfirmedTransaction(
         uint8 _destinationChain,
