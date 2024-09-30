@@ -12,10 +12,14 @@
     "validator5key": [4, 4, 4, 4]
   },
   "Chain": {
-    "id": 1,
+    "id": 2,
     "chainType": 2,
-    "addressMultisig": "A0x1234567890abcdef1234567890abcdef12345678",
-    "addressFeePayer": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+    "addressMultisig": "",
+    "addressFeePayer": "",
     "totalSupply": 1000
+  },
+  "AdditionalData": {
+    "addressMultisig": "A0x1234567890abcdef1234567890abcdef12345678",
+    "addressFeePayer": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"
   }
 }
