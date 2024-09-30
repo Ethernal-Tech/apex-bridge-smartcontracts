@@ -27,8 +27,8 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         _disableInitializers();
     }
 
-    function initialize() public initializer {
-        __Ownable_init(msg.sender);
+    function initialize(address _owner) public initializer {
+        __Ownable_init(_owner);
         __UUPSUpgradeable_init();
     }
 

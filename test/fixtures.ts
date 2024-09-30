@@ -36,27 +36,27 @@ export async function deployBridgeFixture() {
 
   const bridgeProxy = await BridgeProxy.deploy(
     await bridgeLogic.getAddress(),
-    Bridge.interface.encodeFunctionData("initialize", [])
+    Bridge.interface.encodeFunctionData("initialize", [owner.address])
   );
 
   const claimsHelperProxy = await ClaimsHelperProxy.deploy(
     await claimsHelperLogic.getAddress(),
-    ClaimsHelper.interface.encodeFunctionData("initialize", [])
+    ClaimsHelper.interface.encodeFunctionData("initialize", [owner.address])
   );
 
   const claimsProxy = await ClaimsProxy.deploy(
     await claimsLogic.getAddress(),
-    Claims.interface.encodeFunctionData("initialize", [2, 5])
+    Claims.interface.encodeFunctionData("initialize", [owner.address, 2, 5])
   );
 
   const signedBatchesProxy = await SignedBatchesProxy.deploy(
     await signedBatchesLogic.getAddress(),
-    SignedBatches.interface.encodeFunctionData("initialize", [])
+    SignedBatches.interface.encodeFunctionData("initialize", [owner.address])
   );
 
   const slotsProxy = await SlotsProxy.deploy(
     await slotsLogic.getAddress(),
-    Slots.interface.encodeFunctionData("initialize", [])
+    Slots.interface.encodeFunctionData("initialize", [owner.address])
   );
 
   const validatorsAddresses = [
@@ -69,7 +69,7 @@ export async function deployBridgeFixture() {
 
   const validatorsProxy = await ValidatorscProxy.deploy(
     await validatorscLogic.getAddress(),
-    Validators.interface.encodeFunctionData("initialize", [validatorsAddresses])
+    Validators.interface.encodeFunctionData("initialize", [owner.address, validatorsAddresses])
   );
 
   //casting proxy contracts to contract logic

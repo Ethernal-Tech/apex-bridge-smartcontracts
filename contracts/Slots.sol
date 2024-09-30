@@ -25,8 +25,8 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         _disableInitializers();
     }
 
-    function initialize() public initializer {
-        __Ownable_init(msg.sender);
+    function initialize(address _owner) public initializer {
+        __Ownable_init(_owner);
         __UUPSUpgradeable_init();
     }
 
