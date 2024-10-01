@@ -1,0 +1,21 @@
+---
+name: Hardhat Tests
+on: # yamllint disable-line rule:truthy
+  workflow_call:
+
+jobs:
+  hardhat_test:
+    name: Run Hardhat Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0
+      - name: Install node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+      - name: Check hardhat
+        run: npx hardhat help

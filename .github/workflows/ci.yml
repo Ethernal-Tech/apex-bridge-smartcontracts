@@ -1,0 +1,28 @@
+---
+name: CI
+on: # yamllint disable-line rule:truthy
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      hardhat_test:
+        description: Hardhat Tests
+        type: boolean
+        default: true
+  workflow_call:
+    inputs:
+      hardhat_test:
+        description: Hardhat Tests
+        type: boolean
+        required: true
+
+jobs:
+  hardhat_test:
+    name: Hardhat Tests
+    uses: ./.github/workflows/hardhat-test.yml
+    if: |
+      inputs.hardhat_test || 
+      github.event_name == 'pull_request' || 
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
