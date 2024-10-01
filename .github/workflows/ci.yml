@@ -20,7 +20,7 @@ on: # yamllint disable-line rule:truthy
 
 jobs:
   unit_test:
-    name: Hardhat Tests
+    name: Unit Tests
     uses: ./.github/workflows/unit-test.yml
     if: |
       inputs.unit_test || 

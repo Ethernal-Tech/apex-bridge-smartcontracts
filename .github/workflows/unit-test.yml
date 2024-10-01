@@ -4,7 +4,7 @@ on: # yamllint disable-line rule:truthy
   workflow_call:
 
 jobs:
-  hardhat_test:
+  unit_test:
     name: Run Unit Tests
     runs-on: ubuntu-latest
     steps:
@@ -18,8 +18,6 @@ jobs:
           node-version: 18
       - name: Install packages
         run: npm install
-      - name: Check hardhat
-        run: npx hardhat help
       - name: Run Tests
         run: npx hardhat test
         env:
