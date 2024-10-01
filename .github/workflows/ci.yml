@@ -7,22 +7,22 @@ on: # yamllint disable-line rule:truthy
   pull_request:
   workflow_dispatch:
     inputs:
-      hardhat_test:
-        description: Hardhat Tests
+      unit_test:
+        description: Unit Tests
         type: boolean
         default: true
   workflow_call:
     inputs:
-      hardhat_test:
-        description: Hardhat Tests
+      unit_test:
+        description: Unit Tests
         type: boolean
         required: true
 
 jobs:
-  hardhat_test:
+  unit_test:
     name: Hardhat Tests
-    uses: ./.github/workflows/hardhat-test.yml
+    uses: ./.github/workflows/unit-test.yml
     if: |
-      inputs.hardhat_test || 
+      inputs.unit_test || 
       github.event_name == 'pull_request' || 
       (github.event_name == 'push' && github.ref == 'refs/heads/main')
