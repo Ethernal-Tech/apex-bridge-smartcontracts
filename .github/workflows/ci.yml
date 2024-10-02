@@ -1,0 +1,28 @@
+---
+name: CI
+on: # yamllint disable-line rule:truthy
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      unit_test:
+        description: Unit Tests
+        type: boolean
+        default: true
+  workflow_call:
+    inputs:
+      unit_test:
+        description: Unit Tests
+        type: boolean
+        required: true
+
+jobs:
+  unit_test:
+    name: Unit Tests
+    uses: ./.github/workflows/unit-test.yml
+    if: |
+      inputs.unit_test || 
+      github.event_name == 'pull_request' || 
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
