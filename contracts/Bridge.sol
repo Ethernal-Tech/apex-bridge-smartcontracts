@@ -121,27 +121,25 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     // Chain registration by Owner
     function registerChain(
         Chain calldata _chain,
-        uint256 _tokenQuantity,
         ValidatorAddressChainData[] calldata _chainDatas
     ) public override onlyOwner {
         uint8 _chainId = _chain.id;
         validators.setValidatorsChainData(_chainId, _chainDatas);
         chains.push(_chain);
-        claims.setChainRegistered(_chainId, _tokenQuantity);
+        claims.setChainRegistered(_chainId);
         emit newChainRegistered(_chainId);
     }
 
     function registerChainGovernance(
         uint8 _chainId,
         uint8 _chainType,
-        uint256 _tokenQuantity,
         ValidatorChainData calldata _validatorChainData
     ) external override onlyValidator {
         if (claims.isChainRegistered(_chainId)) {
             revert ChainAlreadyRegistered(_chainId);
         }
 
-        bytes32 chainHash = keccak256(abi.encode(_chainId, _chainType, _tokenQuantity));
+        bytes32 chainHash = keccak256(abi.encode(_chainId, _chainType));
 
         if (claims.hasVoted(chainHash, msg.sender)) {
             revert AlreadyProposed(_chainId);
@@ -156,7 +154,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         if (claims.setVoted(msg.sender, chainHash) == validators.validatorsCount()) {
             chains.push(Chain(_chainId, _chainType, "", ""));
 
-            claims.setChainRegistered(_chainId, _tokenQuantity);
+            claims.setChainRegistered(_chainId);
             emit newChainRegistered(_chainId);
         } else {
             emit newChainProposal(_chainId, msg.sender);
@@ -213,16 +211,16 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         return slots.getLastObservedBlock(_sourceChain);
     }
 
-    function getAvailableTokenAmount(uint8 _chainId) external view override returns (uint256 _amount) {
-        return claims.availableTokenAmount(_chainId);
-    }
-
     function getAllRegisteredChains() external view override returns (Chain[] memory _chains) {
         return chains;
     }
 
     function getRawTransactionFromLastBatch(uint8 _destinationChain) external view override returns (bytes memory) {
         return signedBatches.getConfirmedBatchTransaction(_destinationChain);
+    }
+
+    function getTokenQuantity(uint8 _chainId) external view returns (uint256 _amount) {
+        return claims.getTokenQuantity(_chainId);
     }
 
     modifier onlyValidator() {
