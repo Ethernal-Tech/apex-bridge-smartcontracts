@@ -88,11 +88,16 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     // Slots
-    function submitLastObservedBlocks(uint8 _chainId, CardanoBlock[] calldata _blocks) external override onlyValidator {
+    function submitChainStatusData(
+        uint8 _chainId,
+        CardanoBlock[] calldata _blocks,
+        TokenAmount[] calldata _tokenAmounts
+    ) external override onlyValidator {
         if (!claims.isChainRegistered(_chainId)) {
             revert ChainIsNotRegistered(_chainId);
         }
         slots.updateBlocks(_chainId, _blocks, msg.sender);
+        claims.updateTokenAmount(_chainId, _tokenAmounts, msg.sender);
     }
 
     // Chain registration by Owner
@@ -206,6 +211,10 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     function getLastObservedBlock(uint8 _sourceChain) external view override returns (CardanoBlock memory _cblock) {
         return slots.getLastObservedBlock(_sourceChain);
+    }
+
+    function getAvailableTokenAmount(uint8 _chainId) external view override returns (uint256 _amount) {
+        return claims.availableTokenAmount(_chainId);
     }
 
     function getAllRegisteredChains() external view override returns (Chain[] memory _chains) {

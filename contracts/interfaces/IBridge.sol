@@ -14,7 +14,11 @@ abstract contract IBridge is IBridgeStructs {
     function submitSignedBatchEVM(SignedBatch calldata _signedBatch) external virtual;
 
     // Slots
-    function submitLastObservedBlocks(uint8 chainId, CardanoBlock[] calldata blocks) external virtual;
+    function submitChainStatusData(
+        uint8 chainId,
+        CardanoBlock[] calldata blocks,
+        TokenAmount[] calldata tokenAmounts
+    ) external virtual;
 
     // set additional chain data (sc address for nexus)
     function setChainAdditionalData(
@@ -57,6 +61,8 @@ abstract contract IBridge is IBridgeStructs {
     function getValidatorsChainData(uint8 _chainId) external view virtual returns (ValidatorChainData[] memory);
 
     function getLastObservedBlock(uint8 _sourceChain) external view virtual returns (CardanoBlock memory _cblock);
+
+    function getAvailableTokenAmount(uint8 _chainId) external view virtual returns (uint256 _amount);
 
     function getAllRegisteredChains() external view virtual returns (Chain[] memory _chains);
 

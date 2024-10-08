@@ -26,6 +26,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     // BlockchainId -> TokenQuantity
     mapping(uint8 => uint256) public chainTokenQuantity;
 
+    // BlockchainId -> blockNumber
+    mapping(uint8 => uint256) public lastBlockForTokenAmount;
+    // BlockChainId -> tokenAmount
+    mapping(uint8 => uint256) public availableTokenAmount;
+
     // BlockchainId -> nonce -> ConfirmedTransaction
     mapping(uint8 => mapping(uint64 => ConfirmedTransaction)) public confirmedTransactions;
 
@@ -125,6 +130,34 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
 
             _submitClaimsREC(_claim, _caller);
+        }
+    }
+
+    function updateTokenAmount(
+        uint8 _chainId,
+        TokenAmount[] calldata _tokenAmounts,
+        address _caller
+    ) external onlyBridge {
+        // Check if the caller has already voted for this claim
+        uint256 _tokenAmountLength = _tokenAmounts.length;
+        for (uint i; i < _tokenAmountLength; i++) {
+            TokenAmount calldata _tokenAmount = _tokenAmounts[i];
+            if (_tokenAmount.blockSlot <= lastBlockForTokenAmount[_chainId]) {
+                continue;
+            }
+
+            bytes32 _claimHash = keccak256(abi.encodePacked(_chainId, _tokenAmount.blockSlot, _tokenAmount.amount));
+
+            bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
+                _caller,
+                _claimHash,
+                validators.getQuorumNumberOfValidators()
+            );
+
+            if (_quorumReached) {
+                chainTokenQuantity[_chainId] += _tokenAmount.amount;
+                lastBlockForTokenAmount[_chainId] = _tokenAmount.blockSlot;
+            }
         }
     }
 

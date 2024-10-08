@@ -39,6 +39,11 @@ interface IBridgeStructs {
         bytes32 blockHash;
     }
 
+    struct TokenAmount {
+        uint256 blockSlot;
+        uint256 amount;
+    }
+
     struct ValidatorClaims {
         BridgingRequestClaim[] bridgingRequestClaims;
         BatchExecutedClaim[] batchExecutedClaims;
