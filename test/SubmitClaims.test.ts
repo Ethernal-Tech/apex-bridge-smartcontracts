@@ -320,10 +320,17 @@ describe("Submit Claims", function () {
         signedBatch,
         validatorClaimsBEC,
         validatorsCardanoData,
+        cardanoBlocks,
+        tokenAmounts,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
       await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[1]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[2]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[3]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -331,7 +338,7 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
 
       // wait for next timeout
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < 4; i++) {
         await ethers.provider.send("evm_mine");
       }
 
@@ -390,11 +397,9 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       // wait for next timeout
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 4; i++) {
         await ethers.provider.send("evm_mine");
       }
-
-      console.log("OVDE", await claims.shouldCreateBatch(_destinationChain));
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
@@ -415,7 +420,6 @@ describe("Submit Claims", function () {
       const {
         bridge,
         claims,
-        claimsHelper,
         owner,
         chain1,
         chain2,
@@ -548,11 +552,9 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       // wait for next timeout
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 4; i++) {
         await ethers.provider.send("evm_mine");
       }
-
-      console.log("OVDE", await claims.shouldCreateBatch(_destinationChain));
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
@@ -573,7 +575,6 @@ describe("Submit Claims", function () {
       const {
         bridge,
         claims,
-        claimsHelper,
         owner,
         chain1,
         chain2,
