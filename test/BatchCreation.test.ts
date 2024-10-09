@@ -450,6 +450,11 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
+      // wait for next timeout
+      for (let i = 0; i < 5; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
       const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(_destinationChain);
       expect(confirmedTxs.length).to.equal(1);
 

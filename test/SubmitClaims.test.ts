@@ -331,7 +331,7 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
 
       // wait for next timeout
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 6; i++) {
         await ethers.provider.send("evm_mine");
       }
 
@@ -394,21 +394,21 @@ describe("Submit Claims", function () {
         await ethers.provider.send("evm_mine");
       }
 
-      // console.log("OVDE", await claims.shouldCreateBatch(_destinationChain));
+      console.log("OVDE", await claims.shouldCreateBatch(_destinationChain));
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
-      // await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
-      // await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
-      // await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      // expect(await claimsHelper.currentBatchBlock(_destinationChain)).to.greaterThan(-1);
+      expect(await claimsHelper.currentBatchBlock(_destinationChain)).to.greaterThan(-1);
 
-      // await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
-      // await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
-      // await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
-      // await bridge.connect(validators[3]).submitClaims(validatorClaimsBEC);
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
-      // expect(await claimsHelper.currentBatchBlock(_destinationChain)).to.equal(-1);
+      expect(await claimsHelper.currentBatchBlock(_destinationChain)).to.equal(-1);
     });
 
     it("Should update nextTimeoutBlock when Bridging Excuted Claim is confirmed", async function () {
