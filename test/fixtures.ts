@@ -366,16 +366,27 @@ export async function deployBridgeFixture() {
     },
   ];
 
+  const tokenAmounts = [
+    {
+      blockSlot: 1,
+      amount: 1000,
+    },
+    {
+      blockSlot: 2,
+      amount: 1000,
+    },
+  ];
+
   const validatorsCardanoData = [];
   let ind = 0;
   for (let val of validators) {
     validatorsCardanoData.push({
       addr: val.address,
       data: {
-        key: [BigInt(4 * ind), BigInt(4 * ind + 1), BigInt(4 * ind + 2), BigInt(4 * ind + 3)]
-      }
+        key: [BigInt(4 * ind), BigInt(4 * ind + 1), BigInt(4 * ind + 2), BigInt(4 * ind + 3)],
+      },
     });
-    ind++
+    ind++;
   }
 
   const validatorCardanoData = validatorsCardanoData[0].data;
@@ -409,5 +420,6 @@ export async function deployBridgeFixture() {
     validatorsCardanoData,
     validators,
     cardanoBlocks,
+    tokenAmounts,
   };
 }

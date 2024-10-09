@@ -24,7 +24,7 @@ describe("Claims Contract", function () {
         "ChainIsNotRegistered"
       );
 
-      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
 
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
         bridge,
@@ -46,8 +46,8 @@ describe("Claims Contract", function () {
       const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
 
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
@@ -87,11 +87,26 @@ describe("Claims Contract", function () {
     });
 
     it("Should skip if same validator submits the same Bridging Request Claim twice", async function () {
-      const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
-        await loadFixture(deployBridgeFixture);
+      const {
+        bridge,
+        claimsHelper,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsBRC,
+        validatorsCardanoData,
+        cardanoBlocks,
+        tokenAmounts,
+      } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[1]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[2]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[3]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
 
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
@@ -136,7 +151,7 @@ describe("Claims Contract", function () {
     it("Should revert if Claims SC setChainRegistered is not called by Bridge SC", async function () {
       const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
 
-      await expect(claims.connect(owner).setChainRegistered(1, 100)).to.be.revertedWithCustomError(bridge, "NotBridge");
+      await expect(claims.connect(owner).setChainRegistered(1)).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
 
     it("Should revert if Claims SC setNextTimeoutBlock is not called by Bridge SC", async function () {
@@ -152,8 +167,8 @@ describe("Claims Contract", function () {
       const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
 
       validatorClaimsBRC.bridgingRequestClaims[0].totalAmount = 1000000;
 
@@ -192,16 +207,36 @@ describe("Claims Contract", function () {
 
   describe("Submit new Batch Executed Claim", function () {
     it("Should revert if signature is not valid", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, signedBatch, validatorsCardanoData } =
-        await loadFixture(deployBridgeFixture);
+      const {
+        bridge,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsBRC,
+        signedBatch,
+        validatorsCardanoData,
+        cardanoBlocks,
+        tokenAmounts,
+      } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[1]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[2]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[3]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      // wait for next timeout
+      for (let i = 0; i < 4; i++) {
+        await ethers.provider.send("evm_mine");
+      }
 
       await setCode("0x0000000000000000000000000000000000002050", "0x60206000F3"); // should return false for precompile
       await expect(bridge.connect(validators[0]).submitSignedBatch(signedBatch)).to.be.revertedWithCustomError(
@@ -223,7 +258,7 @@ describe("Claims Contract", function () {
       const { bridge, claimsHelper, owner, validators, chain2, validatorClaimsBEC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
 
@@ -269,7 +304,7 @@ describe("Claims Contract", function () {
       const { bridge, claimsHelper, owner, validators, chain2, validatorClaimsBEFC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
@@ -305,7 +340,7 @@ describe("Claims Contract", function () {
       const { bridge, claimsHelper, owner, validators, chain2, validatorClaimsBEFC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
 
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["BEFC"]);
@@ -349,7 +384,7 @@ describe("Claims Contract", function () {
       const { bridge, claimsHelper, owner, validators, chain2, validatorClaimsRRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
 
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
@@ -389,7 +424,7 @@ describe("Claims Contract", function () {
       const { bridge, claimsHelper, owner, validators, chain2, validatorClaimsRRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
 
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
@@ -437,7 +472,7 @@ describe("Claims Contract", function () {
       const { bridge, claimsHelper, owner, validators, chain2, validatorClaimsREC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
 
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["REC"]);
@@ -473,7 +508,7 @@ describe("Claims Contract", function () {
       const { bridge, claimsHelper, owner, validators, chain2, validatorClaimsREC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
 
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["REC"]);

@@ -10,73 +10,69 @@ describe("Slots Contract", function () {
 
   describe("Slot management", function () {
     it("Should revert if chain is not registered", async function () {
-      const { bridge, validators, cardanoBlocks } = await loadFixture(deployBridgeFixture);
+      const { bridge, validators, cardanoBlocks, tokenAmounts } = await loadFixture(deployBridgeFixture);
 
       await expect(
-        bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks)
+        bridge.connect(validators[0]).submitChainStatusData(1, cardanoBlocks, tokenAmounts)
       ).to.be.revertedWithCustomError(bridge, "ChainIsNotRegistered");
     });
 
     it("Should revert if not called by validator", async function () {
-      const { bridge, owner, cardanoBlocks } = await loadFixture(deployBridgeFixture);
+      const { bridge, owner, cardanoBlocks, tokenAmounts } = await loadFixture(deployBridgeFixture);
 
-      await expect(bridge.connect(owner).submitLastObservedBlocks(1, cardanoBlocks)).to.be.revertedWithCustomError(
-        bridge,
-        "NotValidator"
-      );
+      await expect(
+        bridge.connect(owner).submitChainStatusData(1, cardanoBlocks, tokenAmounts)
+      ).to.be.revertedWithCustomError(bridge, "NotValidator");
     });
 
     it("Should skip if validator submitted the same CardanoBlocks twice", async function () {
-      const { bridge, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
-        deployBridgeFixture
-      );
+      const { bridge, owner, validators, chain1, validatorsCardanoData, cardanoBlocks, tokenAmounts } =
+        await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
 
-      await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
-      await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
-      await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
+      await bridge.connect(validators[0]).submitChainStatusData(1, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[1]).submitChainStatusData(1, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[2]).submitChainStatusData(1, cardanoBlocks, tokenAmounts);
 
       var blockSlot = (await bridge.getLastObservedBlock(1)).blockSlot;
       expect(blockSlot).to.equal(0);
 
-      await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
+      await bridge.connect(validators[2]).submitChainStatusData(1, cardanoBlocks, tokenAmounts);
 
       blockSlot = (await bridge.getLastObservedBlock(1)).blockSlot;
       expect(blockSlot).to.equal(0);
     });
 
     it("Should update CardanoBlock when there is quorum", async function () {
-      const { bridge, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
-        deployBridgeFixture
-      );
+      const { bridge, owner, validators, chain1, validatorsCardanoData, cardanoBlocks, tokenAmounts } =
+        await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
 
-      await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
-      await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
-      await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
+      await bridge.connect(validators[0]).submitChainStatusData(1, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[1]).submitChainStatusData(1, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[2]).submitChainStatusData(1, cardanoBlocks, tokenAmounts);
 
       var blockSlot = (await bridge.getLastObservedBlock(1)).blockSlot;
       expect(blockSlot).to.equal(0);
 
-      await bridge.connect(validators[3]).submitLastObservedBlocks(1, cardanoBlocks);
+      await bridge.connect(validators[3]).submitChainStatusData(1, cardanoBlocks, tokenAmounts);
 
       blockSlot = (await bridge.getLastObservedBlock(1)).blockSlot;
       expect(blockSlot).to.equal(cardanoBlocks[1].blockSlot);
     });
 
     it("Should not update CardanoBlock when slot is not newer", async function () {
-      const { bridge, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
-        deployBridgeFixture
-      );
+      const { bridge, owner, validators, chain1, validatorsCardanoData, cardanoBlocks, tokenAmounts } =
+        await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
 
-      await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
-      await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
-      await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
-      await bridge.connect(validators[3]).submitLastObservedBlocks(1, cardanoBlocks);
+      await bridge.connect(validators[0]).submitChainStatusData(1, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[1]).submitChainStatusData(1, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[2]).submitChainStatusData(1, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[3]).submitChainStatusData(1, cardanoBlocks, tokenAmounts);
 
       var blockSlot = (await bridge.getLastObservedBlock(1)).blockSlot;
       expect(blockSlot).to.equal(cardanoBlocks[1].blockSlot);
@@ -88,10 +84,10 @@ describe("Slots Contract", function () {
         },
       ];
 
-      await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocksOld);
-      await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocksOld);
-      await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocksOld);
-      await bridge.connect(validators[3]).submitLastObservedBlocks(1, cardanoBlocksOld);
+      await bridge.connect(validators[0]).submitChainStatusData(1, cardanoBlocksOld, tokenAmounts);
+      await bridge.connect(validators[1]).submitChainStatusData(1, cardanoBlocksOld, tokenAmounts);
+      await bridge.connect(validators[2]).submitChainStatusData(1, cardanoBlocksOld, tokenAmounts);
+      await bridge.connect(validators[3]).submitChainStatusData(1, cardanoBlocksOld, tokenAmounts);
 
       blockSlot = (await bridge.getLastObservedBlock(1)).blockSlot;
       expect(blockSlot).to.equal(cardanoBlocks[1].blockSlot);

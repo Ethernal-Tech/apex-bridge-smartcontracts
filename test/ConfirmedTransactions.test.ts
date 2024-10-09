@@ -33,10 +33,17 @@ describe("Confirmed Transacrions", function () {
         validatorsCardanoData,
         hre,
         claims,
+        cardanoBlocks,
+        tokenAmounts,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[1]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[2]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[3]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -93,11 +100,27 @@ describe("Confirmed Transacrions", function () {
     });
 
     it("GetConfirmedTransactions should not return more transaction than MAX_NUMBER_OF_TRANSACTIONS", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData, claims, hre } =
-        await loadFixture(deployBridgeFixture);
+      const {
+        bridge,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsBRC,
+        validatorsCardanoData,
+        claims,
+        hre,
+        cardanoBlocks,
+        tokenAmounts,
+      } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[1]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[2]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[3]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
 
       const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
 
@@ -179,11 +202,27 @@ describe("Confirmed Transacrions", function () {
     });
 
     it("GetConfirmedTransactions should return transactions with appropriate Observed Transaction Hashes", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData, claims, hre } =
-        await loadFixture(deployBridgeFixture);
+      const {
+        bridge,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsBRC,
+        validatorsCardanoData,
+        claims,
+        hre,
+        cardanoBlocks,
+        tokenAmounts,
+      } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[1]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[2]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await bridge.connect(validators[3]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
 
       const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
 
