@@ -168,15 +168,19 @@ describe("Batch Creation", function () {
         validatorsCardanoData,
         cardanoBlocks,
         tokenAmounts,
+        registerChain,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
-
-      await bridge.connect(validators[0]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[1]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[2]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[3]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await registerChain(
+        bridge,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorsCardanoData,
+        cardanoBlocks,
+        tokenAmounts
+      );
 
       const validatorClaimsBRC2 = {
         ...validatorClaimsBRC,
@@ -216,20 +220,19 @@ describe("Batch Creation", function () {
         validatorsCardanoData,
         cardanoBlocks,
         tokenAmounts,
+        registerChain,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
-
-      await bridge.connect(validators[0]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[1]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[2]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[3]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-
-      await bridge.connect(validators[0]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[1]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[2]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[3]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await registerChain(
+        bridge,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorsCardanoData,
+        cardanoBlocks,
+        tokenAmounts
+      );
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -258,15 +261,19 @@ describe("Batch Creation", function () {
         validatorClaimsBRC,
         cardanoBlocks,
         tokenAmounts,
+        registerChain,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
-
-      await bridge.connect(validators[0]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[1]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[2]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[3]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await registerChain(
+        bridge,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorsCardanoData,
+        cardanoBlocks,
+        tokenAmounts
+      );
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -313,15 +320,19 @@ describe("Batch Creation", function () {
         validatorClaimsBRC,
         cardanoBlocks,
         tokenAmounts,
+        registerChain,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
-
-      await bridge.connect(validators[0]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[1]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[2]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[3]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await registerChain(
+        bridge,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorsCardanoData,
+        cardanoBlocks,
+        tokenAmounts
+      );
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -369,15 +380,19 @@ describe("Batch Creation", function () {
         validatorClaimsBRC,
         cardanoBlocks,
         tokenAmounts,
+        registerChain,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
-
-      await bridge.connect(validators[0]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[1]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[2]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[3]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await registerChain(
+        bridge,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorsCardanoData,
+        cardanoBlocks,
+        tokenAmounts
+      );
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -429,15 +444,19 @@ describe("Batch Creation", function () {
         validatorClaimsBEC,
         cardanoBlocks,
         tokenAmounts,
+        registerChain,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
-
-      await bridge.connect(validators[0]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[1]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[2]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[3]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await registerChain(
+        bridge,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorsCardanoData,
+        cardanoBlocks,
+        tokenAmounts
+      );
 
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
@@ -488,15 +507,19 @@ describe("Batch Creation", function () {
         validatorClaimsBRC,
         cardanoBlocks,
         tokenAmounts,
+        registerChain,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
-
-      await bridge.connect(validators[0]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[1]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[2]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[3]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+      await registerChain(
+        bridge,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorsCardanoData,
+        cardanoBlocks,
+        tokenAmounts
+      );
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);

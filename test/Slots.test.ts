@@ -64,15 +64,28 @@ describe("Slots Contract", function () {
     });
 
     it("Should not update CardanoBlock when slot is not newer", async function () {
-      const { bridge, owner, validators, chain1, validatorsCardanoData, cardanoBlocks, tokenAmounts } =
-        await loadFixture(deployBridgeFixture);
+      const {
+        bridge,
+        owner,
+        validators,
+        chain1,
+        chain2,
+        validatorsCardanoData,
+        cardanoBlocks,
+        tokenAmounts,
+        registerChain,
+      } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
-
-      await bridge.connect(validators[0]).submitChainStatusData(1, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[1]).submitChainStatusData(1, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[2]).submitChainStatusData(1, cardanoBlocks, tokenAmounts);
-      await bridge.connect(validators[3]).submitChainStatusData(1, cardanoBlocks, tokenAmounts);
+      await registerChain(
+        bridge,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorsCardanoData,
+        cardanoBlocks,
+        tokenAmounts
+      );
 
       var blockSlot = (await bridge.getLastObservedBlock(1)).blockSlot;
       expect(blockSlot).to.equal(cardanoBlocks[1].blockSlot);

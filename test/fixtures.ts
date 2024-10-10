@@ -391,6 +391,25 @@ export async function deployBridgeFixture() {
 
   const validatorCardanoData = validatorsCardanoData[0].data;
 
+  async function registerChain(
+    bridge,
+    owner,
+    chain1,
+    chain2,
+    validators,
+    validatorsCardanoData,
+    cardanoBlocks,
+    tokenAmounts
+  ) {
+    await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
+    await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
+
+    await bridge.connect(validators[0]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+    await bridge.connect(validators[1]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+    await bridge.connect(validators[2]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+    await bridge.connect(validators[3]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+  }
+
   return {
     hre,
     bridge,
@@ -421,5 +440,6 @@ export async function deployBridgeFixture() {
     validators,
     cardanoBlocks,
     tokenAmounts,
+    registerChain,
   };
 }
