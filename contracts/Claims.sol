@@ -126,6 +126,16 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             _submitClaimsREC(_claim, _caller);
         }
+
+        uint256 hotWalletIncrementClaimsLength = _claims.hotWalletIncrementClaims.length;
+        for (uint i; i < hotWalletIncrementClaimsLength; i++) {
+            HotWalletIncrementClaim calldata _claim = _claims.hotWalletIncrementClaims[i];
+            if (!isChainRegistered[_claim.chainId]) {
+                revert ChainIsNotRegistered(_claim.chainId);
+            }
+
+            _submitClaimHWIC(_claim, _caller);
+        }
     }
 
     function _submitClaimsBRC(BridgingRequestClaim calldata _claim, address _caller, uint256 receiversSum) internal {
@@ -211,6 +221,27 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function _submitClaimsREC(RefundExecutedClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode("REC", _claim));
         claimsHelper.setVotedOnlyIfNeeded(_caller, claimHash, validators.getQuorumNumberOfValidators());
+    }
+
+    function _submitClaimHWIC(HotWalletIncrementClaim calldata _claim, address _caller) internal {
+        bytes32 claimHash = keccak256(abi.encode("HWIC", _claim));
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
+            _caller,
+            claimHash,
+            validators.getQuorumNumberOfValidators()
+        );
+
+        if (_quorumReached) {
+            uint8 chainId = _claim.chainId;
+            uint256 changeAmount = _claim.amount;
+            if (_claim.isIncrement) {
+                chainTokenQuantity[chainId] += changeAmount;
+            } else if (chainTokenQuantity[chainId] >= changeAmount) {
+                chainTokenQuantity[chainId] -= changeAmount;
+            } else {
+                revert InsufficientFunds(chainTokenQuantity[chainId], changeAmount);
+            }
+        }
     }
 
     function _setConfirmedTransactions(BridgingRequestClaim calldata _claim) internal {

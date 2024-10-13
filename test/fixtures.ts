@@ -145,6 +145,7 @@ export async function deployBridgeFixture() {
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
     refundExecutedClaims: [],
+    hotWalletIncrementClaims: [],
   };
   const validatorClaimsBRC_ConfirmedTransactions = {
     bridgingRequestClaims: [
@@ -169,6 +170,7 @@ export async function deployBridgeFixture() {
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
     refundExecutedClaims: [],
+    hotWalletIncrementClaims: [],
   };
 
   const validatorClaimsBRCerror = {
@@ -193,6 +195,7 @@ export async function deployBridgeFixture() {
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
     refundExecutedClaims: [],
+    hotWalletIncrementClaims: [],
   };
 
   const validatorClaimsBEC = {
@@ -207,6 +210,7 @@ export async function deployBridgeFixture() {
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
     refundExecutedClaims: [],
+    hotWalletIncrementClaims: [],
   };
 
   const validatorClaimsBECerror = {
@@ -221,6 +225,7 @@ export async function deployBridgeFixture() {
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
     refundExecutedClaims: [],
+    hotWalletIncrementClaims: [],
   };
 
   const validatorClaimsBEFC = {
@@ -235,6 +240,7 @@ export async function deployBridgeFixture() {
     ],
     refundRequestClaims: [],
     refundExecutedClaims: [],
+    hotWalletIncrementClaims: [],
   };
 
   const validatorClaimsBEFCerror = {
@@ -249,6 +255,7 @@ export async function deployBridgeFixture() {
     ],
     refundRequestClaims: [],
     refundExecutedClaims: [],
+    hotWalletIncrementClaims: [],
   };
 
   const validatorClaimsRRC = {
@@ -267,6 +274,7 @@ export async function deployBridgeFixture() {
       },
     ],
     refundExecutedClaims: [],
+    hotWalletIncrementClaims: [],
   };
 
   const validatorClaimsRRCerror = {
@@ -289,6 +297,7 @@ export async function deployBridgeFixture() {
       },
     ],
     refundExecutedClaims: [],
+    hotWalletIncrementClaims: [],
   };
 
   const validatorClaimsREC = {
@@ -307,6 +316,7 @@ export async function deployBridgeFixture() {
         },
       },
     ],
+    hotWalletIncrementClaims: [],
   };
 
   const validatorClaimsRECerror = {
@@ -325,6 +335,7 @@ export async function deployBridgeFixture() {
         },
       },
     ],
+    hotWalletIncrementClaims: [],
   };
 
   const validatorClaimsRECObserverdFalse = {
@@ -343,6 +354,7 @@ export async function deployBridgeFixture() {
         },
       },
     ],
+    hotWalletIncrementClaims: [],
   };
 
   const signedBatch = {
@@ -372,13 +384,32 @@ export async function deployBridgeFixture() {
     validatorsCardanoData.push({
       addr: val.address,
       data: {
-        key: [BigInt(4 * ind), BigInt(4 * ind + 1), BigInt(4 * ind + 2), BigInt(4 * ind + 3)]
-      }
+        key: [BigInt(4 * ind), BigInt(4 * ind + 1), BigInt(4 * ind + 2), BigInt(4 * ind + 3)],
+      },
     });
-    ind++
+    ind++;
   }
 
   const validatorCardanoData = validatorsCardanoData[0].data;
+
+  async function registerChain(
+    bridge,
+    owner,
+    chain1,
+    chain2,
+    validators,
+    validatorsCardanoData,
+    cardanoBlocks,
+    tokenAmounts
+  ) {
+    await bridge.connect(owner).registerChain(chain1, validatorsCardanoData);
+    await bridge.connect(owner).registerChain(chain2, validatorsCardanoData);
+
+    await bridge.connect(validators[0]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+    await bridge.connect(validators[1]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+    await bridge.connect(validators[2]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+    await bridge.connect(validators[3]).submitChainStatusData(chain1.id, cardanoBlocks, tokenAmounts);
+  }
 
   return {
     hre,
@@ -409,5 +440,6 @@ export async function deployBridgeFixture() {
     validatorsCardanoData,
     validators,
     cardanoBlocks,
+    registerChain,
   };
 }

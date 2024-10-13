@@ -45,6 +45,7 @@ interface IBridgeStructs {
         BatchExecutionFailedClaim[] batchExecutionFailedClaims;
         RefundRequestClaim[] refundRequestClaims;
         RefundExecutedClaim[] refundExecutedClaims;
+        HotWalletIncrementClaim[] hotWalletIncrementClaims;
     }
 
     struct BridgingRequestClaim {
@@ -99,6 +100,12 @@ interface IBridgeStructs {
         uint8 chainId;
     }
 
+    struct HotWalletIncrementClaim {
+        uint8 chainId;
+        uint256 amount;
+        bool isIncrement;
+    }
+
     struct Receiver {
         uint256 amount;
         string destinationAddress;
@@ -138,6 +145,7 @@ interface IBridgeStructs {
     error ChainIsNotRegistered(uint8 _chainId);
     error WrongBatchNonce(uint8 _chainId, uint64 _nonce);
     error InvalidSignature();
+    error InsufficientFunds(uint256 availableAmount, uint256 withdrawalAmount);
 
     event newChainProposal(uint8 indexed _chainId, address indexed sender);
     event newChainRegistered(uint8 indexed _chainId);

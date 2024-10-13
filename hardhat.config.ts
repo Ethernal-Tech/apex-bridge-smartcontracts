@@ -7,6 +7,7 @@ const config: HardhatUserConfig = {
     version: "0.8.24",
     settings: {
       optimizer: {
+        // evmVersion: "paris",
         enabled: true,
         runs: 1000,
       },
