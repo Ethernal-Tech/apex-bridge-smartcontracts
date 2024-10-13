@@ -319,6 +319,21 @@ export async function deployBridgeFixture() {
     hotWalletIncrementClaims: [],
   };
 
+  const validatorClaimsHWIC = {
+    bridgingRequestClaims: [],
+    batchExecutedClaims: [],
+    batchExecutionFailedClaims: [],
+    refundRequestClaims: [],
+    refundExecutedClaims: [],
+    hotWalletIncrementClaims: [
+      {
+        chainId: 1,
+        amount: 100,
+        isIncrement: true,
+      },
+    ],
+  };
+
   const validatorClaimsRECerror = {
     bridgingRequestClaims: [],
     batchExecutedClaims: [],
@@ -410,6 +425,7 @@ export async function deployBridgeFixture() {
     validatorClaimsBEFC,
     validatorClaimsRRC,
     validatorClaimsREC,
+    validatorClaimsHWIC,
     validatorClaimsBRCerror,
     validatorClaimsBECerror,
     validatorClaimsBEFCerror,
