@@ -250,7 +250,7 @@ describe("Batch Creation", function () {
       expect(await claims.shouldCreateBatch(signedBatch.destinationChainId)).to.equal(false);
 
       const confBatch = await bridge.connect(validators[1]).getConfirmedBatch(signedBatch.destinationChainId);
-      expect(confBatch.bitmap).to.equal(30)
+      expect(confBatch.bitmap).to.equal(30);
     });
 
     it("SignedBatch should be added to signedBatches if there are enough votes", async function () {
@@ -329,12 +329,10 @@ describe("Batch Creation", function () {
         (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).rawTransaction
       ).to.equal(signedBatch.rawTransaction);
       expect(
-        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).signatures
-          .length
+        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).signatures.length
       ).to.equal(4);
       expect(
-        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId))
-          .feeSignatures.length
+        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).feeSignatures.length
       ).to.equal(4);
 
       const confirmedBatch = await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId);
@@ -431,14 +429,14 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      const tokenAmount = await claims.getTokenQuantity(signedBatch.destinationChainId);
+      const tokenAmountDestination = await claims.getTokenQuantity(signedBatch.destinationChainId);
 
       let sumAmounts = 0;
       for (let i = 0; i < validatorClaimsBRC.bridgingRequestClaims[0].receivers.length; i++) {
         sumAmounts += validatorClaimsBRC.bridgingRequestClaims[0].receivers[i].amount;
       }
 
-      expect(tokenAmount).to.equal(sumAmounts);
+      expect(100 - sumAmounts).to.equal(tokenAmountDestination);
     });
 
     it("Should delete multisigSignatures and feePayerMultisigSignatures for confirmed signed batches", async function () {
