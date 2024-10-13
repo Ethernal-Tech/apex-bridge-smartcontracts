@@ -81,6 +81,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             uint256 receiversSum = _claim.totalAmount;
 
             if (chainTokenQuantity[sourceChainId] < receiversSum) {
+                console.log("USAO");
+                emit NotEnoughFunds(chainTokenQuantity[sourceChainId], receiversSum);
                 continue;
             }
 

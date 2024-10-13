@@ -148,9 +148,18 @@ describe("Claims Contract", function () {
       );
     });
 
-    it("Should skip Bridging Request Claim if there is not enough bridging tokens", async function () {
-      const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
-        await loadFixture(deployBridgeFixture);
+    it("Should skip Bridging Request Claim if there is not enough bridging tokens and emit NotEnoughFunds event", async function () {
+      const {
+        bridge,
+        claims,
+        claimsHelper,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsBRC,
+        validatorsCardanoData,
+      } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 1, validatorsCardanoData);
       await bridge.connect(owner).registerChain(chain2, 1, validatorsCardanoData);
@@ -182,7 +191,9 @@ describe("Claims Contract", function () {
 
       const hash = ethers.keccak256(encoded40);
 
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC))
+        .to.emit(claims, "NotEnoughFunds")
+        .withArgs(1, 1000000);
 
       expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
 
