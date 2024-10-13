@@ -28,6 +28,7 @@ interface IBridgeStructs {
     struct ConfirmedTransaction {
         uint256 blockHeight;
         uint256 totalAmount;
+        uint256 retryCounter;
         uint64 nonce;
         uint8 sourceChainId;
         bytes32 observedTransactionHash;
@@ -45,6 +46,7 @@ interface IBridgeStructs {
         BatchExecutionFailedClaim[] batchExecutionFailedClaims;
         RefundRequestClaim[] refundRequestClaims;
         RefundExecutedClaim[] refundExecutedClaims;
+        HotWalletIncrementClaim[] hotWalletIncrementClaims;
     }
 
     struct BridgingRequestClaim {
@@ -53,6 +55,7 @@ interface IBridgeStructs {
         // key is the address on destination UTXO chain; value is the amount of tokens
         Receiver[] receivers;
         uint256 totalAmount;
+        uint256 retryCounter;
         uint8 sourceChainId;
         uint8 destinationChainId;
     }
@@ -99,6 +102,12 @@ interface IBridgeStructs {
         uint8 chainId;
     }
 
+    struct HotWalletIncrementClaim {
+        uint8 chainId;
+        uint256 amount;
+        bool isIncrement;
+    }
+
     struct Receiver {
         uint256 amount;
         string destinationAddress;
@@ -141,4 +150,6 @@ interface IBridgeStructs {
 
     event newChainProposal(uint8 indexed _chainId, address indexed sender);
     event newChainRegistered(uint8 indexed _chainId);
+    event NotEnoughFunds(string claimeType, uint256 index, uint256 availableAmount);
+    event InsufficientFunds(uint256 availableAmount, uint256 withdrawalAmount);
 }
