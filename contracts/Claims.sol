@@ -7,7 +7,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
-import "hardhat/console.sol";
 
 contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private bridgeAddress;
@@ -81,7 +80,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             uint256 receiversSum = _claim.totalAmount;
 
             if (chainTokenQuantity[sourceChainId] < receiversSum) {
-                console.log("USAO");
                 emit NotEnoughFunds(chainTokenQuantity[sourceChainId], receiversSum);
                 continue;
             }
