@@ -7,48 +7,38 @@ describe("Claims Contract", function () {
   describe("Submit new Bridging Request Claim", function () {
     it("Should revert claim submition in Claims SC if not called by bridge SC", async function () {
       const { bridge, claims, owner, validatorClaimsBRC } = await loadFixture(deployBridgeFixture);
-
       await expect(claims.connect(owner).submitClaims(validatorClaimsBRC, owner.address)).to.be.revertedWithCustomError(
         bridge,
         "NotBridge"
       );
     });
-
     it("Should revert if either source and destination chains are not registered", async function () {
       const { bridge, owner, validators, chain1, validatorsCardanoData, validatorClaimsBRC } = await loadFixture(
         deployBridgeFixture
       );
-
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
         bridge,
         "ChainIsNotRegistered"
       );
-
       await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
-
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
         bridge,
         "ChainIsNotRegistered"
       );
     });
-
     it("Claims SC setVoted should revert if not called by Bridge SC", async function () {
       const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
-
       await expect(
         claims
           .connect(owner)
           .setVoted(owner.address, "0x7465737400000000000000000000000000000000000000000000000000000000")
       ).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
-
     it("Should skip if Bridging Request Claim is already confirmed", async function () {
       const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
-
       await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
       await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
-
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
       const encoded = abiCoder.encode(
@@ -66,33 +56,24 @@ describe("Claims Contract", function () {
           validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
         ]
       );
-
       const encoded40 =
         "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
         encodedPrefix.substring(66) +
         encoded.substring(2);
-
       const hash = ethers.keccak256(encoded40);
-
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
-
       expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
-
       await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
-
       expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
     });
-
     it("Should skip if same validator submits the same Bridging Request Claim twice", async function () {
       const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
-
       await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
       await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
-
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
       const encoded = abiCoder.encode(
@@ -110,44 +91,31 @@ describe("Claims Contract", function () {
           validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
         ]
       );
-
       const encoded40 =
         "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
         encodedPrefix.substring(66) +
         encoded.substring(2);
-
       const hash = ethers.keccak256(encoded40);
-
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
-
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
-
     it("Should revert if Claims SC resetCurrentBatchBlock is not called by Bridge SC", async function () {
       const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
-
       await expect(claims.connect(owner).resetCurrentBatchBlock(1)).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
-
     it("Should revert if Claims SC setChainRegistered is not called by Bridge SC", async function () {
       const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
-
       await expect(claims.connect(owner).setChainRegistered(1, 100)).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
-
     it("Should revert if Claims SC setNextTimeoutBlock is not called by Bridge SC", async function () {
       const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
-
       await expect(claims.connect(owner).setNextTimeoutBlock(1, 100)).to.be.revertedWithCustomError(
         bridge,
         "NotBridge"
       );
     });
-
     it("Should skip Bridging Request Claim if there is not enough bridging tokens and emit NotEnoughFunds event", async function () {
       const {
         bridge,
@@ -163,8 +131,6 @@ describe("Claims Contract", function () {
 
       await bridge.connect(owner).registerChain(chain1, 1, validatorsCardanoData);
       await bridge.connect(owner).registerChain(chain2, 1, validatorsCardanoData);
-
-      validatorClaimsBRC.bridgingRequestClaims[0].totalAmount = 1000000;
 
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
@@ -193,11 +159,9 @@ describe("Claims Contract", function () {
 
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC))
         .to.emit(claims, "NotEnoughFunds")
-        .withArgs(1, 1000000);
+        .withArgs(0, 1);
 
       expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
-
-      validatorClaimsBRC.bridgingRequestClaims[0].totalAmount = 100;
     });
   });
 

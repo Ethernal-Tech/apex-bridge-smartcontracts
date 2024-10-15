@@ -80,7 +80,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             uint256 receiversSum = _claim.totalAmount;
 
             if (chainTokenQuantity[sourceChainId] < receiversSum) {
-                emit NotEnoughFunds(chainTokenQuantity[sourceChainId], receiversSum);
+                emit NotEnoughFunds(i, chainTokenQuantity[sourceChainId]);
                 continue;
             }
 
