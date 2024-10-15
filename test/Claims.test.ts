@@ -159,7 +159,7 @@ describe("Claims Contract", function () {
 
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC))
         .to.emit(claims, "NotEnoughFunds")
-        .withArgs(0, 1);
+        .withArgs("BRC", 0, 1);
 
       expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
     });

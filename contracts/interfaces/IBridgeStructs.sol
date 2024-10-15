@@ -149,5 +149,5 @@ interface IBridgeStructs {
 
     event newChainProposal(uint8 indexed _chainId, address indexed sender);
     event newChainRegistered(uint8 indexed _chainId);
-    event NotEnoughFunds(uint256 index, uint256 availableAmount);
+    event NotEnoughFunds(string claimeType, uint256 index, uint256 availableAmount);
 }
