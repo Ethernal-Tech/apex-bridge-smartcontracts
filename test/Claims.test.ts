@@ -516,7 +516,12 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsHWIC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsHWIC);
 
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(
+        await claimsHelper.hasVoted(
+          "0x4ec43138854a8260f51de42ae197fcd87f5d22a6ea8499e1c0b261e1e4ffa575",
+          validators[4].address
+        )
+      ).to.be.false;
 
       await bridge.connect(validators[4]).submitClaims(validatorClaimsHWIC);
 

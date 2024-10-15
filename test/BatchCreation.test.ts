@@ -429,14 +429,14 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      const tokenAmount = await claims.getTokenQuantity(signedBatch.destinationChainId);
+      const tokenAmountDestination = await claims.getTokenQuantity(signedBatch.destinationChainId);
 
       let sumAmounts = 0;
       for (let i = 0; i < validatorClaimsBRC.bridgingRequestClaims[0].receivers.length; i++) {
         sumAmounts += validatorClaimsBRC.bridgingRequestClaims[0].receivers[i].amount;
       }
 
-      expect(tokenAmount).to.equal(sumAmounts);
+      expect(100 - sumAmounts).to.equal(tokenAmountDestination);
     });
 
     it("Should delete multisigSignatures and feePayerMultisigSignatures for confirmed signed batches", async function () {
