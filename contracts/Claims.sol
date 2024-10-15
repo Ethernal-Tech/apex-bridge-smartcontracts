@@ -79,8 +79,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             uint256 receiversSum = _claim.totalAmount;
 
-            if (chainTokenQuantity[sourceChainId] < receiversSum) {
-                emit NotEnoughFunds(i, chainTokenQuantity[sourceChainId]);
+            if (chainTokenQuantity[destinationChainId] < receiversSum) {
+                emit NotEnoughFunds(i, chainTokenQuantity[destinationChainId]);
                 continue;
             }
 
@@ -147,22 +147,22 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
-            uint8 destinationChainID = _claim.destinationChainId;
-            uint8 sourceChainID = _claim.sourceChainId;
+            uint8 destinationChainId = _claim.destinationChainId;
 
-            chainTokenQuantity[sourceChainID] -= receiversSum;
+            chainTokenQuantity[destinationChainId] += receiversSum;
+            chainTokenQuantity[_claim.sourceChainId] -= receiversSum;
 
-            uint256 _confirmedTxCount = getBatchingTxsCount(destinationChainID);
+            uint256 _confirmedTxCount = getBatchingTxsCount(destinationChainId);
 
             _setConfirmedTransactions(_claim);
 
             if (
-                (claimsHelper.currentBatchBlock(destinationChainID) == -1) && // there is no batch in progress
+                (claimsHelper.currentBatchBlock(destinationChainId) == -1) && // there is no batch in progress
                 (_confirmedTxCount == 0) && // check if there is no other confirmed transactions
-                (block.number >= nextTimeoutBlock[destinationChainID])
+                (block.number >= nextTimeoutBlock[destinationChainId])
             ) // check if the current block number is greater or equal than the NEXT_BATCH_TIMEOUT_BLOCK
             {
-                nextTimeoutBlock[destinationChainID] = block.number + timeoutBlocksNumber;
+                nextTimeoutBlock[destinationChainId] = block.number + timeoutBlocksNumber;
             }
         }
     }
@@ -184,12 +184,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 chainId,
                 _claim.batchNonceId
             );
-            uint64 _firstTxNounce = confirmedSignedBatch.firstTxNonceId;
-            uint64 _lastTxNounce = confirmedSignedBatch.lastTxNonceId;
-
-            for (uint64 i = _firstTxNounce; i <= _lastTxNounce; i++) {
-                chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
-            }
 
             lastBatchedTxNonce[chainId] = confirmedSignedBatch.lastTxNonceId;
 
