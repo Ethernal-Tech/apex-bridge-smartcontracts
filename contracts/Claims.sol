@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
+import "./Bridge.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
 
@@ -80,7 +81,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             uint256 receiversSum = _claim.totalAmount;
 
             if (chainTokenQuantity[destinationChainId] < receiversSum) {
-                emit NotEnoughFunds("BRC", i, chainTokenQuantity[destinationChainId]);
+                Bridge(bridgeAddress).emitNotEnoughFunds("BRC", i, chainTokenQuantity[destinationChainId]);
                 continue;
             }
 

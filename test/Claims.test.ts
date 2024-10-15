@@ -158,7 +158,7 @@ describe("Claims Contract", function () {
       const hash = ethers.keccak256(encoded40);
 
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC))
-        .to.emit(claims, "NotEnoughFunds")
+        .to.emit(bridge, "NotEnoughFunds")
         .withArgs("BRC", 0, 1);
 
       expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
