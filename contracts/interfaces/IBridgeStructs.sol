@@ -103,7 +103,6 @@ interface IBridgeStructs {
     struct HotWalletIncrementClaim {
         uint8 chainId;
         uint256 amount;
-        bool isIncrement;
     }
 
     struct Receiver {
