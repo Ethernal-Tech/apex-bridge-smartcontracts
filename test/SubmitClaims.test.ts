@@ -325,7 +325,6 @@ describe("Submit Claims", function () {
     it("Should reset currentBatchBlock when Bridging Executed Claim is confirmed", async function () {
       const {
         bridge,
-        claims,
         claimsHelper,
         owner,
         chain1,
@@ -451,10 +450,9 @@ describe("Submit Claims", function () {
       expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
     });
 
-    it("Should reset currentBatchBlock when Bridging Executed Claim is confirmed", async function () {
+    it("Should reset currentBatchBlock when Bridging Executed Failed Claim is confirmed", async function () {
       const {
         bridge,
-        claims,
         claimsHelper,
         owner,
         chain1,
@@ -495,7 +493,6 @@ describe("Submit Claims", function () {
       const {
         bridge,
         claims,
-        claimsHelper,
         owner,
         chain1,
         chain2,
@@ -533,6 +530,55 @@ describe("Submit Claims", function () {
 
       expect(nextBatchBlock).to.greaterThan(currentBlock + 1);
       expect(lastConfirmedTxNonce - lastBatchedTxNonce).to.be.lessThanOrEqual(1);
+    });
+    it("Should increase chainTokenQuantity when Bridging Excuted Failed Claim is confirmed", async function () {
+      const {
+        bridge,
+        claims,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsBRC,
+        validatorClaimsBEFC,
+        signedBatch,
+        validatorsCardanoData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+
+      const chain2TokenQuantityStart = await claims.chainTokenQuantity(
+        validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId
+      );
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      const chain2TokenQuantityBefore = await claims.chainTokenQuantity(
+        validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId
+      );
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
+
+      const chain2TokenQuantityAfter = await claims.chainTokenQuantity(
+        validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId
+      );
+
+      expect(chain2TokenQuantityAfter).to.be.equal(
+        chain2TokenQuantityBefore + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmount)
+      );
+      expect(chain2TokenQuantityAfter).to.be.equal(chain2TokenQuantityStart);
     });
   });
 
