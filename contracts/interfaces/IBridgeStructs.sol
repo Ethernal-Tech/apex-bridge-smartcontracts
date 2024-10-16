@@ -160,7 +160,6 @@ interface IBridgeStructs {
     event BatchExecutionInfo(
         uint64 _batchID,
         uint8 _chainId,
-        uint256 _claimIdx,
         bool _isFailedClaim,
         TxDataInfo[] _txHashes
     );

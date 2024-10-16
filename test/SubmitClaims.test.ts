@@ -304,7 +304,7 @@ describe("Submit Claims", function () {
       const batchExecutedClaim = validatorClaimsBEC.batchExecutedClaims[0];
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEC))
         .to.emit(claims, "BatchExecutionInfo")
-        .withArgs(batchExecutedClaim.batchNonceId, batchExecutedClaim.chainId, 0, false, [
+        .withArgs(batchExecutedClaim.batchNonceId, batchExecutedClaim.chainId, false, [
           [validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId, validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash]
         ]);
     });
@@ -516,7 +516,7 @@ describe("Submit Claims", function () {
       const batchExecutionFailedClaim = validatorClaimsBEFC.batchExecutionFailedClaims[0];
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC))
         .to.emit(claims, "BatchExecutionInfo")
-        .withArgs(batchExecutionFailedClaim.batchNonceId, batchExecutionFailedClaim.chainId, 0, true, [
+        .withArgs(batchExecutionFailedClaim.batchNonceId, batchExecutionFailedClaim.chainId, true, [
           [validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId, validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash]
         ]);
     });

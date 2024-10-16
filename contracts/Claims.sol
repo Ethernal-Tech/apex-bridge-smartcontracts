@@ -95,7 +95,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 revert ChainIsNotRegistered(_claim.chainId);
             }
 
-            _submitClaimsBEC(_claim, i, _caller);
+            _submitClaimsBEC(_claim, _caller);
         }
 
         uint256 batchExecutionFailedClaimsLength = _claims.batchExecutionFailedClaims.length;
@@ -105,7 +105,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 revert ChainIsNotRegistered(_claim.chainId);
             }
 
-            _submitClaimsBEFC(_claim, i, _caller);
+            _submitClaimsBEFC(_claim, _caller);
         }
 
         uint256 refundRequestClaimsLength = _claims.refundRequestClaims.length;
@@ -168,7 +168,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _submitClaimsBEC(BatchExecutedClaim calldata _claim, uint idx, address _caller) internal {
+    function _submitClaimsBEC(BatchExecutedClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode("BEC", _claim));
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
@@ -185,7 +185,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint64 _firstTxNounce = confirmedSignedBatch.firstTxNonceId;
         uint64 _lastTxNounce = confirmedSignedBatch.lastTxNonceId;
 
-        _emitBatchExecutionInfo(batchId, chainId, idx, false, _firstTxNounce, _lastTxNounce);
+        _emitBatchExecutionInfo(batchId, chainId, false, _firstTxNounce, _lastTxNounce);
 
         if (_quorumReached) {
             claimsHelper.resetCurrentBatchBlock(chainId);
@@ -195,7 +195,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _submitClaimsBEFC(BatchExecutionFailedClaim calldata _claim, uint idx, address _caller) internal {
+    function _submitClaimsBEFC(BatchExecutionFailedClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode("BEFC", _claim));
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
@@ -212,7 +212,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint64 _firstTxNounce = confirmedSignedBatch.firstTxNonceId;
         uint64 _lastTxNounce = confirmedSignedBatch.lastTxNonceId;
 
-        _emitBatchExecutionInfo(batchId, chainId, idx, true, _firstTxNounce, _lastTxNounce);
+        _emitBatchExecutionInfo(batchId, chainId, true, _firstTxNounce, _lastTxNounce);
 
         if (_quorumReached) {
             claimsHelper.resetCurrentBatchBlock(chainId);
@@ -280,7 +280,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function _emitBatchExecutionInfo(
         uint64 _batchID,
         uint8 _chainId,
-        uint256 _claimIdx,
         bool _isFailedClaim,
         uint64 _firstTxNonce,
         uint64 _lastTxNounce
@@ -293,7 +292,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             );
         }
 
-        emit BatchExecutionInfo(_batchID, _chainId, _claimIdx, _isFailedClaim, _txHashes);
+        emit BatchExecutionInfo(_batchID, _chainId, _isFailedClaim, _txHashes);
     }
 
     function setVoted(address _voter, bytes32 _hash) external onlyBridge returns (uint256) {
