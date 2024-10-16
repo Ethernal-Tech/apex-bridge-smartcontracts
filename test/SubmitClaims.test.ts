@@ -274,6 +274,41 @@ describe("Submit Claims", function () {
       expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
     });
 
+    it("Batch Executed Claim should emit BatchExecutionInfo event", async function () {
+      const {
+        bridge,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsBRC,
+        validatorClaimsBEC,
+        signedBatch,
+        claims,
+        validatorsCardanoData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      const batchExecutedClaim = validatorClaimsBEC.batchExecutedClaims[0];
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEC))
+        .to.emit(claims, "BatchExecutionInfo")
+        .withArgs(batchExecutedClaim.batchNonceId, batchExecutedClaim.chainId, 0, false, [
+          [validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId, validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash]
+        ]);
+    });
+
     it("Should update lastBatchedTxNonce when Bridging Executed Claim is confirmed", async function () {
       const {
         bridge,
@@ -449,6 +484,41 @@ describe("Submit Claims", function () {
       expect(await claimsHelper.hasVoted(hash, validators[2].address)).to.be.true;
       expect(await claimsHelper.hasVoted(hash, validators[3].address)).to.be.true;
       expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+    });
+
+    it("Batch Execution Failed Claim should emit BatchExecutionInfo event", async function () {
+      const {
+        bridge,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsBRC,
+        validatorClaimsBEFC,
+        signedBatch,
+        claims,
+        validatorsCardanoData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      const batchExecutionFailedClaim = validatorClaimsBEFC.batchExecutionFailedClaims[0];
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC))
+        .to.emit(claims, "BatchExecutionInfo")
+        .withArgs(batchExecutionFailedClaim.batchNonceId, batchExecutionFailedClaim.chainId, 0, true, [
+          [validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId, validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash]
+        ]);
     });
 
     it("Should reset currentBatchBlock when Bridging Executed Failed Claim is confirmed", async function () {

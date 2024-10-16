@@ -287,8 +287,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     ) private {
         TxDataInfo[] memory _txHashes = new TxDataInfo[](_lastTxNounce - _firstTxNonce + 1);
         for (uint64 i = _firstTxNonce; i <= _lastTxNounce; i++) {
-            uint64 idx = i - _firstTxNonce;
-            _txHashes[idx] = TxDataInfo(
+            _txHashes[i - _firstTxNonce] = TxDataInfo(
                 confirmedTransactions[_chainId][i].sourceChainId,
                 confirmedTransactions[_chainId][i].observedTransactionHash
             );
