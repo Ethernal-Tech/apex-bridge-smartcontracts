@@ -28,6 +28,7 @@ interface IBridgeStructs {
     struct ConfirmedTransaction {
         uint256 blockHeight;
         uint256 totalAmount;
+        uint256 retryCounter;
         uint64 nonce;
         uint8 sourceChainId;
         bytes32 observedTransactionHash;
@@ -54,6 +55,7 @@ interface IBridgeStructs {
         // key is the address on destination UTXO chain; value is the amount of tokens
         Receiver[] receivers;
         uint256 totalAmount;
+        uint256 retryCounter;
         uint8 sourceChainId;
         uint8 destinationChainId;
     }

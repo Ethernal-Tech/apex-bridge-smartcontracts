@@ -77,7 +77,7 @@ describe("Claims Contract", function () {
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
       const encoded = abiCoder.encode(
-        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint8", "uint8"],
+        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint256", "uint8", "uint8"],
         [
           validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
           [
@@ -87,6 +87,7 @@ describe("Claims Contract", function () {
             ],
           ],
           validatorClaimsBRC.bridgingRequestClaims[0].totalAmount,
+          validatorClaimsBRC.bridgingRequestClaims[0].retryCounter,
           validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
           validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
         ]
