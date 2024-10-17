@@ -220,4 +220,9 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         if (!validators.isValidator(msg.sender)) revert NotValidator();
         _;
     }
+
+    modifier onlyClaims() {
+        if (msg.sender != address(claims)) revert NotClaims();
+        _;
+    }
 }

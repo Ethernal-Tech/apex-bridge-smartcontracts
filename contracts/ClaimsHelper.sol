@@ -52,9 +52,9 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
 
     function setConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
         uint8 destinationChainId = _signedBatch.destinationChainId;
-        uint64 signedBatchID = _signedBatch.id;
+        uint64 signedBatchId = _signedBatch.id;
 
-        confirmedSignedBatches[destinationChainId][signedBatchID] = ConfirmedSignedBatchData(
+        confirmedSignedBatches[destinationChainId][signedBatchId] = ConfirmedSignedBatchData(
             _signedBatch.firstTxNonceId,
             _signedBatch.lastTxNonceId
         );
