@@ -131,6 +131,11 @@ interface IBridgeStructs {
         uint256[4] key;
     }
 
+    struct TxDataInfo {
+        uint8 sourceChainId;
+        bytes32 observedTransactionHash;
+    }
+
     error AlreadyConfirmed(bytes32 _claimTransactionHash);
     error AlreadyProposed(uint8 _claimTransactionHash);
     error ChainAlreadyRegistered(uint8 _chainId);
@@ -142,7 +147,7 @@ interface IBridgeStructs {
     error NotSignedBatchesOrBridge();
     error NotSignedBatchesOrClaims();
     error NotEnoughBridgingTokensAvailable(bytes32 _claimTransactionHash);
-    error CanNotCreateBatchYet(uint8 _blockchainId);
+    error CanNotCreateBatchYet(uint8 _chainId);
     error InvalidData(string data);
     error ChainIsNotRegistered(uint8 _chainId);
     error WrongBatchNonce(uint8 _chainId, uint64 _nonce);
@@ -152,4 +157,10 @@ interface IBridgeStructs {
     event newChainRegistered(uint8 indexed _chainId);
     event NotEnoughFunds(string claimeType, uint256 index, uint256 availableAmount);
     event InsufficientFunds(uint256 availableAmount, uint256 withdrawalAmount);
+    event BatchExecutionInfo(
+        uint64 _batchID,
+        uint8 _chainId,
+        bool _isFailedClaim,
+        TxDataInfo[] _txHashes
+    );
 }
