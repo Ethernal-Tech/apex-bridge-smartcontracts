@@ -81,7 +81,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             uint256 receiversSum = _claim.totalAmount;
 
             if (chainTokenQuantity[destinationChainId] < receiversSum) {
-                Bridge(bridgeAddress).emitNotEnoughFunds("BRC", i, chainTokenQuantity[destinationChainId]);
+                emit NotEnoughFunds("BRC", i, chainTokenQuantity[destinationChainId]);
                 continue;
             }
 
@@ -247,7 +247,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             } else if (chainTokenQuantity[chainId] >= changeAmount) {
                 chainTokenQuantity[chainId] -= changeAmount;
             } else {
-                revert InsufficientFunds(chainTokenQuantity[chainId], changeAmount);
+                emit InsufficientFunds(chainTokenQuantity[chainId], changeAmount);
             }
         }
     }
