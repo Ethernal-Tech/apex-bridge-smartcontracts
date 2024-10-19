@@ -10,6 +10,7 @@ import "./Claims.sol";
 import "./SignedBatches.sol";
 import "./Slots.sol";
 import "./Validators.sol";
+import "hardhat/console.sol";
 
 contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     Claims private claims;
@@ -133,14 +134,18 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         ValidatorChainData calldata _validatorChainData
     ) external override onlyValidator {
         if (claims.isChainRegistered(_chainId)) {
+             console.log("NOT REGISTERED");
             revert ChainAlreadyRegistered(_chainId);
         }
 
         bytes32 chainHash = keccak256(abi.encode(_chainId, _chainType, _tokenQuantity));
 
         if (claims.hasVoted(chainHash, msg.sender)) {
+            console.log("ALREADY PROPOSED");
             revert AlreadyProposed(_chainId);
         }
+
+        console.log("VOTED");
 
         // TODO:
         // if _chain.chainType == 1 verify signatures for both verifyingKey and verifyingFeeKey
@@ -149,6 +154,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         validators.addValidatorChainData(_chainId, msg.sender, _validatorChainData);
 
         if (claims.setVoted(msg.sender, chainHash) == validators.validatorsCount()) {
+            console.log("RGEISTERED");
             chains.push(Chain(_chainId, _chainType, "", ""));
 
             claims.setChainRegistered(_chainId, _tokenQuantity);
