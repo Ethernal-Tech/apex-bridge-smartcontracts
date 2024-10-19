@@ -133,6 +133,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint256 _tokenQuantity,
         ValidatorChainData calldata _validatorChainData
     ) external override onlyValidator {
+        console.log("KOVALSKA");
         if (claims.isChainRegistered(_chainId)) {
              console.log("NOT REGISTERED");
             revert ChainAlreadyRegistered(_chainId);
