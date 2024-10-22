@@ -15,10 +15,13 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     mapping(uint8 => CardanoBlock) private lastObservedBlock;
 
     // hash(slot, hash) -> number of votes
-    mapping(bytes32 => uint8) private votes;
+    mapping(bytes32 => uint8) private numberOfVotes;
 
     // hash(slot, hash) -> bool - validator voted already or not
-    mapping(bytes32 => mapping(address => bool)) private validatorVote;
+    mapping(bytes32 => mapping(address => bool)) private hasVoted;
+
+    // claimHash for pruning
+    ClaimHash[] public claimsHashes;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -48,14 +51,19 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
             }
 
             bytes32 _chash = keccak256(abi.encodePacked(_chainId, _cblock.blockHash, _cblock.blockSlot));
-            if (validatorVote[_chash][_caller]) {
+            if (hasVoted[_chash][_caller]) {
                 // no need for additional check: || slotVotesPerChain[_chash] >= _quorumCnt
                 continue;
             }
-            validatorVote[_chash][_caller] = true;
+            hasVoted[_chash][_caller] = true;
+
+            if (numberOfVotes[_chash] == 0) {
+                claimsHashes.push(ClaimHash(_chash, block.number));
+            }
+
             uint256 _votesNum;
             unchecked {
-                _votesNum = ++votes[_chash];
+                _votesNum = ++numberOfVotes[_chash];
             }
             if (_votesNum >= _quorumCnt) {
                 lastObservedBlock[_chainId] = _cblock;
@@ -65,6 +73,23 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
 
     function getLastObservedBlock(uint8 _chainId) external view returns (CardanoBlock memory _cb) {
         return lastObservedBlock[_chainId];
+    }
+
+    function pruneHasVotedAndNumberOfVotes(uint256 _quorumCount, address[] calldata _validators) external onlyOwner {
+        uint256 i = 0;
+        while (i < claimsHashes.length) {
+            bytes32 _hashValue = claimsHashes[i].hashValue;
+            if (numberOfVotes[_hashValue] >= _quorumCount || block.number - claimsHashes[i].blockNumber >= 100) {
+                for (uint256 j = 0; j < _validators.length; j++) {
+                    delete hasVoted[_hashValue][_validators[j]];
+                }
+                delete numberOfVotes[claimsHashes[i].hashValue];
+                delete claimsHashes[i];
+                claimsHashes[i] = claimsHashes[claimsHashes.length - 1];
+                claimsHashes.pop();
+            }
+            i++;
+        }
     }
 
     modifier onlyBridge() {

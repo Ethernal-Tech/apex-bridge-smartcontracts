@@ -131,6 +131,11 @@ interface IBridgeStructs {
         uint256[4] key;
     }
 
+    struct ClaimHash {
+        bytes32 hashValue;
+        uint256 blockNumber;
+    }
+
     error AlreadyConfirmed(bytes32 _claimTransactionHash);
     error AlreadyProposed(uint8 _claimTransactionHash);
     error ChainAlreadyRegistered(uint8 _chainId);

@@ -22,6 +22,9 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     // ClaimHash -> numberOfVotes
     mapping(bytes32 => uint8) public numberOfVotes;
 
+    // claimHash for pruning
+    ClaimHash[] public claimsHashes;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -72,6 +75,11 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         }
 
         hasVoted[_hash][_voter] = true;
+
+        if (numberOfVotes[_hash] == 0) {
+            claimsHashes.push(ClaimHash(_hash, block.number));
+        }
+
         return ++numberOfVotes[_hash] >= _quorumCnt;
     }
 
@@ -79,6 +87,31 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         hasVoted[_hash][_voter] = true;
         uint256 v = ++numberOfVotes[_hash]; // v is numberOfVotes[_hash] + 1
         return v;
+    }
+
+    // Prunning functions (block number difference 100)
+    function pruneHasVotedAndNumberOfVotes(uint256 _quorumCount, address[] calldata _validators) external onlyOwner {
+        uint256 i = 0;
+        while (i < claimsHashes.length) {
+            bytes32 _hashValue = claimsHashes[i].hashValue;
+            if (numberOfVotes[_hashValue] >= _quorumCount || block.number - claimsHashes[i].blockNumber >= 100) {
+                for (uint256 j = 0; j < _validators.length; j++) {
+                    delete hasVoted[_hashValue][_validators[j]];
+                }
+                delete numberOfVotes[claimsHashes[i].hashValue];
+                delete claimsHashes[i];
+                claimsHashes[i] = claimsHashes[claimsHashes.length - 1];
+                claimsHashes.pop();
+            }
+            i++;
+        }
+    }
+
+    //this will delete already deleted ones too
+    function pruneConfirmedSignedBatches(uint8 _chainId, uint64 _lastConfirmedBatchId) external onlyOwner {
+        for (uint256 i = 0; i < _lastConfirmedBatchId; i++) {
+            delete confirmedSignedBatches[_chainId][_lastConfirmedBatchId];
+        }
     }
 
     modifier onlySignedBatchesOrClaims() {

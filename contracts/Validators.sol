@@ -18,7 +18,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     // BlockchainId -> ValidatorChainData[]
     mapping(uint8 => ValidatorChainData[]) private chainData;
     // current validators set bridge addresses
-    address[] private validatorsAddresses;
+    address[] public validatorsAddresses;
     // validator address index(+1) in chainData mapping
     mapping(address => uint8) private addressValidatorIndex;
 
