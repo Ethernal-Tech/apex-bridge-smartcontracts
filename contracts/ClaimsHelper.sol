@@ -89,12 +89,11 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         return v;
     }
 
-    // Prunning functions (block number difference 100)
-    function pruneHasVotedAndNumberOfVotes(uint256 _quorumCount, address[] calldata _validators) external onlyOwner {
+    function pruneSC(uint256 _quorumCount, address[] calldata _validators, uint256 _ttl) external onlyOwner {
         uint256 i = 0;
         while (i < claimsHashes.length) {
             bytes32 _hashValue = claimsHashes[i].hashValue;
-            if (numberOfVotes[_hashValue] >= _quorumCount || block.number - claimsHashes[i].blockNumber >= 100) {
+            if (numberOfVotes[_hashValue] >= _quorumCount || block.number - claimsHashes[i].blockNumber >= _ttl) {
                 for (uint256 j = 0; j < _validators.length; j++) {
                     delete hasVoted[_hashValue][_validators[j]];
                 }
@@ -112,6 +111,10 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         for (uint256 i = 0; i < _lastConfirmedBatchId; i++) {
             delete confirmedSignedBatches[_chainId][_lastConfirmedBatchId];
         }
+    }
+
+    function getClaimsHashes() external view returns (ClaimHash[] memory) {
+        return claimsHashes;
     }
 
     modifier onlySignedBatchesOrClaims() {
