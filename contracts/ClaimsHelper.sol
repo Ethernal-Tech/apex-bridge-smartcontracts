@@ -107,13 +107,13 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         }
     }
 
-    function pruneConfirmedSignedBatches(uint8 _chainId, uint64 _lastConfirmedBatchId) external onlyOwner {
-        if (_lastConfirmedBatchId <= lastPrunedConfirmedSignedBatch) revert AlreadyPruned();
+    function pruneConfirmedSignedBatches(uint8 _chainId, uint64 _batchId) external onlyOwner {
+        if (_batchId <= lastPrunedConfirmedSignedBatch) revert AlreadyPruned();
 
-        for (uint256 i = lastPrunedConfirmedSignedBatch; i < _lastConfirmedBatchId; i++) {
-            delete confirmedSignedBatches[_chainId][_lastConfirmedBatchId];
+        for (uint256 i = lastPrunedConfirmedSignedBatch + 1; i <= _batchId; i++) {
+            delete confirmedSignedBatches[_chainId][_batchId];
         }
-        lastPrunedConfirmedSignedBatch = _lastConfirmedBatchId - 1;
+        lastPrunedConfirmedSignedBatch = _batchId;
     }
 
     function getClaimsHashes() external view returns (ClaimHash[] memory) {

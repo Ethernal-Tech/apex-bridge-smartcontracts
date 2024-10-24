@@ -35,6 +35,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     // chainId -> nonce (nonce of the last transaction from the executed batch)
     mapping(uint8 => uint64) public lastBatchedTxNonce;
 
+    uint64 public lastPrunedConfirmedTransaction;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -336,6 +338,15 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function getTokenQuantity(uint8 _chainId) external view returns (uint256) {
         return chainTokenQuantity[_chainId];
+    }
+
+    function pruneConfirmedTransactions(uint8 _chainId, uint64 _nonce) external onlyOwner {
+        if (_nonce <= lastPrunedConfirmedTransaction) revert AlreadyPruned();
+
+        for (uint256 i = lastPrunedConfirmedTransaction + 1; i <= _nonce; i++) {
+            delete confirmedTransactions[_chainId][_nonce];
+        }
+        lastPrunedConfirmedTransaction = _nonce;
     }
 
     modifier onlyBridge() {

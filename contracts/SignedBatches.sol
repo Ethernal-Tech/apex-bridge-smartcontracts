@@ -83,6 +83,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         if (_numberOfVotes == 0) {
             signedBatchesHashes.push(ClaimHash(_sbHash, block.number));
         }
+
         uint8 validatorIdx = validators.getValidatorIndex(_caller) - 1;
 
         hasVoted[_sbHash][_caller] = true;
@@ -104,10 +105,6 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             );
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
-
-            delete signatures[_sbHash];
-            delete feeSignatures[_sbHash];
-            delete bitmap[_sbHash];
         }
     }
 
@@ -138,7 +135,9 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
                 for (uint256 j = 0; j < _validators.length; j++) {
                     delete hasVoted[_hashValue][_validators[j]];
                 }
-                delete signatures[signedBatchesHashes[i].hashValue];
+                delete signatures[_hashValue];
+                delete feeSignatures[_hashValue];
+                delete bitmap[_hashValue];
                 signedBatchesHashes[i] = signedBatchesHashes[signedBatchesHashes.length - 1];
                 signedBatchesHashes.pop();
             } else {
@@ -149,6 +148,10 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
 
     function getSignedBatchesHashes() external view returns (ClaimHash[] memory) {
         return signedBatchesHashes;
+    }
+
+    function getSignatures(bytes32 _hash) external view returns (bytes[] memory) {
+        return signatures[_hash];
     }
 
     modifier onlyBridge() {
