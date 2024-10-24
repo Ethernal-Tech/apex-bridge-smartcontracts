@@ -77,10 +77,12 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             return;
         }
 
-        signedBatchesHashes.push(ClaimHash(_sbHash, block.number));
-
         uint256 _quorumCount = validators.getQuorumNumberOfValidators();
         uint256 _numberOfVotes = signatures[_sbHash].length;
+
+        if (_numberOfVotes == 0) {
+            signedBatchesHashes.push(ClaimHash(_sbHash, block.number));
+        }
         uint8 validatorIdx = validators.getValidatorIndex(_caller) - 1;
 
         hasVoted[_sbHash][_caller] = true;
