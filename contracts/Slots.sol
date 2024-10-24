@@ -15,10 +15,10 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     mapping(uint8 => CardanoBlock) private lastObservedBlock;
 
     // hash(slot, hash) -> number of votes
-    mapping(bytes32 => uint8) private numberOfVotes;
+    mapping(bytes32 => uint8) public numberOfVotes;
 
     // hash(slot, hash) -> bool - validator voted already or not
-    mapping(bytes32 => mapping(address => bool)) private hasVoted;
+    mapping(bytes32 => mapping(address => bool)) public hasVoted;
 
     // claimHash for pruning
     ClaimHash[] public claimsHashes;
@@ -75,21 +75,25 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         return lastObservedBlock[_chainId];
     }
 
-    function pruneHasVotedAndNumberOfVotes(uint256 _quorumCount, address[] calldata _validators) external onlyOwner {
+    function pruneSlots(uint256 _quorumCount, address[] calldata _validators, uint256 _ttl) external onlyOwner {
         uint256 i = 0;
         while (i < claimsHashes.length) {
             bytes32 _hashValue = claimsHashes[i].hashValue;
-            if (numberOfVotes[_hashValue] >= _quorumCount || block.number - claimsHashes[i].blockNumber >= 100) {
+            if (numberOfVotes[_hashValue] >= _quorumCount || block.number - claimsHashes[i].blockNumber >= _ttl) {
                 for (uint256 j = 0; j < _validators.length; j++) {
                     delete hasVoted[_hashValue][_validators[j]];
                 }
                 delete numberOfVotes[claimsHashes[i].hashValue];
-                delete claimsHashes[i];
                 claimsHashes[i] = claimsHashes[claimsHashes.length - 1];
                 claimsHashes.pop();
+            } else {
+                i++;
             }
-            i++;
         }
+    }
+
+    function getClaimsHashes() external view returns (ClaimHash[] memory) {
+        return claimsHashes;
     }
 
     modifier onlyBridge() {

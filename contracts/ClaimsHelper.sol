@@ -99,11 +99,11 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
                     delete hasVoted[_hashValue][_validators[j]];
                 }
                 delete numberOfVotes[claimsHashes[i].hashValue];
-                delete claimsHashes[i];
                 claimsHashes[i] = claimsHashes[claimsHashes.length - 1];
                 claimsHashes.pop();
+            } else {
+                i++;
             }
-            i++;
         }
     }
 
