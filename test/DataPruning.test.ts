@@ -84,7 +84,7 @@ describe("Data Pruning", function () {
     expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(1);
     expect((await claimsHelper.claimsHashes(0)).hashValue).to.be.equal(hash);
   });
-  it("Should revert if pruneSC is not called by owner", async function () {
+  it("Should revert if pruneClaims is not called by owner", async function () {
     const { claimsHelper, validators } = await loadFixture(deployBridgeFixture);
 
     const validatorsAddresses = [];
@@ -92,12 +92,11 @@ describe("Data Pruning", function () {
       validatorsAddresses.push(validators[i].address);
     }
 
-    await expect(claimsHelper.connect(validators[0]).pruneSC(4, validatorsAddresses, 5)).to.be.revertedWithCustomError(
-      claimsHelper,
-      "OwnableUnauthorizedAccount"
-    );
+    await expect(
+      claimsHelper.connect(validators[0]).pruneClaims(4, validatorsAddresses, 5)
+    ).to.be.revertedWithCustomError(claimsHelper, "OwnableUnauthorizedAccount");
   });
-  it("Calling pruneSC should NOT remove hash if quorum is NOT reached and ttl has NOT passed", async function () {
+  it("Calling pruneClaims should NOT remove hash if quorum is NOT reached and ttl has NOT passed", async function () {
     const { bridge, claimsHelper, owner, validators, validatorClaimsBRC, chain1, chain2, validatorsCardanoData } =
       await loadFixture(deployBridgeFixture);
 
@@ -137,12 +136,12 @@ describe("Data Pruning", function () {
       validatorsAddresses.push(validators[i].address);
     }
 
-    await claimsHelper.connect(owner).pruneSC(4, validatorsAddresses, 5);
+    await claimsHelper.connect(owner).pruneClaims(4, validatorsAddresses, 5);
 
     expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(1);
     expect((await claimsHelper.claimsHashes(0)).hashValue).to.be.equal(hash);
   });
-  it("Calling pruneSC should remove hash if quorum is NOT reached and ttl has been passed", async function () {
+  it("Calling pruneClaims should remove hash if quorum is NOT reached and ttl has been passed", async function () {
     const { bridge, claimsHelper, owner, validators, validatorClaimsBRC, chain1, chain2, validatorsCardanoData } =
       await loadFixture(deployBridgeFixture);
 
@@ -191,7 +190,7 @@ describe("Data Pruning", function () {
     expect(await claimsHelper.hasVoted(hash, validators[2].address)).to.be.equal(true);
     expect(await claimsHelper.numberOfVotes(hash)).to.be.equal(3);
 
-    await claimsHelper.connect(owner).pruneSC(4, validatorsAddresses, 5);
+    await claimsHelper.connect(owner).pruneClaims(4, validatorsAddresses, 5);
 
     expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(0);
     expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.equal(false);
@@ -199,7 +198,7 @@ describe("Data Pruning", function () {
     expect(await claimsHelper.hasVoted(hash, validators[2].address)).to.be.equal(false);
     expect(await claimsHelper.numberOfVotes(hash)).to.be.equal(0);
   });
-  it("Calling pruneSC should remove hash if quorum is reached", async function () {
+  it("Calling pruneClaims should remove hash if quorum is reached", async function () {
     const { bridge, claimsHelper, owner, validators, validatorClaimsBRC, chain1, chain2, validatorsCardanoData } =
       await loadFixture(deployBridgeFixture);
 
@@ -246,7 +245,7 @@ describe("Data Pruning", function () {
     expect(await claimsHelper.hasVoted(hash, validators[3].address)).to.be.equal(true);
     expect(await claimsHelper.numberOfVotes(hash)).to.be.equal(4);
 
-    await claimsHelper.connect(owner).pruneSC(4, validatorsAddresses, 5);
+    await claimsHelper.connect(owner).pruneClaims(4, validatorsAddresses, 5);
 
     expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(0);
     expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.equal(false);
@@ -254,5 +253,71 @@ describe("Data Pruning", function () {
     expect(await claimsHelper.hasVoted(hash, validators[2].address)).to.be.equal(false);
     expect(await claimsHelper.hasVoted(hash, validators[3].address)).to.be.equal(false);
     expect(await claimsHelper.numberOfVotes(hash)).to.be.equal(0);
+  });
+  it("Should revert if pruneConfirmedSignedBatches is not called by owner", async function () {
+    const { claimsHelper, validators } = await loadFixture(deployBridgeFixture);
+
+    await expect(claimsHelper.connect(validators[0]).pruneConfirmedSignedBatches(1, 5)).to.be.revertedWithCustomError(
+      claimsHelper,
+      "OwnableUnauthorizedAccount"
+    );
+  });
+  it("Should revert if _lastConfirmedBatchId is lower then lastPrunedConfirmedSignedBatch is not called by owner", async function () {
+    const { claimsHelper, owner } = await loadFixture(deployBridgeFixture);
+
+    await expect(claimsHelper.connect(owner).pruneConfirmedSignedBatches(1, 0)).to.be.revertedWithCustomError(
+      claimsHelper,
+      "AlreadyPruned"
+    );
+  });
+  it("Should prune confirmedSignedBatches when conditions are met", async function () {
+    const {
+      bridge,
+      claimsHelper,
+      owner,
+      chain1,
+      chain2,
+      validators,
+      signedBatch,
+      validatorsCardanoData,
+      validatorClaimsBRC,
+    } = await loadFixture(deployBridgeFixture);
+
+    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+    await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+
+    await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+    await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+    await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+    await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
+
+    // wait for next timeout
+    for (let i = 0; i < 3; i++) {
+      await ethers.provider.send("evm_mine");
+    }
+
+    await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+    await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+    await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+
+    const confBatchNothing = await claimsHelper
+      .connect(validators[0])
+      .getConfirmedSignedBatchData(signedBatch.destinationChainId, signedBatch.id);
+    expect(confBatchNothing.firstTxNonceId + confBatchNothing.lastTxNonceId).to.equal(0);
+
+    // consensus
+    await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+    expect(await claimsHelper.lastPrunedConfirmedSignedBatch()).to.equal(0);
+
+    expect((await claimsHelper.confirmedSignedBatches(2, 1)).firstTxNonceId).to.equal(1);
+    expect((await claimsHelper.confirmedSignedBatches(2, 1)).lastTxNonceId).to.equal(1);
+
+    await claimsHelper.connect(owner).pruneConfirmedSignedBatches(2, 1);
+
+    expect((await claimsHelper.confirmedSignedBatches(2, 1)).firstTxNonceId).to.equal(0);
+    expect((await claimsHelper.confirmedSignedBatches(2, 1)).lastTxNonceId).to.equal(0);
+
+    expect(await claimsHelper.lastPrunedConfirmedSignedBatch()).to.equal(0);
   });
 });
