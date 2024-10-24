@@ -141,7 +141,7 @@ describe("Claims Pruning", function () {
     expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(1);
     expect((await claimsHelper.claimsHashes(0)).hashValue).to.be.equal(hash);
   });
-  it("Calling pruneClaims should remove hash if quorum is NOT reached and ttl has been passed", async function () {
+  it("Calling pruneClaims should remove hash if quorum is NOT reached and ttl has passed", async function () {
     const { bridge, claimsHelper, owner, validators, validatorClaimsBRC, chain1, chain2, validatorsCardanoData } =
       await loadFixture(deployBridgeFixture);
 
@@ -387,256 +387,512 @@ describe("ConfirmedSignedBatches Pruning", function () {
 
     expect(await claimsHelper.lastPrunedConfirmedSignedBatch()).to.equal(0);
   });
-  describe("Slots Pruning", function () {
-    it("Hash should be added to claimsHashes in Slots when new slot is submitted", async function () {
-      const { bridge, slots, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
-        deployBridgeFixture
-      );
+});
+describe("Slots Pruning", function () {
+  it("Hash should be added to claimsHashes in Slots when new slot is submitted", async function () {
+    const { bridge, slots, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
+      deployBridgeFixture
+    );
 
-      let encoded = ethers.solidityPacked(
-        ["uint8", "bytes32", "uint256"],
-        [1, cardanoBlocks[0].blockHash, cardanoBlocks[0].blockSlot]
-      );
+    let encoded = ethers.solidityPacked(
+      ["uint8", "bytes32", "uint256"],
+      [1, cardanoBlocks[0].blockHash, cardanoBlocks[0].blockSlot]
+    );
 
-      const hash0 = ethers.keccak256(encoded);
+    const hash0 = ethers.keccak256(encoded);
 
-      encoded = ethers.solidityPacked(
-        ["uint8", "bytes32", "uint256"],
-        [1, cardanoBlocks[1].blockHash, cardanoBlocks[1].blockSlot]
-      );
+    encoded = ethers.solidityPacked(
+      ["uint8", "bytes32", "uint256"],
+      [1, cardanoBlocks[1].blockHash, cardanoBlocks[1].blockSlot]
+    );
 
-      const hash1 = ethers.keccak256(encoded);
+    const hash1 = ethers.keccak256(encoded);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
 
-      expect((await slots.getClaimsHashes()).length).to.equal(0);
+    expect((await slots.getSlotsHashes()).length).to.equal(0);
 
-      await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
 
-      expect((await slots.getClaimsHashes()).length).to.equal(2);
-      expect((await slots.claimsHashes(0)).hashValue).to.equal(hash0);
-      expect((await slots.claimsHashes(1)).hashValue).to.equal(hash1);
-    });
+    expect((await slots.getSlotsHashes()).length).to.equal(2);
+    expect((await slots.slotsHashes(0)).hashValue).to.equal(hash0);
+    expect((await slots.slotsHashes(1)).hashValue).to.equal(hash1);
+  });
 
-    it("Only NEW Hashes should be added to claimsHashes in Slots when new slot is submitted", async function () {
-      const { bridge, slots, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
-        deployBridgeFixture
-      );
+  it("Only NEW Hashes should be added to claimsHashes in Slots when new slot is submitted", async function () {
+    const { bridge, slots, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
+      deployBridgeFixture
+    );
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
 
-      expect((await slots.getClaimsHashes()).length).to.equal(0);
+    expect((await slots.getSlotsHashes()).length).to.equal(0);
 
-      await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
 
-      expect((await slots.getClaimsHashes()).length).to.equal(2);
+    expect((await slots.getSlotsHashes()).length).to.equal(2);
 
-      await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
 
-      expect((await slots.getClaimsHashes()).length).to.equal(2);
-    });
-    it("Should revert if pruneSlots is not called by owner", async function () {
-      const { slots, validators } = await loadFixture(deployBridgeFixture);
+    expect((await slots.getSlotsHashes()).length).to.equal(2);
+  });
+  it("Should revert if pruneSlots is not called by owner", async function () {
+    const { slots, validators } = await loadFixture(deployBridgeFixture);
 
-      const validatorsAddresses = [];
-      for (let i = 0; i < validators.length; i++) {
-        validatorsAddresses.push(validators[i].address);
-      }
+    const validatorsAddresses = [];
+    for (let i = 0; i < validators.length; i++) {
+      validatorsAddresses.push(validators[i].address);
+    }
 
-      await expect(slots.connect(validators[0]).pruneSlots(4, validatorsAddresses, 5)).to.be.revertedWithCustomError(
-        slots,
-        "OwnableUnauthorizedAccount"
-      );
-    });
-    it("Calling pruneSlots should NOT remove hash if quorum is NOT reached and ttl has NOT passed", async function () {
-      const { bridge, slots, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
-        deployBridgeFixture
-      );
+    await expect(slots.connect(validators[0]).pruneSlots(4, validatorsAddresses, 5)).to.be.revertedWithCustomError(
+      slots,
+      "OwnableUnauthorizedAccount"
+    );
+  });
+  it("Calling pruneSlots should NOT remove hash if quorum is NOT reached and ttl has NOT passed", async function () {
+    const { bridge, slots, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
+      deployBridgeFixture
+    );
 
-      let encoded = ethers.solidityPacked(
-        ["uint8", "bytes32", "uint256"],
-        [1, cardanoBlocks[0].blockHash, cardanoBlocks[0].blockSlot]
-      );
+    let encoded = ethers.solidityPacked(
+      ["uint8", "bytes32", "uint256"],
+      [1, cardanoBlocks[0].blockHash, cardanoBlocks[0].blockSlot]
+    );
 
-      const hash0 = ethers.keccak256(encoded);
+    const hash0 = ethers.keccak256(encoded);
 
-      encoded = ethers.solidityPacked(
-        ["uint8", "bytes32", "uint256"],
-        [1, cardanoBlocks[1].blockHash, cardanoBlocks[1].blockSlot]
-      );
+    encoded = ethers.solidityPacked(
+      ["uint8", "bytes32", "uint256"],
+      [1, cardanoBlocks[1].blockHash, cardanoBlocks[1].blockSlot]
+    );
 
-      const hash1 = ethers.keccak256(encoded);
+    const hash1 = ethers.keccak256(encoded);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
 
-      expect((await slots.getClaimsHashes()).length).to.equal(0);
+    expect((await slots.getSlotsHashes()).length).to.equal(0);
 
-      await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
-      await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
-      await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
 
-      expect((await slots.getClaimsHashes()).length).to.equal(2);
+    expect((await slots.getSlotsHashes()).length).to.equal(2);
 
-      const validatorsAddresses = [];
-      for (let i = 0; i < validators.length; i++) {
-        validatorsAddresses.push(validators[i].address);
-      }
+    const validatorsAddresses = [];
+    for (let i = 0; i < validators.length; i++) {
+      validatorsAddresses.push(validators[i].address);
+    }
 
-      await slots.connect(owner).pruneSlots(4, validatorsAddresses, 5);
+    await slots.connect(owner).pruneSlots(4, validatorsAddresses, 5);
 
-      expect((await slots.getClaimsHashes()).length).to.equal(2);
-    });
-    it("Calling pruneSlots should remove hash if quorum is NOT reached and ttl has been passed", async function () {
-      const { bridge, slots, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
-        deployBridgeFixture
-      );
+    expect((await slots.getSlotsHashes()).length).to.equal(2);
+  });
+  it("Calling pruneSlots should remove hash if quorum is NOT reached and ttl has passed", async function () {
+    const { bridge, slots, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
+      deployBridgeFixture
+    );
 
-      let encoded = ethers.solidityPacked(
-        ["uint8", "bytes32", "uint256"],
-        [1, cardanoBlocks[0].blockHash, cardanoBlocks[0].blockSlot]
-      );
+    let encoded = ethers.solidityPacked(
+      ["uint8", "bytes32", "uint256"],
+      [1, cardanoBlocks[0].blockHash, cardanoBlocks[0].blockSlot]
+    );
 
-      const hash0 = ethers.keccak256(encoded);
+    const hash0 = ethers.keccak256(encoded);
 
-      encoded = ethers.solidityPacked(
-        ["uint8", "bytes32", "uint256"],
-        [1, cardanoBlocks[1].blockHash, cardanoBlocks[1].blockSlot]
-      );
+    encoded = ethers.solidityPacked(
+      ["uint8", "bytes32", "uint256"],
+      [1, cardanoBlocks[1].blockHash, cardanoBlocks[1].blockSlot]
+    );
 
-      const hash1 = ethers.keccak256(encoded);
+    const hash1 = ethers.keccak256(encoded);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
 
-      expect((await slots.getClaimsHashes()).length).to.equal(0);
+    expect((await slots.getSlotsHashes()).length).to.equal(0);
 
-      await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
-      await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
-      await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
 
-      expect((await slots.getClaimsHashes()).length).to.equal(2);
+    expect((await slots.getSlotsHashes()).length).to.equal(2);
 
-      const validatorsAddresses = [];
-      for (let i = 0; i < validators.length; i++) {
-        validatorsAddresses.push(validators[i].address);
-      }
+    const validatorsAddresses = [];
+    for (let i = 0; i < validators.length; i++) {
+      validatorsAddresses.push(validators[i].address);
+    }
 
-      expect((await slots.getClaimsHashes()).length).to.equal(2);
+    expect((await slots.getSlotsHashes()).length).to.equal(2);
 
-      for (let i = 0; i < 2; i++) {
-        await ethers.provider.send("evm_mine");
-      }
+    for (let i = 0; i < 2; i++) {
+      await ethers.provider.send("evm_mine");
+    }
 
-      expect(await slots.hasVoted(hash0, validators[0].address)).to.be.equal(true);
-      expect(await slots.hasVoted(hash0, validators[1].address)).to.be.equal(true);
-      expect(await slots.hasVoted(hash0, validators[2].address)).to.be.equal(true);
-      expect(await slots.numberOfVotes(hash0)).to.be.equal(3);
-      expect(await slots.hasVoted(hash1, validators[0].address)).to.be.equal(true);
-      expect(await slots.hasVoted(hash1, validators[1].address)).to.be.equal(true);
-      expect(await slots.hasVoted(hash1, validators[2].address)).to.be.equal(true);
-      expect(await slots.numberOfVotes(hash1)).to.be.equal(3);
+    expect(await slots.hasVoted(hash0, validators[0].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash0, validators[1].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash0, validators[2].address)).to.be.equal(true);
+    expect(await slots.numberOfVotes(hash0)).to.be.equal(3);
+    expect(await slots.hasVoted(hash1, validators[0].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash1, validators[1].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash1, validators[2].address)).to.be.equal(true);
+    expect(await slots.numberOfVotes(hash1)).to.be.equal(3);
 
-      await slots.connect(owner).pruneSlots(4, validatorsAddresses, 5);
+    await slots.connect(owner).pruneSlots(4, validatorsAddresses, 5);
 
-      expect((await slots.getClaimsHashes()).length).to.be.equal(0);
-      expect(await slots.hasVoted(hash0, validators[0].address)).to.be.equal(false);
-      expect(await slots.hasVoted(hash0, validators[1].address)).to.be.equal(false);
-      expect(await slots.hasVoted(hash0, validators[2].address)).to.be.equal(false);
-      expect(await slots.numberOfVotes(hash0)).to.be.equal(0);
-      expect(await slots.hasVoted(hash1, validators[0].address)).to.be.equal(false);
-      expect(await slots.hasVoted(hash1, validators[1].address)).to.be.equal(false);
-      expect(await slots.hasVoted(hash1, validators[2].address)).to.be.equal(false);
-      expect(await slots.numberOfVotes(hash1)).to.be.equal(0);
-    });
-    it("Calling pruneSlots should remove hash if quorum is reached", async function () {
-      const { bridge, slots, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
-        deployBridgeFixture
-      );
+    expect((await slots.getSlotsHashes()).length).to.be.equal(0);
+    expect(await slots.hasVoted(hash0, validators[0].address)).to.be.equal(false);
+    expect(await slots.hasVoted(hash0, validators[1].address)).to.be.equal(false);
+    expect(await slots.hasVoted(hash0, validators[2].address)).to.be.equal(false);
+    expect(await slots.numberOfVotes(hash0)).to.be.equal(0);
+    expect(await slots.hasVoted(hash1, validators[0].address)).to.be.equal(false);
+    expect(await slots.hasVoted(hash1, validators[1].address)).to.be.equal(false);
+    expect(await slots.hasVoted(hash1, validators[2].address)).to.be.equal(false);
+    expect(await slots.numberOfVotes(hash1)).to.be.equal(0);
+  });
+  it("Calling pruneSlots should remove hash if quorum is reached", async function () {
+    const { bridge, slots, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
+      deployBridgeFixture
+    );
 
-      let encoded = ethers.solidityPacked(
-        ["uint8", "bytes32", "uint256"],
-        [1, cardanoBlocks[0].blockHash, cardanoBlocks[0].blockSlot]
-      );
+    let encoded = ethers.solidityPacked(
+      ["uint8", "bytes32", "uint256"],
+      [1, cardanoBlocks[0].blockHash, cardanoBlocks[0].blockSlot]
+    );
 
-      const hash0 = ethers.keccak256(encoded);
+    const hash0 = ethers.keccak256(encoded);
 
-      encoded = ethers.solidityPacked(
-        ["uint8", "bytes32", "uint256"],
-        [1, cardanoBlocks[1].blockHash, cardanoBlocks[1].blockSlot]
-      );
+    encoded = ethers.solidityPacked(
+      ["uint8", "bytes32", "uint256"],
+      [1, cardanoBlocks[1].blockHash, cardanoBlocks[1].blockSlot]
+    );
 
-      const hash1 = ethers.keccak256(encoded);
+    const hash1 = ethers.keccak256(encoded);
 
-      encoded = ethers.solidityPacked(["uint8", "bytes32", "uint256"], [1, cardanoBlocks[0].blockHash, 3]);
+    encoded = ethers.solidityPacked(["uint8", "bytes32", "uint256"], [1, cardanoBlocks[0].blockHash, 3]);
 
-      const hash2 = ethers.keccak256(encoded);
+    const hash2 = ethers.keccak256(encoded);
 
-      encoded = ethers.solidityPacked(["uint8", "bytes32", "uint256"], [1, cardanoBlocks[1].blockHash, 4]);
+    encoded = ethers.solidityPacked(["uint8", "bytes32", "uint256"], [1, cardanoBlocks[1].blockHash, 4]);
 
-      const hash3 = ethers.keccak256(encoded);
+    const hash3 = ethers.keccak256(encoded);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
 
-      expect((await slots.getClaimsHashes()).length).to.equal(0);
+    expect((await slots.getSlotsHashes()).length).to.equal(0);
 
-      await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
-      await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
-      await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
-      await bridge.connect(validators[3]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[3]).submitLastObservedBlocks(1, cardanoBlocks);
 
-      cardanoBlocks[0].blockSlot = 3;
-      cardanoBlocks[1].blockSlot = 4;
+    cardanoBlocks[0].blockSlot = 3;
+    cardanoBlocks[1].blockSlot = 4;
 
-      await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
-      await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
-      await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
 
-      expect((await slots.getClaimsHashes()).length).to.equal(4);
+    expect((await slots.getSlotsHashes()).length).to.equal(4);
 
-      const validatorsAddresses = [];
-      for (let i = 0; i < validators.length; i++) {
-        validatorsAddresses.push(validators[i].address);
-      }
+    const validatorsAddresses = [];
+    for (let i = 0; i < validators.length; i++) {
+      validatorsAddresses.push(validators[i].address);
+    }
 
-      expect(await slots.hasVoted(hash0, validators[0].address)).to.be.equal(true);
-      expect(await slots.hasVoted(hash0, validators[1].address)).to.be.equal(true);
-      expect(await slots.hasVoted(hash0, validators[2].address)).to.be.equal(true);
-      expect(await slots.hasVoted(hash0, validators[3].address)).to.be.equal(true);
-      expect(await slots.numberOfVotes(hash0)).to.be.equal(4);
-      expect(await slots.hasVoted(hash1, validators[0].address)).to.be.equal(true);
-      expect(await slots.hasVoted(hash1, validators[1].address)).to.be.equal(true);
-      expect(await slots.hasVoted(hash1, validators[2].address)).to.be.equal(true);
-      expect(await slots.hasVoted(hash1, validators[3].address)).to.be.equal(true);
-      expect(await slots.numberOfVotes(hash1)).to.be.equal(4);
-      expect(await slots.hasVoted(hash2, validators[0].address)).to.be.equal(true);
-      expect(await slots.hasVoted(hash2, validators[1].address)).to.be.equal(true);
-      expect(await slots.hasVoted(hash2, validators[2].address)).to.be.equal(true);
-      expect(await slots.numberOfVotes(hash2)).to.be.equal(3);
-      expect(await slots.hasVoted(hash3, validators[0].address)).to.be.equal(true);
-      expect(await slots.hasVoted(hash3, validators[1].address)).to.be.equal(true);
-      expect(await slots.hasVoted(hash3, validators[2].address)).to.be.equal(true);
-      expect(await slots.numberOfVotes(hash3)).to.be.equal(3);
+    expect(await slots.hasVoted(hash0, validators[0].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash0, validators[1].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash0, validators[2].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash0, validators[3].address)).to.be.equal(true);
+    expect(await slots.numberOfVotes(hash0)).to.be.equal(4);
+    expect(await slots.hasVoted(hash1, validators[0].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash1, validators[1].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash1, validators[2].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash1, validators[3].address)).to.be.equal(true);
+    expect(await slots.numberOfVotes(hash1)).to.be.equal(4);
+    expect(await slots.hasVoted(hash2, validators[0].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash2, validators[1].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash2, validators[2].address)).to.be.equal(true);
+    expect(await slots.numberOfVotes(hash2)).to.be.equal(3);
+    expect(await slots.hasVoted(hash3, validators[0].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash3, validators[1].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash3, validators[2].address)).to.be.equal(true);
+    expect(await slots.numberOfVotes(hash3)).to.be.equal(3);
 
-      await slots.connect(owner).pruneSlots(4, validatorsAddresses, 50);
+    await slots.connect(owner).pruneSlots(4, validatorsAddresses, 50);
 
-      expect((await slots.getClaimsHashes()).length).to.be.equal(2);
-      expect(await slots.hasVoted(hash0, validators[0].address)).to.be.equal(false);
-      expect(await slots.hasVoted(hash0, validators[1].address)).to.be.equal(false);
-      expect(await slots.hasVoted(hash0, validators[2].address)).to.be.equal(false);
-      expect(await slots.hasVoted(hash0, validators[3].address)).to.be.equal(false);
-      expect(await slots.numberOfVotes(hash0)).to.be.equal(0);
-      expect(await slots.hasVoted(hash1, validators[0].address)).to.be.equal(false);
-      expect(await slots.hasVoted(hash1, validators[1].address)).to.be.equal(false);
-      expect(await slots.hasVoted(hash1, validators[2].address)).to.be.equal(false);
-      expect(await slots.hasVoted(hash1, validators[3].address)).to.be.equal(false);
-      expect(await slots.numberOfVotes(hash1)).to.be.equal(0);
-      expect(await slots.hasVoted(hash2, validators[0].address)).to.be.equal(true);
-      expect(await slots.hasVoted(hash2, validators[1].address)).to.be.equal(true);
-      expect(await slots.hasVoted(hash2, validators[2].address)).to.be.equal(true);
-      expect(await slots.numberOfVotes(hash2)).to.be.equal(3);
-      expect(await slots.hasVoted(hash2, validators[0].address)).to.be.equal(true);
-      expect(await slots.hasVoted(hash2, validators[1].address)).to.be.equal(true);
-      expect(await slots.hasVoted(hash2, validators[2].address)).to.be.equal(true);
-      expect(await slots.numberOfVotes(hash3)).to.be.equal(3);
-    });
+    expect((await slots.getSlotsHashes()).length).to.be.equal(2);
+    expect(await slots.hasVoted(hash0, validators[0].address)).to.be.equal(false);
+    expect(await slots.hasVoted(hash0, validators[1].address)).to.be.equal(false);
+    expect(await slots.hasVoted(hash0, validators[2].address)).to.be.equal(false);
+    expect(await slots.hasVoted(hash0, validators[3].address)).to.be.equal(false);
+    expect(await slots.numberOfVotes(hash0)).to.be.equal(0);
+    expect(await slots.hasVoted(hash1, validators[0].address)).to.be.equal(false);
+    expect(await slots.hasVoted(hash1, validators[1].address)).to.be.equal(false);
+    expect(await slots.hasVoted(hash1, validators[2].address)).to.be.equal(false);
+    expect(await slots.hasVoted(hash1, validators[3].address)).to.be.equal(false);
+    expect(await slots.numberOfVotes(hash1)).to.be.equal(0);
+    expect(await slots.hasVoted(hash2, validators[0].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash2, validators[1].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash2, validators[2].address)).to.be.equal(true);
+    expect(await slots.numberOfVotes(hash2)).to.be.equal(3);
+    expect(await slots.hasVoted(hash2, validators[0].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash2, validators[1].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash2, validators[2].address)).to.be.equal(true);
+    expect(await slots.numberOfVotes(hash3)).to.be.equal(3);
+  });
+});
+describe("SignedBatches Pruning", function () {
+  it("Hash should be added to claimsHashes in SignedBatches when new signBatch is submitted", async function () {
+    const { bridge, owner, chain1, chain2, validators, signedBatch, validatorsCardanoData, validatorClaimsBRC } =
+      await loadFixture(deployBridgeFixture);
+
+    const encoded = ethers.solidityPacked(
+      ["uint64", "uint64", "uint64", "uint8", "bytes"],
+      [
+        signedBatch.id,
+        signedBatch.firstTxNonceId,
+        signedBatch.lastTxNonceId,
+        signedBatch.destinationChainId,
+        signedBatch.rawTransaction,
+      ]
+    );
+
+    const hash = ethers.keccak256(encoded);
+
+    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+    await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+
+    await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+    await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+    await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+    await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
+
+    // wait for next timeout
+    for (let i = 0; i < 3; i++) {
+      await ethers.provider.send("evm_mine");
+    }
+
+    await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+    // expect(signedBatch.)
+  });
+
+  it("Only NEW Hashes should be added to claimsHashes in Slots when new slot is submitted", async function () {
+    const { bridge, slots, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
+      deployBridgeFixture
+    );
+
+    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+
+    expect((await slots.getSlotsHashes()).length).to.equal(0);
+
+    await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
+
+    expect((await slots.getSlotsHashes()).length).to.equal(2);
+
+    await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
+
+    expect((await slots.getSlotsHashes()).length).to.equal(2);
+  });
+  it("Should revert if pruneSlots is not called by owner", async function () {
+    const { slots, validators } = await loadFixture(deployBridgeFixture);
+
+    const validatorsAddresses = [];
+    for (let i = 0; i < validators.length; i++) {
+      validatorsAddresses.push(validators[i].address);
+    }
+
+    await expect(slots.connect(validators[0]).pruneSlots(4, validatorsAddresses, 5)).to.be.revertedWithCustomError(
+      slots,
+      "OwnableUnauthorizedAccount"
+    );
+  });
+  it("Calling pruneSlots should NOT remove hash if quorum is NOT reached and ttl has NOT passed", async function () {
+    const { bridge, slots, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
+      deployBridgeFixture
+    );
+
+    let encoded = ethers.solidityPacked(
+      ["uint8", "bytes32", "uint256"],
+      [1, cardanoBlocks[0].blockHash, cardanoBlocks[0].blockSlot]
+    );
+
+    const hash0 = ethers.keccak256(encoded);
+
+    encoded = ethers.solidityPacked(
+      ["uint8", "bytes32", "uint256"],
+      [1, cardanoBlocks[1].blockHash, cardanoBlocks[1].blockSlot]
+    );
+
+    const hash1 = ethers.keccak256(encoded);
+
+    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+
+    expect((await slots.getSlotsHashes()).length).to.equal(0);
+
+    await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
+
+    expect((await slots.getSlotsHashes()).length).to.equal(2);
+
+    const validatorsAddresses = [];
+    for (let i = 0; i < validators.length; i++) {
+      validatorsAddresses.push(validators[i].address);
+    }
+
+    await slots.connect(owner).pruneSlots(4, validatorsAddresses, 5);
+
+    expect((await slots.getSlotsHashes()).length).to.equal(2);
+  });
+  it("Calling pruneSlots should remove hash if quorum is NOT reached and ttl has passed", async function () {
+    const { bridge, slots, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
+      deployBridgeFixture
+    );
+
+    let encoded = ethers.solidityPacked(
+      ["uint8", "bytes32", "uint256"],
+      [1, cardanoBlocks[0].blockHash, cardanoBlocks[0].blockSlot]
+    );
+
+    const hash0 = ethers.keccak256(encoded);
+
+    encoded = ethers.solidityPacked(
+      ["uint8", "bytes32", "uint256"],
+      [1, cardanoBlocks[1].blockHash, cardanoBlocks[1].blockSlot]
+    );
+
+    const hash1 = ethers.keccak256(encoded);
+
+    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+
+    expect((await slots.getSlotsHashes()).length).to.equal(0);
+
+    await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
+
+    expect((await slots.getSlotsHashes()).length).to.equal(2);
+
+    const validatorsAddresses = [];
+    for (let i = 0; i < validators.length; i++) {
+      validatorsAddresses.push(validators[i].address);
+    }
+
+    expect((await slots.getSlotsHashes()).length).to.equal(2);
+
+    for (let i = 0; i < 2; i++) {
+      await ethers.provider.send("evm_mine");
+    }
+
+    expect(await slots.hasVoted(hash0, validators[0].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash0, validators[1].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash0, validators[2].address)).to.be.equal(true);
+    expect(await slots.numberOfVotes(hash0)).to.be.equal(3);
+    expect(await slots.hasVoted(hash1, validators[0].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash1, validators[1].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash1, validators[2].address)).to.be.equal(true);
+    expect(await slots.numberOfVotes(hash1)).to.be.equal(3);
+
+    await slots.connect(owner).pruneSlots(4, validatorsAddresses, 5);
+
+    expect((await slots.getSlotsHashes()).length).to.be.equal(0);
+    expect(await slots.hasVoted(hash0, validators[0].address)).to.be.equal(false);
+    expect(await slots.hasVoted(hash0, validators[1].address)).to.be.equal(false);
+    expect(await slots.hasVoted(hash0, validators[2].address)).to.be.equal(false);
+    expect(await slots.numberOfVotes(hash0)).to.be.equal(0);
+    expect(await slots.hasVoted(hash1, validators[0].address)).to.be.equal(false);
+    expect(await slots.hasVoted(hash1, validators[1].address)).to.be.equal(false);
+    expect(await slots.hasVoted(hash1, validators[2].address)).to.be.equal(false);
+    expect(await slots.numberOfVotes(hash1)).to.be.equal(0);
+  });
+  it("Calling pruneSlots should remove hash if quorum is reached", async function () {
+    const { bridge, slots, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
+      deployBridgeFixture
+    );
+
+    let encoded = ethers.solidityPacked(
+      ["uint8", "bytes32", "uint256"],
+      [1, cardanoBlocks[0].blockHash, cardanoBlocks[0].blockSlot]
+    );
+
+    const hash0 = ethers.keccak256(encoded);
+
+    encoded = ethers.solidityPacked(
+      ["uint8", "bytes32", "uint256"],
+      [1, cardanoBlocks[1].blockHash, cardanoBlocks[1].blockSlot]
+    );
+
+    const hash1 = ethers.keccak256(encoded);
+
+    encoded = ethers.solidityPacked(["uint8", "bytes32", "uint256"], [1, cardanoBlocks[0].blockHash, 3]);
+
+    const hash2 = ethers.keccak256(encoded);
+
+    encoded = ethers.solidityPacked(["uint8", "bytes32", "uint256"], [1, cardanoBlocks[1].blockHash, 4]);
+
+    const hash3 = ethers.keccak256(encoded);
+
+    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+
+    expect((await slots.getSlotsHashes()).length).to.equal(0);
+
+    await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[3]).submitLastObservedBlocks(1, cardanoBlocks);
+
+    cardanoBlocks[0].blockSlot = 3;
+    cardanoBlocks[1].blockSlot = 4;
+
+    await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
+    await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
+
+    expect((await slots.getSlotsHashes()).length).to.equal(4);
+
+    const validatorsAddresses = [];
+    for (let i = 0; i < validators.length; i++) {
+      validatorsAddresses.push(validators[i].address);
+    }
+
+    expect(await slots.hasVoted(hash0, validators[0].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash0, validators[1].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash0, validators[2].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash0, validators[3].address)).to.be.equal(true);
+    expect(await slots.numberOfVotes(hash0)).to.be.equal(4);
+    expect(await slots.hasVoted(hash1, validators[0].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash1, validators[1].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash1, validators[2].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash1, validators[3].address)).to.be.equal(true);
+    expect(await slots.numberOfVotes(hash1)).to.be.equal(4);
+    expect(await slots.hasVoted(hash2, validators[0].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash2, validators[1].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash2, validators[2].address)).to.be.equal(true);
+    expect(await slots.numberOfVotes(hash2)).to.be.equal(3);
+    expect(await slots.hasVoted(hash3, validators[0].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash3, validators[1].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash3, validators[2].address)).to.be.equal(true);
+    expect(await slots.numberOfVotes(hash3)).to.be.equal(3);
+
+    await slots.connect(owner).pruneSlots(4, validatorsAddresses, 50);
+
+    expect((await slots.getSlotsHashes()).length).to.be.equal(2);
+    expect(await slots.hasVoted(hash0, validators[0].address)).to.be.equal(false);
+    expect(await slots.hasVoted(hash0, validators[1].address)).to.be.equal(false);
+    expect(await slots.hasVoted(hash0, validators[2].address)).to.be.equal(false);
+    expect(await slots.hasVoted(hash0, validators[3].address)).to.be.equal(false);
+    expect(await slots.numberOfVotes(hash0)).to.be.equal(0);
+    expect(await slots.hasVoted(hash1, validators[0].address)).to.be.equal(false);
+    expect(await slots.hasVoted(hash1, validators[1].address)).to.be.equal(false);
+    expect(await slots.hasVoted(hash1, validators[2].address)).to.be.equal(false);
+    expect(await slots.hasVoted(hash1, validators[3].address)).to.be.equal(false);
+    expect(await slots.numberOfVotes(hash1)).to.be.equal(0);
+    expect(await slots.hasVoted(hash2, validators[0].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash2, validators[1].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash2, validators[2].address)).to.be.equal(true);
+    expect(await slots.numberOfVotes(hash2)).to.be.equal(3);
+    expect(await slots.hasVoted(hash2, validators[0].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash2, validators[1].address)).to.be.equal(true);
+    expect(await slots.hasVoted(hash2, validators[2].address)).to.be.equal(true);
+    expect(await slots.numberOfVotes(hash3)).to.be.equal(3);
   });
 });

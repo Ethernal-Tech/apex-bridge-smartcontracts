@@ -29,6 +29,9 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     // BlockchainId -> ConfirmedBatch
     mapping(uint8 => ConfirmedBatch) private lastConfirmedBatch;
 
+    // claimHash for pruning
+    ClaimHash[] public signedBatchesHashes;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -74,6 +77,8 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             return;
         }
 
+        signedBatchesHashes.push(ClaimHash(_sbHash, block.number));
+
         uint256 _quorumCount = validators.getQuorumNumberOfValidators();
         uint256 _numberOfVotes = signatures[_sbHash].length;
         uint8 validatorIdx = validators.getValidatorIndex(_caller) - 1;
@@ -118,6 +123,30 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
 
     function getNumberOfSignatures(bytes32 _hash) external view returns (uint256, uint256) {
         return (signatures[_hash].length, feeSignatures[_hash].length);
+    }
+
+    function pruneSignedBatches(uint256 _quorumCount, address[] calldata _validators, uint256 _ttl) external onlyOwner {
+        uint256 i = 0;
+        while (i < signedBatchesHashes.length) {
+            bytes32 _hashValue = signedBatchesHashes[i].hashValue;
+            if (
+                signatures[_hashValue].length >= _quorumCount ||
+                block.number - signedBatchesHashes[i].blockNumber >= _ttl
+            ) {
+                for (uint256 j = 0; j < _validators.length; j++) {
+                    delete hasVoted[_hashValue][_validators[j]];
+                }
+                delete signatures[signedBatchesHashes[i].hashValue];
+                signedBatchesHashes[i] = signedBatchesHashes[signedBatchesHashes.length - 1];
+                signedBatchesHashes.pop();
+            } else {
+                i++;
+            }
+        }
+    }
+
+    function getSignedBatchesHashes() external view returns (ClaimHash[] memory) {
+        return signedBatchesHashes;
     }
 
     modifier onlyBridge() {

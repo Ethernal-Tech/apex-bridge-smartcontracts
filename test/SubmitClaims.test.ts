@@ -186,7 +186,6 @@ describe("Submit Claims", function () {
       const {
         bridge,
         claims,
-        claimsHelper,
         owner,
         chain1,
         chain2,

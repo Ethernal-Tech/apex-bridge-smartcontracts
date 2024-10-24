@@ -21,7 +21,7 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     mapping(bytes32 => mapping(address => bool)) public hasVoted;
 
     // claimHash for pruning
-    ClaimHash[] public claimsHashes;
+    ClaimHash[] public slotsHashes;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -58,7 +58,7 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
             hasVoted[_chash][_caller] = true;
 
             if (numberOfVotes[_chash] == 0) {
-                claimsHashes.push(ClaimHash(_chash, block.number));
+                slotsHashes.push(ClaimHash(_chash, block.number));
             }
 
             uint256 _votesNum;
@@ -77,23 +77,23 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
 
     function pruneSlots(uint256 _quorumCount, address[] calldata _validators, uint256 _ttl) external onlyOwner {
         uint256 i = 0;
-        while (i < claimsHashes.length) {
-            bytes32 _hashValue = claimsHashes[i].hashValue;
-            if (numberOfVotes[_hashValue] >= _quorumCount || block.number - claimsHashes[i].blockNumber >= _ttl) {
+        while (i < slotsHashes.length) {
+            bytes32 _hashValue = slotsHashes[i].hashValue;
+            if (numberOfVotes[_hashValue] >= _quorumCount || block.number - slotsHashes[i].blockNumber >= _ttl) {
                 for (uint256 j = 0; j < _validators.length; j++) {
                     delete hasVoted[_hashValue][_validators[j]];
                 }
-                delete numberOfVotes[claimsHashes[i].hashValue];
-                claimsHashes[i] = claimsHashes[claimsHashes.length - 1];
-                claimsHashes.pop();
+                delete numberOfVotes[slotsHashes[i].hashValue];
+                slotsHashes[i] = slotsHashes[slotsHashes.length - 1];
+                slotsHashes.pop();
             } else {
                 i++;
             }
         }
     }
 
-    function getClaimsHashes() external view returns (ClaimHash[] memory) {
-        return claimsHashes;
+    function getSlotsHashes() external view returns (ClaimHash[] memory) {
+        return slotsHashes;
     }
 
     modifier onlyBridge() {
