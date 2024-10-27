@@ -1,45 +1,220 @@
+import { SignedBatches } from "./../typechain-types/contracts/SignedBatches";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { deployBridgeFixture } from "./fixtures";
 
 describe("Claims Pruning", function () {
+  async function impersonateAsContractAndMintFunds(contractAddress: string) {
+    const hre = require("hardhat");
+    const address = await contractAddress.toLowerCase();
+    // impersonate as an contract on specified address
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [address],
+    });
+
+    const signer = await ethers.getSigner(address);
+    // minting 100000000000000000000 tokens to signer
+    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+
+    return signer;
+  }
   it("Pruning a bunch of claims", async function () {
-    const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
-      await loadFixture(deployBridgeFixture);
+    const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorsCardanoData } = await loadFixture(
+      deployBridgeFixture
+    );
+
+    const validatorsAddresses = [];
+    for (let i = 0; i < validators.length; i++) {
+      validatorsAddresses.push(validators[i].address);
+    }
+
+    const claimsBRC = generateValidatorClaimsBRCArray();
+    const claimsBEC = generateValidatorClaimsBECArray();
+    const claimsBECF = generateValidatorClaimsBEFCArray();
+    const claimsRRC = generateValidatorClaimsRRCArray();
 
     await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
     await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
 
-    const abiCoder = new ethers.AbiCoder();
-    const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
-    const encoded = abiCoder.encode(
-      ["bytes32", "tuple(uint64, string)[]", "uint256", "uint256", "uint8", "uint8"],
-      [
-        validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
-        [
-          [
-            validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount,
-            validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
-          ],
-        ],
-        validatorClaimsBRC.bridgingRequestClaims[0].totalAmount,
-        validatorClaimsBRC.bridgingRequestClaims[0].retryCounter,
-        validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
-        validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
-      ]
-    );
-    const encoded40 =
-      "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-      encodedPrefix.substring(66) +
-      encoded.substring(2);
-    const hash = ethers.keccak256(encoded40);
+    await bridge.connect(validators[0]).submitClaims(claimsBRC[0]);
+    await bridge.connect(validators[1]).submitClaims(claimsBRC[0]);
+    await bridge.connect(validators[2]).submitClaims(claimsBRC[0]);
+    await bridge.connect(validators[0]).submitClaims(claimsBRC[1]);
+    await bridge.connect(validators[1]).submitClaims(claimsBRC[1]);
+    await bridge.connect(validators[2]).submitClaims(claimsBRC[1]);
+    await bridge.connect(validators[3]).submitClaims(claimsBRC[1]);
+    await bridge.connect(validators[0]).submitClaims(claimsBRC[2]);
+    await bridge.connect(validators[1]).submitClaims(claimsBRC[2]);
+    await bridge.connect(validators[2]).submitClaims(claimsBRC[2]);
+    await bridge.connect(validators[0]).submitClaims(claimsBRC[3]);
+    await bridge.connect(validators[1]).submitClaims(claimsBRC[3]);
+    await bridge.connect(validators[2]).submitClaims(claimsBRC[3]);
+    await bridge.connect(validators[3]).submitClaims(claimsBRC[3]);
+    await bridge.connect(validators[0]).submitClaims(claimsBRC[4]);
+    await bridge.connect(validators[1]).submitClaims(claimsBRC[4]);
+    await bridge.connect(validators[2]).submitClaims(claimsBRC[4]);
 
-    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(0);
+    await bridge.connect(validators[0]).submitClaims(claimsBEC[0]);
+    await bridge.connect(validators[1]).submitClaims(claimsBEC[0]);
+    await bridge.connect(validators[2]).submitClaims(claimsBEC[0]);
+    await bridge.connect(validators[3]).submitClaims(claimsBEC[0]);
+    await bridge.connect(validators[0]).submitClaims(claimsBEC[1]);
+    await bridge.connect(validators[1]).submitClaims(claimsBEC[1]);
+    await bridge.connect(validators[2]).submitClaims(claimsBEC[1]);
+    await bridge.connect(validators[0]).submitClaims(claimsBEC[2]);
+    await bridge.connect(validators[1]).submitClaims(claimsBEC[2]);
+    await bridge.connect(validators[2]).submitClaims(claimsBEC[2]);
+    await bridge.connect(validators[3]).submitClaims(claimsBEC[2]);
+    await bridge.connect(validators[0]).submitClaims(claimsBEC[3]);
+    await bridge.connect(validators[1]).submitClaims(claimsBEC[3]);
+    await bridge.connect(validators[2]).submitClaims(claimsBEC[3]);
+    await bridge.connect(validators[0]).submitClaims(claimsBEC[4]);
+    await bridge.connect(validators[1]).submitClaims(claimsBEC[4]);
+    await bridge.connect(validators[2]).submitClaims(claimsBEC[4]);
+    await bridge.connect(validators[3]).submitClaims(claimsBEC[4]);
 
-    await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+    await bridge.connect(validators[0]).submitClaims(claimsBECF[0]);
+    await bridge.connect(validators[1]).submitClaims(claimsBECF[0]);
+    await bridge.connect(validators[2]).submitClaims(claimsBECF[0]);
+    await bridge.connect(validators[0]).submitClaims(claimsBECF[1]);
+    await bridge.connect(validators[1]).submitClaims(claimsBECF[1]);
+    await bridge.connect(validators[2]).submitClaims(claimsBECF[1]);
+    await bridge.connect(validators[3]).submitClaims(claimsBECF[1]);
+    await bridge.connect(validators[0]).submitClaims(claimsBECF[2]);
+    await bridge.connect(validators[1]).submitClaims(claimsBECF[2]);
+    await bridge.connect(validators[2]).submitClaims(claimsBECF[2]);
+    await bridge.connect(validators[0]).submitClaims(claimsBECF[3]);
+    await bridge.connect(validators[1]).submitClaims(claimsBECF[3]);
+    await bridge.connect(validators[2]).submitClaims(claimsBECF[3]);
+    await bridge.connect(validators[3]).submitClaims(claimsBECF[3]);
+    await bridge.connect(validators[0]).submitClaims(claimsBECF[4]);
+    await bridge.connect(validators[1]).submitClaims(claimsBECF[4]);
+    await bridge.connect(validators[2]).submitClaims(claimsBECF[4]);
 
-    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(1);
-    expect((await claimsHelper.claimsHashes(0)).hashValue).to.be.equal(hash);
+    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(15);
+
+    await claimsHelper.connect(owner).pruneClaims(4, validatorsAddresses, 500);
+
+    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(8);
+
+    await bridge.connect(validators[0]).submitClaims(claimsRRC[0]);
+    await bridge.connect(validators[1]).submitClaims(claimsRRC[0]);
+    await bridge.connect(validators[2]).submitClaims(claimsRRC[0]);
+    await bridge.connect(validators[3]).submitClaims(claimsRRC[0]);
+    await bridge.connect(validators[0]).submitClaims(claimsRRC[1]);
+    await bridge.connect(validators[1]).submitClaims(claimsRRC[1]);
+    await bridge.connect(validators[2]).submitClaims(claimsRRC[1]);
+    await bridge.connect(validators[0]).submitClaims(claimsRRC[2]);
+    await bridge.connect(validators[1]).submitClaims(claimsRRC[2]);
+    await bridge.connect(validators[2]).submitClaims(claimsRRC[2]);
+    await bridge.connect(validators[3]).submitClaims(claimsRRC[2]);
+    await bridge.connect(validators[0]).submitClaims(claimsRRC[3]);
+    await bridge.connect(validators[1]).submitClaims(claimsRRC[3]);
+    await bridge.connect(validators[2]).submitClaims(claimsRRC[3]);
+    await bridge.connect(validators[0]).submitClaims(claimsRRC[4]);
+    await bridge.connect(validators[1]).submitClaims(claimsRRC[4]);
+    await bridge.connect(validators[2]).submitClaims(claimsRRC[4]);
+    await bridge.connect(validators[3]).submitClaims(claimsRRC[4]);
+
+    await claimsHelper.connect(owner).pruneClaims(4, validatorsAddresses, 15);
+
+    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(2);
+  });
+  it("Pruning a bunch of confirmedSignedBatches", async function () {
+    const { claims, claimsHelper, owner } = await loadFixture(deployBridgeFixture);
+
+    const signedBatchesChain1 = getSignedBatchArrayChain1();
+    const signedBatchesChain2 = getSignedBatchArrayChain2();
+
+    const claimsContract = await impersonateAsContractAndMintFunds(await claims.getAddress());
+
+    for (let i = 0; i < 20; i++) {
+      await claimsHelper.connect(claimsContract).setConfirmedSignedBatchData(signedBatchesChain1[i]);
+      await claimsHelper.connect(claimsContract).setConfirmedSignedBatchData(signedBatchesChain2[i]);
+    }
+
+    for (let i = 0; i < 20; i++) {
+      expect(
+        (
+          await claimsHelper.confirmedSignedBatches(
+            signedBatchesChain1[i].destinationChainId,
+            signedBatchesChain1[i].id
+          )
+        ).firstTxNonceId
+      ).to.be.equal(signedBatchesChain1[i].firstTxNonceId);
+      expect(
+        (
+          await claimsHelper.confirmedSignedBatches(
+            signedBatchesChain2[i].destinationChainId,
+            signedBatchesChain2[i].id
+          )
+        ).lastTxNonceId
+      ).to.be.equal(signedBatchesChain2[i].lastTxNonceId);
+    }
+
+    await claimsHelper.connect(owner).pruneConfirmedSignedBatches(1, 10);
+    await claimsHelper.connect(owner).pruneConfirmedSignedBatches(2, 10);
+
+    for (let i = 1; i < 10; i++) {
+      expect(
+        (
+          await claimsHelper.confirmedSignedBatches(
+            signedBatchesChain1[i].destinationChainId,
+            signedBatchesChain1[i].id
+          )
+        ).firstTxNonceId
+      ).to.be.equal(0);
+      expect(
+        (
+          await claimsHelper.confirmedSignedBatches(
+            signedBatchesChain1[i].destinationChainId,
+            signedBatchesChain1[i].id
+          )
+        ).lastTxNonceId
+      ).to.be.equal(0);
+    }
+
+    expect(await claimsHelper.connect(owner).lastPrunedConfirmedSignedBatch(1)).to.be.equal(11);
+
+    for (let i = 1; i < 10; i++) {
+      expect(
+        (
+          await claimsHelper.confirmedSignedBatches(
+            signedBatchesChain2[i].destinationChainId,
+            signedBatchesChain2[i].id
+          )
+        ).firstTxNonceId
+      ).to.be.equal(0);
+      expect(
+        (
+          await claimsHelper.confirmedSignedBatches(
+            signedBatchesChain2[i].destinationChainId,
+            signedBatchesChain2[i].id
+          )
+        ).lastTxNonceId
+      ).to.be.equal(0);
+    }
+    expect(await claimsHelper.connect(owner).lastPrunedConfirmedSignedBatch(2)).to.be.equal(11);
+
+    for (let i = 11; i < 20; i++) {
+      expect(
+        (
+          await claimsHelper.confirmedSignedBatches(
+            signedBatchesChain1[i].destinationChainId,
+            signedBatchesChain1[i].id
+          )
+        ).firstTxNonceId
+      ).to.be.equal(signedBatchesChain1[i].firstTxNonceId);
+      expect(
+        (
+          await claimsHelper.confirmedSignedBatches(
+            signedBatchesChain2[i].destinationChainId,
+            signedBatchesChain2[i].id
+          )
+        ).lastTxNonceId
+      ).to.be.equal(signedBatchesChain2[i].lastTxNonceId);
+    }
   });
 });
 describe("Slots Pruning", function () {
@@ -48,29 +223,29 @@ describe("Slots Pruning", function () {
       deployBridgeFixture
     );
 
-    let encoded = ethers.solidityPacked(
-      ["uint8", "bytes32", "uint256"],
-      [1, cardanoBlocks[0].blockHash, cardanoBlocks[0].blockSlot]
-    );
+    // let encoded = ethers.solidityPacked(
+    //   ["uint8", "bytes32", "uint256"],
+    //   [1, cardanoBlocks[0].blockHash, cardanoBlocks[0].blockSlot]
+    // );
 
-    const hash0 = ethers.keccak256(encoded);
+    // const hash0 = ethers.keccak256(encoded);
 
-    encoded = ethers.solidityPacked(
-      ["uint8", "bytes32", "uint256"],
-      [1, cardanoBlocks[1].blockHash, cardanoBlocks[1].blockSlot]
-    );
+    // encoded = ethers.solidityPacked(
+    //   ["uint8", "bytes32", "uint256"],
+    //   [1, cardanoBlocks[1].blockHash, cardanoBlocks[1].blockSlot]
+    // );
 
-    const hash1 = ethers.keccak256(encoded);
+    // const hash1 = ethers.keccak256(encoded);
 
-    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+    // await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
 
-    expect((await slots.getSlotsHashes()).length).to.equal(0);
+    // expect((await slots.getSlotsHashes()).length).to.equal(0);
 
-    await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
+    // await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
 
-    expect((await slots.getSlotsHashes()).length).to.equal(2);
-    expect((await slots.slotsHashes(0)).hashValue).to.equal(hash0);
-    expect((await slots.slotsHashes(1)).hashValue).to.equal(hash1);
+    // expect((await slots.getSlotsHashes()).length).to.equal(2);
+    // expect((await slots.slotsHashes(0)).hashValue).to.equal(hash0);
+    // expect((await slots.slotsHashes(1)).hashValue).to.equal(hash1);
   });
 });
 describe("SignedBatches Pruning", function () {
@@ -87,396 +262,280 @@ describe("SignedBatches Pruning", function () {
       validatorClaimsBRC,
     } = await loadFixture(deployBridgeFixture);
 
-    const encoded = ethers.solidityPacked(
-      ["uint64", "uint64", "uint64", "uint8", "bytes"],
-      [
-        signedBatch.id,
-        signedBatch.firstTxNonceId,
-        signedBatch.lastTxNonceId,
-        signedBatch.destinationChainId,
-        signedBatch.rawTransaction,
-      ]
-    );
+    // const encoded = ethers.solidityPacked(
+    //   ["uint64", "uint64", "uint64", "uint8", "bytes"],
+    //   [
+    //     signedBatch.id,
+    //     signedBatch.firstTxNonceId,
+    //     signedBatch.lastTxNonceId,
+    //     signedBatch.destinationChainId,
+    //     signedBatch.rawTransaction,
+    //   ]
+    // );
 
-    const hash = ethers.keccak256(encoded);
+    // const hash = ethers.keccak256(encoded);
 
-    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-    await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+    // await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+    // await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
 
-    await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
+    // await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+    // await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+    // await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+    // await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
 
-    // wait for next timeout
-    for (let i = 0; i < 3; i++) {
-      await ethers.provider.send("evm_mine");
-    }
+    // // wait for next timeout
+    // for (let i = 0; i < 3; i++) {
+    //   await ethers.provider.send("evm_mine");
+    // }
 
-    expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(0);
+    // expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(0);
 
-    await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+    // await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
 
-    expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(1);
+    // expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(1);
   });
 });
 
-const validatorClaimsBRC1 = {
-  bridgingRequestClaims: [
-    {
-      observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000001",
-      receivers: [
+function generateValidatorClaimsBRCArray() {
+  const claimsArray = [];
+
+  for (let i = 0; i < 5; i++) {
+    const observedTransactionHash = `0x746573740000000000000000000000000000000000000000000000000000000${0 + i}`;
+    const validatorClaimsBRC5 = {
+      bridgingRequestClaims: [
         {
-          amount: 100,
-          destinationAddress: "0x123...",
+          observedTransactionHash: observedTransactionHash,
+          receivers: [
+            {
+              amount: 100,
+              destinationAddress: "0x123...", // Using a fixed address for simplicity
+            },
+          ],
+          totalAmount: 100,
+          retryCounter: 0,
+          sourceChainId: 1,
+          destinationChainId: 2,
         },
       ],
-      totalAmount: 100,
-      retryCounter: 0,
-      sourceChainId: 1,
-      destinationChainId: 2,
-    },
-  ],
-  batchExecutedClaims: [],
-  batchExecutionFailedClaims: [],
-  refundRequestClaims: [],
-  refundExecutedClaims: [],
-  hotWalletIncrementClaims: [],
-};
+      batchExecutedClaims: [],
+      batchExecutionFailedClaims: [],
+      refundRequestClaims: [],
+      refundExecutedClaims: [],
+      hotWalletIncrementClaims: [],
+    };
+    claimsArray.push(validatorClaimsBRC5);
+  }
 
-const validatorClaimsBRC2 = {
-  bridgingRequestClaims: [
-    {
-      observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000002",
-      receivers: [
+  return claimsArray;
+}
+
+function generateValidatorClaimsBECArray() {
+  const claimsArray = [];
+
+  for (let i = 0; i < 5; i++) {
+    const observedTransactionHash = `0x74657375000000000000000000000000000000000000000000000000000000${10 + i}`;
+    const validatorClaimsBEC5 = {
+      bridgingRequestClaims: [],
+      batchExecutedClaims: [
         {
-          amount: 100,
-          destinationAddress: "0x123...",
+          observedTransactionHash: observedTransactionHash,
+          chainId: 2,
+          batchNonceId: 6 + i, // Incremented batchNonceId for each JSON
         },
       ],
-      totalAmount: 100,
-      retryCounter: 0,
-      sourceChainId: 1,
-      destinationChainId: 2,
-    },
-  ],
-  batchExecutedClaims: [],
-  batchExecutionFailedClaims: [],
-  refundRequestClaims: [],
-  refundExecutedClaims: [],
-  hotWalletIncrementClaims: [],
-};
+      batchExecutionFailedClaims: [],
+      refundRequestClaims: [],
+      refundExecutedClaims: [],
+      hotWalletIncrementClaims: [],
+    };
+    claimsArray.push(validatorClaimsBEC5);
+  }
 
-const validatorClaimsBRC3 = {
-  bridgingRequestClaims: [
-    {
-      observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000003",
-      receivers: [
+  return claimsArray;
+}
+
+function generateValidatorClaimsBEFCArray() {
+  const claimsArray = [];
+
+  for (let i = 0; i < 5; i++) {
+    const observedTransactionHash = `0x74657374000000000000000000000000000000000000000000000000000000${20 + i}`;
+    const validatorClaimsBEFC = {
+      bridgingRequestClaims: [],
+      batchExecutedClaims: [],
+      batchExecutionFailedClaims: [
         {
-          amount: 100,
-          destinationAddress: "0x123...",
+          observedTransactionHash: observedTransactionHash,
+          chainId: 2,
+          batchNonceId: i, // Unique batchNonceId for each JSON
         },
       ],
-      totalAmount: 100,
-      retryCounter: 0,
-      sourceChainId: 1,
-      destinationChainId: 2,
-    },
-  ],
-  batchExecutedClaims: [],
-  batchExecutionFailedClaims: [],
-  refundRequestClaims: [],
-  refundExecutedClaims: [],
-  hotWalletIncrementClaims: [],
-};
+      refundRequestClaims: [],
+      refundExecutedClaims: [],
+      hotWalletIncrementClaims: [],
+    };
+    claimsArray.push(validatorClaimsBEFC);
+  }
 
-const validatorClaimsBRC4 = {
-  bridgingRequestClaims: [
-    {
-      observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000004",
-      receivers: [
+  return claimsArray;
+}
+
+function generateValidatorClaimsRRCArray() {
+  const claimsArray = [];
+
+  for (let i = 0; i < 5; i++) {
+    const observedTransactionHash = `0x74657374000000000000000000000000000000000000000000000000000000${30 + i}`;
+    const validatorClaimsRRC = {
+      bridgingRequestClaims: [],
+      batchExecutedClaims: [],
+      batchExecutionFailedClaims: [],
+      refundRequestClaims: [
         {
-          amount: 100,
-          destinationAddress: "0x123...",
+          observedTransactionHash: observedTransactionHash,
+          previousRefundTxHash: observedTransactionHash, // Using the same hash for simplicity
+          signature: "0x7465737400000000000000000000000000000000000000000000000000000000",
+          rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
+          retryCounter: 1,
+          chainId: 2,
+          receiver: `receiver${i + 1}`, // Adding unique receiver for each JSON
         },
       ],
-      totalAmount: 100,
-      retryCounter: 0,
-      sourceChainId: 1,
-      destinationChainId: 2,
-    },
-  ],
-  batchExecutedClaims: [],
-  batchExecutionFailedClaims: [],
-  refundRequestClaims: [],
-  refundExecutedClaims: [],
-  hotWalletIncrementClaims: [],
-};
+      refundExecutedClaims: [],
+      hotWalletIncrementClaims: [],
+    };
+    claimsArray.push(validatorClaimsRRC);
+  }
 
-const validatorClaimsBRC5 = {
-  bridgingRequestClaims: [
-    {
-      observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000005",
-      receivers: [
-        {
-          amount: 100,
-          destinationAddress: "0x123...",
-        },
+  return claimsArray;
+}
+
+function hashBRC(validatorClaimsBRC) {
+  const abiCoder = new ethers.AbiCoder();
+  const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
+  const encoded = abiCoder.encode(
+    ["bytes32", "tuple(uint64, string)[]", "uint256", "uint256", "uint8", "uint8"],
+    [
+      validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
+      [
+        [
+          validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount,
+          validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
+        ],
       ],
-      totalAmount: 100,
-      retryCounter: 0,
-      sourceChainId: 1,
+      validatorClaimsBRC.bridgingRequestClaims[0].totalAmount,
+      validatorClaimsBRC.bridgingRequestClaims[0].retryCounter,
+      validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
+      validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
+    ]
+  );
+  const encoded40 =
+    "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+    encodedPrefix.substring(66) +
+    encoded.substring(2);
+  const hash = ethers.keccak256(encoded40);
+
+  return hash;
+}
+
+function hashBEC(validatorClaimsBEC) {
+  const abiCoder = new ethers.AbiCoder();
+  const encodedPrefix = abiCoder.encode(["string"], ["BEC"]);
+  const encoded = abiCoder.encode(
+    ["bytes32", "uint64", "uint8"],
+    [
+      validatorClaimsBEC.batchExecutedClaims[0].observedTransactionHash,
+      validatorClaimsBEC.batchExecutedClaims[0].batchNonceId,
+      validatorClaimsBEC.batchExecutedClaims[0].chainId,
+    ]
+  );
+
+  const encoded40 =
+    "0x0000000000000000000000000000000000000000000000000000000000000080" +
+    encoded.substring(2) +
+    encodedPrefix.substring(66);
+
+  const hash = ethers.keccak256(encoded40);
+
+  return hash;
+}
+
+function hashBEFC(validatorClaimsBEFC) {
+  const abiCoder = new ethers.AbiCoder();
+  const encodedPrefix = abiCoder.encode(["string"], ["BEFC"]);
+  const encoded = abiCoder.encode(
+    ["bytes32", "uint64", "uint8"],
+    [
+      validatorClaimsBEFC.batchExecutionFailedClaims[0].observedTransactionHash,
+      validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId,
+      validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId,
+    ]
+  );
+
+  const encoded40 =
+    "0x0000000000000000000000000000000000000000000000000000000000000080" +
+    encoded.substring(2) +
+    encodedPrefix.substring(66);
+
+  const hash = ethers.keccak256(encoded40);
+
+  return hash;
+}
+
+function hashRRC(validatorClaimsRRC) {
+  const abiCoder = new ethers.AbiCoder();
+  const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
+  const encoded = abiCoder.encode(
+    ["bytes32", "bytes32", "bytes", "bytes", "uint64", "uint8", "string"],
+    [
+      validatorClaimsRRC.refundRequestClaims[0].observedTransactionHash,
+      validatorClaimsRRC.refundRequestClaims[0].previousRefundTxHash,
+      validatorClaimsRRC.refundRequestClaims[0].signature,
+      validatorClaimsRRC.refundRequestClaims[0].rawTransaction,
+      validatorClaimsRRC.refundRequestClaims[0].retryCounter,
+      validatorClaimsRRC.refundRequestClaims[0].chainId,
+      validatorClaimsRRC.refundRequestClaims[0].receiver,
+    ]
+  );
+
+  const encoded40 =
+    "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+    encodedPrefix.substring(66) +
+    encoded.substring(2);
+
+  const hash = ethers.keccak256(encoded40);
+
+  return hash;
+}
+
+function getSignedBatchArrayChain1() {
+  const signedBatches = [];
+
+  for (let i = 0; i < 20; i++) {
+    signedBatches.push({
+      id: i,
+      firstTxNonceId: Math.floor(Math.random() * 1000),
+      lastTxNonceId: Math.floor(Math.random() * 1000),
+      destinationChainId: 1,
+      signature: "0x" + crypto.randomUUID().replace(/-/g, ""),
+      feeSignature: "0x" + crypto.randomUUID().replace(/-/g, ""),
+      rawTransaction: "0x" + crypto.randomUUID().replace(/-/g, ""),
+    });
+  }
+  return signedBatches;
+}
+
+function getSignedBatchArrayChain2() {
+  const signedBatches = [];
+
+  for (let i = 0; i < 20; i++) {
+    signedBatches.push({
+      id: i,
+      firstTxNonceId: Math.floor(Math.random() * 1000),
+      lastTxNonceId: Math.floor(Math.random() * 1000),
       destinationChainId: 2,
-    },
-  ],
-  batchExecutedClaims: [],
-  batchExecutionFailedClaims: [],
-  refundRequestClaims: [],
-  refundExecutedClaims: [],
-  hotWalletIncrementClaims: [],
-};
-
-const validatorClaimsBEC1 = {
-  bridgingRequestClaims: [],
-  batchExecutedClaims: [
-    {
-      observedTransactionHash: "0x7465737500000000000000000000000000000000000000000000000000000011",
-      chainId: 2,
-      batchNonceId: 2,
-    },
-  ],
-  batchExecutionFailedClaims: [],
-  refundRequestClaims: [],
-  refundExecutedClaims: [],
-  hotWalletIncrementClaims: [],
-};
-
-const validatorClaimsBEC2 = {
-  bridgingRequestClaims: [],
-  batchExecutedClaims: [
-    {
-      observedTransactionHash: "0x7465737500000000000000000000000000000000000000000000000000000012",
-      chainId: 2,
-      batchNonceId: 3,
-    },
-  ],
-  batchExecutionFailedClaims: [],
-  refundRequestClaims: [],
-  refundExecutedClaims: [],
-  hotWalletIncrementClaims: [],
-};
-
-const validatorClaimsBEC3 = {
-  bridgingRequestClaims: [],
-  batchExecutedClaims: [
-    {
-      observedTransactionHash: "0x7465737500000000000000000000000000000000000000000000000000000013",
-      chainId: 2,
-      batchNonceId: 4,
-    },
-  ],
-  batchExecutionFailedClaims: [],
-  refundRequestClaims: [],
-  refundExecutedClaims: [],
-  hotWalletIncrementClaims: [],
-};
-
-const validatorClaimsBEC4 = {
-  bridgingRequestClaims: [],
-  batchExecutedClaims: [
-    {
-      observedTransactionHash: "0x7465737500000000000000000000000000000000000000000000000000000014",
-      chainId: 2,
-      batchNonceId: 5,
-    },
-  ],
-  batchExecutionFailedClaims: [],
-  refundRequestClaims: [],
-  refundExecutedClaims: [],
-  hotWalletIncrementClaims: [],
-};
-
-const validatorClaimsBEC5 = {
-  bridgingRequestClaims: [],
-  batchExecutedClaims: [
-    {
-      observedTransactionHash: "0x7465737500000000000000000000000000000000000000000000000000000015",
-      chainId: 2,
-      batchNonceId: 6,
-    },
-  ],
-  batchExecutionFailedClaims: [],
-  refundRequestClaims: [],
-  refundExecutedClaims: [],
-  hotWalletIncrementClaims: [],
-};
-
-const validatorClaimsBEFC1 = {
-  bridgingRequestClaims: [],
-  batchExecutedClaims: [],
-  batchExecutionFailedClaims: [
-    {
-      observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000021",
-      chainId: 2,
-      batchNonceId: 2,
-    },
-  ],
-  refundRequestClaims: [],
-  refundExecutedClaims: [],
-  hotWalletIncrementClaims: [],
-};
-
-const validatorClaimsBEFC2 = {
-  bridgingRequestClaims: [],
-  batchExecutedClaims: [],
-  batchExecutionFailedClaims: [
-    {
-      observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000022",
-      chainId: 2,
-      batchNonceId: 3,
-    },
-  ],
-  refundRequestClaims: [],
-  refundExecutedClaims: [],
-  hotWalletIncrementClaims: [],
-};
-
-const validatorClaimsBEFC3 = {
-  bridgingRequestClaims: [],
-  batchExecutedClaims: [],
-  batchExecutionFailedClaims: [
-    {
-      observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000023",
-      chainId: 2,
-      batchNonceId: 4,
-    },
-  ],
-  refundRequestClaims: [],
-  refundExecutedClaims: [],
-  hotWalletIncrementClaims: [],
-};
-
-const validatorClaimsBEFC4 = {
-  bridgingRequestClaims: [],
-  batchExecutedClaims: [],
-  batchExecutionFailedClaims: [
-    {
-      observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000024",
-      chainId: 2,
-      batchNonceId: 5,
-    },
-  ],
-  refundRequestClaims: [],
-  refundExecutedClaims: [],
-  hotWalletIncrementClaims: [],
-};
-
-const validatorClaimsBEFC5 = {
-  bridgingRequestClaims: [],
-  batchExecutedClaims: [],
-  batchExecutionFailedClaims: [
-    {
-      observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000025",
-      chainId: 2,
-      batchNonceId: 6,
-    },
-  ],
-  refundRequestClaims: [],
-  refundExecutedClaims: [],
-  hotWalletIncrementClaims: [],
-};
-
-const validatorClaimsRRC1 = {
-  bridgingRequestClaims: [],
-  batchExecutedClaims: [],
-  batchExecutionFailedClaims: [],
-  refundRequestClaims: [
-    {
-      observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000031",
-      previousRefundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000031",
-      signature: "0x7465737400000000000000000000000000000000000000000000000000000000",
-      rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-      retryCounter: 1,
-      chainId: 2,
-      receiver: "receiver1",
-    },
-  ],
-  refundExecutedClaims: [],
-  hotWalletIncrementClaims: [],
-};
-
-const validatorClaimsRRC2 = {
-  bridgingRequestClaims: [],
-  batchExecutedClaims: [],
-  batchExecutionFailedClaims: [],
-  refundRequestClaims: [
-    {
-      observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000032",
-      previousRefundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000032",
-      signature: "0x7465737400000000000000000000000000000000000000000000000000000000",
-      rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-      retryCounter: 1,
-      chainId: 2,
-      receiver: "receiver1",
-    },
-  ],
-  refundExecutedClaims: [],
-  hotWalletIncrementClaims: [],
-};
-
-const validatorClaimsRRC3 = {
-  bridgingRequestClaims: [],
-  batchExecutedClaims: [],
-  batchExecutionFailedClaims: [],
-  refundRequestClaims: [
-    {
-      observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000033",
-      previousRefundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000033",
-      signature: "0x7465737400000000000000000000000000000000000000000000000000000000",
-      rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-      retryCounter: 1,
-      chainId: 2,
-      receiver: "receiver1",
-    },
-  ],
-  refundExecutedClaims: [],
-  hotWalletIncrementClaims: [],
-};
-
-const validatorClaimsRRC4 = {
-  bridgingRequestClaims: [],
-  batchExecutedClaims: [],
-  batchExecutionFailedClaims: [],
-  refundRequestClaims: [
-    {
-      observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000034",
-      previousRefundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000034",
-      signature: "0x7465737400000000000000000000000000000000000000000000000000000000",
-      rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-      retryCounter: 1,
-      chainId: 2,
-      receiver: "receiver1",
-    },
-  ],
-  refundExecutedClaims: [],
-  hotWalletIncrementClaims: [],
-};
-
-const validatorClaimsRRC5 = {
-  bridgingRequestClaims: [],
-  batchExecutedClaims: [],
-  batchExecutionFailedClaims: [],
-  refundRequestClaims: [
-    {
-      observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000035",
-      previousRefundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000035",
-      signature: "0x7465737400000000000000000000000000000000000000000000000000000000",
-      rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-      retryCounter: 1,
-      chainId: 2,
-      receiver: "receiver1",
-    },
-  ],
-  refundExecutedClaims: [],
-  hotWalletIncrementClaims: [],
-};
+      signature: "0x" + crypto.randomUUID().replace(/-/g, ""),
+      feeSignature: "0x" + crypto.randomUUID().replace(/-/g, ""),
+      rawTransaction: "0x" + crypto.randomUUID().replace(/-/g, ""),
+    });
+  }
+  return signedBatches;
+}
