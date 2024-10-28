@@ -368,7 +368,7 @@ describe("ConfirmedSignedBatches Pruning", function () {
     await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
     await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-    expect(await claimsHelper.lastPrunedConfirmedSignedBatch(signedBatch.destinationChainId)).to.equal(0);
+    expect(await claimsHelper.nextUnprunedConfirmedSignedBatch(signedBatch.destinationChainId)).to.equal(0);
 
     expect((await claimsHelper.confirmedSignedBatches(2, 1)).firstTxNonceId).to.equal(1);
     expect((await claimsHelper.confirmedSignedBatches(2, 1)).lastTxNonceId).to.equal(1);
@@ -378,7 +378,7 @@ describe("ConfirmedSignedBatches Pruning", function () {
     expect((await claimsHelper.confirmedSignedBatches(2, 1)).firstTxNonceId).to.equal(0);
     expect((await claimsHelper.confirmedSignedBatches(2, 1)).lastTxNonceId).to.equal(0);
 
-    expect(await claimsHelper.lastPrunedConfirmedSignedBatch(signedBatch.destinationChainId)).to.equal(2);
+    expect(await claimsHelper.nextUnprunedConfirmedSignedBatch(signedBatch.destinationChainId)).to.equal(2);
   });
 });
 describe("Slots Pruning", function () {
@@ -958,7 +958,7 @@ describe("SignedBatches Pruning", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      expect(await claims.lastPrunedConfirmedTransaction(signedBatch.destinationChainId)).to.equal(0);
+      expect(await claims.nextUnprunedConfirmedTransaction(signedBatch.destinationChainId)).to.equal(0);
 
       expect((await claims.confirmedTransactions(2, 1)).blockHeight).to.be.equal(24);
       expect((await claims.confirmedTransactions(2, 1)).totalAmount).to.be.equal(100);
@@ -971,7 +971,7 @@ describe("SignedBatches Pruning", function () {
 
       await claims.connect(owner).pruneConfirmedTransactions(2, 1);
 
-      expect(await claims.lastPrunedConfirmedTransaction(signedBatch.destinationChainId)).to.equal(2);
+      expect(await claims.nextUnprunedConfirmedTransaction(signedBatch.destinationChainId)).to.equal(2);
       expect((await claims.confirmedTransactions(2, 1)).blockHeight).to.be.equal(0);
       expect((await claims.confirmedTransactions(2, 1)).totalAmount).to.be.equal(0);
       expect((await claims.confirmedTransactions(2, 1)).retryCounter).to.be.equal(0);

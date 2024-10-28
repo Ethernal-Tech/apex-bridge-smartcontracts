@@ -37,87 +37,43 @@ describe("Claims Pruning", function () {
     await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
     await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
 
-    await bridge.connect(validators[0]).submitClaims(claimsBRC[0]);
-    await bridge.connect(validators[1]).submitClaims(claimsBRC[0]);
-    await bridge.connect(validators[2]).submitClaims(claimsBRC[0]);
-    await bridge.connect(validators[0]).submitClaims(claimsBRC[1]);
-    await bridge.connect(validators[1]).submitClaims(claimsBRC[1]);
-    await bridge.connect(validators[2]).submitClaims(claimsBRC[1]);
-    await bridge.connect(validators[3]).submitClaims(claimsBRC[1]);
-    await bridge.connect(validators[0]).submitClaims(claimsBRC[2]);
-    await bridge.connect(validators[1]).submitClaims(claimsBRC[2]);
-    await bridge.connect(validators[2]).submitClaims(claimsBRC[2]);
-    await bridge.connect(validators[0]).submitClaims(claimsBRC[3]);
-    await bridge.connect(validators[1]).submitClaims(claimsBRC[3]);
-    await bridge.connect(validators[2]).submitClaims(claimsBRC[3]);
-    await bridge.connect(validators[3]).submitClaims(claimsBRC[3]);
-    await bridge.connect(validators[0]).submitClaims(claimsBRC[4]);
-    await bridge.connect(validators[1]).submitClaims(claimsBRC[4]);
-    await bridge.connect(validators[2]).submitClaims(claimsBRC[4]);
+    for (let i = 0; i < claimsBRC.length; i += 2) {
+      for (let j = 0; j < 4; j++) {
+        await bridge.connect(validators[j]).submitClaims(claimsBRC[i]);
+        await bridge.connect(validators[j]).submitClaims(claimsBEC[i]);
+        await bridge.connect(validators[j]).submitClaims(claimsBECF[i]);
+      }
+    }
 
-    await bridge.connect(validators[0]).submitClaims(claimsBEC[0]);
-    await bridge.connect(validators[1]).submitClaims(claimsBEC[0]);
-    await bridge.connect(validators[2]).submitClaims(claimsBEC[0]);
-    await bridge.connect(validators[3]).submitClaims(claimsBEC[0]);
-    await bridge.connect(validators[0]).submitClaims(claimsBEC[1]);
-    await bridge.connect(validators[1]).submitClaims(claimsBEC[1]);
-    await bridge.connect(validators[2]).submitClaims(claimsBEC[1]);
-    await bridge.connect(validators[0]).submitClaims(claimsBEC[2]);
-    await bridge.connect(validators[1]).submitClaims(claimsBEC[2]);
-    await bridge.connect(validators[2]).submitClaims(claimsBEC[2]);
-    await bridge.connect(validators[3]).submitClaims(claimsBEC[2]);
-    await bridge.connect(validators[0]).submitClaims(claimsBEC[3]);
-    await bridge.connect(validators[1]).submitClaims(claimsBEC[3]);
-    await bridge.connect(validators[2]).submitClaims(claimsBEC[3]);
-    await bridge.connect(validators[0]).submitClaims(claimsBEC[4]);
-    await bridge.connect(validators[1]).submitClaims(claimsBEC[4]);
-    await bridge.connect(validators[2]).submitClaims(claimsBEC[4]);
-    await bridge.connect(validators[3]).submitClaims(claimsBEC[4]);
-
-    await bridge.connect(validators[0]).submitClaims(claimsBECF[0]);
-    await bridge.connect(validators[1]).submitClaims(claimsBECF[0]);
-    await bridge.connect(validators[2]).submitClaims(claimsBECF[0]);
-    await bridge.connect(validators[0]).submitClaims(claimsBECF[1]);
-    await bridge.connect(validators[1]).submitClaims(claimsBECF[1]);
-    await bridge.connect(validators[2]).submitClaims(claimsBECF[1]);
-    await bridge.connect(validators[3]).submitClaims(claimsBECF[1]);
-    await bridge.connect(validators[0]).submitClaims(claimsBECF[2]);
-    await bridge.connect(validators[1]).submitClaims(claimsBECF[2]);
-    await bridge.connect(validators[2]).submitClaims(claimsBECF[2]);
-    await bridge.connect(validators[0]).submitClaims(claimsBECF[3]);
-    await bridge.connect(validators[1]).submitClaims(claimsBECF[3]);
-    await bridge.connect(validators[2]).submitClaims(claimsBECF[3]);
-    await bridge.connect(validators[3]).submitClaims(claimsBECF[3]);
-    await bridge.connect(validators[0]).submitClaims(claimsBECF[4]);
-    await bridge.connect(validators[1]).submitClaims(claimsBECF[4]);
-    await bridge.connect(validators[2]).submitClaims(claimsBECF[4]);
+    for (let i = 1; i < claimsBRC.length; i += 2) {
+      for (let j = 0; j < 3; j++) {
+        await bridge.connect(validators[j]).submitClaims(claimsBRC[i]);
+        await bridge.connect(validators[j]).submitClaims(claimsBEC[i]);
+        await bridge.connect(validators[j]).submitClaims(claimsBECF[i]);
+      }
+    }
 
     expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(15);
 
     await claimsHelper.connect(owner).pruneClaims(4, validatorsAddresses, 500);
 
-    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(8);
+    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(6);
 
-    await bridge.connect(validators[0]).submitClaims(claimsRRC[0]);
-    await bridge.connect(validators[1]).submitClaims(claimsRRC[0]);
-    await bridge.connect(validators[2]).submitClaims(claimsRRC[0]);
-    await bridge.connect(validators[3]).submitClaims(claimsRRC[0]);
-    await bridge.connect(validators[0]).submitClaims(claimsRRC[1]);
-    await bridge.connect(validators[1]).submitClaims(claimsRRC[1]);
-    await bridge.connect(validators[2]).submitClaims(claimsRRC[1]);
-    await bridge.connect(validators[0]).submitClaims(claimsRRC[2]);
-    await bridge.connect(validators[1]).submitClaims(claimsRRC[2]);
-    await bridge.connect(validators[2]).submitClaims(claimsRRC[2]);
-    await bridge.connect(validators[3]).submitClaims(claimsRRC[2]);
-    await bridge.connect(validators[0]).submitClaims(claimsRRC[3]);
-    await bridge.connect(validators[1]).submitClaims(claimsRRC[3]);
-    await bridge.connect(validators[2]).submitClaims(claimsRRC[3]);
-    await bridge.connect(validators[0]).submitClaims(claimsRRC[4]);
-    await bridge.connect(validators[1]).submitClaims(claimsRRC[4]);
-    await bridge.connect(validators[2]).submitClaims(claimsRRC[4]);
-    await bridge.connect(validators[3]).submitClaims(claimsRRC[4]);
+    for (let i = 0; i < claimsRRC.length; i += 2) {
+      for (let j = 0; j < 4; j++) {
+        await bridge.connect(validators[j]).submitClaims(claimsRRC[i]);
+      }
+    }
 
-    await claimsHelper.connect(owner).pruneClaims(4, validatorsAddresses, 15);
+    for (let i = 1; i < claimsRRC.length; i += 2) {
+      for (let j = 0; j < 4; j++) {
+        await bridge.connect(validators[j]).submitClaims(claimsRRC[i]);
+      }
+    }
+
+    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(11);
+
+    await claimsHelper.connect(owner).pruneClaims(4, validatorsAddresses, 30);
 
     expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(2);
   });
@@ -175,7 +131,7 @@ describe("Claims Pruning", function () {
       ).to.be.equal(0);
     }
 
-    expect(await claimsHelper.connect(owner).lastPrunedConfirmedSignedBatch(1)).to.be.equal(11);
+    expect(await claimsHelper.connect(owner).nextUnprunedConfirmedSignedBatch(1)).to.be.equal(11);
 
     for (let i = 1; i < 10; i++) {
       expect(
@@ -195,7 +151,7 @@ describe("Claims Pruning", function () {
         ).lastTxNonceId
       ).to.be.equal(0);
     }
-    expect(await claimsHelper.connect(owner).lastPrunedConfirmedSignedBatch(2)).to.be.equal(11);
+    expect(await claimsHelper.connect(owner).nextUnprunedConfirmedSignedBatch(2)).to.be.equal(11);
 
     for (let i = 11; i < 20; i++) {
       expect(
@@ -214,6 +170,79 @@ describe("Claims Pruning", function () {
           )
         ).lastTxNonceId
       ).to.be.equal(signedBatchesChain2[i].lastTxNonceId);
+    }
+  });
+});
+describe("ConfirmedTransactions Pruning", function () {
+  it("Pruning a bunch of confirmedTransactions", async function () {
+    const { bridge, claims, owner, validators, chain1, chain2, validatorsCardanoData } = await loadFixture(
+      deployBridgeFixture
+    );
+
+    await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
+    await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+
+    const claimsBRC = generateValidatorClaimsBRCArray();
+
+    for (let i = 0; i < claimsBRC.length; i++) {
+      for (let j = 0; j < 4; j++) {
+        await bridge.connect(validators[j]).submitClaims(claimsBRC[i]);
+      }
+    }
+
+    for (let i = 0; i < claimsBRC.length; i++) {
+      expect(
+        (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
+          .totalAmount
+      ).to.be.equal(claimsBRC[i].bridgingRequestClaims[0].totalAmount);
+      expect(
+        (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
+          .retryCounter
+      ).to.be.equal(claimsBRC[i].bridgingRequestClaims[0].retryCounter);
+      expect(
+        (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
+          .sourceChainId
+      ).to.be.equal(claimsBRC[i].bridgingRequestClaims[0].sourceChainId);
+    }
+
+    expect(
+      await claims.nextUnprunedConfirmedTransaction(claimsBRC[0].bridgingRequestClaims[0].destinationChainId)
+    ).to.be.equal(0);
+
+    await claims.connect(owner).pruneConfirmedTransactions(claimsBRC[0].bridgingRequestClaims[0].destinationChainId, 3);
+
+    expect(
+      await claims.nextUnprunedConfirmedTransaction(claimsBRC[0].bridgingRequestClaims[0].destinationChainId)
+    ).to.be.equal(4);
+
+    for (let i = 0; i < 3; i++) {
+      expect(
+        (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
+          .totalAmount
+      ).to.be.equal(0);
+      expect(
+        (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
+          .retryCounter
+      ).to.be.equal(0);
+      expect(
+        (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
+          .sourceChainId
+      ).to.be.equal(0);
+    }
+
+    for (let i = 3; i < 5; i++) {
+      expect(
+        (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
+          .totalAmount
+      ).to.be.equal(claimsBRC[i].bridgingRequestClaims[0].totalAmount);
+      expect(
+        (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
+          .retryCounter
+      ).to.be.equal(claimsBRC[i].bridgingRequestClaims[0].retryCounter);
+      expect(
+        (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
+          .sourceChainId
+      ).to.be.equal(claimsBRC[i].bridgingRequestClaims[0].sourceChainId);
     }
   });
 });
@@ -538,4 +567,46 @@ function getSignedBatchArrayChain2() {
     });
   }
   return signedBatches;
+}
+
+function getConfirmedTransactionsChain1() {
+  const confirmedTransactions = [];
+
+  for (let i = 0; i < 20; i++) {
+    confirmedTransactions.push({
+      totalAmount: 1,
+      retryCounter: Math.floor(Math.random() * 1000),
+      nonce: i,
+      sourceChainId: 1,
+      observedTransactionHash: "0x" + crypto.randomUUID().replace(/-/g, ""),
+      Receiver: [
+        {
+          amount: 1,
+          destinationAddress: "address",
+        },
+      ],
+    });
+  }
+  return confirmedTransactions;
+}
+
+function getConfirmedTransactionsChain2() {
+  const confirmedTransactions = [];
+
+  for (let i = 0; i < 20; i++) {
+    confirmedTransactions.push({
+      totalAmount: 1,
+      retryCounter: Math.floor(Math.random() * 1000),
+      nonce: i,
+      sourceChainId: 1,
+      observedTransactionHash: "0x" + crypto.randomUUID().replace(/-/g, ""),
+      Receiver: [
+        {
+          amount: 1,
+          destinationAddress: "address",
+        },
+      ],
+    });
+  }
+  return confirmedTransactions;
 }

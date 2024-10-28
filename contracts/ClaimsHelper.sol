@@ -24,7 +24,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
 
     // claimHash for pruning
     ClaimHash[] public claimsHashes;
-    mapping(uint8 => uint64) public lastPrunedConfirmedSignedBatch;
+    mapping(uint8 => uint64) public nextUnprunedConfirmedSignedBatch;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -107,12 +107,12 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     }
 
     function pruneConfirmedSignedBatches(uint8 _chainId, uint64 _batchId) external onlyOwner {
-        if (_batchId <= lastPrunedConfirmedSignedBatch[_chainId]) revert AlreadyPruned();
+        if (_batchId <= nextUnprunedConfirmedSignedBatch[_chainId]) revert AlreadyPruned();
 
-        for (uint64 i = lastPrunedConfirmedSignedBatch[_chainId]; i <= _batchId; i++) {
+        for (uint64 i = nextUnprunedConfirmedSignedBatch[_chainId]; i <= _batchId; i++) {
             delete confirmedSignedBatches[_chainId][i];
         }
-        lastPrunedConfirmedSignedBatch[_chainId] = _batchId + 1;
+        nextUnprunedConfirmedSignedBatch[_chainId] = _batchId + 1;
     }
 
     function getClaimsHashes() external view returns (ClaimHash[] memory) {
