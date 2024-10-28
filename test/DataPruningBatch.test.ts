@@ -1,24 +1,8 @@
-import { SignedBatches } from "./../typechain-types/contracts/SignedBatches";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { deployBridgeFixture } from "./fixtures";
 
 describe("Claims Pruning", function () {
-  async function impersonateAsContractAndMintFunds(contractAddress: string) {
-    const hre = require("hardhat");
-    const address = await contractAddress.toLowerCase();
-    // impersonate as an contract on specified address
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [address],
-    });
-
-    const signer = await ethers.getSigner(address);
-    // minting 100000000000000000000 tokens to signer
-    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
-
-    return signer;
-  }
   it("Pruning a bunch of claims", async function () {
     const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorsCardanoData } = await loadFixture(
       deployBridgeFixture
@@ -53,11 +37,11 @@ describe("Claims Pruning", function () {
       }
     }
 
-    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(15);
+    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(60);
 
     await claimsHelper.connect(owner).pruneClaims(4, validatorsAddresses, 500);
 
-    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(6);
+    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(30);
 
     for (let i = 0; i < claimsRRC.length; i += 2) {
       for (let j = 0; j < 4; j++) {
@@ -71,11 +55,11 @@ describe("Claims Pruning", function () {
       }
     }
 
-    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(11);
+    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(50);
 
-    await claimsHelper.connect(owner).pruneClaims(4, validatorsAddresses, 30);
+    await claimsHelper.connect(owner).pruneClaims(4, validatorsAddresses, 100);
 
-    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(2);
+    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(6);
   });
   it("Pruning a bunch of confirmedSignedBatches", async function () {
     const { claims, claimsHelper, owner } = await loadFixture(deployBridgeFixture);
@@ -248,88 +232,108 @@ describe("ConfirmedTransactions Pruning", function () {
 });
 describe("Slots Pruning", function () {
   it("Pruning bunch of slots", async function () {
-    const { bridge, slots, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
-      deployBridgeFixture
-    );
+    const { bridge, slots, owner, validators } = await loadFixture(deployBridgeFixture);
 
-    // let encoded = ethers.solidityPacked(
-    //   ["uint8", "bytes32", "uint256"],
-    //   [1, cardanoBlocks[0].blockHash, cardanoBlocks[0].blockSlot]
-    // );
+    const validatorsAddresses = [];
+    for (let i = 0; i < validators.length; i++) {
+      validatorsAddresses.push(validators[i].address);
+    }
 
-    // const hash0 = ethers.keccak256(encoded);
+    const cardanoBlocks1 = getCardanoBlockArray1();
+    const cardanoBlocks2 = getCardanoBlockArray2();
 
-    // encoded = ethers.solidityPacked(
-    //   ["uint8", "bytes32", "uint256"],
-    //   [1, cardanoBlocks[1].blockHash, cardanoBlocks[1].blockSlot]
-    // );
+    const bridgeContract = await impersonateAsContractAndMintFunds(await bridge.getAddress());
 
-    // const hash1 = ethers.keccak256(encoded);
+    expect(await slots.connect(owner).getSlotsHashes()).to.be.empty;
 
-    // await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+    for (let i = 0; i < 4; i++) {
+      await slots.connect(bridgeContract).updateBlocks(1, cardanoBlocks1, validators[i]);
+    }
 
-    // expect((await slots.getSlotsHashes()).length).to.equal(0);
+    expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(20);
 
-    // await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
+    await slots.connect(owner).pruneSlots(4, validatorsAddresses, 500);
 
-    // expect((await slots.getSlotsHashes()).length).to.equal(2);
-    // expect((await slots.slotsHashes(0)).hashValue).to.equal(hash0);
-    // expect((await slots.slotsHashes(1)).hashValue).to.equal(hash1);
+    expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(0);
+
+    for (let i = 0; i < 3; i++) {
+      await slots.connect(bridgeContract).updateBlocks(2, cardanoBlocks2, validators[i]);
+    }
+
+    expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(20);
+
+    await slots.connect(owner).pruneSlots(4, validatorsAddresses, 3);
+
+    expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(0);
   });
 });
 describe("SignedBatches Pruning", function () {
   it("Pruning a bunch of SignedBatches", async function () {
-    const {
-      bridge,
-      signedBatches,
-      owner,
-      chain1,
-      chain2,
-      validators,
-      signedBatch,
-      validatorsCardanoData,
-      validatorClaimsBRC,
-    } = await loadFixture(deployBridgeFixture);
+    const { bridge, signedBatches, owner, chain1, chain2, validators, validatorsCardanoData, validatorClaimsBRC } =
+      await loadFixture(deployBridgeFixture);
 
-    // const encoded = ethers.solidityPacked(
-    //   ["uint64", "uint64", "uint64", "uint8", "bytes"],
-    //   [
-    //     signedBatch.id,
-    //     signedBatch.firstTxNonceId,
-    //     signedBatch.lastTxNonceId,
-    //     signedBatch.destinationChainId,
-    //     signedBatch.rawTransaction,
-    //   ]
-    // );
+    const signedBatchesArray1 = getSignedBatches1();
+    const signedBatchesArray2 = getSignedBatches2();
 
-    // const hash = ethers.keccak256(encoded);
+    const validatorsAddresses = [];
+    for (let i = 0; i < validators.length; i++) {
+      validatorsAddresses.push(validators[i].address);
+    }
 
-    // await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-    // await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+    const bridgeContract = await impersonateAsContractAndMintFunds(await bridge.getAddress());
 
-    // await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-    // await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-    // await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-    // await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
+    expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(0);
 
-    // // wait for next timeout
-    // for (let i = 0; i < 3; i++) {
-    //   await ethers.provider.send("evm_mine");
-    // }
+    for (let i = 0; i < 20; i++) {
+      for (let j = 0; j < 4; j++) {
+        await signedBatches.connect(bridgeContract).submitSignedBatch(signedBatchesArray1[i], validators[j]);
+      }
+    }
 
-    // expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(0);
+    expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(20);
 
-    // await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+    await signedBatches.connect(owner).pruneSignedBatches(4, validatorsAddresses, 500);
 
-    // expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(1);
+    expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(0);
+
+    for (let i = 0; i < 20; i++) {
+      for (let j = 0; j < 3; j++) {
+        await signedBatches.connect(bridgeContract).submitSignedBatch(signedBatchesArray2[i], validators[j]);
+      }
+    }
+
+    expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(20);
+
+    await signedBatches.connect(owner).pruneSignedBatches(4, validatorsAddresses, 31);
+
+    expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(10);
   });
 });
+
+async function impersonateAsContractAndMintFunds(contractAddress: string) {
+  const hre = require("hardhat");
+  const address = await contractAddress.toLowerCase();
+  // impersonate as an contract on specified address
+  await hre.network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [address],
+  });
+
+  const signer = await ethers.getSigner(address);
+  // minting 100000000000000000000 tokens to signer
+  await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+
+  return signer;
+}
 
 function generateValidatorClaimsBRCArray() {
   const claimsArray = [];
 
-  for (let i = 0; i < 5; i++) {
-    const observedTransactionHash = `0x746573740000000000000000000000000000000000000000000000000000000${0 + i}`;
+  for (let i = 0; i < 20; i++) {
+    // const observedTransactionHash = `0x746573740000000000000000000000000000000000000000000000000000000${0 + i}`;
+    const observedTransactionHash = `0x74657374000000000000000000000000000000000000000000000000000000${i
+      .toString()
+      .padStart(2, "0")}`;
     const validatorClaimsBRC5 = {
       bridgingRequestClaims: [
         {
@@ -361,8 +365,10 @@ function generateValidatorClaimsBRCArray() {
 function generateValidatorClaimsBECArray() {
   const claimsArray = [];
 
-  for (let i = 0; i < 5; i++) {
-    const observedTransactionHash = `0x74657375000000000000000000000000000000000000000000000000000000${10 + i}`;
+  for (let i = 0; i < 20; i++) {
+    const observedTransactionHash = `0x74657375000000000000000000000000000000000000000000000000000000${i
+      .toString()
+      .padStart(2, "0")}`;
     const validatorClaimsBEC5 = {
       bridgingRequestClaims: [],
       batchExecutedClaims: [
@@ -386,8 +392,10 @@ function generateValidatorClaimsBECArray() {
 function generateValidatorClaimsBEFCArray() {
   const claimsArray = [];
 
-  for (let i = 0; i < 5; i++) {
-    const observedTransactionHash = `0x74657374000000000000000000000000000000000000000000000000000000${20 + i}`;
+  for (let i = 0; i < 20; i++) {
+    const observedTransactionHash = `0x74657376000000000000000000000000000000000000000000000000000000${i
+      .toString()
+      .padStart(2, "0")}`;
     const validatorClaimsBEFC = {
       bridgingRequestClaims: [],
       batchExecutedClaims: [],
@@ -411,8 +419,10 @@ function generateValidatorClaimsBEFCArray() {
 function generateValidatorClaimsRRCArray() {
   const claimsArray = [];
 
-  for (let i = 0; i < 5; i++) {
-    const observedTransactionHash = `0x74657374000000000000000000000000000000000000000000000000000000${30 + i}`;
+  for (let i = 0; i < 20; i++) {
+    const observedTransactionHash = `0x74657377000000000000000000000000000000000000000000000000000000${i
+      .toString()
+      .padStart(2, "0")}`;
     const validatorClaimsRRC = {
       bridgingRequestClaims: [],
       batchExecutedClaims: [],
@@ -569,44 +579,101 @@ function getSignedBatchArrayChain2() {
   return signedBatches;
 }
 
-function getConfirmedTransactionsChain1() {
-  const confirmedTransactions = [];
+function getCardanoBlockArray1() {
+  const cardanoBlocks = [];
 
-  for (let i = 0; i < 20; i++) {
-    confirmedTransactions.push({
-      totalAmount: 1,
-      retryCounter: Math.floor(Math.random() * 1000),
-      nonce: i,
-      sourceChainId: 1,
-      observedTransactionHash: "0x" + crypto.randomUUID().replace(/-/g, ""),
-      Receiver: [
-        {
-          amount: 1,
-          destinationAddress: "address",
-        },
-      ],
+  for (let i = 1; i < 21; i++) {
+    let blockHashTemp = `0x74657377000000000000000000000000000000000000000000000000000000${i
+      .toString()
+      .padStart(2, "0")}`;
+    cardanoBlocks.push({
+      blockSlot: i,
+      blockHash: blockHashTemp,
     });
   }
-  return confirmedTransactions;
+  return cardanoBlocks;
 }
 
-function getConfirmedTransactionsChain2() {
-  const confirmedTransactions = [];
+function getCardanoBlockArray2() {
+  const cardanoBlocks = [];
 
-  for (let i = 0; i < 20; i++) {
-    confirmedTransactions.push({
-      totalAmount: 1,
-      retryCounter: Math.floor(Math.random() * 1000),
-      nonce: i,
-      sourceChainId: 1,
-      observedTransactionHash: "0x" + crypto.randomUUID().replace(/-/g, ""),
-      Receiver: [
-        {
-          amount: 1,
-          destinationAddress: "address",
-        },
-      ],
+  for (let i = 21; i < 41; i++) {
+    let blockHashTemp = `0x74657377000000000000000000000000000000000000000000000000000000${i
+      .toString()
+      .padStart(2, "0")}`;
+
+    cardanoBlocks.push({
+      blockSlot: i,
+      blockHash: blockHashTemp,
     });
   }
-  return confirmedTransactions;
+  return cardanoBlocks;
+}
+
+const signedBatch = {
+  id: 1,
+  destinationChainId: 2,
+  rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
+  signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
+  feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
+  firstTxNonceId: 1,
+  lastTxNonceId: 1,
+};
+
+function getSignedBatches1() {
+  const signedBatches = [];
+
+  for (let i = 1; i < 21; i++) {
+    let rawTransactionTemp = `0x74657377000000000000000000000000000000000000000000000000000000${i
+      .toString()
+      .padStart(2, "0")}`;
+
+    let signatureTemp = `0x74657378000000000000000000000000000000000000000000000000000000${i
+      .toString()
+      .padStart(2, "0")}`;
+
+    let feeSignatureTemp = `0x74657379000000000000000000000000000000000000000000000000000000${i
+      .toString()
+      .padStart(2, "0")}`;
+
+    signedBatches.push({
+      id: i,
+      destinationChainId: 2,
+      rawTransaction: rawTransactionTemp,
+      signature: signatureTemp,
+      feeSignature: feeSignatureTemp,
+      firstTxNonceId: i,
+      lastTxNonceId: i,
+    });
+  }
+  return signedBatches;
+}
+
+function getSignedBatches2() {
+  const signedBatches = [];
+
+  for (let i = 21; i < 41; i++) {
+    let rawTransactionTemp = `0x74657377000000000000000000000000000000000000000000000000000000${i
+      .toString()
+      .padStart(2, "0")}`;
+
+    let signatureTemp = `0x74657378000000000000000000000000000000000000000000000000000000${i
+      .toString()
+      .padStart(2, "0")}`;
+
+    let feeSignatureTemp = `0x74657379000000000000000000000000000000000000000000000000000000${i
+      .toString()
+      .padStart(2, "0")}`;
+
+    signedBatches.push({
+      id: 21,
+      destinationChainId: 2,
+      rawTransaction: rawTransactionTemp,
+      signature: signatureTemp,
+      feeSignature: feeSignatureTemp,
+      firstTxNonceId: i,
+      lastTxNonceId: i,
+    });
+  }
+  return signedBatches;
 }
