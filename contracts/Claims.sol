@@ -140,8 +140,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         if (_quorumReached) {
             uint8 destinationChainId = _claim.destinationChainId;
 
-            chainTokenQuantity[destinationChainId] -= receiversSum;
             chainTokenQuantity[_claim.sourceChainId] += receiversSum;
+            chainTokenQuantity[destinationChainId] -= receiversSum;
 
             uint256 _confirmedTxCount = getBatchingTxsCount(destinationChainId);
 
@@ -208,7 +208,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             claimsHelper.resetCurrentBatchBlock(chainId);
 
             for (uint64 i = _firstTxNounce; i <= _lastTxNounce; i++) {
-                chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
+                if (chainId != confirmedTransactions[chainId][i].sourceChainId) {
+                    chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
+                }
             }
 
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
