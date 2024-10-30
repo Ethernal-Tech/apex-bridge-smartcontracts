@@ -45,7 +45,6 @@ interface IBridgeStructs {
         BatchExecutedClaim[] batchExecutedClaims;
         BatchExecutionFailedClaim[] batchExecutionFailedClaims;
         RefundRequestClaim[] refundRequestClaims;
-        RefundExecutedClaim[] refundExecutedClaims;
         HotWalletIncrementClaim[] hotWalletIncrementClaims;
     }
 
@@ -84,12 +83,6 @@ interface IBridgeStructs {
         // chain id where the refund tx will be executed
         uint8 chainId;
         Receiver receiver;
-    }
-
-    struct HotWalletIncrementClaim {
-        uint8 chainId;
-        uint256 amount;
-        bool isIncrement;
     }
 
     struct HotWalletIncrementClaim {
