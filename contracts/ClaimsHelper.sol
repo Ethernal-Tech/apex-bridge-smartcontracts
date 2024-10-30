@@ -27,8 +27,8 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         _disableInitializers();
     }
 
-    function initialize() public initializer {
-        __Ownable_init(msg.sender);
+    function initialize(address _owner) public initializer {
+        __Ownable_init(_owner);
         __UUPSUpgradeable_init();
     }
 
@@ -52,9 +52,9 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
 
     function setConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
         uint8 destinationChainId = _signedBatch.destinationChainId;
-        uint64 signedBatchID = _signedBatch.id;
+        uint64 signedBatchId = _signedBatch.id;
 
-        confirmedSignedBatches[destinationChainId][signedBatchID] = ConfirmedSignedBatchData(
+        confirmedSignedBatches[destinationChainId][signedBatchId] = ConfirmedSignedBatchData(
             _signedBatch.firstTxNonceId,
             _signedBatch.lastTxNonceId
         );

@@ -16,6 +16,13 @@ abstract contract IBridge is IBridgeStructs {
     // Slots
     function submitLastObservedBlocks(uint8 chainId, CardanoBlock[] calldata blocks) external virtual;
 
+    // set additional chain data (sc address for nexus)
+    function setChainAdditionalData(
+        uint8 _chainId,
+        string calldata addressMultisig,
+        string calldata addressFeePayer
+    ) external virtual;
+
     // Chain registration through some kind of governance
     function registerChain(
         Chain calldata _chain,
@@ -24,9 +31,10 @@ abstract contract IBridge is IBridgeStructs {
     ) external virtual;
 
     function registerChainGovernance(
-        Chain calldata _chain,
+        uint8 _chainId,
+        uint8 _chainType,
         uint256 _tokenQuantity,
-        ValidatorChainData calldata _validatorData
+        ValidatorChainData calldata _validatorChainData
     ) external virtual;
 
     // Queries

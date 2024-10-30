@@ -18,7 +18,7 @@ describe("Performance", function () {
       // fourth one is quorum
       const tx = await bridge
         .connect(validators[i])
-        .registerChainGovernance(chain1, 100, validatorsCardanoData[0].data);
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
       const receipt = await tx.wait();
       console.log(`Gas spent on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
     }
