@@ -61,6 +61,7 @@ describe("Claims Contract", function () {
         encodedPrefix.substring(66) +
         encoded.substring(2);
       const hash = ethers.keccak256(encoded40);
+
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -336,8 +337,8 @@ describe("Claims Contract", function () {
           validatorClaimsRRC.refundRequestClaims[0].rawTransaction,
           validatorClaimsRRC.refundRequestClaims[0].chainId,
           [
-            validatorClaimsRRC.refundRequestClaims[0].receiver.amount,
-            validatorClaimsRRC.refundRequestClaims[0].receiver.destinationAddress,
+            validatorClaimsRRC.refundRequestClaims[0].receivers[0].amount,
+            validatorClaimsRRC.refundRequestClaims[0].receivers[0].destinationAddress,
           ],
         ]
       );
@@ -370,14 +371,17 @@ describe("Claims Contract", function () {
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
       const encoded = abiCoder.encode(
-        ["bytes32", "bytes", "uint8", "tuple(uint256, string)"],
+        ["bytes32", "bytes", "uint256", "uint8", "tuple(uint64, string)[]"],
         [
           validatorClaimsRRC.refundRequestClaims[0].observedTransactionHash,
           validatorClaimsRRC.refundRequestClaims[0].rawTransaction,
+          validatorClaimsRRC.refundRequestClaims[0].retryCounter,
           validatorClaimsRRC.refundRequestClaims[0].chainId,
           [
-            validatorClaimsRRC.refundRequestClaims[0].receiver.amount,
-            validatorClaimsRRC.refundRequestClaims[0].receiver.destinationAddress,
+            [
+              validatorClaimsRRC.refundRequestClaims[0].receivers[0].amount,
+              validatorClaimsRRC.refundRequestClaims[0].receivers[0].destinationAddress,
+            ],
           ],
         ]
       );

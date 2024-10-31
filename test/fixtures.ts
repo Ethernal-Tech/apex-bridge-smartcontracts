@@ -260,12 +260,15 @@ export async function deployBridgeFixture() {
     refundRequestClaims: [
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        retryCounter: 0,
         rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
         chainId: 2,
-        receiver: {
-          destinationAddress: "0x123...11111111",
-          amount: 100,
-        },
+        receivers: [
+          {
+            destinationAddress: "0x123...11111111",
+            amount: 100,
+          },
+        ],
       },
     ],
     refundExecutedClaims: [],

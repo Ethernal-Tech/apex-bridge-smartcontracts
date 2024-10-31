@@ -668,14 +668,17 @@ describe("Submit Claims", function () {
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
       const encoded = abiCoder.encode(
-        ["bytes32", "bytes", "uint8", "tuple(uint256, string)"],
+        ["bytes32", "bytes", "uint256", "uint8", "tuple(uint64, string)[]"],
         [
           validatorClaimsRRC.refundRequestClaims[0].observedTransactionHash,
           validatorClaimsRRC.refundRequestClaims[0].rawTransaction,
+          validatorClaimsRRC.refundRequestClaims[0].retryCounter,
           validatorClaimsRRC.refundRequestClaims[0].chainId,
           [
-            validatorClaimsRRC.refundRequestClaims[0].receiver.amount,
-            validatorClaimsRRC.refundRequestClaims[0].receiver.destinationAddress,
+            [
+              validatorClaimsRRC.refundRequestClaims[0].receivers[0].amount,
+              validatorClaimsRRC.refundRequestClaims[0].receivers[0].destinationAddress,
+            ],
           ],
         ]
       );
@@ -747,7 +750,7 @@ describe("Submit Claims", function () {
       );
       expect((await claims.confirmedTransactions(destinationChainId, nounce)).nonce).to.equal(nounce);
       expect((await claims.confirmedTransactions(destinationChainId, nounce)).totalAmount).to.equal(
-        validatorClaimsRRC.refundRequestClaims[0].receiver.amount
+        validatorClaimsRRC.refundRequestClaims[0].receivers[0].amount
       );
       expect((await claims.confirmedTransactions(destinationChainId, nounce)).blockHeight).to.equal(
         await ethers.provider.getBlockNumber()
