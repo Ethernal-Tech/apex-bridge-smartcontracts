@@ -310,6 +310,206 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
+    it("Should emit BatchExecutionInfo when Batch Execution Failed Claim is submitted", async function () {
+      const { bridge, claims, owner, validators, chain2, validatorsCardanoData, validatorClaimsBEFC } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+
+      expect(await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC)).to.emit(
+        claims,
+        "BatchExecutionInfo"
+      );
+    });
+    it("Should resetCurrentBatchBlock when Batch Execution Failed Claim is confirmed", async function () {
+      const {
+        bridge,
+        claimsHelper,
+        owner,
+        validators,
+        chain1,
+        chain2,
+        signedBatch,
+        validatorsCardanoData,
+        validatorClaimsBRC,
+        validatorClaimsBEFC,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      for (let i = 0; i < 3; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      expect(
+        await claimsHelper.currentBatchBlock(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId)
+      ).not.to.be.equal(-1);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
+
+      expect(
+        await claimsHelper.currentBatchBlock(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId)
+      ).to.be.equal(-1);
+    });
+    it("Should reset nextTimeoutBlock when Batch Execution Failed Claim is confirmed", async function () {
+      const {
+        bridge,
+        claims,
+        owner,
+        validators,
+        chain1,
+        chain2,
+        signedBatch,
+        validatorsCardanoData,
+        validatorClaimsBRC,
+        validatorClaimsBEFC,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      for (let i = 0; i < 3; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      expect(await claims.nextTimeoutBlock(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId)).to.be.equal(25);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
+
+      expect(await claims.nextTimeoutBlock(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId)).not.to.be.equal(
+        25
+      );
+    });
+    it("Should increase chainTokenQuantity for destination chain when Batch Execution Failed Claim is confirmed", async function () {
+      const {
+        bridge,
+        claims,
+        owner,
+        validators,
+        chain1,
+        chain2,
+        signedBatch,
+        validatorsCardanoData,
+        validatorClaimsBRC,
+        validatorClaimsBEFC,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      for (let i = 0; i < 3; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId)).to.be.equal(
+        900
+      );
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId)).to.be.equal(
+        1000
+      );
+    });
+    it("Refund request Claims' confirmed transactions should not increase chainTokenQuantity for destination chain when Batch Execution Failed Claim is confirmed", async function () {
+      const {
+        bridge,
+        claims,
+        claimsHelper,
+        owner,
+        validators,
+        chain1,
+        chain2,
+        signedBatch,
+        validatorsCardanoData,
+        validatorClaimsBRC,
+        validatorClaimsRRC,
+        validatorClaimsBEFC,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      expect(await claims.lastConfirmedTxNonce(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId)).to.be.equal(
+        1
+      );
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
+
+      expect(await claims.lastConfirmedTxNonce(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId)).to.be.equal(
+        2
+      );
+
+      for (let i = 0; i < 3; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId)).to.be.equal(
+        900
+      );
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId)).to.be.equal(
+        1000
+      );
+    });
   });
 
   describe("Submit new Refund Request Claims", function () {
