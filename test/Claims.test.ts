@@ -501,5 +501,13 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
+
+    it("Defund", async function () {
+      const { bridge, claims, claimsHelper, owner, validators, chain2, validatorClaimsREC, validatorsCardanoData } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      await claims.defund(1, 10);
+    });
   });
 });

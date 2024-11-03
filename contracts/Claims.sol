@@ -14,6 +14,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     ClaimsHelper private claimsHelper;
     Validators private validators;
 
+    address public defundAdmin;
+    //chain -> address to defund to
+    mapping(uint8 => string) public defundAddress;
+    //keccak256)abi.encode(Packed"Defund")
+    bytes32 private constant defundHash = 0xc74d0d70be942fd68984df57687b9f453f1321726e8db77762dee952a5c85b24;
+
     // BlockchainId -> bool
     mapping(uint8 => bool) public isChainRegistered;
 
@@ -142,18 +148,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             chainTokenQuantity[sourceChainID] -= receiversSum;
 
-            uint256 _confirmedTxCount = getBatchingTxsCount(destinationChainID);
-
             _setConfirmedTransactions(_claim);
 
-            if (
-                (claimsHelper.currentBatchBlock(destinationChainID) == -1) && // there is no batch in progress
-                (_confirmedTxCount == 0) && // check if there is no other confirmed transactions
-                (block.number >= nextTimeoutBlock[destinationChainID])
-            ) // check if the current block number is greater or equal than the NEXT_BATCH_TIMEOUT_BLOCK
-            {
-                nextTimeoutBlock[destinationChainID] = block.number + timeoutBlocksNumber;
-            }
+            _updateNextTimeoutBlockIfNeeded(destinationChainID);
         }
     }
 
@@ -213,7 +210,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         claimsHelper.setVotedOnlyIfNeeded(_caller, claimHash, validators.getQuorumNumberOfValidators());
     }
 
-    function _setConfirmedTransactions(BridgingRequestClaim calldata _claim) internal {
+    function _setConfirmedTransactions(BridgingRequestClaim memory _claim) internal {
         uint8 destinationChainId = _claim.destinationChainId;
         uint64 nextNonce = ++lastConfirmedTxNonce[destinationChainId];
         confirmedTransactions[destinationChainId][nextNonce].observedTransactionHash = _claim.observedTransactionHash;
@@ -294,12 +291,64 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return claimsHelper.hasVoted(_hash, _voter);
     }
 
+    function defund(uint8 _chainId, uint256 _amount) external onlyDefundAdmin {
+        if (!isChainRegistered[_chainId]) {
+            revert ChainIsNotRegistered(_chainId);
+        }
+        if (chainTokenQuantity[_chainId] < _amount) {
+            revert InsufficientFunds(_chainId, _amount);
+        }
+
+        BridgingRequestClaim memory _brc = BridgingRequestClaim({
+            observedTransactionHash: defundHash,
+            receivers: new Receiver[](1),
+            totalAmount: _amount,
+            sourceChainId: _chainId,
+            destinationChainId: _chainId
+        });
+
+        _brc.receivers[0].amount = _amount;
+        _brc.receivers[0].destinationAddress = defundAddress[_chainId];
+
+        _setConfirmedTransactions(_brc);
+
+        _updateNextTimeoutBlockIfNeeded(_chainId);
+
+        emit chainDefunded(_chainId, _amount);
+    }
+
+    function _updateNextTimeoutBlockIfNeeded(uint8 _chainId) internal {
+        uint256 _confirmedTxCount = getBatchingTxsCount(_chainId);
+
+        if (
+            (claimsHelper.currentBatchBlock(_chainId) == -1) && // there is no batch in progress
+            (_confirmedTxCount == 0) && // check if there is no other confirmed transactions
+            (block.number >= nextTimeoutBlock[_chainId])
+        ) // check if the current block number is greater or equal than the NEXT_BATCH_TIMEOUT_BLOCK
+        {
+            nextTimeoutBlock[_chainId] = block.number + timeoutBlocksNumber;
+        }
+    }
+
     function getTokenQuantity(uint8 _chainId) external view returns (uint256) {
         return chainTokenQuantity[_chainId];
     }
 
+    function setDefundOwner(address _defundAdmin) external onlyOwner {
+        defundAdmin = _defundAdmin;
+    }
+
+    function setDefundAddress(uint8 _chainId, string calldata _address) external onlyDefundAdmin {
+        defundAddress[_chainId] = _address;
+    }
+
     modifier onlyBridge() {
         if (msg.sender != bridgeAddress) revert NotBridge();
+        _;
+    }
+
+    modifier onlyDefundAdmin() {
+        if (msg.sender != defundAdmin) revert NotDefundAdmin();
         _;
     }
 }

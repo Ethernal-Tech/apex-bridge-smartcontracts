@@ -130,6 +130,7 @@ interface IBridgeStructs {
     error NotBridge();
     error NotClaims();
     error NotSignedBatches();
+    error NotDefundAdmin();
     error NotSignedBatchesOrBridge();
     error NotSignedBatchesOrClaims();
     error NotEnoughBridgingTokensAvailable(bytes32 _claimTransactionHash);
@@ -138,7 +139,9 @@ interface IBridgeStructs {
     error ChainIsNotRegistered(uint8 _chainId);
     error WrongBatchNonce(uint8 _chainId, uint64 _nonce);
     error InvalidSignature();
+    error InsufficientFunds(uint8 _chainId, uint256 _amount);
 
     event newChainProposal(uint8 indexed _chainId, address indexed sender);
     event newChainRegistered(uint8 indexed _chainId);
+    event chainDefunded(uint8 indexed _chainId, uint256 _amount);
 }
