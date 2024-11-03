@@ -153,11 +153,12 @@ interface IBridgeStructs {
     error ChainIsNotRegistered(uint8 _chainId);
     error WrongBatchNonce(uint8 _chainId, uint64 _nonce);
     error InvalidSignature();
-    error InsufficientFunds(uint8 _chainId, uint256 _amount);
+    error DefundRequestTooHigh(uint8 _chainId, uint256 _availableAmount, uint256 _requestedAmount);
 
     event newChainProposal(uint8 indexed _chainId, address indexed sender);
     event newChainRegistered(uint8 indexed _chainId);
     event NotEnoughFunds(string claimeType, uint256 index, uint256 availableAmount);
-
     event BatchExecutionInfo(uint64 _batchID, uint8 _chainId, bool _isFailedClaim, TxDataInfo[] _txHashes);
+    event InsufficientFunds(uint8 _chainId, uint256 _amount);
+    event ChainDefunded(uint8 indexed _chainId, uint256 _amount);
 }

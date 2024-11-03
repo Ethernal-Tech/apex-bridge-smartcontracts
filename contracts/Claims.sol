@@ -159,11 +159,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             chainTokenQuantity[destinationChainId] -= receiversSum;
             chainTokenQuantity[_claim.sourceChainId] += receiversSum;
 
-            uint256 _confirmedTxCount = getBatchingTxsCount(destinationChainId);
-
             _setConfirmedTransactions(_claim);
 
-            _updateNextTimeoutBlockIfNeeded(destinationChainID);
+            _updateNextTimeoutBlockIfNeeded(destinationChainId);
         }
     }
 
@@ -218,6 +216,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             for (uint64 i = _firstTxNounce; i <= _lastTxNounce; i++) {
                 chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
+                if (confirmedTransactions[chainId][i].observedTransactionHash == defundHash) {
+                    confirmedTransactions[chainId][++lastConfirmedTxNonce[chainId]] = confirmedTransactions[chainId][i];
+                }
             }
 
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
@@ -232,28 +233,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function _submitClaimsREC(RefundExecutedClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode("REC", _claim));
         claimsHelper.setVotedOnlyIfNeeded(_caller, claimHash, validators.getQuorumNumberOfValidators());
-    }
-
-    function _submitClaimHWIC(HotWalletIncrementClaim calldata _claim, address _caller) internal {
-        bytes32 claimHash = keccak256(abi.encode("HWIC", _claim));
-
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
-            _caller,
-            claimHash,
-            validators.getQuorumNumberOfValidators()
-        );
-
-        if (_quorumReached) {
-            uint8 chainId = _claim.chainId;
-            uint256 changeAmount = _claim.amount;
-            if (_claim.isIncrement) {
-                chainTokenQuantity[chainId] += changeAmount;
-            } else if (chainTokenQuantity[chainId] >= changeAmount) {
-                chainTokenQuantity[chainId] -= changeAmount;
-            } else {
-                emit InsufficientFunds(chainTokenQuantity[chainId], changeAmount);
-            }
-        }
     }
 
     function _submitClaimHWIC(HotWalletIncrementClaim memory _claim, address _caller) internal {
@@ -273,7 +252,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             } else if (chainTokenQuantity[chainId] >= changeAmount) {
                 chainTokenQuantity[chainId] -= changeAmount;
             } else {
-                emit InsufficientFunds(chainTokenQuantity[chainId], changeAmount);
+                emit InsufficientFunds(chainId, changeAmount);
             }
         }
     }
@@ -383,13 +362,14 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             revert ChainIsNotRegistered(_chainId);
         }
         if (chainTokenQuantity[_chainId] < _amount) {
-            revert InsufficientFunds(_chainId, _amount);
+            revert DefundRequestTooHigh(_chainId, chainTokenQuantity[_chainId], _amount);
         }
 
         BridgingRequestClaim memory _brc = BridgingRequestClaim({
             observedTransactionHash: defundHash,
             receivers: new Receiver[](1),
             totalAmount: _amount,
+            retryCounter: 0,
             sourceChainId: _chainId,
             destinationChainId: _chainId
         });
@@ -397,11 +377,13 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         _brc.receivers[0].amount = _amount;
         _brc.receivers[0].destinationAddress = defundAddress[_chainId];
 
+        chainTokenQuantity[_chainId] -= _amount;
+
         _setConfirmedTransactions(_brc);
 
         _updateNextTimeoutBlockIfNeeded(_chainId);
 
-        emit chainDefunded(_chainId, _amount);
+        emit ChainDefunded(_chainId, _amount);
     }
 
     function _updateNextTimeoutBlockIfNeeded(uint8 _chainId) internal {
