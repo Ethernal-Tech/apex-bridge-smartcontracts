@@ -628,7 +628,7 @@ describe("Claims Contract", function () {
 
       await expect(bridge.connect(validators[3]).submitClaims(validatorClaimsHWIC))
         .to.emit(claims, "InsufficientFunds")
-        .withArgs(1, 200);
+        .withArgs(100, 200);
     });
   });
 });

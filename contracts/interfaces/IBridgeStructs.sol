@@ -29,6 +29,7 @@ interface IBridgeStructs {
         uint256 blockHeight;
         uint256 totalAmount;
         uint256 retryCounter;
+        uint256 retryCounter;
         uint64 nonce;
         uint8 sourceChainId;
         bytes32 observedTransactionHash;
@@ -158,7 +159,6 @@ interface IBridgeStructs {
     event newChainProposal(uint8 indexed _chainId, address indexed sender);
     event newChainRegistered(uint8 indexed _chainId);
     event NotEnoughFunds(string claimeType, uint256 index, uint256 availableAmount);
+    event InsufficientFunds(uint256 availableAmount, uint256 withdrawalAmount);
     event BatchExecutionInfo(uint64 _batchID, uint8 _chainId, bool _isFailedClaim, TxDataInfo[] _txHashes);
-    event InsufficientFunds(uint8 _chainId, uint256 _amount);
-    event ChainDefunded(uint8 indexed _chainId, uint256 _amount);
 }
