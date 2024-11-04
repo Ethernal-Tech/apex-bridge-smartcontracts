@@ -139,7 +139,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             return;
         }
 
-        uint256 _votesCnt = claimsHelper.setVoted(_caller, _claimHash);
         uint256 _receiversSum = _claim.totalAmount;
         uint8 _destinationChainId = _claim.destinationChainId;
 
@@ -147,6 +146,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             emit NotEnoughFunds("BRC", i, chainTokenQuantity[_destinationChainId]);
             return;
         }
+
+        uint256 _votesCnt = claimsHelper.setVoted(_caller, _claimHash);        
 
         if (_votesCnt == _quorumCnt) {
             chainTokenQuantity[_destinationChainId] -= _receiversSum;
