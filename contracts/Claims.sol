@@ -212,7 +212,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         _emitBatchExecutionInfo(batchId, chainId, true, _firstTxNounce, _lastTxNounce);
 
         if (_quorumReached) {
-            uint8 chainId = _claim.chainId;
             claimsHelper.resetCurrentBatchBlock(chainId);
 
             for (uint64 i = _firstTxNounce; i <= _lastTxNounce; i++) {
@@ -221,10 +220,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 } else {
                     confirmedTransactions[chainId][++lastConfirmedTxNonce[chainId]] = confirmedTransactions[chainId][i];
                 }
-            }
-
-            for (uint64 i = _firstTxNounce; i <= _lastTxNounce; i++) {
-                chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
             }
 
             lastBatchedTxNonce[chainId] = _lastTxNounce;
@@ -240,28 +235,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function _submitClaimsREC(RefundExecutedClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode("REC", _claim));
         claimsHelper.setVotedOnlyIfNeeded(_caller, claimHash, validators.getQuorumNumberOfValidators());
-    }
-
-    function _submitClaimHWIC(HotWalletIncrementClaim calldata _claim, address _caller) internal {
-        bytes32 claimHash = keccak256(abi.encode("HWIC", _claim));
-
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
-            _caller,
-            claimHash,
-            validators.getQuorumNumberOfValidators()
-        );
-
-        if (_quorumReached) {
-            uint8 chainId = _claim.chainId;
-            uint256 changeAmount = _claim.amount;
-            if (_claim.isIncrement) {
-                chainTokenQuantity[chainId] += changeAmount;
-            } else if (chainTokenQuantity[chainId] >= changeAmount) {
-                chainTokenQuantity[chainId] -= changeAmount;
-            } else {
-                emit InsufficientFunds(chainTokenQuantity[chainId], changeAmount);
-            }
-        }
     }
 
     function _submitClaimHWIC(HotWalletIncrementClaim memory _claim, address _caller) internal {
