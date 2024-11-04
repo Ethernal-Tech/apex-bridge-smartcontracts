@@ -148,15 +148,22 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint256 _receiversSum = _claim.totalAmount;
         uint8 _destinationChainId = _claim.destinationChainId;
 
-        if (_quorumReached) {
-            uint8 destinationChainId = _claim.destinationChainId;
+        if (chainTokenQuantity[_destinationChainId] < _receiversSum) {
+            emit NotEnoughFunds("BRC", i, chainTokenQuantity[_destinationChainId]);
+            return;
+        }
 
-            chainTokenQuantity[destinationChainId] -= receiversSum;
-            chainTokenQuantity[_claim.sourceChainId] += receiversSum;
+        uint256 _votesCnt = claimsHelper.setVoted(_caller, _claimHash);
+
+        if (_votesCnt == _quorumCnt) {
+            chainTokenQuantity[_destinationChainId] -= _receiversSum;
+            chainTokenQuantity[_claim.sourceChainId] += _receiversSum;
+
+            // uint256 _confirmedTxCount = getBatchingTxsCount(_destinationChainId);
 
             _setConfirmedTransactions(_claim);
 
-            _updateNextTimeoutBlockIfNeeded(destinationChainId);
+            _updateNextTimeoutBlockIfNeeded(_destinationChainId);
         }
     }
 
