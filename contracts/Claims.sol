@@ -84,14 +84,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 revert ChainIsNotRegistered(destinationChainId);
             }
 
-            uint256 receiversSum = _claim.totalAmount;
-
-            if (chainTokenQuantity[destinationChainId] < receiversSum) {
-                emit NotEnoughFunds("BRC", i, chainTokenQuantity[destinationChainId]);
-                continue;
-            }
-
-            _submitClaimsBRC(_claim, _caller, receiversSum);
+            _submitClaimsBRC(_claim, i, _caller);
         }
 
         uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
@@ -145,13 +138,15 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _submitClaimsBRC(BridgingRequestClaim calldata _claim, address _caller, uint256 receiversSum) internal {
-        bytes32 claimHash = keccak256(abi.encode("BRC", _claim));
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
-            _caller,
-            claimHash,
-            validators.getQuorumNumberOfValidators()
-        );
+    function _submitClaimsBRC(BridgingRequestClaim calldata _claim, uint256 i, address _caller) internal {
+        uint256 _quorumCnt = validators.getQuorumNumberOfValidators();
+        bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
+        if (claimsHelper.isVoteRestricted(_caller, _claimHash, _quorumCnt)) {
+            return;
+        }
+
+        uint256 _receiversSum = _claim.totalAmount;
+        uint8 _destinationChainId = _claim.destinationChainId;
 
         if (_quorumReached) {
             uint8 destinationChainId = _claim.destinationChainId;
@@ -166,13 +161,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _submitClaimsBEC(BatchExecutedClaim calldata _claim, address _caller) internal {
+        // The BatchExecutionInfo event should be emitted even if the validator has already voted
+        // or if consensus has already been reached. Same goes for BEFC
         bytes32 claimHash = keccak256(abi.encode("BEC", _claim));
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
-            _caller,
-            claimHash,
-            validators.getQuorumNumberOfValidators()
-        );
-
         uint8 chainId = _claim.chainId;
         uint64 batchId = _claim.batchNonceId;
         ConfirmedSignedBatchData memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
@@ -184,6 +175,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         _emitBatchExecutionInfo(batchId, chainId, false, _firstTxNounce, _lastTxNounce);
 
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
+            _caller,
+            claimHash,
+            validators.getQuorumNumberOfValidators()
+        );
+
         if (_quorumReached) {
             claimsHelper.resetCurrentBatchBlock(chainId);
 
@@ -194,12 +191,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function _submitClaimsBEFC(BatchExecutionFailedClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode("BEFC", _claim));
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
-            _caller,
-            claimHash,
-            validators.getQuorumNumberOfValidators()
-        );
-
         uint8 chainId = _claim.chainId;
         uint64 batchId = _claim.batchNonceId;
         ConfirmedSignedBatchData memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
@@ -210,6 +201,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint64 _lastTxNounce = confirmedSignedBatch.lastTxNonceId;
 
         _emitBatchExecutionInfo(batchId, chainId, true, _firstTxNounce, _lastTxNounce);
+
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
+            _caller,
+            claimHash,
+            validators.getQuorumNumberOfValidators()
+        );
 
         if (_quorumReached) {
             claimsHelper.resetCurrentBatchBlock(chainId);
