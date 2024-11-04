@@ -157,10 +157,4 @@ interface IBridgeStructs {
     event newChainRegistered(uint8 indexed _chainId);
     event NotEnoughFunds(string claimeType, uint256 index, uint256 availableAmount);
     event InsufficientFunds(uint256 availableAmount, uint256 withdrawalAmount);
-    event BatchExecutionInfo(
-        uint64 _batchID,
-        uint8 _chainId,
-        bool _isFailedClaim,
-        TxDataInfo[] _txHashes
-    );
 }
