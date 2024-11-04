@@ -305,7 +305,10 @@ describe("Submit Claims", function () {
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEC))
         .to.emit(claims, "BatchExecutionInfo")
         .withArgs(batchExecutedClaim.batchNonceId, batchExecutedClaim.chainId, false, [
-          [validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId, validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash]
+          [
+            validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
+            validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
+          ],
         ]);
     });
 
@@ -517,7 +520,10 @@ describe("Submit Claims", function () {
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC))
         .to.emit(claims, "BatchExecutionInfo")
         .withArgs(batchExecutionFailedClaim.batchNonceId, batchExecutionFailedClaim.chainId, true, [
-          [validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId, validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash]
+          [
+            validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
+            validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
+          ],
         ]);
     });
 
@@ -601,6 +607,44 @@ describe("Submit Claims", function () {
 
       expect(nextBatchBlock).to.greaterThan(currentBlock + 1);
       expect(lastConfirmedTxNonce - lastBatchedTxNonce).to.be.lessThanOrEqual(1);
+    });
+    it("Should update lastBatchedTxNonce when Bridging Excuted Failed Claim is confirmed", async function () {
+      const {
+        bridge,
+        claims,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsBRC,
+        validatorClaimsBEFC,
+        signedBatch,
+        validatorsCardanoData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+
+      const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      expect(await claims.lastBatchedTxNonce(_destinationChain)).to.equal(0);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
+
+      expect(await claims.lastBatchedTxNonce(_destinationChain)).to.equal(1);
     });
     it("Should increase chainTokenQuantity when Bridging Excuted Failed Claim is confirmed", async function () {
       const {
