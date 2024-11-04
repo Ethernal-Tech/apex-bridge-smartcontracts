@@ -147,7 +147,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             return;
         }
 
-        uint256 _votesCnt = claimsHelper.setVoted(_caller, _claimHash);        
+        uint256 _votesCnt = claimsHelper.setVoted(_caller, _claimHash);
 
         if (_votesCnt == _quorumCnt) {
             chainTokenQuantity[_destinationChainId] -= _receiversSum;
@@ -169,13 +169,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _submitClaimsBEC(BatchExecutedClaim calldata _claim, address _caller) internal {
+        // The BatchExecutionInfo event should be emitted even if the validator has already voted
+        // or if consensus has already been reached. Same goes for BEFC
         bytes32 claimHash = keccak256(abi.encode("BEC", _claim));
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
-            _caller,
-            claimHash,
-            validators.getQuorumNumberOfValidators()
-        );
-
         uint8 chainId = _claim.chainId;
         uint64 batchId = _claim.batchNonceId;
         ConfirmedSignedBatchData memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
@@ -187,6 +183,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         _emitBatchExecutionInfo(batchId, chainId, false, _firstTxNounce, _lastTxNounce);
 
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
+            _caller,
+            claimHash,
+            validators.getQuorumNumberOfValidators()
+        );
+
         if (_quorumReached) {
             claimsHelper.resetCurrentBatchBlock(chainId);
 
@@ -197,12 +199,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function _submitClaimsBEFC(BatchExecutionFailedClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode("BEFC", _claim));
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
-            _caller,
-            claimHash,
-            validators.getQuorumNumberOfValidators()
-        );
-
         uint8 chainId = _claim.chainId;
         uint64 batchId = _claim.batchNonceId;
         ConfirmedSignedBatchData memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
@@ -213,6 +209,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint64 _lastTxNounce = confirmedSignedBatch.lastTxNonceId;
 
         _emitBatchExecutionInfo(batchId, chainId, true, _firstTxNounce, _lastTxNounce);
+
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
+            _caller,
+            claimHash,
+            validators.getQuorumNumberOfValidators()
+        );
 
         if (_quorumReached) {
             claimsHelper.resetCurrentBatchBlock(chainId);
