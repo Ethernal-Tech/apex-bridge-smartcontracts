@@ -141,28 +141,28 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         uint256 _votesCnt = claimsHelper.setVoted(_caller, _claimHash);
         uint256 _receiversSum = _claim.totalAmount;
-        uint8 destinationChainId = _claim.destinationChainId;
+        uint8 _destinationChainId = _claim.destinationChainId;
 
-        if (chainTokenQuantity[destinationChainId] < _receiversSum) {
-            emit NotEnoughFunds("BRC", i, chainTokenQuantity[destinationChainId]);
+        if (chainTokenQuantity[_destinationChainId] < _receiversSum) {
+            emit NotEnoughFunds("BRC", i, chainTokenQuantity[_destinationChainId]);
             return;
         }
 
         if (_votesCnt == _quorumCnt) {
-            chainTokenQuantity[destinationChainId] -= _receiversSum;
+            chainTokenQuantity[_destinationChainId] -= _receiversSum;
             chainTokenQuantity[_claim.sourceChainId] += _receiversSum;
 
-            uint256 _confirmedTxCount = getBatchingTxsCount(destinationChainId);
+            uint256 _confirmedTxCount = getBatchingTxsCount(_destinationChainId);
 
             _setConfirmedTransactions(_claim);
 
             if (
-                (claimsHelper.currentBatchBlock(destinationChainId) == -1) && // there is no batch in progress
+                (claimsHelper.currentBatchBlock(_destinationChainId) == -1) && // there is no batch in progress
                 (_confirmedTxCount == 0) && // check if there is no other confirmed transactions
-                (block.number >= nextTimeoutBlock[destinationChainId])
+                (block.number >= nextTimeoutBlock[_destinationChainId])
             ) // check if the current block number is greater or equal than the NEXT_BATCH_TIMEOUT_BLOCK
             {
-                nextTimeoutBlock[destinationChainId] = block.number + timeoutBlocksNumber;
+                nextTimeoutBlock[_destinationChainId] = block.number + timeoutBlocksNumber;
             }
         }
     }
@@ -220,6 +220,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
             }
 
+            lastBatchedTxNonce[chainId] = _lastTxNounce;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
         }
     }
