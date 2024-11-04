@@ -78,14 +78,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 revert ChainIsNotRegistered(destinationChainId);
             }
 
-            uint256 receiversSum = _claim.totalAmount;
-
-            if (chainTokenQuantity[destinationChainId] < receiversSum) {
-                emit NotEnoughFunds("BRC", i, chainTokenQuantity[destinationChainId]);
-                continue;
-            }
-
-            _submitClaimsBRC(_claim, _caller, receiversSum);
+            _submitClaimsBRC(_claim, i, _caller);
         }
 
         uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
@@ -139,19 +132,25 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _submitClaimsBRC(BridgingRequestClaim calldata _claim, address _caller, uint256 receiversSum) internal {
-        bytes32 claimHash = keccak256(abi.encode("BRC", _claim));
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
-            _caller,
-            claimHash,
-            validators.getQuorumNumberOfValidators()
-        );
+    function _submitClaimsBRC(BridgingRequestClaim calldata _claim, uint256 i, address _caller) internal {
+        uint256 _quorumCnt = validators.getQuorumNumberOfValidators();
+        bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
+        if (claimsHelper.isVoteRestricted(_caller, _claimHash, _quorumCnt)) {
+            return;
+        }
 
-        if (_quorumReached) {
-            uint8 destinationChainId = _claim.destinationChainId;
+        uint256 _votesCnt = claimsHelper.setVoted(_caller, _claimHash);
+        uint256 _receiversSum = _claim.totalAmount;
+        uint8 destinationChainId = _claim.destinationChainId;
 
-            chainTokenQuantity[destinationChainId] -= receiversSum;
-            chainTokenQuantity[_claim.sourceChainId] += receiversSum;
+        if (chainTokenQuantity[destinationChainId] < _receiversSum) {
+            emit NotEnoughFunds("BRC", i, chainTokenQuantity[destinationChainId]);
+            return;
+        }
+
+        if (_votesCnt == _quorumCnt) {
+            chainTokenQuantity[destinationChainId] -= _receiversSum;
+            chainTokenQuantity[_claim.sourceChainId] += _receiversSum;
 
             uint256 _confirmedTxCount = getBatchingTxsCount(destinationChainId);
 
