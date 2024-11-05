@@ -31,4 +31,60 @@ describe("Defund chain", function () {
       "DefundRequestTooHigh"
     );
   });
+  it("Should remove defund amount from availableTokens amount", async function () {
+    const { bridge, claims, owner, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+
+    await claims.setDefundOwner(validators[0].address);
+
+    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+    expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
+    await claims.connect(validators[0]).defund(chain1.id, 1);
+    expect(await claims.chainTokenQuantity(chain1.id)).to.equal(99);
+  });
+  it("Should emit ChainDefunded when defund is exdcuted", async function () {
+    const { bridge, claims, owner, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+
+    await claims.setDefundOwner(validators[0].address);
+
+    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+
+    await claims.connect(validators[0]).defund(chain1.id, 1);
+
+    await expect(await claims.connect(validators[0]).defund(chain1.id, 1))
+      .to.emit(claims, "ChainDefunded")
+      .withArgs(1, 1);
+  });
+  it("Should add confirmedTransactioin when defund is exdcuted", async function () {
+    const { bridge, claims, owner, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+
+    await claims.setDefundOwner(validators[0].address);
+
+    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+
+    await claims.connect(validators[0]).defund(chain1.id, 1);
+
+    expect(await claims.lastConfirmedTxNonce(chain1.id)).to.equal(1);
+
+    await claims.connect(validators[0]).defund(chain1.id, 1);
+
+    expect(await claims.lastConfirmedTxNonce(chain1.id)).to.equal(2);
+  });
+  it("Should set correct confirmedTransactioin when defund is exdcuted", async function () {
+    const { bridge, claims, owner, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+
+    await claims.setDefundOwner(validators[0].address);
+
+    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+
+    await claims.connect(validators[0]).defund(chain1.id, 1);
+
+    expect((await claims.confirmedTransactions(chain1.id, 1)).observedTransactionHash).to.equal(
+      await claims.defundHash()
+    );
+    expect((await claims.confirmedTransactions(chain1.id, 1)).sourceChainId).to.equal(chain1.id);
+    expect((await claims.confirmedTransactions(chain1.id, 1)).nonce).to.equal(1);
+    expect((await claims.confirmedTransactions(chain1.id, 1)).retryCounter).to.equal(0);
+    expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(1);
+    expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(21);
+  });
 });

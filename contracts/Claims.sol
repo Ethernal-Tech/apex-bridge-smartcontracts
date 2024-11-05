@@ -18,7 +18,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     //chain -> address to defund to
     mapping(uint8 => string) public defundAddress;
     //keccak256)abi.encode(Packed"Defund")
-    bytes32 private constant defundHash = 0xc74d0d70be942fd68984df57687b9f453f1321726e8db77762dee952a5c85b24;
+    bytes32 public constant defundHash = 0xc74d0d70be942fd68984df57687b9f453f1321726e8db77762dee952a5c85b24;
 
     // BlockchainId -> bool
     mapping(uint8 => bool) public isChainRegistered;
