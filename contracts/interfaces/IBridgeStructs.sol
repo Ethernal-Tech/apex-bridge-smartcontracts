@@ -29,6 +29,7 @@ interface IBridgeStructs {
         uint256 blockHeight;
         uint256 totalAmount;
         uint256 retryCounter;
+        uint256 retryCounter;
         uint64 nonce;
         uint8 sourceChainId;
         bytes32 observedTransactionHash;
@@ -92,6 +93,9 @@ interface IBridgeStructs {
         bool isIncrement;
     }
 
+    struct HotWalletIncrementClaim {
+        
+
     struct Receiver {
         uint256 amount;
         string destinationAddress;
@@ -141,5 +145,10 @@ interface IBridgeStructs {
     event newChainRegistered(uint8 indexed _chainId);
     event NotEnoughFunds(string claimeType, uint256 index, uint256 availableAmount);
     event InsufficientFunds(uint256 availableAmount, uint256 withdrawalAmount);
-    event BatchExecutionInfo(uint64 _batchID, uint8 _chainId, bool _isFailedClaim, TxDataInfo[] _txHashes);
+    event BatchExecutionInfo(
+        uint64 _batchID,
+        uint8 _chainId,
+        bool _isFailedClaim,
+        TxDataInfo[] _txHashes
+    );
 }
