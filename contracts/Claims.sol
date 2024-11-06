@@ -216,10 +216,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 }
             }
 
-            for (uint64 i = _firstTxNounce; i <= _lastTxNounce; i++) {
-                chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
-            }
-
             lastBatchedTxNonce[chainId] = _lastTxNounce;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
         }
