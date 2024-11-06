@@ -221,14 +221,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         if (_quorumReached) {
             claimsHelper.resetCurrentBatchBlock(chainId);
 
-            ConfirmedSignedBatchData memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
-                chainId,
-                _claim.batchNonceId
-            );
-
-            uint64 _firstTxNounce = confirmedSignedBatch.firstTxNonceId;
-            uint64 _lastTxNounce = confirmedSignedBatch.lastTxNonceId;
-
             for (uint64 i = _firstTxNounce; i <= _lastTxNounce; i++) {
                 chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
             }
