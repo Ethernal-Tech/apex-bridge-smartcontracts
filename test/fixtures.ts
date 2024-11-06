@@ -177,6 +177,10 @@ export async function deployBridgeFixture() {
             amount: 100,
           },
         ],
+        outputUTXO: {
+          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+          txIndex: 0,
+        },
         retryCounter: 0,
         sourceChainId: 1,
         destinationChainId: 2,
@@ -297,6 +301,38 @@ export async function deployBridgeFixture() {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
         chainId: 2,
         refundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
+      },
+    ],
+    hotWalletIncrementClaims: [],
+  };
+
+  const validatorClaimsHWIC = {
+    bridgingRequestClaims: [],
+    batchExecutedClaims: [],
+    batchExecutionFailedClaims: [],
+    refundRequestClaims: [],
+    refundExecutedClaims: [],
+    hotWalletIncrementClaims: [
+      {
+        chainId: 1,
+        amount: 100,
+        isIncrement: true,
+      },
+    ],
+    \
+  };
+
+  const validatorClaimsHWIC = {
+    bridgingRequestClaims: [],
+    batchExecutedClaims: [],
+    batchExecutionFailedClaims: [],
+    refundRequestClaims: [],
+    refundExecutedClaims: [],
+    hotWalletIncrementClaims: [
+      {
+        chainId: 1,
+        amount: 100,
+        isIncrement: true,
       },
     ],
     hotWalletIncrementClaims: [],

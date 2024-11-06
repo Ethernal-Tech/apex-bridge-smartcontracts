@@ -80,14 +80,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 revert ChainIsNotRegistered(destinationChainId);
             }
 
-            uint256 receiversSum = _claim.totalAmount;
-
-            if (chainTokenQuantity[destinationChainId] < receiversSum) {
-                emit NotEnoughFunds("BRC", i, chainTokenQuantity[destinationChainId]);
-                continue;
-            }
-
-            _submitClaimsBRC(_claim, _caller, receiversSum);
+            _submitClaimsBRC(_claim, i, _caller);
         }
 
         uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
@@ -141,37 +134,57 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _submitClaimsBRC(BridgingRequestClaim calldata _claim, address _caller, uint256 receiversSum) internal {
-        bytes32 claimHash = keccak256(abi.encode("BRC", _claim));
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
-            _caller,
-            claimHash,
-            validators.getQuorumNumberOfValidators()
-        );
+    function _submitClaimsBRC(BridgingRequestClaim calldata _claim, uint256 i, address _caller) internal {
+        uint256 _quorumCnt = validators.getQuorumNumberOfValidators();
+        bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
+        if (claimsHelper.isVoteRestricted(_caller, _claimHash, _quorumCnt)) {
+            return;
+        }
 
-        if (_quorumReached) {
-            uint8 destinationChainId = _claim.destinationChainId;
+        uint256 _receiversSum = _claim.totalAmount;
+        uint8 _destinationChainId = _claim.destinationChainId;
 
-            chainTokenQuantity[destinationChainId] -= receiversSum;
-            chainTokenQuantity[_claim.sourceChainId] += receiversSum;
+        if (chainTokenQuantity[_destinationChainId] < _receiversSum) {
+            emit NotEnoughFunds("BRC", i, chainTokenQuantity[_destinationChainId]);
+            return;
+        }
 
-            uint256 _confirmedTxCount = getBatchingTxsCount(destinationChainId);
+        uint256 _votesCnt = claimsHelper.setVoted(_caller, _claimHash);
+
+        if (_votesCnt == _quorumCnt) {
+            chainTokenQuantity[_destinationChainId] -= _receiversSum;
+            chainTokenQuantity[_claim.sourceChainId] += _receiversSum;
+
+            uint256 _confirmedTxCount = getBatchingTxsCount(_destinationChainId);
 
             _setConfirmedTransactions(_claim);
 
             if (
-                (claimsHelper.currentBatchBlock(destinationChainId) == -1) && // there is no batch in progress
+                (claimsHelper.currentBatchBlock(_destinationChainId) == -1) && // there is no batch in progress
                 (_confirmedTxCount == 0) && // check if there is no other confirmed transactions
-                (block.number >= nextTimeoutBlock[destinationChainId])
+                (block.number >= nextTimeoutBlock[_destinationChainId])
             ) // check if the current block number is greater or equal than the NEXT_BATCH_TIMEOUT_BLOCK
             {
-                nextTimeoutBlock[destinationChainId] = block.number + timeoutBlocksNumber;
+                nextTimeoutBlock[_destinationChainId] = block.number + timeoutBlocksNumber;
             }
         }
     }
 
     function _submitClaimsBEC(BatchExecutedClaim calldata _claim, address _caller) internal {
+        // The BatchExecutionInfo event should be emitted even if the validator has already voted
+        // or if consensus has already been reached. Same goes for BEFC
         bytes32 claimHash = keccak256(abi.encode("BEC", _claim));
+        uint8 chainId = _claim.chainId;
+        uint64 batchId = _claim.batchNonceId;
+        ConfirmedSignedBatchData memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
+            chainId,
+            batchId
+        );
+        uint64 _firstTxNounce = confirmedSignedBatch.firstTxNonceId;
+        uint64 _lastTxNounce = confirmedSignedBatch.lastTxNonceId;
+
+        _emitBatchExecutionInfo(batchId, chainId, false, _firstTxNounce, _lastTxNounce);
+
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
             claimHash,
@@ -179,23 +192,26 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
-            uint8 chainId = _claim.chainId;
-
             claimsHelper.resetCurrentBatchBlock(chainId);
 
-            ConfirmedSignedBatchData memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
-                chainId,
-                _claim.batchNonceId
-            );
-
             lastBatchedTxNonce[chainId] = confirmedSignedBatch.lastTxNonceId;
-
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
         }
     }
 
     function _submitClaimsBEFC(BatchExecutionFailedClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode("BEFC", _claim));
+        uint8 chainId = _claim.chainId;
+        uint64 batchId = _claim.batchNonceId;
+        ConfirmedSignedBatchData memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
+            chainId,
+            batchId
+        );
+        uint64 _firstTxNounce = confirmedSignedBatch.firstTxNonceId;
+        uint64 _lastTxNounce = confirmedSignedBatch.lastTxNonceId;
+
+        _emitBatchExecutionInfo(batchId, chainId, true, _firstTxNounce, _lastTxNounce);
+
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
             claimHash,
@@ -203,7 +219,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
-            uint8 chainId = _claim.chainId;
             claimsHelper.resetCurrentBatchBlock(chainId);
 
             ConfirmedSignedBatchData memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
@@ -218,6 +233,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
             }
 
+            lastBatchedTxNonce[chainId] = _lastTxNounce;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
         }
     }
@@ -272,6 +288,24 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         confirmedTransactions[destinationChainId][nextNonce].totalAmount = tokenQuantity;
 
         confirmedTransactions[destinationChainId][nextNonce].blockHeight = block.number;
+    }
+
+    function _emitBatchExecutionInfo(
+        uint64 _batchID,
+        uint8 _chainId,
+        bool _isFailedClaim,
+        uint64 _firstTxNonce,
+        uint64 _lastTxNounce
+    ) private {
+        TxDataInfo[] memory _txHashes = new TxDataInfo[](_lastTxNounce - _firstTxNonce + 1);
+        for (uint64 i = _firstTxNonce; i <= _lastTxNounce; i++) {
+            _txHashes[i - _firstTxNonce] = TxDataInfo(
+                confirmedTransactions[_chainId][i].sourceChainId,
+                confirmedTransactions[_chainId][i].observedTransactionHash
+            );
+        }
+
+        emit BatchExecutionInfo(_batchID, _chainId, _isFailedClaim, _txHashes);
     }
 
     function setVoted(address _voter, bytes32 _hash) external onlyBridge returns (uint256) {
