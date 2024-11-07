@@ -146,7 +146,7 @@ describe("Submit Claims", function () {
       );
     });
 
-    it("Should add requred amount of tokens on source chain when Bridging Request Claim is confirmed", async function () {
+    it("Should add requred amount of tokens on source chain when Bridging Request Claim is confirmed and it is NOT a retry", async function () {
       const { bridge, claims, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
@@ -161,6 +161,27 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(1100);
+    });
+
+    it("Should NOT add requred amount of tokens on source chain when Bridging Request Claim is confirmed and it is a retry", async function () {
+      const { bridge, claims, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(1000);
+
+      validatorClaimsBRC.bridgingRequestClaims[0].retryCounter = 1;
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      validatorClaimsBRC.bridgingRequestClaims[0].retryCounter = 0;
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(1000);
     });
 
     it("Should remove requred amount of tokens from destination chain when Bridging Request Claim is confirmed", async function () {
@@ -570,7 +591,7 @@ describe("Submit Claims", function () {
 
       expect(await claims.lastBatchedTxNonce(_destinationChain)).to.equal(1);
     });
-    it("Should increase chainTokenQuantity when Bridging Excuted Failed Claim is confirmed", async function () {
+    it("Should increase chainTokenQuantity for destination chain when Bridging Excuted Failed Claim is confirmed", async function () {
       const {
         bridge,
         claims,
