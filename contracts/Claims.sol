@@ -266,14 +266,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         confirmedTransactions[destinationChainId][nextNonce].retryCounter = _claim.retryCounter;
 
         uint256 receiversLength = _claim.receivers.length;
-        uint256 tokenQuantity;
         for (uint i; i < receiversLength; i++) {
             confirmedTransactions[destinationChainId][nextNonce].receivers.push(_claim.receivers[i]);
-            tokenQuantity += _claim.receivers[i].amount;
         }
 
-        confirmedTransactions[destinationChainId][nextNonce].totalAmount = tokenQuantity;
-
+        confirmedTransactions[destinationChainId][nextNonce].totalAmount = _claim.totalAmount;
         confirmedTransactions[destinationChainId][nextNonce].blockHeight = block.number;
     }
 
