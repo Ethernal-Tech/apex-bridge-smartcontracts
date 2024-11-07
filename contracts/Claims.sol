@@ -151,7 +151,10 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         if (_votesCnt == _quorumCnt) {
             chainTokenQuantity[_destinationChainId] -= _receiversSum;
-            chainTokenQuantity[_claim.sourceChainId] += _receiversSum;
+
+            if (_claim.retryCounter == 0) {
+                chainTokenQuantity[_claim.sourceChainId] += _receiversSum;
+            }
 
             uint256 _confirmedTxCount = getBatchingTxsCount(_destinationChainId);
 
