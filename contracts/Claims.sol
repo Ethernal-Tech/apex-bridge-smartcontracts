@@ -151,7 +151,10 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         if (_votesCnt == _quorumCnt) {
             chainTokenQuantity[_destinationChainId] -= _receiversSum;
-            chainTokenQuantity[_claim.sourceChainId] += _receiversSum;
+
+            if (_claim.retryCounter == 0) {
+                chainTokenQuantity[_claim.sourceChainId] += _receiversSum;
+            }
 
             uint256 _confirmedTxCount = getBatchingTxsCount(_destinationChainId);
 
@@ -174,14 +177,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         bytes32 claimHash = keccak256(abi.encode("BEC", _claim));
         uint8 chainId = _claim.chainId;
         uint64 batchId = _claim.batchNonceId;
-        ConfirmedSignedBatchData memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
-            chainId,
-            batchId
-        );
-        uint64 _firstTxNounce = confirmedSignedBatch.firstTxNonceId;
-        uint64 _lastTxNounce = confirmedSignedBatch.lastTxNonceId;
-
-        _emitBatchExecutionInfo(batchId, chainId, false, _firstTxNounce, _lastTxNounce);
 
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
@@ -190,9 +185,13 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
+            ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
+                chainId,
+                batchId
+            );
             claimsHelper.resetCurrentBatchBlock(chainId);
 
-            lastBatchedTxNonce[chainId] = confirmedSignedBatch.lastTxNonceId;
+            lastBatchedTxNonce[chainId] = _confirmedSignedBatch.lastTxNonceId;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
         }
     }
@@ -201,15 +200,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         bytes32 claimHash = keccak256(abi.encode("BEFC", _claim));
         uint8 chainId = _claim.chainId;
         uint64 batchId = _claim.batchNonceId;
-        ConfirmedSignedBatchData memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
-            chainId,
-            batchId
-        );
-        uint64 _firstTxNounce = confirmedSignedBatch.firstTxNonceId;
-        uint64 _lastTxNounce = confirmedSignedBatch.lastTxNonceId;
-
-        _emitBatchExecutionInfo(batchId, chainId, true, _firstTxNounce, _lastTxNounce);
-
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
             claimHash,
@@ -219,11 +209,18 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         if (_quorumReached) {
             claimsHelper.resetCurrentBatchBlock(chainId);
 
-            for (uint64 i = _firstTxNounce; i <= _lastTxNounce; i++) {
+            ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
+                chainId,
+                batchId
+            );
+            uint64 _firstTxNonce = _confirmedSignedBatch.firstTxNonceId;
+            uint64 _lastTxNouce = _confirmedSignedBatch.lastTxNonceId;
+
+            for (uint64 i = _firstTxNonce; i <= _lastTxNouce; i++) {
                 chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
             }
 
-            lastBatchedTxNonce[chainId] = _lastTxNounce;
+            lastBatchedTxNonce[chainId] = _lastTxNouce;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
         }
     }
@@ -263,39 +260,19 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function _setConfirmedTransactions(BridgingRequestClaim calldata _claim) internal {
         uint8 destinationChainId = _claim.destinationChainId;
         uint64 nextNonce = ++lastConfirmedTxNonce[destinationChainId];
-        confirmedTransactions[destinationChainId][nextNonce].observedTransactionHash = _claim.observedTransactionHash;
-        confirmedTransactions[destinationChainId][nextNonce].sourceChainId = _claim.sourceChainId;
-        confirmedTransactions[destinationChainId][nextNonce].nonce = nextNonce;
-        confirmedTransactions[destinationChainId][nextNonce].retryCounter = _claim.retryCounter;
+
+        ConfirmedTransaction storage confirmedTx = confirmedTransactions[destinationChainId][nextNonce];
+        confirmedTx.totalAmount = _claim.totalAmount;
+        confirmedTx.blockHeight = block.number;
+        confirmedTx.observedTransactionHash = _claim.observedTransactionHash;
+        confirmedTx.sourceChainId = _claim.sourceChainId;
+        confirmedTx.nonce = nextNonce;
+        confirmedTx.retryCounter = _claim.retryCounter;
 
         uint256 receiversLength = _claim.receivers.length;
-        uint256 tokenQuantity;
         for (uint i; i < receiversLength; i++) {
-            confirmedTransactions[destinationChainId][nextNonce].receivers.push(_claim.receivers[i]);
-            tokenQuantity += _claim.receivers[i].amount;
+            confirmedTx.receivers.push(_claim.receivers[i]);
         }
-
-        confirmedTransactions[destinationChainId][nextNonce].totalAmount = tokenQuantity;
-
-        confirmedTransactions[destinationChainId][nextNonce].blockHeight = block.number;
-    }
-
-    function _emitBatchExecutionInfo(
-        uint64 _batchID,
-        uint8 _chainId,
-        bool _isFailedClaim,
-        uint64 _firstTxNonce,
-        uint64 _lastTxNounce
-    ) private {
-        TxDataInfo[] memory _txHashes = new TxDataInfo[](_lastTxNounce - _firstTxNonce + 1);
-        for (uint64 i = _firstTxNonce; i <= _lastTxNounce; i++) {
-            _txHashes[i - _firstTxNonce] = TxDataInfo(
-                confirmedTransactions[_chainId][i].sourceChainId,
-                confirmedTransactions[_chainId][i].observedTransactionHash
-            );
-        }
-
-        emit BatchExecutionInfo(_batchID, _chainId, _isFailedClaim, _txHashes);
     }
 
     function setVoted(address _voter, bytes32 _hash) external onlyBridge returns (uint256) {
@@ -362,6 +339,25 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function getTokenQuantity(uint8 _chainId) external view returns (uint256) {
         return chainTokenQuantity[_chainId];
+    }
+
+    function getBatchTransactions(uint8 _chainId, uint64 _batchId) external view returns (TxDataInfo[] memory) {
+        ConfirmedSignedBatchData memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
+            _chainId,
+            _batchId
+        );
+        uint64 _firstTxNonce = confirmedSignedBatch.firstTxNonceId;
+        uint64 _lastTxNonce = confirmedSignedBatch.lastTxNonceId;
+
+        TxDataInfo[] memory _txHashes = new TxDataInfo[](_lastTxNonce - _firstTxNonce + 1);
+        for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
+            _txHashes[i - _firstTxNonce] = TxDataInfo(
+                confirmedTransactions[_chainId][i].sourceChainId,
+                confirmedTransactions[_chainId][i].observedTransactionHash
+            );
+        }
+
+        return _txHashes;
     }
 
     modifier onlyBridge() {
