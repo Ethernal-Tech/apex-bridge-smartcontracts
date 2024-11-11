@@ -39,9 +39,9 @@ describe("Claims Pruning", function () {
 
     expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(60);
 
-    await claimsHelper.connect(owner).pruneClaims(4, validatorsAddresses, 500);
+    await claimsHelper.connect(owner).pruneClaims(validatorsAddresses, 137);
 
-    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(30);
+    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(40);
 
     for (let i = 0; i < claimsRRC.length; i += 2) {
       for (let j = 0; j < 4; j++) {
@@ -55,11 +55,11 @@ describe("Claims Pruning", function () {
       }
     }
 
-    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(50);
+    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(60);
 
-    await claimsHelper.connect(owner).pruneClaims(4, validatorsAddresses, 100);
+    await claimsHelper.connect(owner).pruneClaims(validatorsAddresses, 116);
 
-    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(6);
+    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(30);
   });
   it("Pruning a bunch of confirmedSignedBatches", async function () {
     const { claims, claimsHelper, owner } = await loadFixture(deployBridgeFixture);

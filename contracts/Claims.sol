@@ -37,6 +37,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     mapping(uint8 => uint64) public nextUnprunedConfirmedTransaction;
 
+    // Minimal number of confirmed transaction to be kept at all times
+    uint64 public constant MIN_NUMBER_OF_TRANSACTIONS = 2; //TODO SET THIS VALUE TO AGREED ON
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -366,13 +369,17 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return chainTokenQuantity[_chainId];
     }
 
-    function pruneConfirmedTransactions(uint8 _chainId, uint64 _nonce) external onlyOwner {
-        if (_nonce <= nextUnprunedConfirmedTransaction[_chainId]) revert AlreadyPruned();
+    function pruneConfirmedTransactions(uint8 _chainId, uint64 _deleteToNonce) external onlyOwner {
+        if (
+            _deleteToNonce <= MIN_NUMBER_OF_TRANSACTIONS ||
+            _deleteToNonce <= (lastConfirmedTxNonce[_chainId] - MIN_NUMBER_OF_TRANSACTIONS)
+        ) revert ConfirmedTransactionsProtectedFromPruning();
+        if (_deleteToNonce <= nextUnprunedConfirmedTransaction[_chainId]) revert AlreadyPruned();
 
-        for (uint64 i = nextUnprunedConfirmedTransaction[_chainId]; i <= _nonce; i++) {
+        for (uint64 i = nextUnprunedConfirmedTransaction[_chainId]; i <= _deleteToNonce; i++) {
             delete confirmedTransactions[_chainId][i];
         }
-        nextUnprunedConfirmedTransaction[_chainId] = _nonce + 1;
+        nextUnprunedConfirmedTransaction[_chainId] = _deleteToNonce + 1;
     }
 
     modifier onlyBridge() {

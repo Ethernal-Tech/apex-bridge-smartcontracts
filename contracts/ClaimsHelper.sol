@@ -25,7 +25,8 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     // claimHash for pruning
     ClaimHash[] public claimsHashes;
     mapping(uint8 => uint64) public nextUnprunedConfirmedSignedBatch;
-    uint256 public constant MIN_TTL = 100; //TODO SET THIS VALUE TO AGREED ON
+    //Minimal claim block age to be pruned
+    uint256 public constant MIN_CLAIM_BLOCK_AGE = 100; //TODO SET THIS VALUE TO AGREED ON
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -90,16 +91,19 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
 
     function setVoted(address _voter, bytes32 _hash) external onlySignedBatchesOrClaims returns (uint256) {
         hasVoted[_hash][_voter] = true;
+        if (numberOfVotes[_hash] == 0) {
+            claimsHashes.push(ClaimHash(_hash, block.number));
+        }
         uint256 v = ++numberOfVotes[_hash]; // v is numberOfVotes[_hash] + 1
         return v;
     }
 
-    function pruneClaims(address[] calldata _validators, uint256 _ttl) external onlyOwner {
-        if (_ttl < MIN_TTL) revert TTLTooLow();
+    function pruneClaims(address[] calldata _validators, uint256 _olderThenNumberOfBlocks) external onlyOwner {
+        if (_olderThenNumberOfBlocks < MIN_CLAIM_BLOCK_AGE) revert TTLTooLow();
         uint256 i = 0;
         while (i < claimsHashes.length) {
             bytes32 _hashValue = claimsHashes[i].hashValue;
-            if (block.number - claimsHashes[i].blockNumber >= _ttl) {
+            if (block.number - claimsHashes[i].blockNumber >= _olderThenNumberOfBlocks) {
                 for (uint256 j = 0; j < _validators.length; j++) {
                     delete hasVoted[_hashValue][_validators[j]];
                 }
