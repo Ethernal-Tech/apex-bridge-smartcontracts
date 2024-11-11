@@ -61,4 +61,6 @@ abstract contract IBridge is IBridgeStructs {
     function getAllRegisteredChains() external view virtual returns (Chain[] memory _chains);
 
     function getRawTransactionFromLastBatch(uint8 _destinationChain) external view virtual returns (bytes memory);
+
+    function getBatchTransactions(uint8 _chainId, uint64 _batchId) external virtual returns (TxDataInfo[] memory);
 }

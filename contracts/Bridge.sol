@@ -216,6 +216,13 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         return signedBatches.getConfirmedBatchTransaction(_destinationChain);
     }
 
+    function getBatchTransactions(
+        uint8 _chainId,
+        uint64 _batchId
+    ) external view override returns (TxDataInfo[] memory) {
+        return claims.getBatchTransactions(_chainId, _batchId);
+    }
+
     modifier onlyValidator() {
         if (!validators.isValidator(msg.sender)) revert NotValidator();
         _;
