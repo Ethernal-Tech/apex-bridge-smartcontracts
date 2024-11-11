@@ -92,11 +92,12 @@ describe("Claims Pruning", function () {
       validatorsAddresses.push(validators[i].address);
     }
 
-    await expect(
-      claimsHelper.connect(validators[0]).pruneClaims(4, validatorsAddresses, 5)
-    ).to.be.revertedWithCustomError(claimsHelper, "OwnableUnauthorizedAccount");
+    await expect(claimsHelper.connect(validators[0]).pruneClaims(validatorsAddresses, 5)).to.be.revertedWithCustomError(
+      claimsHelper,
+      "OwnableUnauthorizedAccount"
+    );
   });
-  it("Calling pruneClaims should NOT remove hash if quorum is NOT reached and ttl has NOT passed", async function () {
+  it("Calling pruneClaims should NOT remove hash if ttl has NOT passed", async function () {
     const { bridge, claimsHelper, owner, validators, validatorClaimsBRC, chain1, chain2, validatorsCardanoData } =
       await loadFixture(deployBridgeFixture);
 
@@ -136,12 +137,12 @@ describe("Claims Pruning", function () {
       validatorsAddresses.push(validators[i].address);
     }
 
-    await claimsHelper.connect(owner).pruneClaims(4, validatorsAddresses, 5);
+    await claimsHelper.connect(owner).pruneClaims(validatorsAddresses, 105);
 
     expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(1);
     expect((await claimsHelper.claimsHashes(0)).hashValue).to.be.equal(hash);
   });
-  it("Calling pruneClaims should remove hash if quorum is NOT reached and ttl has passed", async function () {
+  it("Calling pruneClaims should remove hash if ttl has passed", async function () {
     const { bridge, claimsHelper, owner, validators, validatorClaimsBRC, chain1, chain2, validatorsCardanoData } =
       await loadFixture(deployBridgeFixture);
 
@@ -190,134 +191,13 @@ describe("Claims Pruning", function () {
     expect(await claimsHelper.hasVoted(hash, validators[2].address)).to.be.equal(true);
     expect(await claimsHelper.numberOfVotes(hash)).to.be.equal(3);
 
-    await claimsHelper.connect(owner).pruneClaims(4, validatorsAddresses, 5);
+    await claimsHelper.connect(owner).pruneClaims(validatorsAddresses, 105);
 
     expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(0);
     expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.equal(false);
     expect(await claimsHelper.hasVoted(hash, validators[1].address)).to.be.equal(false);
     expect(await claimsHelper.hasVoted(hash, validators[2].address)).to.be.equal(false);
     expect(await claimsHelper.numberOfVotes(hash)).to.be.equal(0);
-  });
-  it("Calling pruneClaims should remove hash if quorum is reached", async function () {
-    const { bridge, claimsHelper, owner, validators, validatorClaimsBRC, chain1, chain2, validatorsCardanoData } =
-      await loadFixture(deployBridgeFixture);
-
-    await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
-    await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
-
-    const abiCoder = new ethers.AbiCoder();
-    let encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
-    let encoded = abiCoder.encode(
-      ["bytes32", "tuple(uint64, string)[]", "uint256", "uint256", "uint8", "uint8"],
-      [
-        validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
-        [
-          [
-            validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount,
-            validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
-          ],
-        ],
-        validatorClaimsBRC.bridgingRequestClaims[0].totalAmount,
-        validatorClaimsBRC.bridgingRequestClaims[0].retryCounter,
-        validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
-        validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
-      ]
-    );
-    let encoded40 =
-      "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-      encodedPrefix.substring(66) +
-      encoded.substring(2);
-    const hash0 = ethers.keccak256(encoded40);
-
-    const validatorClaimsBRC1 = {
-      bridgingRequestClaims: [
-        {
-          observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          receivers: [
-            {
-              amount: 10,
-              destinationAddress: "0x123...",
-            },
-          ],
-          outputUTXO: {
-            txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-            txIndex: 1,
-          },
-          totalAmount: 10,
-          retryCounter: 0,
-          sourceChainId: 1,
-          destinationChainId: 2,
-        },
-      ],
-      batchExecutedClaims: [],
-      batchExecutionFailedClaims: [],
-      refundRequestClaims: [],
-      refundExecutedClaims: [],
-      hotWalletIncrementClaims: [],
-    };
-
-    encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
-    encoded = abiCoder.encode(
-      ["bytes32", "tuple(uint64, string)[]", "uint256", "uint256", "uint8", "uint8"],
-      [
-        validatorClaimsBRC1.bridgingRequestClaims[0].observedTransactionHash,
-        [
-          [
-            validatorClaimsBRC1.bridgingRequestClaims[0].receivers[0].amount,
-            validatorClaimsBRC1.bridgingRequestClaims[0].receivers[0].destinationAddress,
-          ],
-        ],
-        validatorClaimsBRC1.bridgingRequestClaims[0].totalAmount,
-        validatorClaimsBRC1.bridgingRequestClaims[0].retryCounter,
-        validatorClaimsBRC1.bridgingRequestClaims[0].sourceChainId,
-        validatorClaimsBRC1.bridgingRequestClaims[0].destinationChainId,
-      ]
-    );
-    encoded40 =
-      "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-      encodedPrefix.substring(66) +
-      encoded.substring(2);
-    const hash1 = ethers.keccak256(encoded40);
-
-    await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
-    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(1);
-
-    await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC1);
-    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(2);
-    await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC1);
-    await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC1);
-
-    const validatorsAddresses = [];
-    for (let i = 0; i < validators.length; i++) {
-      validatorsAddresses.push(validators[i].address);
-    }
-
-    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(2);
-    expect(await claimsHelper.hasVoted(hash0, validators[0].address)).to.be.equal(true);
-    expect(await claimsHelper.hasVoted(hash0, validators[1].address)).to.be.equal(true);
-    expect(await claimsHelper.hasVoted(hash0, validators[2].address)).to.be.equal(true);
-    expect(await claimsHelper.hasVoted(hash0, validators[3].address)).to.be.equal(true);
-    expect(await claimsHelper.numberOfVotes(hash0)).to.be.equal(4);
-    expect(await claimsHelper.hasVoted(hash1, validators[0].address)).to.be.equal(true);
-    expect(await claimsHelper.hasVoted(hash1, validators[1].address)).to.be.equal(true);
-    expect(await claimsHelper.hasVoted(hash1, validators[2].address)).to.be.equal(true);
-    expect(await claimsHelper.numberOfVotes(hash1)).to.be.equal(3);
-
-    await claimsHelper.connect(owner).pruneClaims(4, validatorsAddresses, 50);
-
-    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(1);
-    expect(await claimsHelper.hasVoted(hash0, validators[0].address)).to.be.equal(false);
-    expect(await claimsHelper.hasVoted(hash0, validators[1].address)).to.be.equal(false);
-    expect(await claimsHelper.hasVoted(hash0, validators[2].address)).to.be.equal(false);
-    expect(await claimsHelper.hasVoted(hash0, validators[3].address)).to.be.equal(false);
-    expect(await claimsHelper.numberOfVotes(hash0)).to.be.equal(0);
-    expect(await claimsHelper.hasVoted(hash1, validators[0].address)).to.be.equal(true);
-    expect(await claimsHelper.hasVoted(hash1, validators[1].address)).to.be.equal(true);
-    expect(await claimsHelper.hasVoted(hash1, validators[2].address)).to.be.equal(true);
-    expect(await claimsHelper.numberOfVotes(hash1)).to.be.equal(3);
   });
 });
 describe("ConfirmedSignedBatches Pruning", function () {

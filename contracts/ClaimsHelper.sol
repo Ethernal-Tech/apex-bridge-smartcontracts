@@ -25,6 +25,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     // claimHash for pruning
     ClaimHash[] public claimsHashes;
     mapping(uint8 => uint64) public nextUnprunedConfirmedSignedBatch;
+    uint256 public constant MIN_TTL = 100; //TODO SET THIS VALUE TO AGREED ON
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -93,11 +94,12 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         return v;
     }
 
-    function pruneClaims(uint256 _quorumCount, address[] calldata _validators, uint256 _ttl) external onlyOwner {
+    function pruneClaims(address[] calldata _validators, uint256 _ttl) external onlyOwner {
+        if (_ttl < MIN_TTL) revert TTLTooLow();
         uint256 i = 0;
         while (i < claimsHashes.length) {
             bytes32 _hashValue = claimsHashes[i].hashValue;
-            if (numberOfVotes[_hashValue] >= _quorumCount || block.number - claimsHashes[i].blockNumber >= _ttl) {
+            if (block.number - claimsHashes[i].blockNumber >= _ttl) {
                 for (uint256 j = 0; j < _validators.length; j++) {
                     delete hasVoted[_hashValue][_validators[j]];
                 }
