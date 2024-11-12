@@ -904,7 +904,7 @@ describe("SignedBatches Pruning", function () {
         "OwnableUnauthorizedAccount"
       );
     });
-    it("Should revert if _nonce is lower then MIN_TRANSACTION_NUMBER", async function () {
+    it("Should revert if _deleteToNonce is lower then MIN_TRANSACTION_NUMBER", async function () {
       const { claims, owner } = await loadFixture(deployBridgeFixture);
 
       await expect(claims.connect(owner).pruneConfirmedTransactions(1, 1)).to.be.revertedWithCustomError(
@@ -912,10 +912,55 @@ describe("SignedBatches Pruning", function () {
         "ConfirmedTransactionsProtectedFromPruning"
       );
     });
-    it("Should revert if _nonce is lower then lastPrunedConfirmedtransaction", async function () {
-      const { claims, owner } = await loadFixture(deployBridgeFixture);
+    it("Should revert if _deleteToNonce is lower then lastPrunedConfirmedtransaction", async function () {
+      const { bridge, claims, owner, chain1, chain2, validators, validatorsCardanoData } = await loadFixture(
+        deployBridgeFixture
+      );
+      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
 
-      await expect(claims.connect(owner).pruneConfirmedTransactions(1, 0)).to.be.revertedWithCustomError(
+      const claimsBRC = generateValidatorClaimsBRCArray();
+
+      console.log(await claims.lastConfirmedTxNonce(claimsBRC[0].bridgingRequestClaims[0].destinationChainId));
+
+      // for (let i = 0; i < claimsBRC.length; i++) {
+      //   for (let j = 0; j < 4; j++) {
+      //     await bridge.connect(validators[j]).submitClaims(claimsBRC[i]);
+      //   }
+      // }
+
+      for (let j = 0; j < 4; j++) {
+        await bridge.connect(validators[j]).submitClaims(claimsBRC[0]);
+      }
+
+      console.log(await claims.lastConfirmedTxNonce(claimsBRC[0].bridgingRequestClaims[0].destinationChainId));
+
+      for (let j = 0; j < 4; j++) {
+        await bridge.connect(validators[j]).submitClaims(claimsBRC[1]);
+      }
+
+      console.log(await claims.lastConfirmedTxNonce(claimsBRC[0].bridgingRequestClaims[0].destinationChainId));
+
+      // // wait for next timeout
+      // for (let i = 0; i < 3; i++) {
+      //   await ethers.provider.send("evm_mine");
+      // }
+
+      // const signedBatchesChain1 = getSignedBatchArrayChain1();
+
+      // await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      // await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      // await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      // await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      // expect(await claims.nextUnprunedConfirmedTransaction(signedBatch.destinationChainId)).to.equal(0);
+      expect(
+        await claims.nextUnprunedConfirmedTransaction(claimsBRC[0].bridgingRequestClaims[0].destinationChainId)
+      ).to.equal(0);
+      console.log("KOLIKO IMA");
+      console.log(await claims.lastConfirmedTxNonce(claimsBRC[0].bridgingRequestClaims[0].destinationChainId));
+
+      await expect(claims.connect(owner).pruneConfirmedTransactions(1, 3)).to.be.revertedWithCustomError(
         claims,
         "AlreadyPruned"
       );
@@ -976,3 +1021,38 @@ describe("SignedBatches Pruning", function () {
     });
   });
 });
+
+function generateValidatorClaimsBRCArray() {
+  const claimsArray = [];
+
+  for (let i = 0; i < 20; i++) {
+    const observedTransactionHash = `0x74657374000000000000000000000000000000000000000000000000000000${i
+      .toString()
+      .padStart(2, "0")}`;
+    const validatorClaimsBRC = {
+      bridgingRequestClaims: [
+        {
+          observedTransactionHash: observedTransactionHash,
+          receivers: [
+            {
+              amount: 100,
+              destinationAddress: "0x123...", // Using a fixed address for simplicity
+            },
+          ],
+          totalAmount: 100,
+          retryCounter: 0,
+          sourceChainId: 1,
+          destinationChainId: 2,
+        },
+      ],
+      batchExecutedClaims: [],
+      batchExecutionFailedClaims: [],
+      refundRequestClaims: [],
+      refundExecutedClaims: [],
+      hotWalletIncrementClaims: [],
+    };
+    claimsArray.push(validatorClaimsBRC);
+  }
+
+  return claimsArray;
+}
