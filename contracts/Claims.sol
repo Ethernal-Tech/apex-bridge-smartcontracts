@@ -370,7 +370,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function setFundAdmin(address _fundAdmin) external onlyOwner {
+        if (_fundAdmin == address(0)) revert ZeroAddress();
         fundAdmin = _fundAdmin;
+        emit FundAdminChanged(_fundAdmin);
     }
 
     modifier onlyBridge() {
