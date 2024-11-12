@@ -1,3 +1,4 @@
+import { ConfirmedBatchStruct } from "./../typechain-types/contracts/interfaces/IBridgeContract";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
@@ -58,28 +59,76 @@ describe("Chain Registration", function () {
         .to.emit(bridge, "newChainRegistered")
         .withArgs(1);
     });
+    it("setChainAdditionalData should be allowed for owner", async function () {
+      const { bridge, chain1, owner, validators, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+      const [multisigAddr, feeAddr] = ["0xff0033", "0x0007788aa"];
+
+      await expect(
+        bridge.connect(owner).setChainAdditionalData(chain1.id, multisigAddr, feeAddr)
+      ).to.be.revertedWithCustomError(bridge, "ChainIsNotRegistered");
+
+      await expect(
+        bridge.connect(validators[0]).setChainAdditionalData(chain1.id, multisigAddr, feeAddr)
+      ).to.be.revertedWithCustomError(bridge, "OwnableUnauthorizedAccount");
+
+      await bridge
+        .connect(validators[0])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
+      await bridge
+        .connect(validators[1])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[1].data);
+      await bridge
+        .connect(validators[2])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[2].data);
+      await bridge
+        .connect(validators[3])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[3].data);
+      await bridge
+        .connect(validators[4])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[4].data);
+
+      await bridge.connect(owner).setChainAdditionalData(chain1.id, multisigAddr, feeAddr);
+
+      const chains = await bridge.getAllRegisteredChains();
+      expect(chains.length).to.equal(1);
+      expect(chains[0].id).to.equal(1);
+      expect(chains[0].addressMultisig).to.equal(multisigAddr);
+      expect(chains[0].addressFeePayer).to.equal(feeAddr);
+    });
   });
 
   describe("Registering new chain with Governance", function () {
     it("Should revert proposal if chain is already registered with Governance", async function () {
       const { bridge, claims, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(validators[0]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
-      await bridge.connect(validators[1]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[1].data);
-      await bridge.connect(validators[2]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[2].data);
+      await bridge
+        .connect(validators[0])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
+      await bridge
+        .connect(validators[1])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[1].data);
+      await bridge
+        .connect(validators[2])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[2].data);
 
       expect(await claims.isChainRegistered(chain1.id)).to.be.false;
 
-      await bridge.connect(validators[3]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[3].data);
+      await bridge
+        .connect(validators[3])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[3].data);
 
       expect(await claims.isChainRegistered(chain1.id)).to.be.false;
 
-      await bridge.connect(validators[4]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[4].data);
+      await bridge
+        .connect(validators[4])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[4].data);
 
       expect(await claims.isChainRegistered(chain1.id)).to.be.true;
 
       await expect(
-        bridge.connect(validators[4]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[4].data)
+        bridge
+          .connect(validators[4])
+          .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[4].data)
       ).to.be.revertedWithCustomError(bridge, "ChainAlreadyRegistered");
     });
 
@@ -96,17 +145,25 @@ describe("Chain Registration", function () {
         deployBridgeFixture
       );
 
-      await bridge.connect(validators[0]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
+      await bridge
+        .connect(validators[0])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
 
       await expect(
-        bridge.connect(validators[0]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data)
+        bridge
+          .connect(validators[0])
+          .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data)
       ).to.be.revertedWithCustomError(claimsHelper, "AlreadyProposed");
     });
 
     it("Should emit new chain proposal", async function () {
       const { bridge, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
-      await expect(bridge.connect(validators[0]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data))
+      await expect(
+        bridge
+          .connect(validators[0])
+          .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data)
+      )
         .to.emit(bridge, "newChainProposal")
         .withArgs(1, validators[0].address);
     });
@@ -114,14 +171,24 @@ describe("Chain Registration", function () {
     it("Should add new chain if there are enough votes (100% of them)", async function () {
       const { bridge, claims, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(validators[0]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
-      await bridge.connect(validators[1]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[1].data);
-      await bridge.connect(validators[2]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[2].data);
-      await bridge.connect(validators[3]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[3].data);
+      await bridge
+        .connect(validators[0])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
+      await bridge
+        .connect(validators[1])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[1].data);
+      await bridge
+        .connect(validators[2])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[2].data);
+      await bridge
+        .connect(validators[3])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[3].data);
 
       expect(await claims.isChainRegistered(chain1.id)).to.be.false;
 
-      await bridge.connect(validators[4]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
+      await bridge
+        .connect(validators[4])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
 
       expect(await claims.isChainRegistered(chain1.id)).to.be.true;
     });
@@ -129,14 +196,24 @@ describe("Chain Registration", function () {
     it("Should set correct nextTimeoutBlock when chain is registered with Governance", async function () {
       const { bridge, claims, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(validators[0]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
-      await bridge.connect(validators[1]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[1].data);
-      await bridge.connect(validators[2]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[2].data);
-      await bridge.connect(validators[3]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[3].data);
+      await bridge
+        .connect(validators[0])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
+      await bridge
+        .connect(validators[1])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[1].data);
+      await bridge
+        .connect(validators[2])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[2].data);
+      await bridge
+        .connect(validators[3])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[3].data);
 
       expect(await claims.nextTimeoutBlock(1)).to.equal(BigInt(0));
 
-      await bridge.connect(validators[4]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
+      await bridge
+        .connect(validators[4])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
 
       expect(await claims.nextTimeoutBlock(1)).to.equal(
         BigInt(await ethers.provider.getBlockNumber()) + (await claims.timeoutBlocksNumber())
@@ -146,15 +223,27 @@ describe("Chain Registration", function () {
     it("Should emit new chain registered when registered by Governance", async function () {
       const { bridge, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(validators[0]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
+      await bridge
+        .connect(validators[0])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
 
-      await bridge.connect(validators[1]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[1].data);
+      await bridge
+        .connect(validators[1])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[1].data);
 
-      await bridge.connect(validators[2]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[2].data);
+      await bridge
+        .connect(validators[2])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[2].data);
 
-      await bridge.connect(validators[3]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[3].data);
+      await bridge
+        .connect(validators[3])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[3].data);
 
-      await expect(bridge.connect(validators[4]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[4].data))
+      await expect(
+        bridge
+          .connect(validators[4])
+          .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[4].data)
+      )
         .to.emit(bridge, "newChainRegistered")
         .withArgs(1);
     });
@@ -162,17 +251,37 @@ describe("Chain Registration", function () {
     it("Should list all registered chains", async function () {
       const { bridge, chain1, chain2, validators, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(validators[0]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
-      await bridge.connect(validators[1]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[1].data);
-      await bridge.connect(validators[2]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[2].data);
-      await bridge.connect(validators[3]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[3].data);
-      await bridge.connect(validators[4]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[4].data);
+      await bridge
+        .connect(validators[0])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
+      await bridge
+        .connect(validators[1])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[1].data);
+      await bridge
+        .connect(validators[2])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[2].data);
+      await bridge
+        .connect(validators[3])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[3].data);
+      await bridge
+        .connect(validators[4])
+        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[4].data);
 
-      await bridge.connect(validators[0]).registerChainGovernance(chain2.id, chain2.chainType, 100, validatorsCardanoData[0].data);
-      await bridge.connect(validators[1]).registerChainGovernance(chain2.id, chain2.chainType, 100, validatorsCardanoData[1].data);
-      await bridge.connect(validators[2]).registerChainGovernance(chain2.id, chain2.chainType, 100, validatorsCardanoData[2].data);
-      await bridge.connect(validators[3]).registerChainGovernance(chain2.id, chain2.chainType, 100, validatorsCardanoData[3].data);
-      await bridge.connect(validators[4]).registerChainGovernance(chain2.id, chain2.chainType, 100, validatorsCardanoData[4].data);
+      await bridge
+        .connect(validators[0])
+        .registerChainGovernance(chain2.id, chain2.chainType, 100, validatorsCardanoData[0].data);
+      await bridge
+        .connect(validators[1])
+        .registerChainGovernance(chain2.id, chain2.chainType, 100, validatorsCardanoData[1].data);
+      await bridge
+        .connect(validators[2])
+        .registerChainGovernance(chain2.id, chain2.chainType, 100, validatorsCardanoData[2].data);
+      await bridge
+        .connect(validators[3])
+        .registerChainGovernance(chain2.id, chain2.chainType, 100, validatorsCardanoData[3].data);
+      await bridge
+        .connect(validators[4])
+        .registerChainGovernance(chain2.id, chain2.chainType, 100, validatorsCardanoData[4].data);
 
       const chains = await bridge.getAllRegisteredChains();
       expect(chains.length).to.equal(2);
@@ -209,7 +318,7 @@ describe("Chain Registration", function () {
       validatorsCardanoData.push({
         addr: validator6.address,
         data: {
-          key: [BigInt(4 * 5), BigInt(4 * 5 + 1), BigInt(4 * 5 + 2), BigInt(4 * 5 + 3)]
+          key: [BigInt(4 * 5), BigInt(4 * 5 + 1), BigInt(4 * 5 + 2), BigInt(4 * 5 + 3)],
         },
       });
 
@@ -232,32 +341,35 @@ describe("Chain Registration", function () {
     });
   });
 
-  it("setChainAdditionalData should be allowed for owner", async function () {
-    const { bridge, chain1, owner, validators, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
-    const [multisigAddr, feeAddr] = ['0xff0033', '0x0007788aa'];
+  describe("Registering new chain with Governance", function () {
+    it("Should revert if setChainTokenQuantity is not called by fundAdmin", async function () {
+      const { claims } = await loadFixture(deployBridgeFixture);
 
-    await expect(bridge.connect(owner).setChainAdditionalData(chain1.id, multisigAddr, feeAddr)).to.be.revertedWithCustomError(
-      bridge,
-      "ChainIsNotRegistered"
-    );
+      await expect(claims.setChainTokenQuantity(1, 100)).to.be.revertedWithCustomError(claims, "NotFundAdmin");
+    });
 
-    await expect(bridge.connect(validators[0]).setChainAdditionalData(chain1.id, multisigAddr, feeAddr)).to.be.revertedWithCustomError(
-      bridge,
-      "OwnableUnauthorizedAccount"
-    );
+    it("Should revert if setChainTokenQuantity is called on unregistered chain", async function () {
+      const { claims, validators } = await loadFixture(deployBridgeFixture);
 
-    await bridge.connect(validators[0]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
-    await bridge.connect(validators[1]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[1].data);
-    await bridge.connect(validators[2]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[2].data);
-    await bridge.connect(validators[3]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[3].data);
-    await bridge.connect(validators[4]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[4].data);
+      await claims.setFundAdmin(validators[0]);
 
-    await bridge.connect(owner).setChainAdditionalData(chain1.id, multisigAddr, feeAddr);
+      await expect(claims.connect(validators[0]).setChainTokenQuantity(1, 100)).to.be.revertedWithCustomError(
+        claims,
+        "ChainIsNotRegistered"
+      );
+    });
+    it("Should update chainTokenQuantity after calling setChainTokenQuantity by fundAdmin", async function () {
+      const { bridge, claims, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
-    const chains = await bridge.getAllRegisteredChains();
-    expect(chains.length).to.equal(1);
-    expect(chains[0].id).to.equal(1);
-    expect(chains[0].addressMultisig).to.equal(multisigAddr);
-    expect(chains[0].addressFeePayer).to.equal(feeAddr);
+      await bridge.registerChain(chain1, 100, validatorsCardanoData);
+
+      await claims.setFundAdmin(validators[0]);
+
+      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
+
+      await claims.connect(validators[0]).setChainTokenQuantity(chain1.id, 200);
+
+      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(200);
+    });
   });
 });

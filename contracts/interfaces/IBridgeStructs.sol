@@ -144,6 +144,7 @@ interface IBridgeStructs {
     error NotBridge();
     error NotClaims();
     error NotSignedBatches();
+    error NotFundAdmin();
     error NotSignedBatchesOrBridge();
     error NotSignedBatchesOrClaims();
     error NotEnoughBridgingTokensAvailable(bytes32 _claimTransactionHash);

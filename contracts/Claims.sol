@@ -365,6 +365,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function setChainTokenQuantity(uint8 _chainId, uint256 _quantity) external onlyFundAdmin {
+        if (!isChainRegistered[_chainId]) revert ChainIsNotRegistered(_chainId);
         chainTokenQuantity[_chainId] = _quantity;
     }
 
