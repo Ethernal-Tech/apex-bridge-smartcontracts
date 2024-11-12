@@ -14,6 +14,10 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     ClaimsHelper private claimsHelper;
     Validators private validators;
 
+    address public fundAdmin;
+    //chain -> address to defund to
+    mapping(uint8 => string) public defundAddress;
+
     // BlockchainId -> bool
     mapping(uint8 => bool) public isChainRegistered;
 
@@ -360,8 +364,21 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return _txHashes;
     }
 
+    function setChainTokenQuantity(uint8 _chainId, uint256 _quantity) external onlyFundAdmin {
+        chainTokenQuantity[_chainId] = _quantity;
+    }
+
+    function setFundAdmin(address _fundAdmin) external onlyOwner {
+        fundAdmin = _fundAdmin;
+    }
+
     modifier onlyBridge() {
         if (msg.sender != bridgeAddress) revert NotBridge();
+        _;
+    }
+
+    modifier onlyFundAdmin() {
+        if (msg.sender != fundAdmin) revert NotFundAdmin();
         _;
     }
 }
