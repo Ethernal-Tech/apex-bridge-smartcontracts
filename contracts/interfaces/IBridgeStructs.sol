@@ -154,6 +154,7 @@ interface IBridgeStructs {
     error WrongBatchNonce(uint8 _chainId, uint64 _nonce);
     error InvalidSignature();
     error DefundRequestTooHigh(uint8 _chainId, uint256 _availableAmount, uint256 _requestedAmount);
+    error ZeroAddress();
 
     event newChainProposal(uint8 indexed _chainId, address indexed sender);
     event newChainRegistered(uint8 indexed _chainId);
