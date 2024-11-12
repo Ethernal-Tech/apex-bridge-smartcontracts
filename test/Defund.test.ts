@@ -4,11 +4,11 @@ import { ethers } from "hardhat";
 import { deployBridgeFixture } from "./fixtures";
 
 describe("Defund chain", function () {
-  it("Should revert if defund is not called by defundAdmin", async function () {
+  it("Should revert if defund is not called by fundAdmin", async function () {
     const { claims, validators, owner } = await loadFixture(deployBridgeFixture);
 
     await claims.setDefundOwner(validators[0].address);
-    await expect(claims.connect(owner).defund(1, 100)).to.be.revertedWithCustomError(claims, "NotDefundAdmin");
+    await expect(claims.connect(owner).defund(1, 100)).to.be.revertedWithCustomError(claims, "NotFundAdmin");
   });
 
   it("Should revert when defund is called and chain is not registered", async function () {

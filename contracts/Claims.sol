@@ -14,7 +14,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     ClaimsHelper private claimsHelper;
     Validators private validators;
 
-    address public defundAdmin;
+    address public fundAdmin;
     //chain -> address to defund to
     mapping(uint8 => string) public defundAddress;
     //keccak256)abi.encode(Packed"Defund")
@@ -336,7 +336,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return claimsHelper.hasVoted(_hash, _voter);
     }
 
-    function defund(uint8 _chainId, uint256 _amount) external onlyDefundAdmin {
+    function defund(uint8 _chainId, uint256 _amount) external onlyFundAdmin {
         if (!isChainRegistered[_chainId]) {
             revert ChainIsNotRegistered(_chainId);
         }
@@ -401,11 +401,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return _txHashes;
     }
 
-    function setDefundOwner(address _defundAdmin) external onlyOwner {
-        defundAdmin = _defundAdmin;
+    function setDefundOwner(address _fundAdmin) external onlyOwner {
+        fundAdmin = _fundAdmin;
     }
 
-    function setDefundAddress(uint8 _chainId, string calldata _address) external onlyDefundAdmin {
+    function setDefundAddress(uint8 _chainId, string calldata _address) external onlyFundAdmin {
         defundAddress[_chainId] = _address;
     }
 
@@ -414,8 +414,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         _;
     }
 
-    modifier onlyDefundAdmin() {
-        if (msg.sender != defundAdmin) revert NotDefundAdmin();
+    modifier onlyFundAdmin() {
+        if (msg.sender != fundAdmin) revert NotFundAdmin();
         _;
     }
 }
