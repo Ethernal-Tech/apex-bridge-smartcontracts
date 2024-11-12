@@ -7,14 +7,14 @@ describe("Defund chain", function () {
   it("Should revert if defund is not called by fundAdmin", async function () {
     const { claims, validators, owner } = await loadFixture(deployBridgeFixture);
 
-    await claims.setDefundOwner(validators[0].address);
+    await claims.setFundOwner(validators[0].address);
     await expect(claims.connect(owner).defund(1, 100)).to.be.revertedWithCustomError(claims, "NotFundAdmin");
   });
 
   it("Should revert when defund is called and chain is not registered", async function () {
     const { claims, validators } = await loadFixture(deployBridgeFixture);
 
-    await claims.setDefundOwner(validators[0].address);
+    await claims.setFundOwner(validators[0].address);
     await expect(claims.connect(validators[0]).defund(1, 100)).to.be.revertedWithCustomError(
       claims,
       "ChainIsNotRegistered"
@@ -23,7 +23,7 @@ describe("Defund chain", function () {
   it("Should revert when defund amount is higher then availableTokens amount", async function () {
     const { bridge, claims, owner, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
-    await claims.setDefundOwner(validators[0].address);
+    await claims.setFundOwner(validators[0].address);
 
     await bridge.connect(owner).registerChain(chain1, 1, validatorsCardanoData);
     await expect(claims.connect(validators[0]).defund(1, 100)).to.be.revertedWithCustomError(
@@ -34,7 +34,7 @@ describe("Defund chain", function () {
   it("Should remove defund amount from availableTokens amount", async function () {
     const { bridge, claims, owner, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
-    await claims.setDefundOwner(validators[0].address);
+    await claims.setFundOwner(validators[0].address);
 
     await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
     expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
@@ -44,7 +44,7 @@ describe("Defund chain", function () {
   it("Should emit ChainDefunded when defund is exdcuted", async function () {
     const { bridge, claims, owner, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
-    await claims.setDefundOwner(validators[0].address);
+    await claims.setFundOwner(validators[0].address);
 
     await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
 
@@ -57,7 +57,7 @@ describe("Defund chain", function () {
   it("Should add confirmedTransactioin when defund is exdcuted", async function () {
     const { bridge, claims, owner, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
-    await claims.setDefundOwner(validators[0].address);
+    await claims.setFundOwner(validators[0].address);
 
     await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
 
@@ -72,7 +72,7 @@ describe("Defund chain", function () {
   it("Should set correct confirmedTransactioin when defund is exdcuted", async function () {
     const { bridge, claims, owner, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
-    await claims.setDefundOwner(validators[0].address);
+    await claims.setFundOwner(validators[0].address);
 
     await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
 

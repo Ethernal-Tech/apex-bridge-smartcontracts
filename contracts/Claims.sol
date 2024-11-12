@@ -403,10 +403,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function setFundOwner(address _fundAdmin) external onlyOwner {
         fundAdmin = _fundAdmin;
+        emit FundAdminChanged(_fundAdmin);
     }
 
     function setDefundAddress(uint8 _chainId, string calldata _address) external onlyFundAdmin {
         defundAddress[_chainId] = _address;
+        emit DefundAddressChanged(_chainId, _address);
     }
 
     modifier onlyBridge() {
