@@ -364,9 +364,15 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return _txHashes;
     }
 
-    function setChainTokenQuantity(uint8 _chainId, uint256 _quantity) external onlyFundAdmin {
+    function updateChainTokenQuantity(uint8 _chainId, bool _isIncrease, uint256 _quantity) external onlyFundAdmin {
         if (!isChainRegistered[_chainId]) revert ChainIsNotRegistered(_chainId);
-        chainTokenQuantity[_chainId] = _quantity;
+        if (_isIncrease) {
+            chainTokenQuantity[_chainId] += _quantity;
+        } else if (chainTokenQuantity[_chainId] < _quantity) {
+            revert NegativeChainTokenAmount(chainTokenQuantity[_chainId], _quantity);
+        } else {
+            chainTokenQuantity[_chainId] -= _quantity;
+        }
     }
 
     function setFundAdmin(address _fundAdmin) external onlyOwner {
