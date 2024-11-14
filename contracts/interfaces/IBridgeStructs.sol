@@ -161,4 +161,5 @@ interface IBridgeStructs {
     event NotEnoughFunds(string claimeType, uint256 index, uint256 availableAmount);
     event InsufficientFunds(uint256 availableAmount, uint256 withdrawalAmount);
     event FundAdminChanged(address indexed newFundAdmin);
+    event UpdateChainTokenQuantity(uint indexed chainId, bool isIncrement, uint256 tokenQuantity);
 }

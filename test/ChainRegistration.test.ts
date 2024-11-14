@@ -341,14 +341,14 @@ describe("Chain Registration", function () {
     });
   });
 
-  describe("Registering new chain with Governance", function () {
-    it("Should revert if setChainTokenQuantity is not called by fundAdmin", async function () {
+  describe("Chain Token Quantity", function () {
+    it("Should revert if updateChainTokenQuantity is not called by fundAdmin", async function () {
       const { claims } = await loadFixture(deployBridgeFixture);
 
       await expect(claims.updateChainTokenQuantity(1, true, 100)).to.be.revertedWithCustomError(claims, "NotFundAdmin");
     });
 
-    it("Should revert if setChainTokenQuantity is called on unregistered chain", async function () {
+    it("Should revert if updateChainTokenQuantity is called on unregistered chain", async function () {
       const { claims, validators } = await loadFixture(deployBridgeFixture);
 
       await claims.setFundAdmin(validators[0]);
@@ -358,7 +358,7 @@ describe("Chain Registration", function () {
         "ChainIsNotRegistered"
       );
     });
-    it("Should increase chainTokenQuantity after calling setChainTokenQuantity by fundAdmin", async function () {
+    it("Should increase chainTokenQuantity after calling updateChainTokenQuantity by fundAdmin", async function () {
       const { bridge, claims, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
       await bridge.registerChain(chain1, 100, validatorsCardanoData);
@@ -368,6 +368,22 @@ describe("Chain Registration", function () {
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
 
       await claims.connect(validators[0]).updateChainTokenQuantity(chain1.id, true, 100);
+
+      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(200);
+    });
+    it("Should emit event after increaseint chain token quantity with updateChainTokenQuantity", async function () {
+      const { bridge, claims, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+
+      await bridge.registerChain(chain1, 100, validatorsCardanoData);
+
+      await claims.setFundAdmin(validators[0]);
+
+      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
+
+      await expect(claims.connect(validators[0]).updateChainTokenQuantity(chain1.id, true, 100)).to.emit(
+        claims,
+        "UpdateChainTokenQuantity"
+      );
 
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(200);
     });
@@ -383,7 +399,7 @@ describe("Chain Registration", function () {
         "NegativeChainTokenAmount"
       );
     });
-    it("Should decreae chainTokenQuantity by required amount", async function () {
+    it("Should decrease chainTokenQuantity by required amount", async function () {
       const { bridge, claims, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
       await bridge.registerChain(chain1, 100, validatorsCardanoData);
@@ -393,6 +409,22 @@ describe("Chain Registration", function () {
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
 
       await claims.connect(validators[0]).updateChainTokenQuantity(chain1.id, false, 50);
+
+      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(50);
+    });
+    it("Should emit event after decreasing chain token quantity with updateChainTokenQuantity", async function () {
+      const { bridge, claims, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+
+      await bridge.registerChain(chain1, 100, validatorsCardanoData);
+
+      await claims.setFundAdmin(validators[0]);
+
+      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
+
+      await expect(claims.connect(validators[0]).updateChainTokenQuantity(chain1.id, false, 50)).to.emit(
+        claims,
+        "UpdateChainTokenQuantity"
+      );
 
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(50);
     });
