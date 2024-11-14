@@ -1,4 +1,3 @@
-import { ConfirmedBatchStruct } from "./../typechain-types/contracts/interfaces/IBridgeContract";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";

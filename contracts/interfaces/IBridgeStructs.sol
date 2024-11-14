@@ -153,13 +153,11 @@ interface IBridgeStructs {
     error ChainIsNotRegistered(uint8 _chainId);
     error WrongBatchNonce(uint8 _chainId, uint64 _nonce);
     error InvalidSignature();
-    error ZeroAddress();
     error NegativeChainTokenAmount(uint256 _availableAmount, uint256 _decreaseAmount);
 
     event newChainProposal(uint8 indexed _chainId, address indexed sender);
     event newChainRegistered(uint8 indexed _chainId);
     event NotEnoughFunds(string claimeType, uint256 index, uint256 availableAmount);
     event InsufficientFunds(uint256 availableAmount, uint256 withdrawalAmount);
-    event FundAdminChanged(address indexed newFundAdmin);
     event UpdatedChainTokenQuantity(uint indexed chainId, bool isIncrement, uint256 tokenQuantity);
 }
