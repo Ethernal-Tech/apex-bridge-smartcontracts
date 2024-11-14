@@ -447,7 +447,6 @@ describe("Batch Creation", function () {
         signedBatch,
         validatorsCardanoData,
         validatorClaimsBRC,
-        claims,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);

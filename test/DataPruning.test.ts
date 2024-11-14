@@ -914,8 +914,9 @@ describe("SignedBatches Pruning", function () {
       );
     });
     it("Should revert if _deleteToNonce is lower then lastPrunedConfirmedtransaction", async function () {
-      const { bridge, claims, owner, chain1, chain2, validators, signedBatch, validatorsCardanoData } =
-        await loadFixture(deployBridgeFixture);
+      const { bridge, claims, owner, chain1, chain2, validators, validatorsCardanoData } = await loadFixture(
+        deployBridgeFixture
+      );
       await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
 
@@ -927,80 +928,59 @@ describe("SignedBatches Pruning", function () {
         }
       }
 
-      // wait for next timeout
-      for (let i = 0; i < 3; i++) {
-        await ethers.provider.send("evm_mine");
-      }
-
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
-
       expect(
         await claims.nextUnprunedConfirmedTransaction(claimsBRC[0].bridgingRequestClaims[0].destinationChainId)
       ).to.equal(0);
 
-      await claims.connect(owner).pruneConfirmedTransactions(1, 3);
+      await claims
+        .connect(owner)
+        .pruneConfirmedTransactions(claimsBRC[0].bridgingRequestClaims[0].destinationChainId, 3);
 
-      await expect(claims.connect(owner).pruneConfirmedTransactions(1, 3)).to.be.revertedWithCustomError(
-        claims,
-        "AlreadyPruned"
-      );
+      await expect(
+        claims.connect(owner).pruneConfirmedTransactions(claimsBRC[0].bridgingRequestClaims[0].destinationChainId, 3)
+      ).to.be.revertedWithCustomError(claims, "AlreadyPruned");
     });
     it("Should prune confirmedSignedTransactions when conditions are met", async function () {
-      const {
-        bridge,
-        claims,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        signedBatch,
-        validatorsCardanoData,
-        validatorClaimsBRC,
-      } = await loadFixture(deployBridgeFixture);
+      const { bridge, claims, owner, chain1, chain2, validators, signedBatch, validatorsCardanoData } =
+        await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
 
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
+      const claimsBRC = generateValidatorClaimsBRCArray();
 
-      // wait for next timeout
-      for (let i = 0; i < 3; i++) {
-        await ethers.provider.send("evm_mine");
+      for (let i = 0; i < claimsBRC.length; i++) {
+        for (let j = 0; j < 4; j++) {
+          await bridge.connect(validators[j]).submitClaims(claimsBRC[i]);
+        }
       }
 
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+      const chainId = claimsBRC[0].bridgingRequestClaims[0].destinationChainId;
 
-      expect(await claims.nextUnprunedConfirmedTransaction(signedBatch.destinationChainId)).to.equal(0);
+      expect(await claims.nextUnprunedConfirmedTransaction(chainId)).to.equal(0);
 
-      expect((await claims.confirmedTransactions(2, 1)).blockHeight).to.be.equal(24);
-      expect((await claims.confirmedTransactions(2, 1)).totalAmount).to.be.equal(100);
-      expect((await claims.confirmedTransactions(2, 1)).retryCounter).to.be.equal(0);
-      expect((await claims.confirmedTransactions(2, 1)).nonce).to.be.equal(1);
-      expect((await claims.confirmedTransactions(2, 1)).sourceChainId).to.be.equal(1);
-      expect((await claims.confirmedTransactions(2, 1)).observedTransactionHash).to.be.equal(
-        "0x7465737400000000000000000000000000000000000000000000000000000000"
-      );
+      expect(await claims.lastConfirmedTxNonce(chainId)).to.equal(20);
 
-      await claims.connect(owner).pruneConfirmedTransactions(2, 1);
+      await claims.pruneConfirmedTransactions(chainId, 10);
 
-      expect(await claims.nextUnprunedConfirmedTransaction(signedBatch.destinationChainId)).to.equal(2);
-      expect((await claims.confirmedTransactions(2, 1)).blockHeight).to.be.equal(0);
-      expect((await claims.confirmedTransactions(2, 1)).totalAmount).to.be.equal(0);
-      expect((await claims.confirmedTransactions(2, 1)).retryCounter).to.be.equal(0);
-      expect((await claims.confirmedTransactions(2, 1)).nonce).to.be.equal(0);
-      expect((await claims.confirmedTransactions(2, 1)).sourceChainId).to.be.equal(0);
-      expect((await claims.confirmedTransactions(2, 1)).observedTransactionHash).to.be.equal(
-        "0x0000000000000000000000000000000000000000000000000000000000000000"
-      );
+      expect(await claims.nextUnprunedConfirmedTransaction(chainId)).to.equal(11);
+
+      for (let i = 1; i <= 10; i++) {
+        expect((await claims.confirmedTransactions(chainId, i)).blockHeight).to.be.equal(0);
+        expect((await claims.confirmedTransactions(chainId, i)).totalAmount).to.be.equal(0);
+        expect((await claims.confirmedTransactions(chainId, i)).retryCounter).to.be.equal(0);
+        expect((await claims.confirmedTransactions(chainId, i)).nonce).to.be.equal(0);
+        expect((await claims.confirmedTransactions(chainId, i)).sourceChainId).to.be.equal(0);
+        expect((await claims.confirmedTransactions(chainId, i)).observedTransactionHash).to.be.equal(
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
+      }
+
+      for (let i = 11; i <= 20; i++) {
+        expect((await claims.confirmedTransactions(chainId, i)).totalAmount).to.be.equal(1);
+        expect((await claims.confirmedTransactions(chainId, i)).retryCounter).to.be.equal(0);
+        expect((await claims.confirmedTransactions(chainId, i)).sourceChainId).to.be.equal(1);
+      }
     });
   });
 });

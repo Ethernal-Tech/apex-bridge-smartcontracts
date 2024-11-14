@@ -381,6 +381,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         for (uint64 i = nextUnprunedConfirmedTransaction[_chainId]; i <= _deleteToNonce; i++) {
             delete confirmedTransactions[_chainId][i];
         }
+
         nextUnprunedConfirmedTransaction[_chainId] = _deleteToNonce + 1;
     }
 
