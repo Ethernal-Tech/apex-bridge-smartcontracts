@@ -13,10 +13,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
     Validators private validators;
-
-    address public fundAdmin;
-    //chain -> address to defund to
-    mapping(uint8 => string) public defundAddress;
+    address private adminContractAddress;
 
     // BlockchainId -> bool
     mapping(uint8 => bool) public isChainRegistered;
@@ -60,11 +57,13 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function setDependencies(
         address _bridgeAddress,
         address _claimsHelperAddress,
-        address _validatorsAddress
+        address _validatorsAddress,
+        address _adminContractAddress
     ) external onlyOwner {
         bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         validators = Validators(_validatorsAddress);
+        adminContractAddress = _adminContractAddress;
     }
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
@@ -341,8 +340,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return claimsHelper.hasVoted(_hash, _voter);
     }
 
-    function getTokenQuantity(uint8 _chainId) external view returns (uint256) {
+    function getChainTokenQuantity(uint8 _chainId) external view returns (uint256) {
         return chainTokenQuantity[_chainId];
+    }
+
+    function setChainTokenQuantity(uint8 _chainId, uint256 _tokenAmount) external onlyAdminContract {
+        chainTokenQuantity[_chainId] = _tokenAmount;
     }
 
     function getBatchTransactions(uint8 _chainId, uint64 _batchId) external view returns (TxDataInfo[] memory) {
@@ -364,32 +367,13 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return _txHashes;
     }
 
-    function updateChainTokenQuantity(uint8 _chainId, bool _isIncrease, uint256 _quantity) external onlyFundAdmin {
-        if (!isChainRegistered[_chainId]) revert ChainIsNotRegistered(_chainId);
-        if (_isIncrease) {
-            chainTokenQuantity[_chainId] += _quantity;
-            emit UpdateChainTokenQuantity(_chainId, _isIncrease, _quantity);
-        } else if (chainTokenQuantity[_chainId] < _quantity) {
-            revert NegativeChainTokenAmount(chainTokenQuantity[_chainId], _quantity);
-        } else {
-            chainTokenQuantity[_chainId] -= _quantity;
-            emit UpdateChainTokenQuantity(_chainId, _isIncrease, _quantity);
-        }
-    }
-
-    function setFundAdmin(address _fundAdmin) external onlyOwner {
-        if (_fundAdmin == address(0)) revert ZeroAddress();
-        fundAdmin = _fundAdmin;
-        emit FundAdminChanged(_fundAdmin);
-    }
-
     modifier onlyBridge() {
         if (msg.sender != bridgeAddress) revert NotBridge();
         _;
     }
 
-    modifier onlyFundAdmin() {
-        if (msg.sender != fundAdmin) revert NotFundAdmin();
+    modifier onlyAdminContract() {
+        if (msg.sender != adminContractAddress) revert NotAdminContract();
         _;
     }
 }

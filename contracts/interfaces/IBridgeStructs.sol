@@ -144,7 +144,7 @@ interface IBridgeStructs {
     error NotBridge();
     error NotClaims();
     error NotSignedBatches();
-    error NotFundAdmin();
+    error NotAdminContract();
     error NotSignedBatchesOrBridge();
     error NotSignedBatchesOrClaims();
     error NotEnoughBridgingTokensAvailable(bytes32 _claimTransactionHash);
@@ -161,5 +161,5 @@ interface IBridgeStructs {
     event NotEnoughFunds(string claimeType, uint256 index, uint256 availableAmount);
     event InsufficientFunds(uint256 availableAmount, uint256 withdrawalAmount);
     event FundAdminChanged(address indexed newFundAdmin);
-    event UpdateChainTokenQuantity(uint indexed chainId, bool isIncrement, uint256 tokenQuantity);
+    event UpdatedChainTokenQuantity(uint indexed chainId, bool isIncrement, uint256 tokenQuantity);
 }

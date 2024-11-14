@@ -429,7 +429,7 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      const tokenAmountDestination = await claims.getTokenQuantity(signedBatch.destinationChainId);
+      const tokenAmountDestination = await claims.getChainTokenQuantity(signedBatch.destinationChainId);
 
       let sumAmounts = 0;
       for (let i = 0; i < validatorClaimsBRC.bridgingRequestClaims[0].receivers.length; i++) {
@@ -450,7 +450,6 @@ describe("Batch Creation", function () {
         signedBatch,
         validatorsCardanoData,
         validatorClaimsBRC,
-        claims,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
