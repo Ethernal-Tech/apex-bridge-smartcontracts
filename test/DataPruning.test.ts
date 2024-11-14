@@ -1,5 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
+import { ethers } from "hardhat";
 import { deployBridgeFixture } from "./fixtures";
 
 describe("Claims Pruning", function () {
@@ -913,52 +914,36 @@ describe("SignedBatches Pruning", function () {
       );
     });
     it("Should revert if _deleteToNonce is lower then lastPrunedConfirmedtransaction", async function () {
-      const { bridge, claims, owner, chain1, chain2, validators, validatorsCardanoData } = await loadFixture(
-        deployBridgeFixture
-      );
+      const { bridge, claims, owner, chain1, chain2, validators, signedBatch, validatorsCardanoData } =
+        await loadFixture(deployBridgeFixture);
       await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
 
       const claimsBRC = generateValidatorClaimsBRCArray();
 
-      console.log(await claims.lastConfirmedTxNonce(claimsBRC[0].bridgingRequestClaims[0].destinationChainId));
-
-      // for (let i = 0; i < claimsBRC.length; i++) {
-      //   for (let j = 0; j < 4; j++) {
-      //     await bridge.connect(validators[j]).submitClaims(claimsBRC[i]);
-      //   }
-      // }
-
-      for (let j = 0; j < 4; j++) {
-        await bridge.connect(validators[j]).submitClaims(claimsBRC[0]);
+      for (let i = 0; i < claimsBRC.length; i++) {
+        for (let j = 0; j < 4; j++) {
+          await bridge.connect(validators[j]).submitClaims(claimsBRC[i]);
+        }
       }
 
-      console.log(await claims.lastConfirmedTxNonce(claimsBRC[0].bridgingRequestClaims[0].destinationChainId));
-
-      for (let j = 0; j < 4; j++) {
-        await bridge.connect(validators[j]).submitClaims(claimsBRC[1]);
+      // wait for next timeout
+      for (let i = 0; i < 3; i++) {
+        await ethers.provider.send("evm_mine");
       }
 
-      console.log(await claims.lastConfirmedTxNonce(claimsBRC[0].bridgingRequestClaims[0].destinationChainId));
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      // // wait for next timeout
-      // for (let i = 0; i < 3; i++) {
-      //   await ethers.provider.send("evm_mine");
-      // }
-
-      // const signedBatchesChain1 = getSignedBatchArrayChain1();
-
-      // await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
-      // await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
-      // await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
-      // await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
-
-      // expect(await claims.nextUnprunedConfirmedTransaction(signedBatch.destinationChainId)).to.equal(0);
       expect(
         await claims.nextUnprunedConfirmedTransaction(claimsBRC[0].bridgingRequestClaims[0].destinationChainId)
       ).to.equal(0);
-      console.log("KOLIKO IMA");
+
       console.log(await claims.lastConfirmedTxNonce(claimsBRC[0].bridgingRequestClaims[0].destinationChainId));
+      console.log(await claims.lastConfirmedTxNonce(1));
+      await claims.connect(owner).pruneConfirmedTransactions(1, 3);
 
       await expect(claims.connect(owner).pruneConfirmedTransactions(1, 3)).to.be.revertedWithCustomError(
         claims,
@@ -1035,11 +1020,11 @@ function generateValidatorClaimsBRCArray() {
           observedTransactionHash: observedTransactionHash,
           receivers: [
             {
-              amount: 100,
+              amount: 1,
               destinationAddress: "0x123...", // Using a fixed address for simplicity
             },
           ],
-          totalAmount: 100,
+          totalAmount: 1,
           retryCounter: 0,
           sourceChainId: 1,
           destinationChainId: 2,
