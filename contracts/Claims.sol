@@ -8,6 +8,7 @@ import "./interfaces/IBridgeStructs.sol";
 import "./Bridge.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
+import "hardhat/console.sol";
 
 contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private bridgeAddress;
@@ -71,6 +72,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
         uint256 bridgingRequestClaimsLength = _claims.bridgingRequestClaims.length;
         for (uint i; i < bridgingRequestClaimsLength; i++) {
+            console.log("USAO 1");
             BridgingRequestClaim calldata _claim = _claims.bridgingRequestClaims[i];
             uint8 sourceChainId = _claim.sourceChainId;
             uint8 destinationChainId = _claim.destinationChainId;
@@ -78,10 +80,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             if (!isChainRegistered[sourceChainId]) {
                 revert ChainIsNotRegistered(sourceChainId);
             }
-
+            console.log("USAO 3");
             if (!isChainRegistered[destinationChainId]) {
                 revert ChainIsNotRegistered(destinationChainId);
             }
+            console.log("USAO 3");
 
             _submitClaimsBRC(_claim, i, _caller);
         }
@@ -138,12 +141,13 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _submitClaimsBRC(BridgingRequestClaim calldata _claim, uint256 i, address _caller) internal {
+        console.log("USAO 4");
         uint256 _quorumCnt = validators.getQuorumNumberOfValidators();
         bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
         if (claimsHelper.isVoteRestricted(_caller, _claimHash, _quorumCnt)) {
             return;
         }
-
+        console.log("USAO 5");
         uint256 _receiversSum = _claim.totalAmount;
         uint8 _destinationChainId = _claim.destinationChainId;
 
@@ -151,10 +155,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             emit NotEnoughFunds("BRC", i, chainTokenQuantity[_destinationChainId]);
             return;
         }
-
+        console.log("USAO 6");
         uint256 _votesCnt = claimsHelper.setVoted(_caller, _claimHash);
 
         if (_votesCnt == _quorumCnt) {
+            console.log("USAO 7");
             chainTokenQuantity[_destinationChainId] -= _receiversSum;
             chainTokenQuantity[_claim.sourceChainId] += _receiversSum;
 
@@ -266,6 +271,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _setConfirmedTransactions(BridgingRequestClaim calldata _claim) internal {
+        console.log("USAO 10");
         uint8 destinationChainId = _claim.destinationChainId;
         uint64 nextNonce = ++lastConfirmedTxNonce[destinationChainId];
         confirmedTransactions[destinationChainId][nextNonce].observedTransactionHash = _claim.observedTransactionHash;
