@@ -371,25 +371,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function pruneConfirmedTransactions(uint8 _chainId, uint64 _deleteToNonce) external onlyOwner {
-        // with || could fail on first and throw on third, no shott-circuit mechanism in solidity
-
-        console.log("DJE BA ZAPELO");
-        console.logBool(lastConfirmedTxNonce[_chainId] <= MIN_NUMBER_OF_TRANSACTIONS);
-        console.logBool(MIN_NUMBER_OF_TRANSACTIONS <= (lastConfirmedTxNonce[_chainId] - _deleteToNonce));
+        if (_deleteToNonce <= nextUnprunedConfirmedTransaction[_chainId]) revert AlreadyPruned();
 
         if (
-            (lastConfirmedTxNonce[_chainId] <= MIN_NUMBER_OF_TRANSACTIONS) ||
-            (MIN_NUMBER_OF_TRANSACTIONS <= (lastConfirmedTxNonce[_chainId] - _deleteToNonce))
+            _deleteToNonce <= MIN_NUMBER_OF_TRANSACTIONS ||
+            (lastConfirmedTxNonce[_chainId] + _deleteToNonce) < MIN_NUMBER_OF_TRANSACTIONS
         ) revert ConfirmedTransactionsProtectedFromPruning();
-        // if (lastConfirmedTxNonce[_chainId] <= MIN_NUMBER_OF_TRANSACTIONS) {
-        //     revert ConfirmedTransactionsProtectedFromPruning();
-        // } else if (_deleteToNonce <= MIN_NUMBER_OF_TRANSACTIONS) {
-        //     revert ConfirmedTransactionsProtectedFromPruning();
-        // } else if (MIN_NUMBER_OF_TRANSACTIONS <= (lastConfirmedTxNonce[_chainId] - _deleteToNonce)) {
-        //     revert ConfirmedTransactionsProtectedFromPruning();
-        // }
-
-        if (_deleteToNonce <= nextUnprunedConfirmedTransaction[_chainId]) revert AlreadyPruned();
 
         for (uint64 i = nextUnprunedConfirmedTransaction[_chainId]; i <= _deleteToNonce; i++) {
             delete confirmedTransactions[_chainId][i];

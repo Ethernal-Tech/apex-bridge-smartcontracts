@@ -905,7 +905,7 @@ describe("SignedBatches Pruning", function () {
         "OwnableUnauthorizedAccount"
       );
     });
-    it("Should revert if _deleteToNonce is lower then MIN_TRANSACTION_NUMBER", async function () {
+    it("Should revert if _deleteToNonce is lower than MIN_TRANSACTION_NUMBER", async function () {
       const { claims, owner } = await loadFixture(deployBridgeFixture);
 
       await expect(claims.connect(owner).pruneConfirmedTransactions(1, 1)).to.be.revertedWithCustomError(
@@ -941,8 +941,6 @@ describe("SignedBatches Pruning", function () {
         await claims.nextUnprunedConfirmedTransaction(claimsBRC[0].bridgingRequestClaims[0].destinationChainId)
       ).to.equal(0);
 
-      console.log(await claims.lastConfirmedTxNonce(claimsBRC[0].bridgingRequestClaims[0].destinationChainId));
-      console.log(await claims.lastConfirmedTxNonce(1));
       await claims.connect(owner).pruneConfirmedTransactions(1, 3);
 
       await expect(claims.connect(owner).pruneConfirmedTransactions(1, 3)).to.be.revertedWithCustomError(
