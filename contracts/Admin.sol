@@ -28,17 +28,12 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     }
 
     function updateChainTokenQuantity(uint8 _chainId, bool _isIncrease, uint256 _quantity) external onlyOwner {
-        uint256 currentChainTokenQuantity = claims.chainTokenQuantity(_chainId);
-
         if (!claims.isChainRegistered(_chainId)) revert ChainIsNotRegistered(_chainId);
-        if (_isIncrease) {
-            claims.setChainTokenQuantity(_chainId, currentChainTokenQuantity + _quantity);
-            emit UpdatedChainTokenQuantity(_chainId, _isIncrease, _quantity);
-        } else if (claims.chainTokenQuantity(_chainId) < _quantity) {
-            revert NegativeChainTokenAmount(currentChainTokenQuantity, _quantity);
-        } else {
-            claims.setChainTokenQuantity(_chainId, currentChainTokenQuantity - _quantity);
-            emit UpdatedChainTokenQuantity(_chainId, _isIncrease, _quantity);
-        }
+        if (claims.chainTokenQuantity(_chainId) < _quantity)
+            revert NegativeChainTokenAmount(claims.chainTokenQuantity(_chainId), _quantity);
+
+        claims.updateChainTokenQuantity(_chainId, _isIncrease, _quantity);
+
+        emit UpdatedChainTokenQuantity(_chainId, _isIncrease, _quantity);
     }
 }

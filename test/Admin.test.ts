@@ -27,7 +27,10 @@ describe("Admin Functions", function () {
     });
     it("Should revert if setChainTokenQuantity in Clais is not called by Admin contract", async function () {
       const { admin, claims } = await loadFixture(deployBridgeFixture);
-      await expect(claims.setChainTokenQuantity(1, 100)).to.be.revertedWithCustomError(claims, "NotAdminContract");
+      await expect(claims.updateChainTokenQuantity(1, true, 100)).to.be.revertedWithCustomError(
+        claims,
+        "NotAdminContract"
+      );
     });
     it("Should increase chainTokenQuantity after calling updateChainTokenQuantity", async function () {
       const { admin, bridge, claims, validators, chain1, validatorsCardanoData } = await loadFixture(

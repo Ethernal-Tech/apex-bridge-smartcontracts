@@ -344,8 +344,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return chainTokenQuantity[_chainId];
     }
 
-    function setChainTokenQuantity(uint8 _chainId, uint256 _tokenAmount) external onlyAdminContract {
-        chainTokenQuantity[_chainId] = _tokenAmount;
+    function updateChainTokenQuantity(
+        uint8 _chainId,
+        bool _isIncrease,
+        uint256 _tokenAmount
+    ) external onlyAdminContract {
+        _isIncrease ? chainTokenQuantity[_chainId] += _tokenAmount : chainTokenQuantity[_chainId] -= _tokenAmount;
     }
 
     function getBatchTransactions(uint8 _chainId, uint64 _batchId) external view returns (TxDataInfo[] memory) {
