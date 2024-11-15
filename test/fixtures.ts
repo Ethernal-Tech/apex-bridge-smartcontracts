@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { Bridge, Claims, ClaimsHelper, IBridge, SignedBatches, Slots, Validators } from "../typechain-types";
+import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin } from "../typechain-types";
 
 export async function deployBridgeFixture() {
   // Contracts are deployed using the first signer/account by default
@@ -26,6 +26,9 @@ export async function deployBridgeFixture() {
   const Validators = await ethers.getContractFactory("Validators");
   const validatorscLogic = await Validators.deploy();
 
+  const Admin = await ethers.getContractFactory("Admin");
+  const adminLogic = await Admin.deploy();
+
   // deployment of contract proxy
   const BridgeProxy = await ethers.getContractFactory("ERC1967Proxy");
   const ClaimsHelperProxy = await ethers.getContractFactory("ERC1967Proxy");
@@ -33,6 +36,7 @@ export async function deployBridgeFixture() {
   const SignedBatchesProxy = await ethers.getContractFactory("ERC1967Proxy");
   const SlotsProxy = await ethers.getContractFactory("ERC1967Proxy");
   const ValidatorscProxy = await ethers.getContractFactory("ERC1967Proxy");
+  const AdminProxy = await ethers.getContractFactory("ERC1967Proxy");
 
   const bridgeProxy = await BridgeProxy.deploy(
     await bridgeLogic.getAddress(),
@@ -72,6 +76,11 @@ export async function deployBridgeFixture() {
     Validators.interface.encodeFunctionData("initialize", [owner.address, validatorsAddresses])
   );
 
+  const adminProxy = await AdminProxy.deploy(
+    await adminLogic.getAddress(),
+    Admin.interface.encodeFunctionData("initialize", [owner.address])
+  );
+
   //casting proxy contracts to contract logic
   const BridgeDeployed = await ethers.getContractFactory("Bridge");
   const bridge = BridgeDeployed.attach(bridgeProxy.target) as Bridge;
@@ -91,6 +100,9 @@ export async function deployBridgeFixture() {
   const ValidatorsDeployed = await ethers.getContractFactory("Validators");
   const validatorsc = ValidatorsDeployed.attach(validatorsProxy.target) as Validators;
 
+  const AdminDeployed = await ethers.getContractFactory("Admin");
+  const admin = AdminDeployed.attach(adminProxy.target) as Admin;
+
   await bridge.setDependencies(
     claimsProxy.target,
     signedBatchesProxy.target,
@@ -100,13 +112,15 @@ export async function deployBridgeFixture() {
 
   await claimsHelper.setDependencies(claims.target, signedBatches.target);
 
-  await claims.setDependencies(bridge.target, claimsHelper.target, validatorsc.target);
+  await claims.setDependencies(bridge.target, claimsHelper.target, validatorsc.target, admin.target);
 
   await signedBatches.setDependencies(bridge.target, claimsHelper.target, validatorsc);
 
   await slots.setDependencies(bridge.target, validatorsc.target);
 
   await validatorsc.setDependencies(bridge.target);
+
+  await admin.setDependencies(claims.target);
 
   const chain1 = {
     id: 1,
@@ -417,6 +431,7 @@ export async function deployBridgeFixture() {
     claims,
     signedBatches,
     slots,
+    admin,
     owner,
     chain1,
     chain2,
