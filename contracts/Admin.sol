@@ -23,8 +23,8 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-    function setDependencies(address _claimsAddres) external onlyOwner {
-        claims = Claims(_claimsAddres);
+    function setDependencies(address _claimsAddress) external onlyOwner {
+        claims = Claims(_claimsAddress);
     }
 
     function updateChainTokenQuantity(uint8 _chainId, bool _isIncrease, uint256 _quantity) external onlyOwner {
@@ -35,5 +35,9 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         claims.updateChainTokenQuantity(_chainId, _isIncrease, _quantity);
 
         emit UpdatedChainTokenQuantity(_chainId, _isIncrease, _quantity);
+    }
+
+    function getChainTokenQuantity(uint8 _chainId) external view returns (uint256) {
+        return claims.chainTokenQuantity(_chainId);
     }
 }
