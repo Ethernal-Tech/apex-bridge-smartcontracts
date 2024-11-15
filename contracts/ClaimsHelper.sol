@@ -24,9 +24,13 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
 
     // claimHash for pruning
     ClaimHash[] public claimsHashes;
-    mapping(uint8 => uint64) public nextUnprunedConfirmedSignedBatch;
     //Minimal claim block age to be pruned
     uint256 public constant MIN_CLAIM_BLOCK_AGE = 100; //TODO SET THIS VALUE TO AGREED ON
+    // Confirmed signed batches pruning
+    //Minimal number of confirmed signed batches to be kept
+    uint256 public constant MIN_NUMBER_OF_SIGNED_BATCHES = 2; //TODO SET THIS VALUE TO AGREED ON
+    mapping(uint8 => uint256) public lastConfirmedSignedBatchId;
+    mapping(uint8 => uint64) public nextUnprunedConfirmedSignedBatchId;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -65,6 +69,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
             _signedBatch.lastTxNonceId
         );
         currentBatchBlock[destinationChainId] = int256(block.number);
+        lastConfirmedSignedBatchId[destinationChainId] = _signedBatch.id;
     }
 
     // update vote only if _hash is not already confiremed or _voter not already voted
@@ -98,12 +103,12 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         return v;
     }
 
-    function pruneClaims(address[] calldata _validators, uint256 _olderThenNumberOfBlocks) external onlyOwner {
-        if (_olderThenNumberOfBlocks < MIN_CLAIM_BLOCK_AGE) revert TTLTooLow();
+    function pruneClaims(address[] calldata _validators, uint256 _olderThanBlock) external onlyOwner {
+        if (_olderThanBlock < MIN_CLAIM_BLOCK_AGE) revert TTLTooLow();
         uint256 i = 0;
         while (i < claimsHashes.length) {
             bytes32 _hashValue = claimsHashes[i].hashValue;
-            if (block.number - claimsHashes[i].blockNumber >= _olderThenNumberOfBlocks) {
+            if (block.number - claimsHashes[i].blockNumber >= _olderThanBlock) {
                 for (uint256 j = 0; j < _validators.length; j++) {
                     delete hasVoted[_hashValue][_validators[j]];
                 }
@@ -116,13 +121,18 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         }
     }
 
-    function pruneConfirmedSignedBatches(uint8 _chainId, uint64 _batchId) external onlyOwner {
-        if (_batchId <= nextUnprunedConfirmedSignedBatch[_chainId]) revert AlreadyPruned();
+    function pruneConfirmedSignedBatches(uint8 _chainId, uint64 _deleteToBatchId) external onlyOwner {
+        if (
+            _deleteToBatchId <= MIN_NUMBER_OF_SIGNED_BATCHES ||
+            (lastConfirmedSignedBatchId[_chainId] + _deleteToBatchId) < MIN_NUMBER_OF_SIGNED_BATCHES
+        ) revert ConfirmedTransactionsProtectedFromPruning();
 
-        for (uint64 i = nextUnprunedConfirmedSignedBatch[_chainId]; i <= _batchId; i++) {
+        if (_deleteToBatchId <= nextUnprunedConfirmedSignedBatchId[_chainId]) revert AlreadyPruned();
+
+        for (uint64 i = nextUnprunedConfirmedSignedBatchId[_chainId]; i <= _deleteToBatchId; i++) {
             delete confirmedSignedBatches[_chainId][i];
         }
-        nextUnprunedConfirmedSignedBatch[_chainId] = _batchId + 1;
+        nextUnprunedConfirmedSignedBatchId[_chainId] = _deleteToBatchId + 1;
     }
 
     function getClaimsHashes() external view returns (ClaimHash[] memory) {

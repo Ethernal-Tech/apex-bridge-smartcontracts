@@ -159,6 +159,7 @@ interface IBridgeStructs {
     error InvalidSignature();
     error AlreadyPruned();
     error ConfirmedTransactionsProtectedFromPruning();
+    error SignedBatchesProtectedFromPruning();
     error TTLTooLow();
 
     event newChainProposal(uint8 indexed _chainId, address indexed sender);

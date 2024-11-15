@@ -354,7 +354,7 @@ describe("ConfirmedSignedBatches Pruning", function () {
     await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
     await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-    expect(await claimsHelper.nextUnprunedConfirmedSignedBatch(signedBatch.destinationChainId)).to.equal(0);
+    expect(await claimsHelper.nextUnprunedConfirmedSignedBatchId(signedBatch.destinationChainId)).to.equal(0);
 
     expect((await claimsHelper.confirmedSignedBatches(2, 1)).firstTxNonceId).to.equal(1);
     expect((await claimsHelper.confirmedSignedBatches(2, 1)).lastTxNonceId).to.equal(1);
@@ -364,7 +364,7 @@ describe("ConfirmedSignedBatches Pruning", function () {
     expect((await claimsHelper.confirmedSignedBatches(2, 1)).firstTxNonceId).to.equal(0);
     expect((await claimsHelper.confirmedSignedBatches(2, 1)).lastTxNonceId).to.equal(0);
 
-    expect(await claimsHelper.nextUnprunedConfirmedSignedBatch(signedBatch.destinationChainId)).to.equal(2);
+    expect(await claimsHelper.nextUnprunedConfirmedSignedBatchId(signedBatch.destinationChainId)).to.equal(2);
   });
 });
 describe("Slots Pruning", function () {

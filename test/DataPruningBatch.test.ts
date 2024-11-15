@@ -115,7 +115,7 @@ describe("Claims Pruning", function () {
       ).to.be.equal(0);
     }
 
-    expect(await claimsHelper.connect(owner).nextUnprunedConfirmedSignedBatch(1)).to.be.equal(11);
+    expect(await claimsHelper.connect(owner).nextUnprunedConfirmedSignedBatchId(1)).to.be.equal(11);
 
     for (let i = 1; i < 10; i++) {
       expect(
@@ -135,7 +135,7 @@ describe("Claims Pruning", function () {
         ).lastTxNonceId
       ).to.be.equal(0);
     }
-    expect(await claimsHelper.connect(owner).nextUnprunedConfirmedSignedBatch(2)).to.be.equal(11);
+    expect(await claimsHelper.connect(owner).nextUnprunedConfirmedSignedBatchId(2)).to.be.equal(11);
 
     for (let i = 11; i < 20; i++) {
       expect(
