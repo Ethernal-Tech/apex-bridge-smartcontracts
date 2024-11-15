@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { Bridge, Claims, ClaimsHelper, IBridge, SignedBatches, Slots, Validators } from "../typechain-types";
+import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators } from "../typechain-types";
 
 export async function deployBridgeFixture() {
   // Contracts are deployed using the first signer/account by default

@@ -122,16 +122,17 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     }
 
     function pruneConfirmedSignedBatches(uint8 _chainId, uint64 _deleteToBatchId) external onlyOwner {
+        if (_deleteToBatchId <= nextUnprunedConfirmedSignedBatchId[_chainId]) revert AlreadyPruned();
+
         if (
             _deleteToBatchId <= MIN_NUMBER_OF_SIGNED_BATCHES ||
-            (lastConfirmedSignedBatchId[_chainId] + _deleteToBatchId) < MIN_NUMBER_OF_SIGNED_BATCHES
+            MIN_NUMBER_OF_SIGNED_BATCHES + _deleteToBatchId > lastConfirmedSignedBatchId[_chainId]
         ) revert ConfirmedTransactionsProtectedFromPruning();
-
-        if (_deleteToBatchId <= nextUnprunedConfirmedSignedBatchId[_chainId]) revert AlreadyPruned();
 
         for (uint64 i = nextUnprunedConfirmedSignedBatchId[_chainId]; i <= _deleteToBatchId; i++) {
             delete confirmedSignedBatches[_chainId][i];
         }
+
         nextUnprunedConfirmedSignedBatchId[_chainId] = _deleteToBatchId + 1;
     }
 

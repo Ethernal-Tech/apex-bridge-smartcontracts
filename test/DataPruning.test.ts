@@ -315,7 +315,7 @@ describe("ConfirmedSignedBatches Pruning", function () {
       "OwnableUnauthorizedAccount"
     );
   });
-  it("Should revert if _lastConfirmedBatchId is lower then lastPrunedConfirmedSignedBatch", async function () {
+  it("Should revert if _deleteToBatchId is lower than lastConfirmedSignedBatchId", async function () {
     const { claimsHelper, owner } = await loadFixture(deployBridgeFixture);
 
     await expect(claimsHelper.connect(owner).pruneConfirmedSignedBatches(1, 0)).to.be.revertedWithCustomError(
@@ -323,48 +323,84 @@ describe("ConfirmedSignedBatches Pruning", function () {
       "AlreadyPruned"
     );
   });
-  it("Should prune confirmedSignedBatches when conditions are met", async function () {
-    const {
-      bridge,
-      claimsHelper,
-      owner,
-      chain1,
-      chain2,
-      validators,
-      signedBatch,
-      validatorsCardanoData,
-      validatorClaimsBRC,
-    } = await loadFixture(deployBridgeFixture);
+  it("Should revert if _deleteToBatchId is lower than MIN_NUMBER_OF_SIGNED_BATCHES", async function () {
+    const { bridge, claimsHelper, owner, chain1, chain2, validatorsCardanoData, validators, signedBatch } =
+      await loadFixture(deployBridgeFixture);
 
     await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
     await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
-
-    await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
-
-    // wait for next timeout
-    for (let i = 0; i < 3; i++) {
-      await ethers.provider.send("evm_mine");
-    }
 
     await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
     await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
     await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
     await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-    expect(await claimsHelper.nextUnprunedConfirmedSignedBatchId(signedBatch.destinationChainId)).to.equal(0);
+    await expect(
+      claimsHelper.connect(owner).pruneConfirmedSignedBatches(signedBatch.destinationChainId, 1)
+    ).to.be.revertedWithCustomError(claimsHelper, "ConfirmedTransactionsProtectedFromPruning");
+  });
+  it("Should revert if _deleteToBatchId than protected number of signed batches", async function () {
+    const { bridge, claimsHelper, signedBatches, owner, chain1, chain2, validatorsCardanoData } = await loadFixture(
+      deployBridgeFixture
+    );
 
-    expect((await claimsHelper.confirmedSignedBatches(2, 1)).firstTxNonceId).to.equal(1);
-    expect((await claimsHelper.confirmedSignedBatches(2, 1)).lastTxNonceId).to.equal(1);
+    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+    await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
 
-    await claimsHelper.connect(owner).pruneConfirmedSignedBatches(2, 1);
+    const signedBatchesArray1 = getSignedBatches1();
 
-    expect((await claimsHelper.confirmedSignedBatches(2, 1)).firstTxNonceId).to.equal(0);
-    expect((await claimsHelper.confirmedSignedBatches(2, 1)).lastTxNonceId).to.equal(0);
+    const signedBatchesContract = await impersonateAsContractAndMintFunds(await signedBatches.getAddress());
 
-    expect(await claimsHelper.nextUnprunedConfirmedSignedBatchId(signedBatch.destinationChainId)).to.equal(2);
+    for (let i = 0; i < 20; i++) {
+      await claimsHelper.connect(signedBatchesContract).setConfirmedSignedBatchData(signedBatchesArray1[i]);
+    }
+
+    await expect(
+      claimsHelper.connect(owner).pruneConfirmedSignedBatches(signedBatchesArray1[0].destinationChainId, 200)
+    ).to.be.revertedWithCustomError(claimsHelper, "ConfirmedTransactionsProtectedFromPruning");
+  });
+  it("Should prune confirmedSignedBatches when conditions are met", async function () {
+    const { bridge, claimsHelper, owner, chain1, chain2, validatorsCardanoData, signedBatches } = await loadFixture(
+      deployBridgeFixture
+    );
+
+    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+    await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+
+    const signedBatchesArray1 = getSignedBatches1();
+
+    const signedBatchesContract = await impersonateAsContractAndMintFunds(await signedBatches.getAddress());
+
+    for (let i = 0; i < 20; i++) {
+      await claimsHelper.connect(signedBatchesContract).setConfirmedSignedBatchData(signedBatchesArray1[i]);
+    }
+
+    expect(await claimsHelper.nextUnprunedConfirmedSignedBatchId(signedBatchesArray1[0].destinationChainId)).to.equal(
+      0
+    );
+
+    await claimsHelper.pruneConfirmedSignedBatches(signedBatchesArray1[0].destinationChainId, 10);
+
+    expect(await claimsHelper.nextUnprunedConfirmedSignedBatchId(signedBatchesArray1[0].destinationChainId)).to.equal(
+      11
+    );
+
+    for (let i = 0; i < 10; i++) {
+      expect(
+        (await claimsHelper.getConfirmedSignedBatchData(signedBatchesArray1[0].destinationChainId, i)).firstTxNonceId
+      ).to.equal(0);
+      expect(
+        (await claimsHelper.getConfirmedSignedBatchData(signedBatchesArray1[0].destinationChainId, i)).lastTxNonceId
+      ).to.equal(0);
+    }
+    for (let i = 11; i < 20; i++) {
+      expect(
+        (await claimsHelper.getConfirmedSignedBatchData(signedBatchesArray1[0].destinationChainId, i)).firstTxNonceId
+      ).to.equal(i);
+      expect(
+        (await claimsHelper.getConfirmedSignedBatchData(signedBatchesArray1[0].destinationChainId, i)).lastTxNonceId
+      ).to.equal(i);
+    }
   });
 });
 describe("Slots Pruning", function () {
@@ -913,7 +949,7 @@ describe("SignedBatches Pruning", function () {
         "ConfirmedTransactionsProtectedFromPruning"
       );
     });
-    it("Should revert if _deleteToNonce is lower then lastPrunedConfirmedtransaction", async function () {
+    it("Should revert if _deleteToNonce is lower than lastPrunedConfirmedtransaction", async function () {
       const { bridge, claims, owner, chain1, chain2, validators, validatorsCardanoData } = await loadFixture(
         deployBridgeFixture
       );
@@ -1018,4 +1054,48 @@ function generateValidatorClaimsBRCArray() {
   }
 
   return claimsArray;
+}
+function getSignedBatches1() {
+  const signedBatches = [];
+
+  for (let i = 1; i < 21; i++) {
+    let rawTransactionTemp = `0x74657377000000000000000000000000000000000000000000000000000000${i
+      .toString()
+      .padStart(2, "0")}`;
+
+    let signatureTemp = `0x74657378000000000000000000000000000000000000000000000000000000${i
+      .toString()
+      .padStart(2, "0")}`;
+
+    let feeSignatureTemp = `0x74657379000000000000000000000000000000000000000000000000000000${i
+      .toString()
+      .padStart(2, "0")}`;
+
+    signedBatches.push({
+      id: i,
+      destinationChainId: 2,
+      rawTransaction: rawTransactionTemp,
+      signature: signatureTemp,
+      feeSignature: feeSignatureTemp,
+      firstTxNonceId: i,
+      lastTxNonceId: i,
+    });
+  }
+  return signedBatches;
+}
+
+async function impersonateAsContractAndMintFunds(contractAddress: string) {
+  const hre = require("hardhat");
+  const address = await contractAddress.toLowerCase();
+  // impersonate as an contract on specified address
+  await hre.network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [address],
+  });
+
+  const signer = await ethers.getSigner(address);
+  // minting 100000000000000000000 tokens to signer
+  await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+
+  return signer;
 }

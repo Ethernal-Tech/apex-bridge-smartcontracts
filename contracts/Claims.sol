@@ -8,7 +8,6 @@ import "./interfaces/IBridgeStructs.sol";
 import "./Bridge.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
-import "hardhat/console.sol";
 
 contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private bridgeAddress;
@@ -375,7 +374,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         if (
             _deleteToNonce <= MIN_NUMBER_OF_TRANSACTIONS ||
-            (lastConfirmedTxNonce[_chainId] + _deleteToNonce) < MIN_NUMBER_OF_TRANSACTIONS
+            MIN_NUMBER_OF_TRANSACTIONS + _deleteToNonce > lastConfirmedTxNonce[_chainId]
         ) revert ConfirmedTransactionsProtectedFromPruning();
 
         for (uint64 i = nextUnprunedConfirmedTransaction[_chainId]; i <= _deleteToNonce; i++) {
