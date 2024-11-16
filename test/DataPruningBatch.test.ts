@@ -2,311 +2,315 @@ import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { deployBridgeFixture } from "./fixtures";
 
-describe("Claims Pruning", function () {
-  it("Pruning a bunch of claims", async function () {
-    const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorsCardanoData } = await loadFixture(
-      deployBridgeFixture
-    );
+describe("Batch Pruning", function () {
+  describe("Batch Claims Pruning", function () {
+    it("Pruning a bunch of claims", async function () {
+      const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorsCardanoData } = await loadFixture(
+        deployBridgeFixture
+      );
 
-    const validatorsAddresses = [];
-    for (let i = 0; i < validators.length; i++) {
-      validatorsAddresses.push(validators[i].address);
-    }
-
-    const claimsBRC = generateValidatorClaimsBRCArray();
-    const claimsBEC = generateValidatorClaimsBECArray();
-    const claimsBECF = generateValidatorClaimsBEFCArray();
-    const claimsRRC = generateValidatorClaimsRRCArray();
-
-    await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
-    await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
-
-    for (let i = 0; i < claimsBRC.length; i += 2) {
-      for (let j = 0; j < 4; j++) {
-        await bridge.connect(validators[j]).submitClaims(claimsBRC[i]);
-        await bridge.connect(validators[j]).submitClaims(claimsBEC[i]);
-        await bridge.connect(validators[j]).submitClaims(claimsBECF[i]);
+      const validatorsAddresses = [];
+      for (let i = 0; i < validators.length; i++) {
+        validatorsAddresses.push(validators[i].address);
       }
-    }
 
-    for (let i = 1; i < claimsBRC.length; i += 2) {
-      for (let j = 0; j < 3; j++) {
-        await bridge.connect(validators[j]).submitClaims(claimsBRC[i]);
-        await bridge.connect(validators[j]).submitClaims(claimsBEC[i]);
-        await bridge.connect(validators[j]).submitClaims(claimsBECF[i]);
+      const claimsBRC = generateValidatorClaimsBRCArray();
+      const claimsBEC = generateValidatorClaimsBECArray();
+      const claimsBECF = generateValidatorClaimsBEFCArray();
+      const claimsRRC = generateValidatorClaimsRRCArray();
+
+      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+
+      for (let i = 0; i < claimsBRC.length; i += 2) {
+        for (let j = 0; j < 4; j++) {
+          await bridge.connect(validators[j]).submitClaims(claimsBRC[i]);
+          await bridge.connect(validators[j]).submitClaims(claimsBEC[i]);
+          await bridge.connect(validators[j]).submitClaims(claimsBECF[i]);
+        }
       }
-    }
 
-    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(60);
-
-    await claimsHelper.connect(owner).pruneClaims(validatorsAddresses, 137);
-
-    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(40);
-
-    for (let i = 0; i < claimsRRC.length; i += 2) {
-      for (let j = 0; j < 4; j++) {
-        await bridge.connect(validators[j]).submitClaims(claimsRRC[i]);
+      for (let i = 1; i < claimsBRC.length; i += 2) {
+        for (let j = 0; j < 3; j++) {
+          await bridge.connect(validators[j]).submitClaims(claimsBRC[i]);
+          await bridge.connect(validators[j]).submitClaims(claimsBEC[i]);
+          await bridge.connect(validators[j]).submitClaims(claimsBECF[i]);
+        }
       }
-    }
 
-    for (let i = 1; i < claimsRRC.length; i += 2) {
-      for (let j = 0; j < 4; j++) {
-        await bridge.connect(validators[j]).submitClaims(claimsRRC[i]);
+      expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(60);
+
+      await claimsHelper.connect(owner).pruneClaims(validatorsAddresses, 137);
+
+      expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(40);
+
+      for (let i = 0; i < claimsRRC.length; i += 2) {
+        for (let j = 0; j < 4; j++) {
+          await bridge.connect(validators[j]).submitClaims(claimsRRC[i]);
+        }
       }
-    }
 
-    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(60);
+      for (let i = 1; i < claimsRRC.length; i += 2) {
+        for (let j = 0; j < 4; j++) {
+          await bridge.connect(validators[j]).submitClaims(claimsRRC[i]);
+        }
+      }
 
-    await claimsHelper.connect(owner).pruneClaims(validatorsAddresses, 116);
+      expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(60);
 
-    expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(30);
+      await claimsHelper.connect(owner).pruneClaims(validatorsAddresses, 116);
+
+      expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(30);
+    });
+    it("Pruning a bunch of confirmedSignedBatches", async function () {
+      const { claims, claimsHelper, owner } = await loadFixture(deployBridgeFixture);
+
+      const signedBatchesChain1 = getSignedBatchArrayChain1();
+      const signedBatchesChain2 = getSignedBatchArrayChain2();
+
+      const claimsContract = await impersonateAsContractAndMintFunds(await claims.getAddress());
+
+      for (let i = 0; i < 20; i++) {
+        await claimsHelper.connect(claimsContract).setConfirmedSignedBatchData(signedBatchesChain1[i]);
+        await claimsHelper.connect(claimsContract).setConfirmedSignedBatchData(signedBatchesChain2[i]);
+      }
+
+      for (let i = 0; i < 20; i++) {
+        expect(
+          (
+            await claimsHelper.confirmedSignedBatches(
+              signedBatchesChain1[i].destinationChainId,
+              signedBatchesChain1[i].id
+            )
+          ).firstTxNonceId
+        ).to.be.equal(signedBatchesChain1[i].firstTxNonceId);
+        expect(
+          (
+            await claimsHelper.confirmedSignedBatches(
+              signedBatchesChain2[i].destinationChainId,
+              signedBatchesChain2[i].id
+            )
+          ).lastTxNonceId
+        ).to.be.equal(signedBatchesChain2[i].lastTxNonceId);
+      }
+
+      await claimsHelper.connect(owner).pruneConfirmedSignedBatches(1, 10);
+      await claimsHelper.connect(owner).pruneConfirmedSignedBatches(2, 10);
+
+      for (let i = 1; i < 10; i++) {
+        expect(
+          (
+            await claimsHelper.confirmedSignedBatches(
+              signedBatchesChain1[i].destinationChainId,
+              signedBatchesChain1[i].id
+            )
+          ).firstTxNonceId
+        ).to.be.equal(0);
+        expect(
+          (
+            await claimsHelper.confirmedSignedBatches(
+              signedBatchesChain1[i].destinationChainId,
+              signedBatchesChain1[i].id
+            )
+          ).lastTxNonceId
+        ).to.be.equal(0);
+      }
+
+      expect(await claimsHelper.connect(owner).nextUnprunedConfirmedSignedBatchId(1)).to.be.equal(11);
+
+      for (let i = 1; i < 10; i++) {
+        expect(
+          (
+            await claimsHelper.confirmedSignedBatches(
+              signedBatchesChain2[i].destinationChainId,
+              signedBatchesChain2[i].id
+            )
+          ).firstTxNonceId
+        ).to.be.equal(0);
+        expect(
+          (
+            await claimsHelper.confirmedSignedBatches(
+              signedBatchesChain2[i].destinationChainId,
+              signedBatchesChain2[i].id
+            )
+          ).lastTxNonceId
+        ).to.be.equal(0);
+      }
+      expect(await claimsHelper.connect(owner).nextUnprunedConfirmedSignedBatchId(2)).to.be.equal(11);
+
+      for (let i = 11; i < 20; i++) {
+        expect(
+          (
+            await claimsHelper.confirmedSignedBatches(
+              signedBatchesChain1[i].destinationChainId,
+              signedBatchesChain1[i].id
+            )
+          ).firstTxNonceId
+        ).to.be.equal(signedBatchesChain1[i].firstTxNonceId);
+        expect(
+          (
+            await claimsHelper.confirmedSignedBatches(
+              signedBatchesChain2[i].destinationChainId,
+              signedBatchesChain2[i].id
+            )
+          ).lastTxNonceId
+        ).to.be.equal(signedBatchesChain2[i].lastTxNonceId);
+      }
+    });
   });
-  it("Pruning a bunch of confirmedSignedBatches", async function () {
-    const { claims, claimsHelper, owner } = await loadFixture(deployBridgeFixture);
+  describe("Batch ConfirmedTransactions Pruning", function () {
+    it("Pruning a bunch of confirmedTransactions", async function () {
+      const { bridge, claims, owner, validators, chain1, chain2, validatorsCardanoData } = await loadFixture(
+        deployBridgeFixture
+      );
 
-    const signedBatchesChain1 = getSignedBatchArrayChain1();
-    const signedBatchesChain2 = getSignedBatchArrayChain2();
+      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
 
-    const claimsContract = await impersonateAsContractAndMintFunds(await claims.getAddress());
+      const claimsBRC = generateValidatorClaimsBRCArray();
 
-    for (let i = 0; i < 20; i++) {
-      await claimsHelper.connect(claimsContract).setConfirmedSignedBatchData(signedBatchesChain1[i]);
-      await claimsHelper.connect(claimsContract).setConfirmedSignedBatchData(signedBatchesChain2[i]);
-    }
-
-    for (let i = 0; i < 20; i++) {
-      expect(
-        (
-          await claimsHelper.confirmedSignedBatches(
-            signedBatchesChain1[i].destinationChainId,
-            signedBatchesChain1[i].id
-          )
-        ).firstTxNonceId
-      ).to.be.equal(signedBatchesChain1[i].firstTxNonceId);
-      expect(
-        (
-          await claimsHelper.confirmedSignedBatches(
-            signedBatchesChain2[i].destinationChainId,
-            signedBatchesChain2[i].id
-          )
-        ).lastTxNonceId
-      ).to.be.equal(signedBatchesChain2[i].lastTxNonceId);
-    }
-
-    await claimsHelper.connect(owner).pruneConfirmedSignedBatches(1, 10);
-    await claimsHelper.connect(owner).pruneConfirmedSignedBatches(2, 10);
-
-    for (let i = 1; i < 10; i++) {
-      expect(
-        (
-          await claimsHelper.confirmedSignedBatches(
-            signedBatchesChain1[i].destinationChainId,
-            signedBatchesChain1[i].id
-          )
-        ).firstTxNonceId
-      ).to.be.equal(0);
-      expect(
-        (
-          await claimsHelper.confirmedSignedBatches(
-            signedBatchesChain1[i].destinationChainId,
-            signedBatchesChain1[i].id
-          )
-        ).lastTxNonceId
-      ).to.be.equal(0);
-    }
-
-    expect(await claimsHelper.connect(owner).nextUnprunedConfirmedSignedBatchId(1)).to.be.equal(11);
-
-    for (let i = 1; i < 10; i++) {
-      expect(
-        (
-          await claimsHelper.confirmedSignedBatches(
-            signedBatchesChain2[i].destinationChainId,
-            signedBatchesChain2[i].id
-          )
-        ).firstTxNonceId
-      ).to.be.equal(0);
-      expect(
-        (
-          await claimsHelper.confirmedSignedBatches(
-            signedBatchesChain2[i].destinationChainId,
-            signedBatchesChain2[i].id
-          )
-        ).lastTxNonceId
-      ).to.be.equal(0);
-    }
-    expect(await claimsHelper.connect(owner).nextUnprunedConfirmedSignedBatchId(2)).to.be.equal(11);
-
-    for (let i = 11; i < 20; i++) {
-      expect(
-        (
-          await claimsHelper.confirmedSignedBatches(
-            signedBatchesChain1[i].destinationChainId,
-            signedBatchesChain1[i].id
-          )
-        ).firstTxNonceId
-      ).to.be.equal(signedBatchesChain1[i].firstTxNonceId);
-      expect(
-        (
-          await claimsHelper.confirmedSignedBatches(
-            signedBatchesChain2[i].destinationChainId,
-            signedBatchesChain2[i].id
-          )
-        ).lastTxNonceId
-      ).to.be.equal(signedBatchesChain2[i].lastTxNonceId);
-    }
-  });
-});
-describe("ConfirmedTransactions Pruning", function () {
-  it("Pruning a bunch of confirmedTransactions", async function () {
-    const { bridge, claims, owner, validators, chain1, chain2, validatorsCardanoData } = await loadFixture(
-      deployBridgeFixture
-    );
-
-    await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
-    await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
-
-    const claimsBRC = generateValidatorClaimsBRCArray();
-
-    for (let i = 0; i < claimsBRC.length; i++) {
-      for (let j = 0; j < 4; j++) {
-        await bridge.connect(validators[j]).submitClaims(claimsBRC[i]);
+      for (let i = 0; i < claimsBRC.length; i++) {
+        for (let j = 0; j < 4; j++) {
+          await bridge.connect(validators[j]).submitClaims(claimsBRC[i]);
+        }
       }
-    }
 
-    for (let i = 0; i < claimsBRC.length; i++) {
-      expect(
-        (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
-          .totalAmount
-      ).to.be.equal(claimsBRC[i].bridgingRequestClaims[0].totalAmount);
-      expect(
-        (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
-          .retryCounter
-      ).to.be.equal(claimsBRC[i].bridgingRequestClaims[0].retryCounter);
-      expect(
-        (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
-          .sourceChainId
-      ).to.be.equal(claimsBRC[i].bridgingRequestClaims[0].sourceChainId);
-    }
-
-    expect(
-      await claims.nextUnprunedConfirmedTransaction(claimsBRC[0].bridgingRequestClaims[0].destinationChainId)
-    ).to.be.equal(0);
-
-    await claims.connect(owner).pruneConfirmedTransactions(claimsBRC[0].bridgingRequestClaims[0].destinationChainId, 3);
-
-    expect(
-      await claims.nextUnprunedConfirmedTransaction(claimsBRC[0].bridgingRequestClaims[0].destinationChainId)
-    ).to.be.equal(4);
-
-    for (let i = 0; i < 3; i++) {
-      expect(
-        (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
-          .totalAmount
-      ).to.be.equal(0);
-      expect(
-        (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
-          .retryCounter
-      ).to.be.equal(0);
-      expect(
-        (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
-          .sourceChainId
-      ).to.be.equal(0);
-    }
-
-    for (let i = 3; i < 5; i++) {
-      expect(
-        (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
-          .totalAmount
-      ).to.be.equal(claimsBRC[i].bridgingRequestClaims[0].totalAmount);
-      expect(
-        (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
-          .retryCounter
-      ).to.be.equal(claimsBRC[i].bridgingRequestClaims[0].retryCounter);
-      expect(
-        (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
-          .sourceChainId
-      ).to.be.equal(claimsBRC[i].bridgingRequestClaims[0].sourceChainId);
-    }
-  });
-});
-describe("Slots Pruning", function () {
-  it("Pruning bunch of slots", async function () {
-    const { bridge, slots, owner, validators } = await loadFixture(deployBridgeFixture);
-
-    const validatorsAddresses = [];
-    for (let i = 0; i < validators.length; i++) {
-      validatorsAddresses.push(validators[i].address);
-    }
-
-    const cardanoBlocks1 = getCardanoBlockArray1();
-    const cardanoBlocks2 = getCardanoBlockArray2();
-
-    const bridgeContract = await impersonateAsContractAndMintFunds(await bridge.getAddress());
-
-    expect(await slots.connect(owner).getSlotsHashes()).to.be.empty;
-
-    for (let i = 0; i < 4; i++) {
-      await slots.connect(bridgeContract).updateBlocks(1, cardanoBlocks1, validators[i]);
-    }
-
-    expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(20);
-
-    await slots.connect(owner).pruneSlots(4, validatorsAddresses, 500);
-
-    expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(0);
-
-    for (let i = 0; i < 3; i++) {
-      await slots.connect(bridgeContract).updateBlocks(2, cardanoBlocks2, validators[i]);
-    }
-
-    expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(20);
-
-    await slots.connect(owner).pruneSlots(4, validatorsAddresses, 3);
-
-    expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(0);
-  });
-});
-describe("SignedBatches Pruning", function () {
-  it("Pruning a bunch of SignedBatches", async function () {
-    const { bridge, signedBatches, owner, chain1, chain2, validators, validatorsCardanoData, validatorClaimsBRC } =
-      await loadFixture(deployBridgeFixture);
-
-    const signedBatchesArray1 = getSignedBatches1();
-    const signedBatchesArray2 = getSignedBatches2();
-
-    const validatorsAddresses = [];
-    for (let i = 0; i < validators.length; i++) {
-      validatorsAddresses.push(validators[i].address);
-    }
-
-    const bridgeContract = await impersonateAsContractAndMintFunds(await bridge.getAddress());
-
-    expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(0);
-
-    for (let i = 0; i < 20; i++) {
-      for (let j = 0; j < 4; j++) {
-        await signedBatches.connect(bridgeContract).submitSignedBatch(signedBatchesArray1[i], validators[j]);
+      for (let i = 0; i < claimsBRC.length; i++) {
+        expect(
+          (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
+            .totalAmount
+        ).to.be.equal(claimsBRC[i].bridgingRequestClaims[0].totalAmount);
+        expect(
+          (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
+            .retryCounter
+        ).to.be.equal(claimsBRC[i].bridgingRequestClaims[0].retryCounter);
+        expect(
+          (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
+            .sourceChainId
+        ).to.be.equal(claimsBRC[i].bridgingRequestClaims[0].sourceChainId);
       }
-    }
 
-    expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(20);
+      expect(
+        await claims.nextUnprunedConfirmedTransaction(claimsBRC[0].bridgingRequestClaims[0].destinationChainId)
+      ).to.be.equal(0);
 
-    await signedBatches.connect(owner).pruneSignedBatches(4, validatorsAddresses, 500);
+      await claims
+        .connect(owner)
+        .pruneConfirmedTransactions(claimsBRC[0].bridgingRequestClaims[0].destinationChainId, 3);
 
-    expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(0);
+      expect(
+        await claims.nextUnprunedConfirmedTransaction(claimsBRC[0].bridgingRequestClaims[0].destinationChainId)
+      ).to.be.equal(4);
 
-    for (let i = 0; i < 20; i++) {
-      for (let j = 0; j < 3; j++) {
-        await signedBatches.connect(bridgeContract).submitSignedBatch(signedBatchesArray2[i], validators[j]);
+      for (let i = 0; i < 3; i++) {
+        expect(
+          (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
+            .totalAmount
+        ).to.be.equal(0);
+        expect(
+          (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
+            .retryCounter
+        ).to.be.equal(0);
+        expect(
+          (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
+            .sourceChainId
+        ).to.be.equal(0);
       }
-    }
 
-    expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(20);
+      for (let i = 3; i < 5; i++) {
+        expect(
+          (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
+            .totalAmount
+        ).to.be.equal(claimsBRC[i].bridgingRequestClaims[0].totalAmount);
+        expect(
+          (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
+            .retryCounter
+        ).to.be.equal(claimsBRC[i].bridgingRequestClaims[0].retryCounter);
+        expect(
+          (await claims.confirmedTransactions(claimsBRC[i].bridgingRequestClaims[0].destinationChainId, i + 1))
+            .sourceChainId
+        ).to.be.equal(claimsBRC[i].bridgingRequestClaims[0].sourceChainId);
+      }
+    });
+  });
+  describe("Batch Slots Pruning", function () {
+    it("Pruning bunch of slots", async function () {
+      const { bridge, slots, owner, validators } = await loadFixture(deployBridgeFixture);
 
-    await signedBatches.connect(owner).pruneSignedBatches(4, validatorsAddresses, 31);
+      const validatorsAddresses = [];
+      for (let i = 0; i < validators.length; i++) {
+        validatorsAddresses.push(validators[i].address);
+      }
 
-    expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(10);
+      const cardanoBlocks1 = getCardanoBlockArray1();
+      const cardanoBlocks2 = getCardanoBlockArray2();
+
+      const bridgeContract = await impersonateAsContractAndMintFunds(await bridge.getAddress());
+
+      expect(await slots.connect(owner).getSlotsHashes()).to.be.empty;
+
+      for (let i = 0; i < 4; i++) {
+        await slots.connect(bridgeContract).updateBlocks(1, cardanoBlocks1, validators[i]);
+      }
+
+      expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(20);
+
+      await slots.connect(owner).pruneSlots(4, validatorsAddresses, 500);
+
+      expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(0);
+
+      for (let i = 0; i < 3; i++) {
+        await slots.connect(bridgeContract).updateBlocks(2, cardanoBlocks2, validators[i]);
+      }
+
+      expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(20);
+
+      await slots.connect(owner).pruneSlots(4, validatorsAddresses, 3);
+
+      expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(0);
+    });
+  });
+  describe("Batch SignedBatches Pruning", function () {
+    it("Pruning a bunch of SignedBatches", async function () {
+      const { bridge, signedBatches, owner, chain1, chain2, validators, validatorsCardanoData, validatorClaimsBRC } =
+        await loadFixture(deployBridgeFixture);
+
+      const signedBatchesArray1 = getSignedBatches1();
+      const signedBatchesArray2 = getSignedBatches2();
+
+      const validatorsAddresses = [];
+      for (let i = 0; i < validators.length; i++) {
+        validatorsAddresses.push(validators[i].address);
+      }
+
+      const bridgeContract = await impersonateAsContractAndMintFunds(await bridge.getAddress());
+
+      expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(0);
+
+      for (let i = 0; i < 20; i++) {
+        for (let j = 0; j < 4; j++) {
+          await signedBatches.connect(bridgeContract).submitSignedBatch(signedBatchesArray1[i], validators[j]);
+        }
+      }
+
+      expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(20);
+
+      await signedBatches.connect(owner).pruneSignedBatches(4, validatorsAddresses, 500);
+
+      expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(0);
+
+      for (let i = 0; i < 20; i++) {
+        for (let j = 0; j < 3; j++) {
+          await signedBatches.connect(bridgeContract).submitSignedBatch(signedBatchesArray2[i], validators[j]);
+        }
+      }
+
+      expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(20);
+
+      await signedBatches.connect(owner).pruneSignedBatches(4, validatorsAddresses, 31);
+
+      expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(10);
+    });
   });
 });
 
