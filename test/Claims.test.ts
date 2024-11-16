@@ -166,6 +166,87 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
     });
+    it("Hash should be added to claimsHashes in ClaimsHelper when new claim is submitted", async function () {
+      const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+
+      const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
+      const encoded = abiCoder.encode(
+        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint256", "uint8", "uint8"],
+        [
+          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
+          [
+            [
+              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount,
+              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
+            ],
+          ],
+          validatorClaimsBRC.bridgingRequestClaims[0].totalAmount,
+          validatorClaimsBRC.bridgingRequestClaims[0].retryCounter,
+          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
+          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
+        ]
+      );
+      const encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
+      const hash = ethers.keccak256(encoded40);
+
+      expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(0);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+
+      expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(1);
+      expect((await claimsHelper.claimsHashes(0)).hashValue).to.be.equal(hash);
+    });
+
+    it("Only NEW Hashes should be added to claimsHashes in ClaimsHelper when new claim is submitted", async function () {
+      const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+
+      const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
+      const encoded = abiCoder.encode(
+        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint256", "uint8", "uint8"],
+        [
+          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
+          [
+            [
+              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount,
+              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
+            ],
+          ],
+          validatorClaimsBRC.bridgingRequestClaims[0].totalAmount,
+          validatorClaimsBRC.bridgingRequestClaims[0].retryCounter,
+          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
+          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
+        ]
+      );
+      const encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
+      const hash = ethers.keccak256(encoded40);
+
+      expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(0);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+
+      expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(1);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+
+      expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(1);
+      expect((await claimsHelper.claimsHashes(0)).hashValue).to.be.equal(hash);
+    });
   });
 
   describe("Submit new Batch Executed Claim", function () {

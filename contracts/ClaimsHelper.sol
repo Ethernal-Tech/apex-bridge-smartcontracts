@@ -103,12 +103,12 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         return v;
     }
 
-    function pruneClaims(address[] calldata _validators, uint256 _olderThanBlock) external onlyOwner {
-        if (_olderThanBlock < MIN_CLAIM_BLOCK_AGE) revert TTLTooLow();
+    function pruneClaims(address[] calldata _validators, uint256 _deleteToBlock) external onlyOwner {
+        if (MIN_CLAIM_BLOCK_AGE + _deleteToBlock > block.number) revert TTLTooLow();
         uint256 i = 0;
         while (i < claimsHashes.length) {
             bytes32 _hashValue = claimsHashes[i].hashValue;
-            if (block.number - claimsHashes[i].blockNumber >= _olderThanBlock) {
+            if (block.number - claimsHashes[i].blockNumber >= _deleteToBlock) {
                 for (uint256 j = 0; j < _validators.length; j++) {
                     delete hasVoted[_hashValue][_validators[j]];
                 }
@@ -124,10 +124,8 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     function pruneConfirmedSignedBatches(uint8 _chainId, uint64 _deleteToBatchId) external onlyOwner {
         if (_deleteToBatchId <= nextUnprunedConfirmedSignedBatchId[_chainId]) revert AlreadyPruned();
 
-        if (
-            _deleteToBatchId <= MIN_NUMBER_OF_SIGNED_BATCHES ||
-            MIN_NUMBER_OF_SIGNED_BATCHES + _deleteToBatchId > lastConfirmedSignedBatchId[_chainId]
-        ) revert ConfirmedTransactionsProtectedFromPruning();
+        if (MIN_NUMBER_OF_SIGNED_BATCHES + _deleteToBatchId > lastConfirmedSignedBatchId[_chainId])
+            revert ConfirmedTransactionsProtectedFromPruning();
 
         for (uint64 i = nextUnprunedConfirmedSignedBatchId[_chainId]; i <= _deleteToBatchId; i++) {
             delete confirmedSignedBatches[_chainId][i];

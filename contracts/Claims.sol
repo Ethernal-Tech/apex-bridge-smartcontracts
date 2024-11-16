@@ -372,10 +372,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function pruneConfirmedTransactions(uint8 _chainId, uint64 _deleteToNonce) external onlyOwner {
         if (_deleteToNonce <= nextUnprunedConfirmedTransaction[_chainId]) revert AlreadyPruned();
 
-        if (
-            _deleteToNonce <= MIN_NUMBER_OF_TRANSACTIONS ||
-            MIN_NUMBER_OF_TRANSACTIONS + _deleteToNonce > lastConfirmedTxNonce[_chainId]
-        ) revert ConfirmedTransactionsProtectedFromPruning();
+        if (MIN_NUMBER_OF_TRANSACTIONS + _deleteToNonce > lastConfirmedTxNonce[_chainId])
+            revert ConfirmedTransactionsProtectedFromPruning();
 
         for (uint64 i = nextUnprunedConfirmedTransaction[_chainId]; i <= _deleteToNonce; i++) {
             delete confirmedTransactions[_chainId][i];
