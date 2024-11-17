@@ -397,8 +397,9 @@ describe("Pruning", function () {
       ).to.be.revertedWithCustomError(claims, "AlreadyPruned");
     });
     it("Should prune confirmedSignedTransactions when conditions are met", async function () {
-      const { bridge, claims, owner, chain1, chain2, validators, signedBatch, validatorsCardanoData } =
-        await loadFixture(deployBridgeFixture);
+      const { bridge, claims, owner, chain1, chain2, validators, validatorsCardanoData } = await loadFixture(
+        deployBridgeFixture
+      );
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);

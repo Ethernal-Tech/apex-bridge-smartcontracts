@@ -255,7 +255,11 @@ describe("Batch Pruning", function () {
 
       expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(20);
 
-      await slots.connect(owner).pruneSlots(validatorsAddresses, 500);
+      for (let i = 0; i < 100; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      await slots.connect(owner).pruneSlots(validatorsAddresses, 23);
 
       expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(0);
 
@@ -272,8 +276,7 @@ describe("Batch Pruning", function () {
   });
   describe("Batch SignedBatches Pruning", function () {
     it("Pruning a bunch of SignedBatches", async function () {
-      const { bridge, signedBatches, owner, chain1, chain2, validators, validatorsCardanoData, validatorClaimsBRC } =
-        await loadFixture(deployBridgeFixture);
+      const { bridge, signedBatches, owner, validators } = await loadFixture(deployBridgeFixture);
 
       const signedBatchesArray1 = getSignedBatches1();
       const signedBatchesArray2 = getSignedBatches2();
@@ -295,7 +298,11 @@ describe("Batch Pruning", function () {
 
       expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(20);
 
-      await signedBatches.connect(owner).pruneSignedBatches(4, validatorsAddresses, 500);
+      for (let i = 0; i < 100; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      await signedBatches.connect(owner).pruneSignedBatches(4, validatorsAddresses, 99);
 
       expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(0);
 
