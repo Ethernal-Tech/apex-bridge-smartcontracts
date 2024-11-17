@@ -22,6 +22,7 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
 
     // claimHash for pruning
     ClaimHash[] public slotsHashes;
+    uint256 public constant MIN_CLAIM_BLOCK_AGE = 100; //TODO SET THIS VALUE TO AGREED ON
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -75,11 +76,12 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         return lastObservedBlock[_chainId];
     }
 
-    function pruneSlots(uint256 _quorumCount, address[] calldata _validators, uint256 _ttl) external onlyOwner {
+    function pruneSlots(address[] calldata _validators, uint256 _deleteToBlock) external onlyOwner {
+        if (MIN_CLAIM_BLOCK_AGE + _deleteToBlock > block.number) revert TTLTooLow();
         uint256 i = 0;
         while (i < slotsHashes.length) {
             bytes32 _hashValue = slotsHashes[i].hashValue;
-            if (numberOfVotes[_hashValue] >= _quorumCount || block.number - slotsHashes[i].blockNumber >= _ttl) {
+            if (block.number - slotsHashes[i].blockNumber >= _deleteToBlock) {
                 for (uint256 j = 0; j < _validators.length; j++) {
                     delete hasVoted[_hashValue][_validators[j]];
                 }

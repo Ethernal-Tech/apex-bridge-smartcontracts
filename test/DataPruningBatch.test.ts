@@ -255,7 +255,7 @@ describe("Batch Pruning", function () {
 
       expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(20);
 
-      await slots.connect(owner).pruneSlots(4, validatorsAddresses, 500);
+      await slots.connect(owner).pruneSlots(validatorsAddresses, 500);
 
       expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(0);
 
@@ -265,7 +265,7 @@ describe("Batch Pruning", function () {
 
       expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(20);
 
-      await slots.connect(owner).pruneSlots(4, validatorsAddresses, 3);
+      await slots.connect(owner).pruneSlots(validatorsAddresses, 3);
 
       expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(0);
     });

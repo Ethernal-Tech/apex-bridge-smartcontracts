@@ -105,5 +105,52 @@ describe("Slots Contract", function () {
         "NotBridge"
       );
     });
+    it("Hash should be added to slotsHashes in Slots when new slot is submitted", async function () {
+      const { bridge, slots, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
+        deployBridgeFixture
+      );
+
+      let encoded = ethers.solidityPacked(
+        ["uint8", "bytes32", "uint256"],
+        [1, cardanoBlocks[0].blockHash, cardanoBlocks[0].blockSlot]
+      );
+
+      const hash0 = ethers.keccak256(encoded);
+
+      encoded = ethers.solidityPacked(
+        ["uint8", "bytes32", "uint256"],
+        [1, cardanoBlocks[1].blockHash, cardanoBlocks[1].blockSlot]
+      );
+
+      const hash1 = ethers.keccak256(encoded);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+
+      expect((await slots.getSlotsHashes()).length).to.equal(0);
+
+      await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
+
+      expect((await slots.getSlotsHashes()).length).to.equal(2);
+      expect((await slots.slotsHashes(0)).hashValue).to.equal(hash0);
+      expect((await slots.slotsHashes(1)).hashValue).to.equal(hash1);
+    });
+
+    it("Only NEW Hashes should be added to slotsHashes in Slots when new slot is submitted", async function () {
+      const { bridge, slots, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
+        deployBridgeFixture
+      );
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+
+      expect((await slots.getSlotsHashes()).length).to.equal(0);
+
+      await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
+
+      expect((await slots.getSlotsHashes()).length).to.equal(2);
+
+      await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
+
+      expect((await slots.getSlotsHashes()).length).to.equal(2);
+    });
   });
 });
