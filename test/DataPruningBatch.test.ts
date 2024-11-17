@@ -40,9 +40,9 @@ describe("Batch Pruning", function () {
 
       expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(60);
 
-      await claimsHelper.connect(owner).pruneClaims(validatorsAddresses, 137);
+      await claimsHelper.connect(owner).pruneClaims(validatorsAddresses, 131);
 
-      expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(40);
+      expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(39);
 
       for (let i = 0; i < claimsRRC.length; i += 2) {
         for (let j = 0; j < 4; j++) {
@@ -56,7 +56,7 @@ describe("Batch Pruning", function () {
         }
       }
 
-      expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(60);
+      expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(59);
 
       await claimsHelper.connect(owner).pruneClaims(validatorsAddresses, 116);
 

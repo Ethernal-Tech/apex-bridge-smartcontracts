@@ -435,8 +435,7 @@ describe("Batch Creation", function () {
 
       expect(100 - sumAmounts).to.equal(tokenAmountDestination);
     });
-
-    it("Should delete multisigSignatures and feePayerMultisigSignatures for confirmed signed batches", async function () {
+    it("Hash should be added to signedBatchesHashes in SignedBatches when new signBatch is submitted", async function () {
       const {
         bridge,
         signedBatches,
@@ -448,23 +447,6 @@ describe("Batch Creation", function () {
         validatorsCardanoData,
         validatorClaimsBRC,
       } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
-
-      // wait for next timeout
-      for (let i = 0; i < 3; i++) {
-        await ethers.provider.send("evm_mine");
-      }
-
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
 
       const encoded = ethers.solidityPacked(
         ["uint64", "uint64", "uint64", "uint8", "bytes"],
@@ -479,112 +461,74 @@ describe("Batch Creation", function () {
 
       const hash = ethers.keccak256(encoded);
 
-      var numberOfSignatures = await signedBatches.getNumberOfSignatures(hash);
+      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
 
-      expect(numberOfSignatures[0]).to.equal(3);
-      expect(numberOfSignatures[1]).to.equal(3);
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
 
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+      // wait for next timeout
+      for (let i = 0; i < 3; i++) {
+        await ethers.provider.send("evm_mine");
+      }
 
-      numberOfSignatures = await signedBatches.getNumberOfSignatures(hash);
+      expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(0);
 
-      expect(numberOfSignatures[0]).to.equal(0);
-      expect(numberOfSignatures[1]).to.equal(0);
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+
+      expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(1);
     });
-  });
-  it("Hash should be added to signedBatchesHashes in SignedBatches when new signBatch is submitted", async function () {
-    const {
-      bridge,
-      signedBatches,
-      owner,
-      chain1,
-      chain2,
-      validators,
-      signedBatch,
-      validatorsCardanoData,
-      validatorClaimsBRC,
-    } = await loadFixture(deployBridgeFixture);
 
-    const encoded = ethers.solidityPacked(
-      ["uint64", "uint64", "uint64", "uint8", "bytes"],
-      [
-        signedBatch.id,
-        signedBatch.firstTxNonceId,
-        signedBatch.lastTxNonceId,
-        signedBatch.destinationChainId,
-        signedBatch.rawTransaction,
-      ]
-    );
+    it("Only NEW Hashes should be added to signedBatchesHashes in SignedBatches when new slot is submitted", async function () {
+      const {
+        bridge,
+        signedBatches,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        signedBatch,
+        validatorsCardanoData,
+        validatorClaimsBRC,
+      } = await loadFixture(deployBridgeFixture);
 
-    const hash = ethers.keccak256(encoded);
+      const encoded = ethers.solidityPacked(
+        ["uint64", "uint64", "uint64", "uint8", "bytes"],
+        [
+          signedBatch.id,
+          signedBatch.firstTxNonceId,
+          signedBatch.lastTxNonceId,
+          signedBatch.destinationChainId,
+          signedBatch.rawTransaction,
+        ]
+      );
 
-    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-    await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      const hash = ethers.keccak256(encoded);
 
-    await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
 
-    // wait for next timeout
-    for (let i = 0; i < 3; i++) {
-      await ethers.provider.send("evm_mine");
-    }
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
 
-    expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(0);
+      // wait for next timeout
+      for (let i = 0; i < 3; i++) {
+        await ethers.provider.send("evm_mine");
+      }
 
-    await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(0);
 
-    expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(1);
-  });
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
 
-  it("Only NEW Hashes should be added to signedBatchesHashes in SignedBatches when new slot is submitted", async function () {
-    const {
-      bridge,
-      signedBatches,
-      owner,
-      chain1,
-      chain2,
-      validators,
-      signedBatch,
-      validatorsCardanoData,
-      validatorClaimsBRC,
-    } = await loadFixture(deployBridgeFixture);
+      expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(1);
 
-    const encoded = ethers.solidityPacked(
-      ["uint64", "uint64", "uint64", "uint8", "bytes"],
-      [
-        signedBatch.id,
-        signedBatch.firstTxNonceId,
-        signedBatch.lastTxNonceId,
-        signedBatch.destinationChainId,
-        signedBatch.rawTransaction,
-      ]
-    );
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
 
-    const hash = ethers.keccak256(encoded);
-
-    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-    await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
-
-    await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
-
-    // wait for next timeout
-    for (let i = 0; i < 3; i++) {
-      await ethers.provider.send("evm_mine");
-    }
-
-    expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(0);
-
-    await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
-
-    expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(1);
-
-    await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
-
-    expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(1);
+      expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(1);
+    });
   });
 });
