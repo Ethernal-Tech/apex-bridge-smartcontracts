@@ -114,6 +114,15 @@ describe("Admin Functions", function () {
       await expect(admin.connect(owner).defund(1, 100)).to.be.revertedWithCustomError(admin, "NotFundAdmin");
     });
 
+    it("Should revert if defund in claims is not called by Admin Contract", async function () {
+      const { claims, owner } = await loadFixture(deployBridgeFixture);
+
+      await expect(claims.connect(owner).defund(1, 100, "address")).to.be.revertedWithCustomError(
+        claims,
+        "NotAdminContract"
+      );
+    });
+
     it("Should revert when defund is called and chain is not registered", async function () {
       const { admin, validators } = await loadFixture(deployBridgeFixture);
 
