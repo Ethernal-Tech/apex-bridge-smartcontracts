@@ -145,6 +145,7 @@ interface IBridgeStructs {
     error NotClaims();
     error NotSignedBatches();
     error NotFundAdmin();
+    error NotAdminContract();
     error NotSignedBatchesOrBridge();
     error NotSignedBatchesOrClaims();
     error NotEnoughBridgingTokensAvailable(bytes32 _claimTransactionHash);
@@ -155,6 +156,7 @@ interface IBridgeStructs {
     error InvalidSignature();
     error DefundRequestTooHigh(uint8 _chainId, uint256 _availableAmount, uint256 _requestedAmount);
     error ZeroAddress();
+    error NegativeChainTokenAmount(uint256 _availableAmount, uint256 _decreaseAmount);
 
     event newChainProposal(uint8 indexed _chainId, address indexed sender);
     event newChainRegistered(uint8 indexed _chainId);
@@ -163,4 +165,5 @@ interface IBridgeStructs {
     event ChainDefunded(uint8 _chainId, uint256 _amount);
     event FundAdminChanged(address _newFundAdmin);
     event DefundAddressChanged(uint8 _chainId, string _newDefundAdmin);
+    event UpdatedChainTokenQuantity(uint indexed chainId, bool isIncrement, uint256 tokenQuantity);
 }

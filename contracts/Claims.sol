@@ -13,6 +13,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
     Validators private validators;
+    address private adminContractAddress;
 
     address public fundAdmin;
     //chain -> address to defund to
@@ -62,11 +63,13 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function setDependencies(
         address _bridgeAddress,
         address _claimsHelperAddress,
-        address _validatorsAddress
+        address _validatorsAddress,
+        address _adminContractAddress
     ) external onlyOwner {
         bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         validators = Validators(_validatorsAddress);
+        adminContractAddress = _adminContractAddress;
     }
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
@@ -378,8 +381,58 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function getTokenQuantity(uint8 _chainId) external view returns (uint256) {
+    function defund(uint8 _chainId, uint256 _amount) external onlyFundAdmin {
+        if (!isChainRegistered[_chainId]) {
+            revert ChainIsNotRegistered(_chainId);
+        }
+        if (chainTokenQuantity[_chainId] < _amount) {
+            revert DefundRequestTooHigh(_chainId, chainTokenQuantity[_chainId], _amount);
+        }
+
+        BridgingRequestClaim memory _brc = BridgingRequestClaim({
+            observedTransactionHash: defundHash,
+            receivers: new Receiver[](1),
+            totalAmount: _amount,
+            retryCounter: 0,
+            sourceChainId: _chainId,
+            destinationChainId: _chainId
+        });
+
+        _brc.receivers[0].amount = _amount;
+        _brc.receivers[0].destinationAddress = defundAddress[_chainId];
+
+        chainTokenQuantity[_chainId] -= _amount;
+
+        _setConfirmedTransactions(_brc);
+
+        _updateNextTimeoutBlockIfNeeded(_chainId);
+
+        emit ChainDefunded(_chainId, _amount);
+    }
+
+    function _updateNextTimeoutBlockIfNeeded(uint8 _chainId) internal {
+        uint256 _confirmedTxCount = getBatchingTxsCount(_chainId);
+
+        if (
+            (claimsHelper.currentBatchBlock(_chainId) == -1) && // there is no batch in progress
+            (_confirmedTxCount == 0) && // check if there is no other confirmed transactions
+            (block.number >= nextTimeoutBlock[_chainId])
+        ) // check if the current block number is greater or equal than the NEXT_BATCH_TIMEOUT_BLOCK
+        {
+            nextTimeoutBlock[_chainId] = block.number + timeoutBlocksNumber;
+        }
+    }
+
+    function getChainTokenQuantity(uint8 _chainId) external view returns (uint256) {
         return chainTokenQuantity[_chainId];
+    }
+
+    function updateChainTokenQuantity(
+        uint8 _chainId,
+        bool _isIncrease,
+        uint256 _tokenAmount
+    ) external onlyAdminContract {
+        _isIncrease ? chainTokenQuantity[_chainId] += _tokenAmount : chainTokenQuantity[_chainId] -= _tokenAmount;
     }
 
     function getBatchTransactions(uint8 _chainId, uint64 _batchId) external view returns (TxDataInfo[] memory) {
@@ -419,6 +472,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     modifier onlyFundAdmin() {
         if (msg.sender != fundAdmin) revert NotFundAdmin();
+        _;
+    }
+
+    modifier onlyAdminContract() {
+        if (msg.sender != adminContractAddress) revert NotAdminContract();
         _;
     }
 }

@@ -478,6 +478,7 @@ describe("Claims Contract", function () {
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
   });
+
   describe("Submit new Hot Wallet Increment Claim", function () {
     it("Should revert if chain is not registered", async function () {
       const { bridge, validators, validatorClaimsHWIC } = await loadFixture(deployBridgeFixture);
@@ -657,13 +658,13 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      const txs = await claims.getBatchTransactions(signedBatch.destinationChainId, signedBatch.id)
-      expect(txs).to.deep.equal(
+      const txs = await claims.getBatchTransactions(signedBatch.destinationChainId, signedBatch.id);
+      expect(txs).to.deep.equal([
         [
-          [BigInt(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId).toString(),
-          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash],
+          BigInt(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId).toString(),
+          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
         ],
-      );
+      ]);
     });
   });
 });
