@@ -115,9 +115,6 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[3])
         .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[3].data);
-      await bridge
-        .connect(validators[3])
-        .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[3].data);
 
       expect(await claims.isChainRegistered(chain1.id)).to.be.false;
 

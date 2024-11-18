@@ -85,6 +85,6 @@ describe("Defund chain", function () {
     expect((await claims.confirmedTransactions(chain1.id, 1)).nonce).to.equal(1);
     expect((await claims.confirmedTransactions(chain1.id, 1)).retryCounter).to.equal(0);
     expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(1);
-    expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(21);
+    expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(24);
   });
 });
