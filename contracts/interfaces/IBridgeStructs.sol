@@ -149,6 +149,7 @@ interface IBridgeStructs {
     error NotBridge();
     error NotClaims();
     error NotSignedBatches();
+    error NotAdminContract();
     error NotSignedBatchesOrBridge();
     error NotSignedBatchesOrClaims();
     error NotEnoughBridgingTokensAvailable(bytes32 _claimTransactionHash);
@@ -161,10 +162,11 @@ interface IBridgeStructs {
     error ConfirmedTransactionsProtectedFromPruning();
     error SignedBatchesProtectedFromPruning();
     error TTLTooLow();
+    error NegativeChainTokenAmount(uint256 _availableAmount, uint256 _decreaseAmount);
 
     event newChainProposal(uint8 indexed _chainId, address indexed sender);
     event newChainRegistered(uint8 indexed _chainId);
     event NotEnoughFunds(string claimeType, uint256 index, uint256 availableAmount);
     event InsufficientFunds(uint256 availableAmount, uint256 withdrawalAmount);
-    event BatchExecutionInfo(uint64 _batchID, uint8 _chainId, bool _isFailedClaim, TxDataInfo[] _txHashes);
+    event UpdatedChainTokenQuantity(uint indexed chainId, bool isIncrement, uint256 tokenQuantity);
 }

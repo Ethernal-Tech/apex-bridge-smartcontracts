@@ -561,6 +561,7 @@ describe("Claims Contract", function () {
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
   });
+
   describe("Submit new Hot Wallet Increment Claim", function () {
     it("Should revert if chain is not registered", async function () {
       const { bridge, validators, validatorClaimsHWIC } = await loadFixture(deployBridgeFixture);
@@ -712,6 +713,41 @@ describe("Claims Contract", function () {
       await expect(bridge.connect(validators[3]).submitClaims(validatorClaimsHWIC))
         .to.emit(claims, "InsufficientFunds")
         .withArgs(100, 200);
+    });
+
+    it("getBatchTransactions should return txs from batch", async function () {
+      const {
+        bridge,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsBRC,
+        signedBatch,
+        claims,
+        validatorsCardanoData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      const txs = await claims.getBatchTransactions(signedBatch.destinationChainId, signedBatch.id);
+      expect(txs).to.deep.equal([
+        [
+          BigInt(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId).toString(),
+          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
+        ],
+      ]);
     });
   });
 });
