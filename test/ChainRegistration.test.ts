@@ -376,35 +376,4 @@ describe("Chain Registration", function () {
     expect(chains[0].addressMultisig).to.equal(multisigAddr);
     expect(chains[0].addressFeePayer).to.equal(feeAddr);
   });
-  describe("Setting FundAdmin", function () {
-    it("Should revert setFundAdmin is not called by owner", async function () {
-      const { claims, validators } = await loadFixture(deployBridgeFixture);
-
-      await expect(claims.connect(validators[0]).setFundAdmin(validators[0])).to.be.revertedWithCustomError(
-        claims,
-        "OwnableUnauthorizedAccount"
-      );
-    });
-
-    it("Should revert if FundAdmin is ZeroAddress", async function () {
-      const { claims } = await loadFixture(deployBridgeFixture);
-
-      await expect(claims.setFundAdmin(ethers.ZeroAddress)).to.be.revertedWithCustomError(claims, "ZeroAddress");
-    });
-
-    it("Should set fundAdmin when called by Owner", async function () {
-      const { claims, validators } = await loadFixture(deployBridgeFixture);
-
-      await claims.setFundAdmin(validators[0].address);
-
-      expect(await claims.fundAdmin()).to.be.equal(validators[0].address);
-    });
-    it("Should emit ChangedFundAdmin when new fundAdmin is set ", async function () {
-      const { claims, validators } = await loadFixture(deployBridgeFixture);
-
-      await expect(await claims.setFundAdmin(validators[0].address))
-        .to.emit(claims, "FundAdminChanged")
-        .withArgs(validators[0].address);
-    });
-  });
 });

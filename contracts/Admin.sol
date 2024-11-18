@@ -11,6 +11,10 @@ import "./Claims.sol";
 contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     Claims private claims;
 
+    address public fundAdmin;
+    //chain -> address to defund to
+    mapping(uint8 => string) public defundAddress;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -39,5 +43,34 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
 
     function getChainTokenQuantity(uint8 _chainId) external view returns (uint256) {
         return claims.chainTokenQuantity(_chainId);
+    }
+
+    function defund(uint8 _chainId, uint256 _amount) external onlyFundAdmin {
+        if (!claims.isChainRegistered(_chainId)) {
+            revert ChainIsNotRegistered(_chainId);
+        }
+        if (claims.getChainTokenQuantity(_chainId) < _amount) {
+            revert DefundRequestTooHigh(_chainId, claims.getChainTokenQuantity(_chainId), _amount);
+        }
+
+        claims.defund(_chainId, _amount, defundAddress[_chainId]);
+
+        emit ChainDefunded(_chainId, _amount);
+    }
+
+    function setFundAdmin(address _fundAdmin) external onlyOwner {
+        if (_fundAdmin == address(0)) revert ZeroAddress();
+        fundAdmin = _fundAdmin;
+        emit FundAdminChanged(_fundAdmin);
+    }
+
+    function setDefundAddress(uint8 _chainId, string calldata _address) external onlyFundAdmin {
+        defundAddress[_chainId] = _address;
+        emit DefundAddressChanged(_chainId, _address);
+    }
+
+    modifier onlyFundAdmin() {
+        if (msg.sender != fundAdmin) revert NotFundAdmin();
+        _;
     }
 }

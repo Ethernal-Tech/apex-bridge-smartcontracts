@@ -15,9 +15,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     Validators private validators;
     address private adminContractAddress;
 
-    address public fundAdmin;
-    //chain -> address to defund to
-    mapping(uint8 => string) public defundAddress;
     //keccak256)abi.encode(Packed"Defund")
     bytes32 public constant defundHash = 0xc74d0d70be942fd68984df57687b9f453f1321726e8db77762dee952a5c85b24;
 
@@ -339,14 +336,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return claimsHelper.hasVoted(_hash, _voter);
     }
 
-    function defund(uint8 _chainId, uint256 _amount) external onlyFundAdmin {
-        if (!isChainRegistered[_chainId]) {
-            revert ChainIsNotRegistered(_chainId);
-        }
-        if (chainTokenQuantity[_chainId] < _amount) {
-            revert DefundRequestTooHigh(_chainId, chainTokenQuantity[_chainId], _amount);
-        }
-
+    function defund(uint8 _chainId, uint256 _amount, string calldata _defundAddress) external onlyAdminContract {
         BridgingRequestClaim memory _brc = BridgingRequestClaim({
             observedTransactionHash: defundHash,
             receivers: new Receiver[](1),
@@ -357,15 +347,13 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         });
 
         _brc.receivers[0].amount = _amount;
-        _brc.receivers[0].destinationAddress = defundAddress[_chainId];
+        _brc.receivers[0].destinationAddress = _defundAddress;
 
         chainTokenQuantity[_chainId] -= _amount;
 
         _setConfirmedTransactions(_brc);
 
         _updateNextTimeoutBlockIfNeeded(_chainId);
-
-        emit ChainDefunded(_chainId, _amount);
     }
 
     function _updateNextTimeoutBlockIfNeeded(uint8 _chainId) internal {
@@ -412,24 +400,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return _txHashes;
     }
 
-    function setFundAdmin(address _fundAdmin) external onlyOwner {
-        if (_fundAdmin == address(0)) revert ZeroAddress();
-        fundAdmin = _fundAdmin;
-        emit FundAdminChanged(_fundAdmin);
-    }
-
-    function setDefundAddress(uint8 _chainId, string calldata _address) external onlyFundAdmin {
-        defundAddress[_chainId] = _address;
-        emit DefundAddressChanged(_chainId, _address);
-    }
-
     modifier onlyBridge() {
         if (msg.sender != bridgeAddress) revert NotBridge();
-        _;
-    }
-
-    modifier onlyFundAdmin() {
-        if (msg.sender != fundAdmin) revert NotFundAdmin();
         _;
     }
 
