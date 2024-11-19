@@ -273,5 +273,80 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(29);
     });
+    it("Should reject defund after maximum number of retries", async function () {
+      const {
+        admin,
+        bridge,
+        claims,
+        claimsHelper,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        signedBatchDefund,
+        signedBatchDefundRetry,
+        validatorsCardanoData,
+        validatorClaimsBRC,
+        validatorClaimsBEFC,
+        validatorClaimsBEFCDefundRetry,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 200, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
+
+      expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(1);
+
+      await admin.setFundAdmin(validators[0].address);
+
+      await admin.connect(validators[0]).defund(chain2.id, 1);
+
+      expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(2);
+
+      // wait for next timeout
+      for (let i = 0; i < 3; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatchDefund);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatchDefund);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatchDefund);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatchDefund);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[4]).submitClaims(validatorClaimsBEFC);
+
+      // wait for next timeout
+      for (let i = 0; i < 5; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatchDefundRetry);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatchDefundRetry);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatchDefundRetry);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatchDefundRetry);
+
+      const confBatch = await claimsHelper
+        .connect(validators[0])
+        .getConfirmedSignedBatchData(signedBatchDefundRetry.destinationChainId, signedBatchDefundRetry.id);
+
+      expect(confBatch.firstTxNonceId).to.equal(signedBatchDefundRetry.firstTxNonceId);
+      expect(confBatch.lastTxNonceId).to.equal(signedBatchDefundRetry.lastTxNonceId);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFCDefundRetry);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFCDefundRetry);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFCDefundRetry);
+
+      await expect(await bridge.connect(validators[4]).submitClaims(validatorClaimsBEFCDefundRetry)).to.emit(
+        claims,
+        "DefundFailedAfterMultipleRetries"
+      );
+    });
   });
 });

@@ -39,7 +39,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     // chainId -> nonce (nonce of the last transaction from the executed batch)
     mapping(uint8 => uint64) public lastBatchedTxNonce;
 
-    uint8 MAX_NUMBER_OF_DEFUND_RETRIES = 2; //TO DO decide on exact number
+    uint8 public constant MAX_NUMBER_OF_DEFUND_RETRIES = 1; //TO DO decide on exact number
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -214,6 +214,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 chainId,
                 batchId
             );
+
             uint64 _firstTxNonce = _confirmedSignedBatch.firstTxNonceId;
             uint64 _lastTxNouce = _confirmedSignedBatch.lastTxNonceId;
 
@@ -222,7 +223,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                     chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
                 } else if (
                     confirmedTransactions[chainId][i].transactionType == 1 &&
-                    confirmedTransactions[chainId][i].retryCounter <= MAX_NUMBER_OF_DEFUND_RETRIES
+                    confirmedTransactions[chainId][i].retryCounter < MAX_NUMBER_OF_DEFUND_RETRIES
                 ) {
                     uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
                     confirmedTransactions[chainId][i].nonce = nextNonce;
