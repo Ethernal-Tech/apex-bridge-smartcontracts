@@ -216,7 +216,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             uint64 _lastTxNouce = _confirmedSignedBatch.lastTxNonceId;
 
             for (uint64 i = _firstTxNonce; i <= _lastTxNouce; i++) {
-                chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
+                if (!(confirmedTransactions[chainId][i].observedTransactionHash == defundHash)) {
+                    chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
+                } else {
+                    confirmedTransactions[chainId][++lastConfirmedTxNonce[chainId]] = confirmedTransactions[chainId][i];
+                }
             }
 
             lastBatchedTxNonce[chainId] = _lastTxNouce;
