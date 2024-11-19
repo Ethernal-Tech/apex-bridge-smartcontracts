@@ -9,6 +9,7 @@ import "./interfaces/IBridgeStructs.sol";
 contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private claimsAddress;
     address private signedBatchesAddress;
+    address private adminContractAddress;
 
     // BlockchainId -> batchId -> SignedBatch
     mapping(uint8 => mapping(uint64 => ConfirmedSignedBatchData)) public confirmedSignedBatches;
@@ -24,8 +25,6 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
 
     // claimHash for pruning
     ClaimHash[] public claimsHashes;
-    //Minimal claim block age to be pruned
-    uint256 public constant MIN_CLAIM_BLOCK_AGE = 100; //TODO SET THIS VALUE TO AGREED ON
     // Confirmed signed batches pruning
     //Minimal number of confirmed signed batches to be kept
     uint256 public constant MIN_NUMBER_OF_SIGNED_BATCHES = 2; //TODO SET THIS VALUE TO AGREED ON
@@ -103,8 +102,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         return v;
     }
 
-    function pruneClaims(address[] calldata _validators, uint256 _deleteToBlock) external onlyOwner {
-        if (MIN_CLAIM_BLOCK_AGE + _deleteToBlock > block.number) revert TTLTooLow();
+    function pruneClaims(address[] calldata _validators, uint256 _deleteToBlock) external onlyAdminContract {
         uint256 i = 0;
         while (i < claimsHashes.length) {
             bytes32 _hashValue = claimsHashes[i].hashValue;
@@ -150,6 +148,11 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
 
     modifier onlyClaims() {
         if (msg.sender != claimsAddress) revert NotClaims();
+        _;
+    }
+
+    modifier onlyAdminContract() {
+        if (msg.sender != adminContractAddress) revert NotClaims();
         _;
     }
 }

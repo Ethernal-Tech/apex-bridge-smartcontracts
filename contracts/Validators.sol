@@ -53,6 +53,10 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         return addressValidatorIndex[_addr];
     }
 
+    function getValidatorsAddresses() public view returns (address[] memory) {
+        return validatorsAddresses;
+    }
+
     function isSignatureValid(
         bytes calldata _data,
         bytes calldata _signature,
