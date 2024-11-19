@@ -32,6 +32,7 @@ interface IBridgeStructs {
         uint64 nonce;
         uint8 sourceChainId;
         bytes32 observedTransactionHash;
+        uint8 transactionType; // 0 = normal, 1 = defund, 2 = refund
         Receiver[] receivers;
     }
 
@@ -166,4 +167,5 @@ interface IBridgeStructs {
     event FundAdminChanged(address _newFundAdmin);
     event DefundAddressChanged(uint8 _chainId, string _newDefundAdmin);
     event UpdatedChainTokenQuantity(uint indexed chainId, bool isIncrement, uint256 tokenQuantity);
+    event DefundFailedAfterMultipleRetries();
 }

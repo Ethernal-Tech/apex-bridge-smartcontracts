@@ -298,9 +298,6 @@ describe("Batch Creation", function () {
 
       expect(confBatch.firstTxNonceId).to.equal(signedBatch.firstTxNonceId);
       expect(confBatch.lastTxNonceId).to.equal(signedBatch.lastTxNonceId);
-
-      expect(confBatch.firstTxNonceId).to.equal(signedBatch.firstTxNonceId);
-      expect(confBatch.lastTxNonceId).to.equal(signedBatch.lastTxNonceId);
     });
 
     it("Should create ConfirmedBatch if there are enough votes", async function () {

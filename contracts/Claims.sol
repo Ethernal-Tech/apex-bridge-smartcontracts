@@ -39,6 +39,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     // chainId -> nonce (nonce of the last transaction from the executed batch)
     mapping(uint8 => uint64) public lastBatchedTxNonce;
 
+    uint8 MAX_NUMBER_OF_DEFUND_RETRIES = 2; //TO DO decide on exact number
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -164,7 +166,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             uint256 _confirmedTxCount = getBatchingTxsCount(_destinationChainId);
 
-            _setConfirmedTransactions(_claim);
+            _setConfirmedTransactions(_claim, 0);
 
             _updateNextTimeoutBlockIfNeeded(_destinationChainId, _confirmedTxCount);
         }
@@ -216,10 +218,20 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             uint64 _lastTxNouce = _confirmedSignedBatch.lastTxNonceId;
 
             for (uint64 i = _firstTxNonce; i <= _lastTxNouce; i++) {
-                if (!(confirmedTransactions[chainId][i].observedTransactionHash == defundHash)) {
+                if (confirmedTransactions[chainId][i].transactionType == 0) {
                     chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
+                } else if (
+                    confirmedTransactions[chainId][i].transactionType == 1 &&
+                    confirmedTransactions[chainId][i].retryCounter <= MAX_NUMBER_OF_DEFUND_RETRIES
+                ) {
+                    uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
+                    confirmedTransactions[chainId][i].nonce = nextNonce;
+                    confirmedTransactions[chainId][i].retryCounter++;
+                    confirmedTransactions[chainId][nextNonce] = confirmedTransactions[chainId][i];
+                } else if (confirmedTransactions[chainId][i].transactionType == 2) {
+                    //REFUND TO DO
                 } else {
-                    confirmedTransactions[chainId][++lastConfirmedTxNonce[chainId]] = confirmedTransactions[chainId][i];
+                    emit DefundFailedAfterMultipleRetries();
                 }
             }
 
@@ -238,7 +250,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         claimsHelper.setVotedOnlyIfNeeded(_caller, claimHash, validators.getQuorumNumberOfValidators());
     }
 
-    function _submitClaimHWIC(HotWalletIncrementClaim memory _claim, address _caller) internal {
+    function _submitClaimHWIC(HotWalletIncrementClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode("HWIC", _claim));
 
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
@@ -260,7 +272,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _setConfirmedTransactions(BridgingRequestClaim memory _claim) internal {
+    function _setConfirmedTransactions(BridgingRequestClaim memory _claim, uint8 _transactionType) internal {
         uint8 destinationChainId = _claim.destinationChainId;
         uint64 nextNonce = ++lastConfirmedTxNonce[destinationChainId];
 
@@ -271,6 +283,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         confirmedTx.sourceChainId = _claim.sourceChainId;
         confirmedTx.nonce = nextNonce;
         confirmedTx.retryCounter = _claim.retryCounter;
+        confirmedTx.transactionType = _transactionType;
 
         uint256 receiversLength = _claim.receivers.length;
         for (uint i; i < receiversLength; i++) {
@@ -357,7 +370,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         uint256 _confirmedTxCount = getBatchingTxsCount(_chainId);
 
-        _setConfirmedTransactions(_brc);
+        _setConfirmedTransactions(_brc, 1);
 
         _updateNextTimeoutBlockIfNeeded(_chainId, _confirmedTxCount);
     }

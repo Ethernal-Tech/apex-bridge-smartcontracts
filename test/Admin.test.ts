@@ -189,7 +189,7 @@ describe("Admin Functions", function () {
 
       expect(await claims.lastConfirmedTxNonce(chain1.id)).to.equal(2);
     });
-    it("Should set correct confirmedTransactioin when defund is exdcuted", async function () {
+    it("Should set correct confirmedTransaction when defund is excuted", async function () {
       const { admin, bridge, claims, owner, validators, chain1, validatorsCardanoData } = await loadFixture(
         deployBridgeFixture
       );
@@ -208,6 +208,70 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).retryCounter).to.equal(0);
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(24);
+    });
+    it("Should set correct confirmedTransaction when defund fails", async function () {
+      const {
+        admin,
+        bridge,
+        claims,
+        claimsHelper,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        signedBatchDefund,
+        validatorsCardanoData,
+        validatorClaimsBRC,
+        validatorClaimsBEFC,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 200, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
+
+      expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(1);
+
+      await admin.setFundAdmin(validators[0].address);
+
+      await admin.connect(validators[0]).defund(chain2.id, 1);
+
+      expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(2);
+
+      // wait for next timeout
+      for (let i = 0; i < 3; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatchDefund);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatchDefund);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatchDefund);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatchDefund);
+
+      const confBatch = await claimsHelper
+        .connect(validators[0])
+        .getConfirmedSignedBatchData(signedBatchDefund.destinationChainId, signedBatchDefund.id);
+
+      expect(confBatch.firstTxNonceId).to.equal(signedBatchDefund.firstTxNonceId);
+      expect(confBatch.lastTxNonceId).to.equal(signedBatchDefund.lastTxNonceId);
+
+      expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(2);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[4]).submitClaims(validatorClaimsBEFC);
+
+      expect(await claims.lastBatchedTxNonce(chain2.id)).to.equal(2);
+      expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(3);
+      expect((await claims.confirmedTransactions(chain2.id, 3)).sourceChainId).to.equal(chain2.id);
+      expect((await claims.confirmedTransactions(chain2.id, 3)).nonce).to.equal(3);
+      expect((await claims.confirmedTransactions(chain2.id, 3)).retryCounter).to.equal(1);
+      expect((await claims.confirmedTransactions(chain2.id, 3)).totalAmount).to.equal(1);
+      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(29);
     });
   });
 });
