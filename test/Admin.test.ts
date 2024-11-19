@@ -10,12 +10,12 @@ describe("Admin Functions", function () {
   });
 
   describe("Chain Token Quantity", function () {
-    it("Should revert any claim if not called by owner", async function () {
+    it("Should revert any claim if not called by fundAdmin", async function () {
       const { admin, validators } = await loadFixture(deployBridgeFixture);
 
       await expect(admin.connect(validators[0]).updateChainTokenQuantity(1, true, 100)).to.be.revertedWithCustomError(
         admin,
-        "OwnableUnauthorizedAccount"
+        "NotFundAdmin"
       );
     });
     it("Should revert if updateChainTokenQuantity is called on unregistered chain", async function () {

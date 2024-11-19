@@ -162,11 +162,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 chainTokenQuantity[_claim.sourceChainId] += _receiversSum;
             }
 
-            // uint256 _confirmedTxCount = getBatchingTxsCount(_destinationChainId);
+            uint256 _confirmedTxCount = getBatchingTxsCount(_destinationChainId);
 
             _setConfirmedTransactions(_claim);
 
-            _updateNextTimeoutBlockIfNeeded(_destinationChainId);
+            _updateNextTimeoutBlockIfNeeded(_destinationChainId, _confirmedTxCount);
         }
     }
 
@@ -351,14 +351,14 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         chainTokenQuantity[_chainId] -= _amount;
 
-        _setConfirmedTransactions(_brc);
-
-        _updateNextTimeoutBlockIfNeeded(_chainId);
-    }
-
-    function _updateNextTimeoutBlockIfNeeded(uint8 _chainId) internal {
         uint256 _confirmedTxCount = getBatchingTxsCount(_chainId);
 
+        _setConfirmedTransactions(_brc);
+
+        _updateNextTimeoutBlockIfNeeded(_chainId, _confirmedTxCount);
+    }
+
+    function _updateNextTimeoutBlockIfNeeded(uint8 _chainId, uint256 _confirmedTxCount) internal {
         if (
             (claimsHelper.currentBatchBlock(_chainId) == -1) && // there is no batch in progress
             (_confirmedTxCount == 0) && // check if there is no other confirmed transactions
