@@ -1,132 +1,237 @@
-import { ethers } from "hardhat";
+const { ethers } = require("ethers");
+const { JsonRpcProvider } = require("ethers");
+const config = require("./config.json");
+const bridgeJson = require("../artifacts/contracts/Bridge.sol/Bridge.json");
+const claimsJson = require("../artifacts/contracts/Claims.sol/Claims.json");
+const claimsHelperJson = require("../artifacts/contracts/ClaimsHelper.sol/ClaimsHelper.json");
+const signedBatchesJson = require("../artifacts/contracts/SignedBatches.sol/SignedBatches.json");
+const slotsJson = require("../artifacts/contracts/Slots.sol/Slots.json");
+const validatorsJson = require("../artifacts/contracts/Validators.sol/Validators.json");
+const ERC1967ProxyJson = require("../artifacts/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol/ERC1967Proxy.json");
 
 async function main() {
-  //deployment of contract logic
-  const Bridge = await ethers.getContractFactory("Bridge");
-  const bridgeLogic = await Bridge.deploy();
+  const provider = new JsonRpcProvider(config.RPC.url);
+  const wallet = new ethers.Wallet(config.RPC.key, provider);
 
-  const ClaimsHelper = await ethers.getContractFactory("ClaimsHelper");
-  const claimsHelperLogic = await ClaimsHelper.deploy();
+  console.log("--- Deploying the Logic Contracts");
+  const bridgeFactory = new ethers.ContractFactory(bridgeJson.abi, bridgeJson.bytecode, wallet);
+  const bridgeLogic = await bridgeFactory.deploy();
+  await bridgeLogic.waitForDeployment();
+  console.log("Bridge logic", bridgeLogic.target);
 
-  const Claims = await ethers.getContractFactory("Claims");
-  const claimsLogic = await Claims.deploy();
+  const claimsFactory = new ethers.ContractFactory(claimsJson.abi, claimsJson.bytecode, wallet);
+  const claimsLogic = await claimsFactory.deploy();
+  await claimsLogic.waitForDeployment();
+  console.log("Claims logic", claimsLogic.target);
 
-  const SignedBatches = await ethers.getContractFactory("SignedBatches");
-  const signedBatchesLogic = await SignedBatches.deploy();
+  const claimsHelperFactory = new ethers.ContractFactory(claimsHelperJson.abi, claimsHelperJson.bytecode, wallet);
+  const claimsHelperLogic = await claimsHelperFactory.deploy();
+  await claimsHelperLogic.waitForDeployment();
+  console.log("ClaimsHelper logic", claimsHelperLogic.target);
 
-  const Slots = await ethers.getContractFactory("Slots");
-  const slotsLogic = await Slots.deploy();
+  const signedBatchesFactory = new ethers.ContractFactory(signedBatchesJson.abi, signedBatchesJson.bytecode, wallet);
+  const signedBatchesLogic = await signedBatchesFactory.deploy();
+  await signedBatchesLogic.waitForDeployment();
+  console.log("SignedBatches logic", signedBatchesLogic.target);
 
-  const UTXOsc = await ethers.getContractFactory("UTXOsc");
-  const utxoscLogic = await UTXOsc.deploy();
+  const slotsFactory = new ethers.ContractFactory(slotsJson.abi, slotsJson.bytecode, wallet);
+  const slotsLogic = await slotsFactory.deploy();
+  await slotsLogic.waitForDeployment();
+  console.log("Slots logic", slotsLogic.target);
 
-  const Validators = await ethers.getContractFactory("Validators");
-  const validatorscLogic = await Validators.deploy();
+  const validatorsFactory = new ethers.ContractFactory(validatorsJson.abi, validatorsJson.bytecode, wallet);
+  const validatorsLogic = await validatorsFactory.deploy();
+  await validatorsLogic.waitForDeployment();
+  console.log("Validators logic", validatorsLogic.target);
 
-  // deployment of contract proxy
-  const BridgeProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const ClaimsHelperProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const ClaimsProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const SignedBatchesProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const SlotsProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const UTXOscProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const ValidatorsProxy = await ethers.getContractFactory("ERC1967Proxy");
+  console.log("--- Deploying the Proxy Contracts");
+  const owner = config.Owner.address;
+  let initDataOwner = bridgeLogic.interface.encodeFunctionData("initialize", [owner]);
 
-  const bridgeProxy = await BridgeProxy.deploy(
-    await bridgeLogic.getAddress(),
-    Bridge.interface.encodeFunctionData("initialize", [])
-  );
+  const ProxyFactory = new ethers.ContractFactory(ERC1967ProxyJson.abi, ERC1967ProxyJson.bytecode, wallet);
 
-  const claimsHelperProxy = await ClaimsHelperProxy.deploy(
-    await claimsHelperLogic.getAddress(),
-    ClaimsHelper.interface.encodeFunctionData("initialize", [])
-  );
+  const bridgeProxyContract = await ProxyFactory.deploy(bridgeLogic.target, initDataOwner);
+  await bridgeProxyContract.waitForDeployment();
 
-  const claimsProxy = await ClaimsProxy.deploy(
-    await claimsLogic.getAddress(),
-    Claims.interface.encodeFunctionData("initialize", [2, 5])
-  );
+  console.log(`Bridge Proxy contract deployed at: ${bridgeProxyContract.target}`);
 
-  const signedBatchesProxy = await SignedBatchesProxy.deploy(
-    await signedBatchesLogic.getAddress(),
-    SignedBatches.interface.encodeFunctionData("initialize", [])
-  );
+  const initDataClaims = claimsLogic.interface.encodeFunctionData("initialize", [owner, 2, 5]);
 
-  const slotsProxy = await SlotsProxy.deploy(
-    await slotsLogic.getAddress(),
-    Slots.interface.encodeFunctionData("initialize", [])
-  );
+  const claimsProxyContract = await ProxyFactory.deploy(claimsLogic.target, initDataClaims);
+  await claimsProxyContract.waitForDeployment();
 
-  const utxoscProxy = await UTXOscProxy.deploy(
-    await utxoscLogic.getAddress(),
-    UTXOsc.interface.encodeFunctionData("initialize", [])
-  );
+  console.log(`Claims Proxy contract deployed at: ${claimsProxyContract.target}`);
 
-  const [validator1, validator2, validator3, validator4, validator5] = await ethers.getSigners();
+  initDataOwner = claimsHelperLogic.interface.encodeFunctionData("initialize", [owner]);
+
+  const claimsHelperProxyContract = await ProxyFactory.deploy(claimsHelperLogic.target, initDataOwner);
+  await claimsHelperProxyContract.waitForDeployment();
+
+  console.log(`ClaimsHelper Proxy contract deployed at: ${claimsHelperProxyContract.target}`);
+
+  initDataOwner = signedBatchesLogic.interface.encodeFunctionData("initialize", [owner]);
+
+  const signedBatchesProxyContract = await ProxyFactory.deploy(signedBatchesLogic.target, initDataOwner);
+  await signedBatchesProxyContract.waitForDeployment();
+
+  console.log(`SignedBatches Proxy contract deployed at: ${signedBatchesProxyContract.target}`);
+
+  initDataOwner = slotsLogic.interface.encodeFunctionData("initialize", [owner]);
+
+  const slotsProxyContract = await ProxyFactory.deploy(slotsLogic.target, initDataOwner);
+  await slotsProxyContract.waitForDeployment();
+
+  console.log(`Slots Proxy contract deployed at: ${slotsProxyContract.target}`);
+
   const validatorsAddresses = [
-    validator1.address,
-    validator2.address,
-    validator3.address,
-    validator4.address,
-    validator5.address,
+    config.Validators.validator1address,
+    config.Validators.validator2address,
+    config.Validators.validator3address,
+    config.Validators.validator4address,
+    config.Validators.validator5address,
   ];
 
-  const validatorsProxy = await ValidatorsProxy.deploy(
-    await validatorscLogic.getAddress(),
-    Validators.interface.encodeFunctionData("initialize", [validatorsAddresses])
+  const initDataValidators = validatorsLogic.interface.encodeFunctionData("initialize", [owner, validatorsAddresses]);
+
+  const validatorsProxyContract = await ProxyFactory.deploy(validatorsLogic.target, initDataValidators);
+  await validatorsProxyContract.waitForDeployment();
+
+  console.log(`Validators Proxy contract deployed at: ${validatorsProxyContract.target}`);
+
+  console.log("--- Setting dependencies");
+
+  const gasPrice = (await provider.getFeeData()).gasPrice;
+  const nonce = await provider.getTransactionCount(wallet.address);
+
+  const proxyBridge = new ethers.Contract(bridgeProxyContract.target, bridgeJson.abi, wallet);
+
+  let tx = await proxyBridge.setDependencies(
+    claimsProxyContract.target,
+    signedBatchesProxyContract.target,
+    slotsProxyContract.target,
+    validatorsProxyContract.target
   );
 
-  //casting proxy contracts to contract logic
-  const BridgeDeployed = await ethers.getContractFactory("Bridge");
-  const bridge = BridgeDeployed.attach(bridgeProxy.target);
+  await tx.wait();
+  console.log("Bridge setDependencies done");
 
-  const ClaimsHelperDeployed = await ethers.getContractFactory("ClaimsHelper");
-  const claimsHelper = ClaimsHelperDeployed.attach(claimsHelperProxy.target);
+  const proxyClaims = new ethers.Contract(claimsProxyContract.target, claimsJson.abi, wallet);
 
-  const ClaimsDeployed = await ethers.getContractFactory("Claims");
-  const claims = ClaimsDeployed.attach(claimsProxy.target);
-
-  const SignedBatchesDeployed = await ethers.getContractFactory("SignedBatches");
-  const signedBatches = SignedBatchesDeployed.attach(signedBatchesProxy.target);
-
-  const SlotsDeployed = await ethers.getContractFactory("Slots");
-  const slots = SlotsDeployed.attach(slotsProxy.target);
-
-  const UTXOscDeployed = await ethers.getContractFactory("UTXOsc");
-  const utxosc = UTXOscDeployed.attach(utxoscProxy.target);
-
-  const ValidatorscDeployed = await ethers.getContractFactory("Validators");
-  const validatorsc = ValidatorscDeployed.attach(validatorsProxy.target);
-
-  await bridge.setDependencies(
-    claimsProxy.target,
-    signedBatchesProxy.target,
-    slotsProxy.target,
-    utxoscProxy.target,
-    validatorsProxy.target
+  tx = await proxyClaims.setDependencies(
+    bridgeProxyContract.target,
+    claimsHelperProxyContract.target,
+    validatorsProxyContract.target
   );
 
-  console.log("BridgeLogic deployed at:", bridgeLogic.target);
-  console.log("BridgeProxy deployed at:", bridgeProxy.target);
-  console.log("Bridge deployed at:", bridge.target);
-  console.log("---");
-  console.log("BridgeLogic owner:", await bridgeLogic.owner());
-  console.log("Bridge owner:", await bridge.owner());
-  console.log("---");
-  console.log("ClaimsLogic maxNumberOfTransactions:", await claimsLogic.maxNumberOfTransactions());
-  console.log("Claims maxNumberOfTransactions:", await claims.maxNumberOfTransactions());
-  console.log("ClaimsLogic timeoutBlocksNumber:", await claimsLogic.timeoutBlocksNumber());
-  console.log("Claims timeoutBlocksNumber:", await claims.timeoutBlocksNumber());
-  console.log("---");
-  console.log("ValdatorsLogic numberOfValidators:", await validatorscLogic.validatorsCount());
-  console.log("Valdators numberOfValidators:", await validatorsc.validatorsCount());
+  await tx.wait();
+  console.log("Claims setDependencies done");
 
-  //await bridgeDeployed.console.log(`Bridge deployed to ${bridge.target}`);
+  const proxyClaimsHelper = new ethers.Contract(claimsHelperProxyContract.target, claimsHelperJson.abi, wallet);
+
+  tx = await proxyClaimsHelper.setDependencies(claimsProxyContract.target, signedBatchesProxyContract.target);
+
+  await tx.wait();
+  console.log("ClaimsHelper setDependencies done");
+
+  const proxySignedBatches = new ethers.Contract(signedBatchesProxyContract.target, signedBatchesJson.abi, wallet);
+
+  tx = await proxySignedBatches.setDependencies(
+    bridgeProxyContract.target,
+    claimsHelperProxyContract.target,
+    validatorsProxyContract.target
+  );
+
+  await tx.wait();
+  console.log("SignedBatches setDependencies done");
+
+  const proxySlots = new ethers.Contract(slotsProxyContract.target, slotsJson.abi, wallet);
+
+  tx = await proxySlots.setDependencies(bridgeProxyContract.target, validatorsProxyContract.target);
+
+  await tx.wait();
+  console.log("Slots setDependencies done");
+
+  const proxyValidators = new ethers.Contract(validatorsProxyContract.target, validatorsJson.abi, wallet);
+
+  tx = await proxyValidators.setDependencies(bridgeProxyContract.target);
+
+  await tx.wait();
+  console.log("Validators setDependencies done");
+
+  const chain = {
+    id: config.Chain.id,
+    chainType: config.Chain.chainType,
+    addressMultisig: config.Chain.addressMultisig,
+    addressFeePayer: config.Chain.addressFeePayer,
+  };
+
+  const validatorsChainData = [
+    {
+      addr: config.Validators.validator1address,
+      data: {
+        key: [1n, 1n, 1n, 1n],
+      },
+    },
+    {
+      addr: config.Validators.validator2address,
+      data: {
+        key: [2n, 2n, 2n, 2n],
+      },
+    },
+    {
+      addr: config.Validators.validator3address,
+      data: {
+        key: [3n, 3n, 3n, 3n],
+      },
+    },
+    {
+      addr: config.Validators.validator4address,
+      data: {
+        key: [4n, 4n, 4n, 4n],
+      },
+    },
+    {
+      addr: config.Validators.validator5address,
+      data: {
+        key: [5n, 5n, 5n, 5n],
+      },
+    },
+  ];
+
+  tx = await proxyBridge.registerChain(chain, config.Chain.totalSupply, validatorsChainData);
+
+  await tx.wait();
+  console.log("Chain registered");
+
+  // //after this step, gateway contract should be deployed on the other chain
+  // //and the address of the gateway contract should be added to the bridge contract
+
+  // tx = await proxyBridge.setChainAdditionalData(
+  //   config.Chain.id,
+  //   config.AdditionalData.addressMultisig,
+  //   config.AdditionalData.addressFeePayer,
+  //   { gasPrice: gasPrice * BigInt(8), nonce: nonce + 20 }
+  // );
+
+  // // receipt = await tx.wait();
+  // console.log("Chain additional data set");
+
+  // console.log("---");
+  // console.log("Validators chain data", await proxyBridge.getValidatorsChainData(chain.id));
+
+  // // Proxy Bridge upgrade test
+  // // const BridgeV2 = await ethers.getContractFactory("BridgeV2");
+  // // const bridgeV2Logic = await BridgeV2.deploy();
+
+  // //empty bytes for second parameter signifies that contract is only being upgraded
+  // // await bridge.upgradeToAndCall(await bridgeV2Logic.getAddress(), "0x");
+
+  // // const BridgeDeployedV2 = await ethers.getContractFactory("BridgeV2");
+  // // const bridgeV2 = BridgeDeployedV2.attach(bridgeProxy.target);
+
+  // //function hello() added in BridgeV2 contract always returns true
+  // // const result = await bridgeV2.hello();
+  // console.log("Hello call BridgeV2", result);
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
-main().catch((error: any) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+main();
