@@ -39,7 +39,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     // chainId -> nonce (nonce of the last transaction from the executed batch)
     mapping(uint8 => uint64) public lastBatchedTxNonce;
 
-    uint8 public constant MAX_NUMBER_OF_DEFUND_RETRIES = 1; //TO DO decide on exact number
+    uint8 public constant MAX_NUMBER_OF_DEFUND_RETRIES = 3; //TO DO SET EXACT NUMBER TO BE USED
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -221,18 +221,18 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             for (uint64 i = _firstTxNonce; i <= _lastTxNouce; i++) {
                 if (confirmedTransactions[chainId][i].transactionType == 0) {
                     chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
-                } else if (
-                    confirmedTransactions[chainId][i].transactionType == 1 &&
-                    confirmedTransactions[chainId][i].retryCounter < MAX_NUMBER_OF_DEFUND_RETRIES
-                ) {
-                    uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
-                    confirmedTransactions[chainId][i].nonce = nextNonce;
-                    confirmedTransactions[chainId][i].retryCounter++;
-                    confirmedTransactions[chainId][nextNonce] = confirmedTransactions[chainId][i];
-                } else if (confirmedTransactions[chainId][i].transactionType == 2) {
-                    //REFUND TO DO
+                } else if (confirmedTransactions[chainId][i].transactionType == 1) {
+                    if (confirmedTransactions[chainId][i].retryCounter < MAX_NUMBER_OF_DEFUND_RETRIES) {
+                        uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
+                        confirmedTransactions[chainId][nextNonce] = confirmedTransactions[chainId][i];
+                        confirmedTransactions[chainId][nextNonce].nonce = nextNonce;
+                        confirmedTransactions[chainId][nextNonce].retryCounter++;
+                    } else {
+                        chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
+                        emit DefundFailedAfterMultipleRetries();
+                    }
                 } else {
-                    emit DefundFailedAfterMultipleRetries();
+                    //REFUND TO DO
                 }
             }
 

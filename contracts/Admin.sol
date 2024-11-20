@@ -12,8 +12,6 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     Claims private claims;
 
     address public fundAdmin;
-    //chain -> address to defund to
-    mapping(uint8 => string) public defundAddress;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -46,7 +44,7 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         return claims.chainTokenQuantity(_chainId);
     }
 
-    function defund(uint8 _chainId, uint256 _amount) external onlyFundAdmin {
+    function defund(uint8 _chainId, string calldata _defundAddress, uint256 _amount) external onlyFundAdmin {
         if (!claims.isChainRegistered(_chainId)) {
             revert ChainIsNotRegistered(_chainId);
         }
@@ -55,7 +53,7 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
             revert DefundRequestTooHigh(_chainId, claims.getChainTokenQuantity(_chainId), _amount);
         }
 
-        claims.defund(_chainId, _amount, defundAddress[_chainId]);
+        claims.defund(_chainId, _amount, _defundAddress);
 
         emit ChainDefunded(_chainId, _amount);
     }
@@ -64,11 +62,6 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         if (_fundAdmin == address(0)) revert ZeroAddress();
         fundAdmin = _fundAdmin;
         emit FundAdminChanged(_fundAdmin);
-    }
-
-    function setDefundAddress(uint8 _chainId, string calldata _address) external onlyFundAdmin {
-        defundAddress[_chainId] = _address;
-        emit DefundAddressChanged(_chainId, _address);
     }
 
     modifier onlyFundAdmin() {

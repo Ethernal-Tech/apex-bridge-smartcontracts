@@ -111,7 +111,7 @@ describe("Admin Functions", function () {
       const { admin, validators, owner } = await loadFixture(deployBridgeFixture);
 
       await admin.setFundAdmin(validators[0].address);
-      await expect(admin.connect(owner).defund(1, 100)).to.be.revertedWithCustomError(admin, "NotFundAdmin");
+      await expect(admin.connect(owner).defund(1, "address", 100)).to.be.revertedWithCustomError(admin, "NotFundAdmin");
     });
 
     it("Should revert if defund in claims is not called by Admin Contract", async function () {
@@ -127,7 +127,7 @@ describe("Admin Functions", function () {
       const { admin, validators } = await loadFixture(deployBridgeFixture);
 
       await admin.setFundAdmin(validators[0].address);
-      await expect(admin.connect(validators[0]).defund(1, 100)).to.be.revertedWithCustomError(
+      await expect(admin.connect(validators[0]).defund(1, "address", 100)).to.be.revertedWithCustomError(
         admin,
         "ChainIsNotRegistered"
       );
@@ -140,7 +140,7 @@ describe("Admin Functions", function () {
       await admin.setFundAdmin(validators[0].address);
 
       await bridge.connect(owner).registerChain(chain1, 1, validatorsCardanoData);
-      await expect(admin.connect(validators[0]).defund(1, 100)).to.be.revertedWithCustomError(
+      await expect(admin.connect(validators[0]).defund(1, "address", 100)).to.be.revertedWithCustomError(
         claims,
         "DefundRequestTooHigh"
       );
@@ -154,7 +154,7 @@ describe("Admin Functions", function () {
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
-      await admin.connect(validators[0]).defund(chain1.id, 1);
+      await admin.connect(validators[0]).defund(chain1.id, "address", 1);
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(99);
     });
     it("Should emit ChainDefunded when defund is exdcuted", async function () {
@@ -166,9 +166,9 @@ describe("Admin Functions", function () {
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
 
-      await admin.connect(validators[0]).defund(chain1.id, 1);
+      await admin.connect(validators[0]).defund(chain1.id, "address", 1);
 
-      await expect(await admin.connect(validators[0]).defund(chain1.id, 1))
+      await expect(await admin.connect(validators[0]).defund(chain1.id, "address", 1))
         .to.emit(admin, "ChainDefunded")
         .withArgs(1, 1);
     });
@@ -181,11 +181,11 @@ describe("Admin Functions", function () {
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
 
-      await admin.connect(validators[0]).defund(chain1.id, 1);
+      await admin.connect(validators[0]).defund(chain1.id, "address", 1);
 
       expect(await claims.lastConfirmedTxNonce(chain1.id)).to.equal(1);
 
-      await admin.connect(validators[0]).defund(chain1.id, 1);
+      await admin.connect(validators[0]).defund(chain1.id, "address", 1);
 
       expect(await claims.lastConfirmedTxNonce(chain1.id)).to.equal(2);
     });
@@ -198,7 +198,7 @@ describe("Admin Functions", function () {
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
 
-      await admin.connect(validators[0]).defund(chain1.id, 1);
+      await admin.connect(validators[0]).defund(chain1.id, "address", 1);
 
       expect((await claims.confirmedTransactions(chain1.id, 1)).observedTransactionHash).to.equal(
         await claims.defundHash()
@@ -237,7 +237,7 @@ describe("Admin Functions", function () {
 
       await admin.setFundAdmin(validators[0].address);
 
-      await admin.connect(validators[0]).defund(chain2.id, 1);
+      await admin.connect(validators[0]).defund(chain2.id, "address", 1);
 
       expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(2);
 
@@ -303,7 +303,7 @@ describe("Admin Functions", function () {
 
       await admin.setFundAdmin(validators[0].address);
 
-      await admin.connect(validators[0]).defund(chain2.id, 1);
+      await admin.connect(validators[0]).defund(chain2.id, "address", 1);
 
       expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(2);
 
