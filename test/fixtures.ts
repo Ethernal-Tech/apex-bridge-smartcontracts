@@ -280,6 +280,7 @@ export async function deployBridgeFixture() {
         retryCounter: 0,
         rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
         chainId: 2,
+        totalAmount: 100,
         receivers: [
           {
             destinationAddress: "0x123...11111111",

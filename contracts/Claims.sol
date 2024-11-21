@@ -298,25 +298,23 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _setConfirmedTransactionsRRC(RefundRequestClaim calldata _claim) internal {
-        uint8 destinationChainId = _claim.chainId;
-        uint64 nextNonce = ++lastConfirmedTxNonce[destinationChainId];
+    function _setConfirmedTransactionsRRC(RefundRequestClaim memory _claim) internal {
+        uint8 chainId = _claim.chainId;
+        uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
 
-        ConfirmedTransaction storage confirmedTx = confirmedTransactions[destinationChainId][nextNonce];
+        ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nextNonce];
+        confirmedTx.totalAmount = _claim.totalAmount;
+        confirmedTx.blockHeight = block.number;
         confirmedTx.observedTransactionHash = _claim.observedTransactionHash;
-        confirmedTx.sourceChainId = destinationChainId;
+        confirmedTx.sourceChainId = chainId;
         confirmedTx.nonce = nextNonce;
         confirmedTx.retryCounter = _claim.retryCounter;
+        confirmedTx.transactionType = 2;
 
         uint256 receiversLength = _claim.receivers.length;
-        uint256 tokenQuantity;
         for (uint i; i < receiversLength; i++) {
             confirmedTx.receivers.push(_claim.receivers[i]);
-            tokenQuantity += _claim.receivers[i].amount;
         }
-
-        confirmedTransactions[destinationChainId][nextNonce].totalAmount = tokenQuantity;
-        confirmedTransactions[destinationChainId][nextNonce].blockHeight = block.number;
     }
 
     function setVoted(address _voter, bytes32 _hash) external onlyBridge returns (uint256) {

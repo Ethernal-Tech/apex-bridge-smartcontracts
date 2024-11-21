@@ -82,9 +82,10 @@ interface IBridgeStructs {
         // the refund transaction itself
         bytes rawTransaction;
         // chain id where the refund tx will be executed
+        Receiver[] receivers;
+        uint256 totalAmount;
         uint256 retryCounter;
         uint8 chainId;
-        Receiver[] receivers;
     }
 
     struct HotWalletIncrementClaim {
