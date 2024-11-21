@@ -395,7 +395,7 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      expect(await claims.nextTimeoutBlock(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId)).to.be.equal(25);
+      expect(await claims.nextTimeoutBlock(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId)).to.be.equal(28);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
@@ -403,7 +403,7 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
 
       expect(await claims.nextTimeoutBlock(validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId)).not.to.be.equal(
-        25
+        28
       );
     });
     it("Should increase chainTokenQuantity for destination chain when Batch Execution Failed Claim is confirmed", async function () {
@@ -597,86 +597,6 @@ describe("Claims Contract", function () {
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
-
-      expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
-    });
-  });
-
-  describe("Submit new Refund Executed Claim", function () {
-    it("Should revert if chain is not registered", async function () {
-      const { bridge, validators, validatorClaimsREC } = await loadFixture(deployBridgeFixture);
-
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsREC)).to.be.revertedWithCustomError(
-        bridge,
-        "ChainIsNotRegistered"
-      );
-    });
-
-    it("Should skip if Refund Executed Claim is already confirmed", async function () {
-      const { bridge, claimsHelper, owner, validators, chain2, validatorClaimsREC, validatorsCardanoData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
-
-      const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["REC"]);
-      const encoded = abiCoder.encode(
-        ["bytes32", "bytes32", "uint8"],
-        [
-          validatorClaimsREC.refundExecutedClaims[0].observedTransactionHash,
-          validatorClaimsREC.refundExecutedClaims[0].refundTxHash,
-          validatorClaimsREC.refundExecutedClaims[0].chainId,
-        ]
-      );
-
-      const encoded40 =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encoded.substring(2) +
-        encodedPrefix.substring(66);
-
-      const hash = ethers.keccak256(encoded40);
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsREC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsREC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsREC);
-      await bridge.connect(validators[3]).submitClaims(validatorClaimsREC);
-
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
-
-      await bridge.connect(validators[4]).submitClaims(validatorClaimsREC);
-
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
-    });
-
-    it("Should skip if same validator submits the same Refund Executed Claim twice", async function () {
-      const { bridge, claimsHelper, owner, validators, chain2, validatorClaimsREC, validatorsCardanoData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
-
-      const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["REC"]);
-      const encoded = abiCoder.encode(
-        ["bytes32", "bytes32", "uint8"],
-        [
-          validatorClaimsREC.refundExecutedClaims[0].observedTransactionHash,
-          validatorClaimsREC.refundExecutedClaims[0].refundTxHash,
-          validatorClaimsREC.refundExecutedClaims[0].chainId,
-        ]
-      );
-
-      const encoded40 =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encoded.substring(2) +
-        encodedPrefix.substring(66);
-
-      const hash = ethers.keccak256(encoded40);
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsREC);
-
-      expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsREC);
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });

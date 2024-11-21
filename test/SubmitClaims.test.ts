@@ -758,11 +758,11 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsRRC);
 
-      expect(await claims.nextTimeoutBlock(validatorClaimsRRC.refundRequestClaims[0].chainId)).to.equal(25);
+      expect(await claims.nextTimeoutBlock(validatorClaimsRRC.refundRequestClaims[0].chainId)).to.equal(28);
 
       await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
 
-      expect(await claims.nextTimeoutBlock(validatorClaimsRRC.refundRequestClaims[0].chainId)).to.equal(32);
+      expect(await claims.nextTimeoutBlock(validatorClaimsRRC.refundRequestClaims[0].chainId)).to.equal(35);
     });
 
     it("Should NOT remove tokens from source chain when Refund Request Claim is confirmed", async function () {
