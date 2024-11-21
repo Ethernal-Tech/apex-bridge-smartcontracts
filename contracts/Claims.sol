@@ -219,16 +219,18 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             uint64 _lastTxNouce = _confirmedSignedBatch.lastTxNonceId;
 
             for (uint64 i = _firstTxNonce; i <= _lastTxNouce; i++) {
-                if (confirmedTransactions[chainId][i].transactionType == 0) {
-                    chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
-                } else if (confirmedTransactions[chainId][i].transactionType == 1) {
-                    if (confirmedTransactions[chainId][i].retryCounter < MAX_NUMBER_OF_DEFUND_RETRIES) {
+                ConfirmedTransaction storage _ctx = confirmedTransactions[chainId][i];
+                uint8 _txType = _ctx.transactionType;
+                if (_txType == 0) {
+                    chainTokenQuantity[chainId] += _ctx.totalAmount;
+                } else if (_txType == 1) {
+                    if (_ctx.retryCounter < MAX_NUMBER_OF_DEFUND_RETRIES) {
                         uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
-                        confirmedTransactions[chainId][nextNonce] = confirmedTransactions[chainId][i];
+                        confirmedTransactions[chainId][nextNonce] = _ctx;
                         confirmedTransactions[chainId][nextNonce].nonce = nextNonce;
                         confirmedTransactions[chainId][nextNonce].retryCounter++;
                     } else {
-                        chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
+                        chainTokenQuantity[chainId] += _ctx.totalAmount;
                         emit DefundFailedAfterMultipleRetries();
                     }
                 } else {
@@ -317,21 +319,21 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function getBatchingTxsCount(uint8 _chainId) public view returns (uint64 counterConfirmedTransactions) {
         uint64 lastConfirmedTxNonceForChain = lastConfirmedTxNonce[_chainId];
         uint64 lastBatchedTxNonceForChain = lastBatchedTxNonce[_chainId];
+        uint256 timeoutBlock = nextTimeoutBlock[_chainId];
+        uint64 maxTxsCount = maxNumberOfTransactions;
 
-        uint256 txsToProcess = ((lastConfirmedTxNonceForChain - lastBatchedTxNonceForChain) >= maxNumberOfTransactions)
-            ? maxNumberOfTransactions
-            : (lastConfirmedTxNonceForChain - lastBatchedTxNonceForChain);
+        uint64 txsToProcess = lastConfirmedTxNonceForChain - lastBatchedTxNonceForChain >= maxTxsCount
+            ? maxTxsCount
+            : lastConfirmedTxNonceForChain - lastBatchedTxNonceForChain;
 
-        counterConfirmedTransactions = 0;
+        uint64 txIndx = lastBatchedTxNonceForChain + 1;
 
         while (counterConfirmedTransactions < txsToProcess) {
-            uint256 blockHeight = confirmedTransactions[_chainId][
-                lastBatchedTxNonceForChain + counterConfirmedTransactions + 1
-            ].blockHeight;
-            if (blockHeight >= nextTimeoutBlock[_chainId]) {
+            if (confirmedTransactions[_chainId][txIndx].blockHeight >= timeoutBlock) {
                 break;
             }
             counterConfirmedTransactions++;
+            txIndx++;
         }
     }
 
@@ -409,10 +411,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         TxDataInfo[] memory _txHashes = new TxDataInfo[](_lastTxNonce - _firstTxNonce + 1);
         for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
-            _txHashes[i - _firstTxNonce] = TxDataInfo(
-                confirmedTransactions[_chainId][i].sourceChainId,
-                confirmedTransactions[_chainId][i].observedTransactionHash
-            );
+            ConfirmedTransaction storage ctx = confirmedTransactions[_chainId][i];
+            _txHashes[i - _firstTxNonce] = TxDataInfo(ctx.sourceChainId, ctx.observedTransactionHash);
         }
 
         return _txHashes;
