@@ -339,4 +339,41 @@ describe("Chain Registration", function () {
       });
     });
   });
+
+  it("setChainAdditionalData should be allowed for owner", async function () {
+    const { bridge, chain1, owner, validators, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+    const [multisigAddr, feeAddr] = ["0xff0033", "0x0007788aa"];
+
+    await expect(
+      bridge.connect(owner).setChainAdditionalData(chain1.id, multisigAddr, feeAddr)
+    ).to.be.revertedWithCustomError(bridge, "ChainIsNotRegistered");
+
+    await expect(
+      bridge.connect(validators[0]).setChainAdditionalData(chain1.id, multisigAddr, feeAddr)
+    ).to.be.revertedWithCustomError(bridge, "OwnableUnauthorizedAccount");
+
+    await bridge
+      .connect(validators[0])
+      .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
+    await bridge
+      .connect(validators[1])
+      .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[1].data);
+    await bridge
+      .connect(validators[2])
+      .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[2].data);
+    await bridge
+      .connect(validators[3])
+      .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[3].data);
+    await bridge
+      .connect(validators[4])
+      .registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[4].data);
+
+    await bridge.connect(owner).setChainAdditionalData(chain1.id, multisigAddr, feeAddr);
+
+    const chains = await bridge.getAllRegisteredChains();
+    expect(chains.length).to.equal(1);
+    expect(chains[0].id).to.equal(1);
+    expect(chains[0].addressMultisig).to.equal(multisigAddr);
+    expect(chains[0].addressFeePayer).to.equal(feeAddr);
+  });
 });

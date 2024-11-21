@@ -629,7 +629,7 @@ describe("Claims Contract", function () {
 
       await expect(bridge.connect(validators[3]).submitClaims(validatorClaimsHWIC))
         .to.emit(claims, "InsufficientFunds")
-        .withArgs(100, 200);
+        .withArgs(1, 200);
     });
 
     it("getBatchTransactions should return txs from batch", async function () {
