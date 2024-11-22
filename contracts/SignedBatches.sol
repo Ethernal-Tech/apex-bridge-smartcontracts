@@ -8,11 +8,13 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBridgeStructs.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
+import "./Admin.sol";
 
 contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
     Validators private validators;
+    address private adminContractAddress;
 
     // hash -> multisig / bls signatures
     mapping(bytes32 => bytes[]) private signatures;
@@ -48,11 +50,13 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     function setDependencies(
         address _bridgeAddress,
         address _claimsHelperAddress,
-        address _validatorsAddress
+        address _validatorsAddress,
+        address _adminContractAddress
     ) external onlyOwner {
         bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         validators = Validators(_validatorsAddress);
+        adminContractAddress = _adminContractAddress;
     }
 
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
@@ -129,8 +133,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         uint256 _quorumCount,
         address[] calldata _validators,
         uint256 _deleteToBlock
-    ) external onlyOwner {
-        if (MIN_CLAIM_BLOCK_AGE + _deleteToBlock > block.number) revert TTLTooLow();
+    ) external onlyAdminContract {
         uint256 i = 0;
         while (i < signedBatchesHashes.length) {
             bytes32 _hashValue = signedBatchesHashes[i].hashValue;
@@ -162,6 +165,11 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
 
     modifier onlyBridge() {
         if (msg.sender != bridgeAddress) revert NotBridge();
+        _;
+    }
+
+    modifier onlyAdminContract() {
+        if (msg.sender != adminContractAddress) revert NotClaims();
         _;
     }
 }

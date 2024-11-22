@@ -27,7 +27,6 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     ClaimHash[] public claimsHashes;
     // Confirmed signed batches pruning
     //Minimal number of confirmed signed batches to be kept
-    uint256 public constant MIN_NUMBER_OF_SIGNED_BATCHES = 2; //TODO SET THIS VALUE TO AGREED ON
     mapping(uint8 => uint256) public lastConfirmedSignedBatchId;
     mapping(uint8 => uint64) public nextUnprunedConfirmedSignedBatchId;
 
@@ -119,12 +118,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         }
     }
 
-    function pruneConfirmedSignedBatches(uint8 _chainId, uint64 _deleteToBatchId) external onlyOwner {
-        if (_deleteToBatchId <= nextUnprunedConfirmedSignedBatchId[_chainId]) revert AlreadyPruned();
-
-        if (MIN_NUMBER_OF_SIGNED_BATCHES + _deleteToBatchId > lastConfirmedSignedBatchId[_chainId])
-            revert ConfirmedTransactionsProtectedFromPruning();
-
+    function pruneConfirmedSignedBatches(uint8 _chainId, uint64 _deleteToBatchId) external onlyAdminContract {
         for (uint64 i = nextUnprunedConfirmedSignedBatchId[_chainId]; i <= _deleteToBatchId; i++) {
             delete confirmedSignedBatches[_chainId][i];
         }

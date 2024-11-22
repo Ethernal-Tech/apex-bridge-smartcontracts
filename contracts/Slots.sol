@@ -10,6 +10,7 @@ import "./Validators.sol";
 contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private bridgeAddress;
     Validators private validators;
+    address private adminContractAddress;
 
     // BlockChainId -> CardanoBlock
     mapping(uint8 => CardanoBlock) private lastObservedBlock;
@@ -36,9 +37,14 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-    function setDependencies(address _bridgeAddress, address _validatorsAddress) external onlyOwner {
+    function setDependencies(
+        address _bridgeAddress,
+        address _validatorsAddress,
+        address _adminContractAddress
+    ) external onlyOwner {
         bridgeAddress = _bridgeAddress;
         validators = Validators(_validatorsAddress);
+        adminContractAddress = _adminContractAddress;
     }
 
     function updateBlocks(uint8 _chainId, CardanoBlock[] calldata _blocks, address _caller) external onlyBridge {
@@ -76,7 +82,7 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         return lastObservedBlock[_chainId];
     }
 
-    function pruneSlots(address[] calldata _validators, uint256 _deleteToBlock) external onlyOwner {
+    function pruneSlots(address[] calldata _validators, uint256 _deleteToBlock) external onlyAdminContract {
         if (MIN_CLAIM_BLOCK_AGE + _deleteToBlock > block.number) revert TTLTooLow();
         uint256 i = 0;
         while (i < slotsHashes.length) {
@@ -100,6 +106,10 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
 
     modifier onlyBridge() {
         if (msg.sender != bridgeAddress) revert NotBridge();
+        _;
+    }
+    modifier onlyAdminContract() {
+        if (msg.sender != adminContractAddress) revert NotClaims();
         _;
     }
 }

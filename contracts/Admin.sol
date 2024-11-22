@@ -12,15 +12,16 @@ import "./Validators.sol";
 
 contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     Claims private claims;
-
-    address public fundAdmin;
     ClaimsHelper private claimsHelper;
     Validators private validators;
+    SignedBatches private signedBatches;
+    Slots private slots;
 
-    // Minimal number of confirmed transaction to be kept at all times
+    address public fundAdmin;
+
     uint64 public constant MIN_NUMBER_OF_TRANSACTIONS = 2; //TODO SET THIS VALUE TO AGREED ON
-    //Minimal claim block age to be pruned
     uint256 public constant MIN_CLAIM_BLOCK_AGE = 100; //TODO SET THIS VALUE TO AGREED ON
+    uint256 public constant MIN_NUMBER_OF_SIGNED_BATCHES = 2; //TODO SET THIS VALUE TO AGREED ON
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -38,11 +39,15 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     function setDependencies(
         address _claimsAddress,
         address _claimsHelperAddress,
-        address _validatorsAddress
+        address _validatorsAddress,
+        address _signedBatchesAddress,
+        address _sloptsAddress
     ) external onlyOwner {
         claims = Claims(_claimsAddress);
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         validators = Validators(_validatorsAddress);
+        signedBatches = SignedBatches(_signedBatchesAddress);
+        slots = Slots(_sloptsAddress);
     }
 
     function updateChainTokenQuantity(uint8 _chainId, bool _isIncrease, uint256 _quantity) external onlyFundAdmin {
@@ -98,5 +103,29 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         if (MIN_CLAIM_BLOCK_AGE + _deleteToBlock > block.number) revert TTLTooLow();
 
         claimsHelper.pruneClaims(validators.getValidatorsAddresses(), _deleteToBlock);
+    }
+
+    function pruneConfirmedSignedBatches(uint8 _chainId, uint64 _deleteToBatchId) external onlyOwner {
+        if (_deleteToBatchId <= claimsHelper.nextUnprunedConfirmedSignedBatchId(_chainId)) revert AlreadyPruned();
+
+        if (MIN_NUMBER_OF_SIGNED_BATCHES + _deleteToBatchId > claimsHelper.lastConfirmedSignedBatchId(_chainId))
+            revert ConfirmedTransactionsProtectedFromPruning();
+
+        claimsHelper.pruneConfirmedSignedBatches(_chainId, _deleteToBatchId);
+    }
+
+    function pruneSignedBatches(uint256 _deleteToBlock) external onlyOwner {
+        if (MIN_CLAIM_BLOCK_AGE + _deleteToBlock > block.number) revert TTLTooLow();
+
+        signedBatches.pruneSignedBatches(
+            validators.getQuorumNumberOfValidators(),
+            validators.getValidatorsAddresses(),
+            _deleteToBlock
+        );
+    }
+
+    function pruneSlots(uint256 _deleteToBlock) external onlyOwner {
+        if (MIN_CLAIM_BLOCK_AGE + _deleteToBlock > block.number) revert TTLTooLow();
+        slots.pruneSlots(validators.getValidatorsAddresses(), _deleteToBlock);
     }
 }

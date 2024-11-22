@@ -120,7 +120,7 @@ export async function deployBridgeFixture() {
 
   await validatorsc.setDependencies(bridge.target);
 
-  await admin.setDependencies(claims.target);
+  await admin.setDependencies(claims.target, claimsHelper.target, validatorsc.target);
 
   const chain1 = {
     id: 1,
