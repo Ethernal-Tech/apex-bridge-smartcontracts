@@ -15,6 +15,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     Validators private validators;
     address private adminContractAddress;
 
+    //keccak256)abi.encode(Packed"Defund")
+    bytes32 public constant defundHash = 0xc74d0d70be942fd68984df57687b9f453f1321726e8db77762dee952a5c85b24;
+
     // BlockchainId -> bool
     mapping(uint8 => bool) public isChainRegistered;
 
@@ -35,6 +38,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     // chainId -> nonce (nonce of the last transaction from the executed batch)
     mapping(uint8 => uint64) public lastBatchedTxNonce;
+
+    uint8 public constant MAX_NUMBER_OF_DEFUND_RETRIES = 3; //TO DO SET EXACT NUMBER TO BE USED
 
     mapping(uint8 => uint64) public nextUnprunedConfirmedTransaction;
 
@@ -163,16 +168,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             uint256 _confirmedTxCount = getBatchingTxsCount(_destinationChainId);
 
-            _setConfirmedTransactions(_claim);
+            _setConfirmedTransactions(_claim, 0);
 
-            if (
-                (claimsHelper.currentBatchBlock(_destinationChainId) == -1) && // there is no batch in progress
-                (_confirmedTxCount == 0) && // check if there is no other confirmed transactions
-                (block.number >= nextTimeoutBlock[_destinationChainId])
-            ) // check if the current block number is greater or equal than the NEXT_BATCH_TIMEOUT_BLOCK
-            {
-                nextTimeoutBlock[_destinationChainId] = block.number + timeoutBlocksNumber;
-            }
+            _updateNextTimeoutBlockIfNeeded(_destinationChainId, _confirmedTxCount);
         }
     }
 
@@ -218,11 +216,26 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 chainId,
                 batchId
             );
+
             uint64 _firstTxNonce = _confirmedSignedBatch.firstTxNonceId;
             uint64 _lastTxNouce = _confirmedSignedBatch.lastTxNonceId;
 
             for (uint64 i = _firstTxNonce; i <= _lastTxNouce; i++) {
-                chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
+                if (confirmedTransactions[chainId][i].transactionType == 0) {
+                    chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
+                } else if (confirmedTransactions[chainId][i].transactionType == 1) {
+                    if (confirmedTransactions[chainId][i].retryCounter < MAX_NUMBER_OF_DEFUND_RETRIES) {
+                        uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
+                        confirmedTransactions[chainId][nextNonce] = confirmedTransactions[chainId][i];
+                        confirmedTransactions[chainId][nextNonce].nonce = nextNonce;
+                        confirmedTransactions[chainId][nextNonce].retryCounter++;
+                    } else {
+                        chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
+                        emit DefundFailedAfterMultipleRetries();
+                    }
+                } else {
+                    //REFUND TO DO
+                }
             }
 
             lastBatchedTxNonce[chainId] = _lastTxNouce;
@@ -257,12 +270,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             } else if (chainTokenQuantity[chainId] >= changeAmount) {
                 chainTokenQuantity[chainId] -= changeAmount;
             } else {
-                emit InsufficientFunds(chainTokenQuantity[chainId], changeAmount);
+                emit InsufficientFunds(chainId, changeAmount);
             }
         }
     }
 
-    function _setConfirmedTransactions(BridgingRequestClaim calldata _claim) internal {
+    function _setConfirmedTransactions(BridgingRequestClaim memory _claim, uint8 _transactionType) internal {
         uint8 destinationChainId = _claim.destinationChainId;
         uint64 nextNonce = ++lastConfirmedTxNonce[destinationChainId];
 
@@ -273,6 +286,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         confirmedTx.sourceChainId = _claim.sourceChainId;
         confirmedTx.nonce = nextNonce;
         confirmedTx.retryCounter = _claim.retryCounter;
+        confirmedTx.transactionType = _transactionType;
 
         uint256 receiversLength = _claim.receivers.length;
         for (uint i; i < receiversLength; i++) {
@@ -340,6 +354,39 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function hasVoted(bytes32 _hash, address _voter) external view returns (bool) {
         return claimsHelper.hasVoted(_hash, _voter);
+    }
+
+    function defund(uint8 _chainId, uint256 _amount, string calldata _defundAddress) external onlyAdminContract {
+        BridgingRequestClaim memory _brc = BridgingRequestClaim({
+            observedTransactionHash: defundHash,
+            receivers: new Receiver[](1),
+            totalAmount: _amount,
+            retryCounter: 0,
+            sourceChainId: _chainId,
+            destinationChainId: _chainId
+        });
+
+        _brc.receivers[0].amount = _amount;
+        _brc.receivers[0].destinationAddress = _defundAddress;
+
+        chainTokenQuantity[_chainId] -= _amount;
+
+        uint256 _confirmedTxCount = getBatchingTxsCount(_chainId);
+
+        _setConfirmedTransactions(_brc, 1);
+
+        _updateNextTimeoutBlockIfNeeded(_chainId, _confirmedTxCount);
+    }
+
+    function _updateNextTimeoutBlockIfNeeded(uint8 _chainId, uint256 _confirmedTxCount) internal {
+        if (
+            (claimsHelper.currentBatchBlock(_chainId) == -1) && // there is no batch in progress
+            (_confirmedTxCount == 0) && // check if there is no other confirmed transactions
+            (block.number >= nextTimeoutBlock[_chainId])
+        ) // check if the current block number is greater or equal than the NEXT_BATCH_TIMEOUT_BLOCK
+        {
+            nextTimeoutBlock[_chainId] = block.number + timeoutBlocksNumber;
+        }
     }
 
     function getChainTokenQuantity(uint8 _chainId) external view returns (uint256) {
