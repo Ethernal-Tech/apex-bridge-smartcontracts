@@ -60,7 +60,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         timeoutBlocksNumber = _timeoutBlocksNumber;
     }
 
-    function _authorizeUpgrade(address newImplementation) internal virtual override onlyUpgradeAdmin {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
 
     function setDependencies(
         address _bridgeAddress,
