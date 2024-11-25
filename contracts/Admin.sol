@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridge.sol";
 import "./Claims.sol";
+import "hardhat/console.sol";
 
 contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
@@ -23,6 +24,10 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         _transferOwnership(_owner);
         upgradeAdmin = _upgradeAdmin;
         fundAdmin = _owner;
+    }
+
+    function customUpgrade() external view onlyUpgradeAdmin {
+        console.log("GDE SI PAPANIKOLAU");
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
