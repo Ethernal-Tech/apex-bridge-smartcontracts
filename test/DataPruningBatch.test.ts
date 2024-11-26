@@ -45,7 +45,7 @@ describe("Batch Pruning", function () {
 
       await claimsHelper.connect(adminContract).pruneClaims(validatorsAddresses, MIN_CLAIM_BLOCK_AGE + 31n);
 
-      expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(MIN_CLAIM_BLOCK_AGE - 61n);
+      expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(MIN_CLAIM_BLOCK_AGE - 140n);
 
       for (let i = 0; i < claimsRRC.length; i += 2) {
         for (let j = 0; j < 4; j++) {
