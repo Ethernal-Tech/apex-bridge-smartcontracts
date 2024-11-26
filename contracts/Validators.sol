@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
 
 contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+    address private upgradeAdmin;
+
     // slither-disable too-many-digits
     address constant PRECOMPILE = 0x0000000000000000000000000000000000002050;
     uint32 constant PRECOMPILE_GAS = 50000;
@@ -29,9 +31,9 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         _disableInitializers();
     }
 
-    function initialize(address _owner, address[] calldata _validators) public initializer {
-        __Ownable_init(_owner);
-        __UUPSUpgradeable_init();
+    function initialize(address _owner, address _upgradeAdmin, address[] calldata _validators) public initializer {
+        _transferOwnership(_owner);
+        upgradeAdmin = _upgradeAdmin;
         for (uint8 i; i < _validators.length; i++) {
             addressValidatorIndex[_validators[i]] = i + 1;
             validatorsAddresses.push(_validators[i]);
@@ -39,7 +41,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         validatorsCount = uint8(_validators.length);
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
 
     function setDependencies(address _bridgeAddress) external onlyOwner {
         bridgeAddress = _bridgeAddress;
@@ -166,6 +168,11 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
 
     modifier onlyBridge() {
         if (msg.sender != bridgeAddress) revert NotBridge();
+        _;
+    }
+
+    modifier onlyUpgradeAdmin() {
+        if (msg.sender != upgradeAdmin) revert NotOwner();
         _;
     }
 }

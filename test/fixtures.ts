@@ -40,27 +40,27 @@ export async function deployBridgeFixture() {
 
   const bridgeProxy = await BridgeProxy.deploy(
     await bridgeLogic.getAddress(),
-    Bridge.interface.encodeFunctionData("initialize", [owner.address])
+    Bridge.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
   const claimsHelperProxy = await ClaimsHelperProxy.deploy(
     await claimsHelperLogic.getAddress(),
-    ClaimsHelper.interface.encodeFunctionData("initialize", [owner.address])
+    ClaimsHelper.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
   const claimsProxy = await ClaimsProxy.deploy(
     await claimsLogic.getAddress(),
-    Claims.interface.encodeFunctionData("initialize", [owner.address, 2, 5])
+    Claims.interface.encodeFunctionData("initialize", [owner.address, owner.address, 2, 5])
   );
 
   const signedBatchesProxy = await SignedBatchesProxy.deploy(
     await signedBatchesLogic.getAddress(),
-    SignedBatches.interface.encodeFunctionData("initialize", [owner.address])
+    SignedBatches.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
   const slotsProxy = await SlotsProxy.deploy(
     await slotsLogic.getAddress(),
-    Slots.interface.encodeFunctionData("initialize", [owner.address])
+    Slots.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
   const validatorsAddresses = [
@@ -73,12 +73,12 @@ export async function deployBridgeFixture() {
 
   const validatorsProxy = await ValidatorscProxy.deploy(
     await validatorscLogic.getAddress(),
-    Validators.interface.encodeFunctionData("initialize", [owner.address, validatorsAddresses])
+    Validators.interface.encodeFunctionData("initialize", [owner.address, owner.address, validatorsAddresses])
   );
 
   const adminProxy = await AdminProxy.deploy(
     await adminLogic.getAddress(),
-    Admin.interface.encodeFunctionData("initialize", [owner.address])
+    Admin.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
   //casting proxy contracts to contract logic
