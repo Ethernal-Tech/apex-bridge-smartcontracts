@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
 import "./Bridge.sol";
@@ -10,6 +10,8 @@ import "./ClaimsHelper.sol";
 import "./Validators.sol";
 
 contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+    address private upgradeAdmin;
+
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
     Validators private validators;
@@ -48,16 +50,17 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function initialize(
         address _owner,
+        address _upgradeAdmin,
         uint16 _maxNumberOfTransactions,
         uint8 _timeoutBlocksNumber
     ) public initializer {
-        __Ownable_init(_owner);
-        __UUPSUpgradeable_init();
+        _transferOwnership(_owner);
+        upgradeAdmin = _upgradeAdmin;
         maxNumberOfTransactions = _maxNumberOfTransactions;
         timeoutBlocksNumber = _timeoutBlocksNumber;
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
 
     function setDependencies(
         address _bridgeAddress,
@@ -425,6 +428,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     modifier onlyAdminContract() {
         if (msg.sender != adminContractAddress) revert NotAdminContract();
+        _;
+    }
+
+    modifier onlyUpgradeAdmin() {
+        if (msg.sender != upgradeAdmin) revert NotOwner();
         _;
     }
 }
