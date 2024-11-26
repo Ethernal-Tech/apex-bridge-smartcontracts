@@ -18,18 +18,9 @@ describe("Pruning", function () {
       ).to.be.revertedWithCustomError(claimsHelper, "NotAdminContract");
     });
     it("Should revert calling pruneClaims ttl has NOT passed", async function () {
-      const { claimsHelper, admin, validators } = await loadFixture(deployBridgeFixture);
+      const { claimsHelper, admin, owner } = await loadFixture(deployBridgeFixture);
 
-      const validatorsAddresses = [];
-      for (let i = 0; i < validators.length; i++) {
-        validatorsAddresses.push(validators[i].address);
-      }
-
-      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
-
-      await expect(
-        claimsHelper.connect(adminContract).pruneClaims(validatorsAddresses, 105)
-      ).to.be.revertedWithCustomError(claimsHelper, "TTLTooLow");
+      await expect(admin.connect(owner).pruneClaims(105)).to.be.revertedWithCustomError(claimsHelper, "TTLTooLow");
     });
     it("Calling pruneClaims should remove hash if ttl has passed", async function () {
       const {
@@ -124,10 +115,8 @@ describe("Pruning", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
-
       await expect(
-        claimsHelper.connect(adminContract).pruneConfirmedSignedBatches(signedBatch.destinationChainId, 1)
+        admin.connect(owner).pruneConfirmedSignedBatches(signedBatch.destinationChainId, 1)
       ).to.be.revertedWithCustomError(claimsHelper, "ConfirmedTransactionsProtectedFromPruning");
     });
     it("Should revert if _deleteToBatchId than protected number of signed batches", async function () {
@@ -145,10 +134,8 @@ describe("Pruning", function () {
         await claimsHelper.connect(signedBatchesContract).setConfirmedSignedBatchData(signedBatchesArray1[i]);
       }
 
-      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
-
       await expect(
-        claimsHelper.connect(adminContract).pruneConfirmedSignedBatches(signedBatchesArray1[0].destinationChainId, 200)
+        admin.connect(owner).pruneConfirmedSignedBatches(signedBatchesArray1[0].destinationChainId, 200)
       ).to.be.revertedWithCustomError(claimsHelper, "ConfirmedTransactionsProtectedFromPruning");
     });
     it("Should prune confirmedSignedBatches when conditions are met", async function () {
@@ -213,19 +200,9 @@ describe("Pruning", function () {
       );
     });
     it("Should revert calling pruneSLots if ttl has NOT passed", async function () {
-      const { admin, slots, validators } = await loadFixture(deployBridgeFixture);
+      const { admin, slots, owner } = await loadFixture(deployBridgeFixture);
 
-      const validatorsAddresses = [];
-      for (let i = 0; i < validators.length; i++) {
-        validatorsAddresses.push(validators[i].address);
-      }
-
-      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
-
-      await expect(slots.connect(adminContract).pruneSlots(validatorsAddresses, 5)).to.be.revertedWithCustomError(
-        slots,
-        "TTLTooLow"
-      );
+      await expect(admin.connect(owner).pruneSlots(5)).to.be.revertedWithCustomError(slots, "TTLTooLow");
     });
     it("Calling pruneSlots should remove hash if TTL has passed", async function () {
       const { bridge, slots, admin, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } =
@@ -309,18 +286,17 @@ describe("Pruning", function () {
       ).to.be.revertedWithCustomError(signedBatches, "NotAdminContract");
     });
     it("Should revert if min TTL has not yet passed", async function () {
-      const { signedBatches, admin, validators } = await loadFixture(deployBridgeFixture);
+      const { signedBatches, admin, validators, owner } = await loadFixture(deployBridgeFixture);
 
       const validatorsAddresses = [];
       for (let i = 0; i < validators.length; i++) {
         validatorsAddresses.push(validators[i].address);
       }
 
-      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
-
-      await expect(
-        signedBatches.connect(adminContract).pruneSignedBatches(4, validatorsAddresses, 5)
-      ).to.be.revertedWithCustomError(signedBatches, "TTLTooLow");
+      await expect(admin.connect(owner).pruneSignedBatches(5)).to.be.revertedWithCustomError(
+        signedBatches,
+        "TTLTooLow"
+      );
     });
     it("Calling pruneSignedBatches should remove hashes when ttl has passed", async function () {
       const {
@@ -421,9 +397,7 @@ describe("Pruning", function () {
         .pruneConfirmedTransactions(claimsBRC[0].bridgingRequestClaims[0].destinationChainId, 3);
 
       await expect(
-        claims
-          .connect(adminContract)
-          .pruneConfirmedTransactions(claimsBRC[0].bridgingRequestClaims[0].destinationChainId, 3)
+        admin.connect(owner).pruneConfirmedTransactions(claimsBRC[0].bridgingRequestClaims[0].destinationChainId, 3)
       ).to.be.revertedWithCustomError(claims, "AlreadyPruned");
     });
     it("Should prune confirmedSignedTransactions when conditions are met", async function () {
