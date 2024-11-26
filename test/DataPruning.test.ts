@@ -78,13 +78,15 @@ describe("Pruning", function () {
       expect(await claimsHelper.hasVoted(hash, validators[3].address)).to.be.equal(true);
       expect(await claimsHelper.numberOfVotes(hash)).to.be.equal(4);
 
-      for (let i = 0; i < 100; i++) {
+      const MIN_CLAIM_BLOCK_AGE = await admin.MIN_CLAIM_BLOCK_AGE();
+
+      for (let i = 0; i < MIN_CLAIM_BLOCK_AGE; i++) {
         await ethers.provider.send("evm_mine");
       }
 
       const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
 
-      await claimsHelper.connect(adminContract).pruneClaims(validatorsAddresses, 25);
+      await claimsHelper.connect(adminContract).pruneClaims(validatorsAddresses, MIN_CLAIM_BLOCK_AGE - 75n);
 
       expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(0);
       expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.equal(false);
@@ -134,8 +136,12 @@ describe("Pruning", function () {
         await claimsHelper.connect(signedBatchesContract).setConfirmedSignedBatchData(signedBatchesArray1[i]);
       }
 
+      const MIN_CLAIM_BLOCK_AGE = await admin.MIN_CLAIM_BLOCK_AGE();
+
       await expect(
-        admin.connect(owner).pruneConfirmedSignedBatches(signedBatchesArray1[0].destinationChainId, 200)
+        admin
+          .connect(owner)
+          .pruneConfirmedSignedBatches(signedBatchesArray1[0].destinationChainId, MIN_CLAIM_BLOCK_AGE + 100n)
       ).to.be.revertedWithCustomError(claimsHelper, "ConfirmedTransactionsProtectedFromPruning");
     });
     it("Should prune confirmedSignedBatches when conditions are met", async function () {
@@ -251,13 +257,15 @@ describe("Pruning", function () {
       expect(await slots.hasVoted(hash1, validators[3].address)).to.be.equal(true);
       expect(await slots.numberOfVotes(hash1)).to.be.equal(4);
 
-      for (let i = 0; i < 100; i++) {
+      const MIN_CLAIM_BLOCK_AGE = await admin.MIN_CLAIM_BLOCK_AGE();
+
+      for (let i = 0; i < MIN_CLAIM_BLOCK_AGE; i++) {
         await ethers.provider.send("evm_mine");
       }
 
       const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
 
-      await slots.connect(adminContract).pruneSlots(validatorsAddresses, 24);
+      await slots.connect(adminContract).pruneSlots(validatorsAddresses, MIN_CLAIM_BLOCK_AGE - 76n);
 
       expect((await slots.getSlotsHashes()).length).to.be.equal(0);
       expect(await slots.hasVoted(hash0, validators[0].address)).to.be.equal(false);
@@ -350,13 +358,15 @@ describe("Pruning", function () {
       expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(1);
       expect((await signedBatches.getSignatures(hash)).length).to.be.equal(3);
 
-      for (let i = 0; i < 100; i++) {
+      const MIN_CLAIM_BLOCK_AGE = await admin.MIN_CLAIM_BLOCK_AGE();
+
+      for (let i = 0; i < MIN_CLAIM_BLOCK_AGE; i++) {
         await ethers.provider.send("evm_mine");
       }
 
       const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
 
-      await signedBatches.connect(adminContract).pruneSignedBatches(4, validatorsAddresses, 31);
+      await signedBatches.connect(adminContract).pruneSignedBatches(4, validatorsAddresses, MIN_CLAIM_BLOCK_AGE - 69n);
 
       expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(0);
       expect((await signedBatches.getSignatures(hash)).length).to.be.equal(0);
