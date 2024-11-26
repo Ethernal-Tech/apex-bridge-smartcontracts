@@ -152,6 +152,7 @@ interface IBridgeStructs {
     error NotSignedBatches();
     error NotFundAdmin();
     error NotAdminContract();
+    error NotUpgradeAdmin();
     error NotSignedBatchesOrBridge();
     error NotSignedBatchesOrClaims();
     error NotEnoughBridgingTokensAvailable(bytes32 _claimTransactionHash);

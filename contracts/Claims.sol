@@ -442,7 +442,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
+        if (msg.sender != upgradeAdmin) revert NotUpgradeAdmin();
         _;
     }
 }

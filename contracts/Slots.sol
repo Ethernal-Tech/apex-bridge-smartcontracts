@@ -110,11 +110,11 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     }
 
     modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
+        if (msg.sender != upgradeAdmin) revert NotUpgradeAdmin();
         _;
     }
     modifier onlyAdminContract() {
-        if (msg.sender != adminContractAddress) revert NotClaims();
+        if (msg.sender != adminContractAddress) revert NotAdminContract();
         _;
     }
 }

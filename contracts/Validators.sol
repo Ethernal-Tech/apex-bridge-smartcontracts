@@ -172,7 +172,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     }
 
     modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
+        if (msg.sender != upgradeAdmin) revert NotUpgradeAdmin();
         _;
     }
 }

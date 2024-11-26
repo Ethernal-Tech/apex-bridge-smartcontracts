@@ -44,9 +44,14 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
 
     function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
 
-    function setDependencies(address _claimsAddress, address _signedBatchesAddress) external onlyOwner {
+    function setDependencies(
+        address _claimsAddress,
+        address _signedBatchesAddress,
+        address _adminContractAddress
+    ) external onlyOwner {
         claimsAddress = _claimsAddress;
         signedBatchesAddress = _signedBatchesAddress;
+        adminContractAddress = _adminContractAddress;
     }
 
     function getConfirmedSignedBatchData(
@@ -153,7 +158,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     }
 
     modifier onlyAdminContract() {
-        if (msg.sender != adminContractAddress) revert NotClaims();
+        if (msg.sender != adminContractAddress) revert NotAdminContract();
         _;
     }
 }

@@ -5,9 +5,8 @@ import { deployBridgeFixture } from "./fixtures";
 describe("Batch Pruning", function () {
   describe("Batch Claims Pruning", function () {
     it("Pruning a bunch of claims", async function () {
-      const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorsCardanoData } = await loadFixture(
-        deployBridgeFixture
-      );
+      const { bridge, claimsHelper, admin, owner, chain1, chain2, validators, validatorsCardanoData } =
+        await loadFixture(deployBridgeFixture);
 
       const validatorsAddresses = [];
       for (let i = 0; i < validators.length; i++) {
@@ -40,7 +39,9 @@ describe("Batch Pruning", function () {
 
       expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(60);
 
-      await claimsHelper.connect(owner).pruneClaims(validatorsAddresses, 131);
+      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
+
+      await claimsHelper.connect(adminContract).pruneClaims(validatorsAddresses, 131);
 
       expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(39);
 
@@ -58,12 +59,12 @@ describe("Batch Pruning", function () {
 
       expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(59);
 
-      await claimsHelper.connect(owner).pruneClaims(validatorsAddresses, 116);
+      await claimsHelper.connect(adminContract).pruneClaims(validatorsAddresses, 116);
 
       expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(30);
     });
     it("Pruning a bunch of confirmedSignedBatches", async function () {
-      const { claims, claimsHelper, owner } = await loadFixture(deployBridgeFixture);
+      const { claims, claimsHelper, admin, owner } = await loadFixture(deployBridgeFixture);
 
       const signedBatchesChain1 = getSignedBatchArrayChain1();
       const signedBatchesChain2 = getSignedBatchArrayChain2();
@@ -94,8 +95,10 @@ describe("Batch Pruning", function () {
         ).to.be.equal(signedBatchesChain2[i].lastTxNonceId);
       }
 
-      await claimsHelper.connect(owner).pruneConfirmedSignedBatches(1, 10);
-      await claimsHelper.connect(owner).pruneConfirmedSignedBatches(2, 10);
+      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
+
+      await claimsHelper.connect(adminContract).pruneConfirmedSignedBatches(1, 10);
+      await claimsHelper.connect(adminContract).pruneConfirmedSignedBatches(2, 10);
 
       for (let i = 1; i < 10; i++) {
         expect(
@@ -160,7 +163,7 @@ describe("Batch Pruning", function () {
   });
   describe("Batch ConfirmedTransactions Pruning", function () {
     it("Pruning a bunch of confirmedTransactions", async function () {
-      const { bridge, claims, owner, validators, chain1, chain2, validatorsCardanoData } = await loadFixture(
+      const { bridge, claims, admin, owner, validators, chain1, chain2, validatorsCardanoData } = await loadFixture(
         deployBridgeFixture
       );
 
@@ -194,8 +197,10 @@ describe("Batch Pruning", function () {
         await claims.nextUnprunedConfirmedTransaction(claimsBRC[0].bridgingRequestClaims[0].destinationChainId)
       ).to.be.equal(0);
 
+      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
+
       await claims
-        .connect(owner)
+        .connect(adminContract)
         .pruneConfirmedTransactions(claimsBRC[0].bridgingRequestClaims[0].destinationChainId, 3);
 
       expect(
@@ -235,7 +240,7 @@ describe("Batch Pruning", function () {
   });
   describe("Batch Slots Pruning", function () {
     it("Pruning bunch of slots", async function () {
-      const { bridge, slots, owner, validators } = await loadFixture(deployBridgeFixture);
+      const { bridge, slots, admin, owner, validators } = await loadFixture(deployBridgeFixture);
 
       const validatorsAddresses = [];
       for (let i = 0; i < validators.length; i++) {
@@ -259,7 +264,9 @@ describe("Batch Pruning", function () {
         await ethers.provider.send("evm_mine");
       }
 
-      await slots.connect(owner).pruneSlots(validatorsAddresses, 23);
+      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
+
+      await slots.connect(adminContract).pruneSlots(validatorsAddresses, 23);
 
       expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(0);
 
@@ -269,14 +276,14 @@ describe("Batch Pruning", function () {
 
       expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(20);
 
-      await slots.connect(owner).pruneSlots(validatorsAddresses, 3);
+      await slots.connect(adminContract).pruneSlots(validatorsAddresses, 3);
 
       expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(0);
     });
   });
   describe("Batch SignedBatches Pruning", function () {
     it("Pruning a bunch of SignedBatches", async function () {
-      const { bridge, signedBatches, owner, validators } = await loadFixture(deployBridgeFixture);
+      const { bridge, signedBatches, admin, owner, validators } = await loadFixture(deployBridgeFixture);
 
       const signedBatchesArray1 = getSignedBatches1();
       const signedBatchesArray2 = getSignedBatches2();
@@ -302,7 +309,9 @@ describe("Batch Pruning", function () {
         await ethers.provider.send("evm_mine");
       }
 
-      await signedBatches.connect(owner).pruneSignedBatches(4, validatorsAddresses, 99);
+      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
+
+      await signedBatches.connect(adminContract).pruneSignedBatches(4, validatorsAddresses, 99);
 
       expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(0);
 
@@ -314,7 +323,7 @@ describe("Batch Pruning", function () {
 
       expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(20);
 
-      await signedBatches.connect(owner).pruneSignedBatches(4, validatorsAddresses, 31);
+      await signedBatches.connect(adminContract).pruneSignedBatches(4, validatorsAddresses, 31);
 
       expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(10);
     });

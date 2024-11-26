@@ -85,16 +85,6 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         emit FundAdminChanged(_fundAdmin);
     }
 
-    modifier onlyFundAdmin() {
-        if (msg.sender != fundAdmin) revert NotFundAdmin();
-        _;
-    }
-
-    modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
-        _;
-    }
-
     function pruneConfirmedTransactions(uint8 _chainId, uint64 _deleteToNonce) external onlyOwner {
         if (_deleteToNonce <= claims.nextUnprunedConfirmedTransaction(_chainId)) revert AlreadyPruned();
 
@@ -133,5 +123,15 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     function pruneSlots(uint256 _deleteToBlock) external onlyOwner {
         if (MIN_CLAIM_BLOCK_AGE + _deleteToBlock > block.number) revert TTLTooLow();
         slots.pruneSlots(validators.getValidatorsAddresses(), _deleteToBlock);
+    }
+
+    modifier onlyFundAdmin() {
+        if (msg.sender != fundAdmin) revert NotFundAdmin();
+        _;
+    }
+
+    modifier onlyUpgradeAdmin() {
+        if (msg.sender != upgradeAdmin) revert NotOwner();
+        _;
     }
 }

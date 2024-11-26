@@ -170,12 +170,12 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     }
 
     modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
+        if (msg.sender != upgradeAdmin) revert NotUpgradeAdmin();
         _;
     }
 
     modifier onlyAdminContract() {
-        if (msg.sender != adminContractAddress) revert NotClaims();
+        if (msg.sender != adminContractAddress) revert NotAdminContract();
         _;
     }
 }

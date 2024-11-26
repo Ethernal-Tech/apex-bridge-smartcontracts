@@ -110,7 +110,7 @@ export async function deployBridgeFixture() {
     validatorsProxy.target
   );
 
-  await claimsHelper.setDependencies(claims.target, signedBatches.target);
+  await claimsHelper.setDependencies(claims.target, signedBatches.target, admin.target);
 
   await claims.setDependencies(bridge.target, claimsHelper.target, validatorsc.target, admin.target);
 

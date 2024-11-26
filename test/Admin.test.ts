@@ -79,7 +79,10 @@ describe("Admin Functions", function () {
     it("Should revert setFundAdmin is not called by owner", async function () {
       const { admin, validators } = await loadFixture(deployBridgeFixture);
 
-      await expect(admin.connect(validators[0]).setFundAdmin(validators[0])).to.be.revertedWith("Ownable: caller is not the owner");
+      await expect(admin.connect(validators[0]).setFundAdmin(validators[0])).to.be.revertedWithCustomError(
+        admin,
+        "OwnableUnauthorizedAccount"
+      );
     });
 
     it("Should revert if FundAdmin is ZeroAddress", async function () {

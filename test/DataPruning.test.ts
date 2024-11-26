@@ -5,7 +5,7 @@ import { deployBridgeFixture } from "./fixtures";
 
 describe("Pruning", function () {
   describe("Claims Pruning", function () {
-    it("Should revert if pruneClaims is not called by owner", async function () {
+    it("Should revert if pruneClaims is not called by Admin contract", async function () {
       const { claimsHelper, validators } = await loadFixture(deployBridgeFixture);
 
       const validatorsAddresses = [];
@@ -15,24 +15,34 @@ describe("Pruning", function () {
 
       await expect(
         claimsHelper.connect(validators[0]).pruneClaims(validatorsAddresses, 5)
-      ).to.be.revertedWithCustomError(claimsHelper, "OwnableUnauthorizedAccount");
+      ).to.be.revertedWithCustomError(claimsHelper, "NotAdminContract");
     });
     it("Should revert calling pruneClaims ttl has NOT passed", async function () {
-      const { claimsHelper, owner, validators } = await loadFixture(deployBridgeFixture);
+      const { claimsHelper, admin, validators } = await loadFixture(deployBridgeFixture);
 
       const validatorsAddresses = [];
       for (let i = 0; i < validators.length; i++) {
         validatorsAddresses.push(validators[i].address);
       }
 
-      await expect(claimsHelper.connect(owner).pruneClaims(validatorsAddresses, 105)).to.be.revertedWithCustomError(
-        claimsHelper,
-        "TTLTooLow"
-      );
+      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
+
+      await expect(
+        claimsHelper.connect(adminContract).pruneClaims(validatorsAddresses, 105)
+      ).to.be.revertedWithCustomError(claimsHelper, "TTLTooLow");
     });
     it("Calling pruneClaims should remove hash if ttl has passed", async function () {
-      const { bridge, claimsHelper, owner, validators, validatorClaimsBRC, chain1, chain2, validatorsCardanoData } =
-        await loadFixture(deployBridgeFixture);
+      const {
+        bridge,
+        claimsHelper,
+        admin,
+        owner,
+        validators,
+        validatorClaimsBRC,
+        chain1,
+        chain2,
+        validatorsCardanoData,
+      } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
       await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
@@ -81,7 +91,9 @@ describe("Pruning", function () {
         await ethers.provider.send("evm_mine");
       }
 
-      await claimsHelper.connect(owner).pruneClaims(validatorsAddresses, 25);
+      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
+
+      await claimsHelper.connect(adminContract).pruneClaims(validatorsAddresses, 25);
 
       expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(0);
       expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.equal(false);
@@ -92,16 +104,16 @@ describe("Pruning", function () {
     });
   });
   describe("ConfirmedSignedBatches Pruning", function () {
-    it("Should revert if pruneConfirmedSignedBatches is not called by owner", async function () {
+    it("Should revert if pruneConfirmedSignedBatches is not called by Admin contract", async function () {
       const { claimsHelper, validators } = await loadFixture(deployBridgeFixture);
 
       await expect(claimsHelper.connect(validators[0]).pruneConfirmedSignedBatches(1, 5)).to.be.revertedWithCustomError(
         claimsHelper,
-        "OwnableUnauthorizedAccount"
+        "NotAdminContract"
       );
     });
     it("Should revert if _deleteToBatchId is lower than MIN_NUMBER_OF_SIGNED_BATCHES", async function () {
-      const { bridge, claimsHelper, owner, chain1, chain2, validatorsCardanoData, validators, signedBatch } =
+      const { bridge, claimsHelper, admin, owner, chain1, chain2, validatorsCardanoData, validators, signedBatch } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
@@ -112,14 +124,15 @@ describe("Pruning", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
+      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
+
       await expect(
-        claimsHelper.connect(owner).pruneConfirmedSignedBatches(signedBatch.destinationChainId, 1)
+        claimsHelper.connect(adminContract).pruneConfirmedSignedBatches(signedBatch.destinationChainId, 1)
       ).to.be.revertedWithCustomError(claimsHelper, "ConfirmedTransactionsProtectedFromPruning");
     });
     it("Should revert if _deleteToBatchId than protected number of signed batches", async function () {
-      const { bridge, claimsHelper, signedBatches, owner, chain1, chain2, validatorsCardanoData } = await loadFixture(
-        deployBridgeFixture
-      );
+      const { bridge, claimsHelper, signedBatches, admin, owner, chain1, chain2, validatorsCardanoData } =
+        await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
@@ -132,14 +145,15 @@ describe("Pruning", function () {
         await claimsHelper.connect(signedBatchesContract).setConfirmedSignedBatchData(signedBatchesArray1[i]);
       }
 
+      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
+
       await expect(
-        claimsHelper.connect(owner).pruneConfirmedSignedBatches(signedBatchesArray1[0].destinationChainId, 200)
+        claimsHelper.connect(adminContract).pruneConfirmedSignedBatches(signedBatchesArray1[0].destinationChainId, 200)
       ).to.be.revertedWithCustomError(claimsHelper, "ConfirmedTransactionsProtectedFromPruning");
     });
     it("Should prune confirmedSignedBatches when conditions are met", async function () {
-      const { bridge, claimsHelper, owner, chain1, chain2, validatorsCardanoData, signedBatches } = await loadFixture(
-        deployBridgeFixture
-      );
+      const { bridge, claimsHelper, admin, owner, chain1, chain2, validatorsCardanoData, signedBatches } =
+        await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
@@ -156,7 +170,11 @@ describe("Pruning", function () {
         0
       );
 
-      await claimsHelper.connect(owner).pruneConfirmedSignedBatches(signedBatchesArray1[0].destinationChainId, 10);
+      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
+
+      await claimsHelper
+        .connect(adminContract)
+        .pruneConfirmedSignedBatches(signedBatchesArray1[0].destinationChainId, 10);
 
       expect(await claimsHelper.nextUnprunedConfirmedSignedBatchId(signedBatchesArray1[0].destinationChainId)).to.equal(
         11
@@ -181,7 +199,7 @@ describe("Pruning", function () {
     });
   });
   describe("Slots Pruning", function () {
-    it("Should revert if pruneSlots is not called by owner", async function () {
+    it("Should revert if pruneSlots is not called by Admin Contract", async function () {
       const { slots, validators } = await loadFixture(deployBridgeFixture);
 
       const validatorsAddresses = [];
@@ -191,26 +209,27 @@ describe("Pruning", function () {
 
       await expect(slots.connect(validators[0]).pruneSlots(validatorsAddresses, 5)).to.be.revertedWithCustomError(
         slots,
-        "OwnableUnauthorizedAccount"
+        "NotAdminContract"
       );
     });
     it("Should revert calling pruneSLots if ttl has NOT passed", async function () {
-      const { owner, slots, validators } = await loadFixture(deployBridgeFixture);
+      const { admin, slots, validators } = await loadFixture(deployBridgeFixture);
 
       const validatorsAddresses = [];
       for (let i = 0; i < validators.length; i++) {
         validatorsAddresses.push(validators[i].address);
       }
 
-      await expect(slots.connect(owner).pruneSlots(validatorsAddresses, 5)).to.be.revertedWithCustomError(
+      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
+
+      await expect(slots.connect(adminContract).pruneSlots(validatorsAddresses, 5)).to.be.revertedWithCustomError(
         slots,
         "TTLTooLow"
       );
     });
     it("Calling pruneSlots should remove hash if TTL has passed", async function () {
-      const { bridge, slots, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
-        deployBridgeFixture
-      );
+      const { bridge, slots, admin, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } =
+        await loadFixture(deployBridgeFixture);
 
       let encoded = ethers.solidityPacked(
         ["uint8", "bytes32", "uint256"],
@@ -259,7 +278,9 @@ describe("Pruning", function () {
         await ethers.provider.send("evm_mine");
       }
 
-      await slots.connect(owner).pruneSlots(validatorsAddresses, 24);
+      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
+
+      await slots.connect(adminContract).pruneSlots(validatorsAddresses, 24);
 
       expect((await slots.getSlotsHashes()).length).to.be.equal(0);
       expect(await slots.hasVoted(hash0, validators[0].address)).to.be.equal(false);
@@ -275,7 +296,7 @@ describe("Pruning", function () {
     });
   });
   describe("SignedBatches Pruning", function () {
-    it("Should revert if pruneSignedBatches is not called by owner", async function () {
+    it("Should revert if pruneSignedBatches is not called by Admin Contract", async function () {
       const { signedBatches, validators } = await loadFixture(deployBridgeFixture);
 
       const validatorsAddresses = [];
@@ -285,24 +306,27 @@ describe("Pruning", function () {
 
       await expect(
         signedBatches.connect(validators[0]).pruneSignedBatches(4, validatorsAddresses, 5)
-      ).to.be.revertedWithCustomError(signedBatches, "OwnableUnauthorizedAccount");
+      ).to.be.revertedWithCustomError(signedBatches, "NotAdminContract");
     });
     it("Should revert if min TTL has not yet passed", async function () {
-      const { signedBatches, owner, validators } = await loadFixture(deployBridgeFixture);
+      const { signedBatches, admin, validators } = await loadFixture(deployBridgeFixture);
 
       const validatorsAddresses = [];
       for (let i = 0; i < validators.length; i++) {
         validatorsAddresses.push(validators[i].address);
       }
 
+      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
+
       await expect(
-        signedBatches.connect(owner).pruneSignedBatches(4, validatorsAddresses, 5)
+        signedBatches.connect(adminContract).pruneSignedBatches(4, validatorsAddresses, 5)
       ).to.be.revertedWithCustomError(signedBatches, "TTLTooLow");
     });
     it("Calling pruneSignedBatches should remove hashes when ttl has passed", async function () {
       const {
         bridge,
         signedBatches,
+        admin,
         owner,
         chain1,
         chain2,
@@ -354,23 +378,25 @@ describe("Pruning", function () {
         await ethers.provider.send("evm_mine");
       }
 
-      await signedBatches.pruneSignedBatches(4, validatorsAddresses, 31);
+      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
+
+      await signedBatches.connect(adminContract).pruneSignedBatches(4, validatorsAddresses, 31);
 
       expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(0);
       expect((await signedBatches.getSignatures(hash)).length).to.be.equal(0);
     });
   });
   describe("ConfirmedTransaction Pruning", function () {
-    it("Should revert if pruneConfirmedTransactions is not called by owner", async function () {
+    it("Should revert if pruneConfirmedTransactions is not called by Admin Contract", async function () {
       const { claims, validators } = await loadFixture(deployBridgeFixture);
 
       await expect(claims.connect(validators[0]).pruneConfirmedTransactions(1, 5)).to.be.revertedWithCustomError(
         claims,
-        "OwnableUnauthorizedAccount"
+        "NotAdminContract"
       );
     });
     it("Should revert if _deleteToNonce is lower than lastPrunedConfirmedtransaction", async function () {
-      const { bridge, claims, owner, chain1, chain2, validators, validatorsCardanoData } = await loadFixture(
+      const { bridge, claims, admin, owner, chain1, chain2, validators, validatorsCardanoData } = await loadFixture(
         deployBridgeFixture
       );
       await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
@@ -388,16 +414,20 @@ describe("Pruning", function () {
         await claims.nextUnprunedConfirmedTransaction(claimsBRC[0].bridgingRequestClaims[0].destinationChainId)
       ).to.equal(0);
 
+      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
+
       await claims
-        .connect(owner)
+        .connect(adminContract)
         .pruneConfirmedTransactions(claimsBRC[0].bridgingRequestClaims[0].destinationChainId, 3);
 
       await expect(
-        claims.connect(owner).pruneConfirmedTransactions(claimsBRC[0].bridgingRequestClaims[0].destinationChainId, 3)
+        claims
+          .connect(adminContract)
+          .pruneConfirmedTransactions(claimsBRC[0].bridgingRequestClaims[0].destinationChainId, 3)
       ).to.be.revertedWithCustomError(claims, "AlreadyPruned");
     });
     it("Should prune confirmedSignedTransactions when conditions are met", async function () {
-      const { bridge, claims, owner, chain1, chain2, validators, validatorsCardanoData } = await loadFixture(
+      const { bridge, claims, admin, owner, chain1, chain2, validators, validatorsCardanoData } = await loadFixture(
         deployBridgeFixture
       );
 
@@ -418,7 +448,9 @@ describe("Pruning", function () {
 
       expect(await claims.lastConfirmedTxNonce(chainId)).to.equal(20);
 
-      await claims.connect(owner).pruneConfirmedTransactions(chainId, 10);
+      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
+
+      await claims.connect(adminContract).pruneConfirmedTransactions(chainId, 10);
 
       expect(await claims.nextUnprunedConfirmedTransaction(chainId)).to.equal(11);
 
