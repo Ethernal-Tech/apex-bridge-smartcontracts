@@ -326,7 +326,6 @@ describe("Admin Functions", function () {
       for (let i = 0; i < 5; i++) {
         await ethers.provider.send("evm_mine");
       }
-
       await bridge.connect(validators[0]).submitSignedBatch(signedBatchDefundRetry);
       await bridge.connect(validators[1]).submitSignedBatch(signedBatchDefundRetry);
       await bridge.connect(validators[2]).submitSignedBatch(signedBatchDefundRetry);
@@ -337,6 +336,7 @@ describe("Admin Functions", function () {
         .getConfirmedSignedBatchData(signedBatchDefundRetry.destinationChainId, signedBatchDefundRetry.id);
 
       expect(confBatch.firstTxNonceId).to.equal(signedBatchDefundRetry.firstTxNonceId);
+
       expect(confBatch.lastTxNonceId).to.equal(signedBatchDefundRetry.lastTxNonceId);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFCDefundRetry);
