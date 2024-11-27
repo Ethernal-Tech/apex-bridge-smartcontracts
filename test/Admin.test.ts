@@ -278,75 +278,71 @@ describe("Admin Functions", function () {
         admin,
         bridge,
         claims,
-        claimsHelper,
+        signedBatches,
         owner,
         chain1,
         chain2,
         validators,
-        signedBatchDefund,
-        signedBatchDefundRetry,
+        signedBatch,
         validatorsCardanoData,
-        validatorClaimsBRC,
         validatorClaimsBEFC,
-        validatorClaimsBEFCDefundRetry,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
       await bridge.connect(owner).registerChain(chain2, 200, validatorsCardanoData);
 
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
-
-      expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(1);
-
       await admin.setFundAdmin(validators[0].address);
 
       await admin.connect(validators[0]).defund(chain2.id, "address", 1);
 
-      expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(2);
+      const retryCounter = await claims.MAX_NUMBER_OF_DEFUND_RETRIES();
 
-      // wait for next timeout
-      for (let i = 0; i < 3; i++) {
-        await ethers.provider.send("evm_mine");
+      for (let i = 0; i <= retryCounter; i++) {
+        expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(i + 1);
+        expect((await claims.confirmedTransactions(chain2.id, i + 1)).retryCounter).to.equal(i);
+
+        // wait for next timeout
+        for (let i = 0; i < 3; i++) {
+          await ethers.provider.send("evm_mine");
+        }
+
+        signedBatch.firstTxNonceId = i + 1;
+        signedBatch.lastTxNonceId = i + 1;
+        signedBatch.id = i + 1;
+
+        await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+        await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+        await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+        await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+        await bridge.connect(validators[4]).submitSignedBatch(signedBatch);
+
+        validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId = i + 1;
+
+        await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+        await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+        await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
+
+        if (i == Number(retryCounter)) {
+          await expect(await bridge.connect(validators[4]).submitClaims(validatorClaimsBEFC)).to.emit(
+            claims,
+            "DefundFailedAfterMultipleRetries"
+          );
+        } else {
+          await bridge.connect(validators[4]).submitClaims(validatorClaimsBEFC);
+
+          expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(i + 2);
+
+          expect((await claims.confirmedTransactions(chain2.id, i + 2)).retryCounter).to.equal(i + 1);
+        }
       }
 
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatchDefund);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatchDefund);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatchDefund);
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatchDefund);
+      // //reseting signedBatch
+      signedBatch.firstTxNonceId = 1;
+      signedBatch.lastTxNonceId = 1;
+      signedBatch.id = 1;
 
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
-      await bridge.connect(validators[4]).submitClaims(validatorClaimsBEFC);
-
-      // wait for next timeout
-      for (let i = 0; i < 5; i++) {
-        await ethers.provider.send("evm_mine");
-      }
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatchDefundRetry);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatchDefundRetry);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatchDefundRetry);
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatchDefundRetry);
-
-      const confBatch = await claimsHelper
-        .connect(validators[0])
-        .getConfirmedSignedBatchData(signedBatchDefundRetry.destinationChainId, signedBatchDefundRetry.id);
-
-      expect(confBatch.firstTxNonceId).to.equal(signedBatchDefundRetry.firstTxNonceId);
-
-      expect(confBatch.lastTxNonceId).to.equal(signedBatchDefundRetry.lastTxNonceId);
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFCDefundRetry);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFCDefundRetry);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFCDefundRetry);
-
-      await expect(await bridge.connect(validators[4]).submitClaims(validatorClaimsBEFCDefundRetry)).to.emit(
-        claims,
-        "DefundFailedAfterMultipleRetries"
-      );
+      //reseting validatorClaimsBEFC
+      validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId = 1;
     });
   });
 });
