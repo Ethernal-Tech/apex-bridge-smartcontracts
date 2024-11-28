@@ -250,9 +250,9 @@ describe("Batch Pruning", function () {
         await ethers.provider.send("evm_mine");
       }
 
-      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
+      let currentBlockNumber = await ethers.provider.getBlockNumber();
 
-      await slots.connect(adminContract).pruneSlots(validatorsAddresses, MIN_CLAIM_BLOCK_AGE - 77n);
+      await admin.connect(owner).pruneSlots(currentBlockNumber - Number(MIN_CLAIM_BLOCK_AGE));
 
       expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(0);
 
@@ -262,7 +262,12 @@ describe("Batch Pruning", function () {
 
       expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(20);
 
-      await slots.connect(adminContract).pruneSlots(validatorsAddresses, 3);
+      for (let i = 0; i < MIN_CLAIM_BLOCK_AGE; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+      currentBlockNumber = await ethers.provider.getBlockNumber();
+
+      await admin.connect(owner).pruneSlots(currentBlockNumber - Number(MIN_CLAIM_BLOCK_AGE));
 
       expect((await slots.connect(owner).getSlotsHashes()).length).to.be.equal(0);
     });
@@ -273,11 +278,6 @@ describe("Batch Pruning", function () {
 
       const signedBatchesArray1 = getSignedBatches1();
       const signedBatchesArray2 = getSignedBatches2();
-
-      const validatorsAddresses = [];
-      for (let i = 0; i < validators.length; i++) {
-        validatorsAddresses.push(validators[i].address);
-      }
 
       const bridgeContract = await impersonateAsContractAndMintFunds(await bridge.getAddress());
 
@@ -297,9 +297,7 @@ describe("Batch Pruning", function () {
         await ethers.provider.send("evm_mine");
       }
 
-      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
-
-      await signedBatches.connect(adminContract).pruneSignedBatches(validatorsAddresses, MIN_CLAIM_BLOCK_AGE - 1n);
+      await admin.connect(owner).pruneSignedBatches(MIN_CLAIM_BLOCK_AGE);
 
       expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(0);
 
@@ -311,7 +309,13 @@ describe("Batch Pruning", function () {
 
       expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(20);
 
-      await signedBatches.connect(adminContract).pruneSignedBatches(validatorsAddresses, 31);
+      for (let i = 0; i < MIN_CLAIM_BLOCK_AGE; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      const currentBlockNumber = await ethers.provider.getBlockNumber();
+
+      await admin.connect(owner).pruneSignedBatches(Number(currentBlockNumber) - Number(MIN_CLAIM_BLOCK_AGE) - 31);
 
       expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(10);
     });

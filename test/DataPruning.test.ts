@@ -366,7 +366,11 @@ describe("Pruning", function () {
 
       const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
 
-      await signedBatches.connect(adminContract).pruneSignedBatches(validatorsAddresses, MIN_CLAIM_BLOCK_AGE - 69n);
+      const currentBlockNumber = await ethers.provider.getBlockNumber();
+
+      const deleteTo = Number(currentBlockNumber) - Number(MIN_CLAIM_BLOCK_AGE);
+
+      await signedBatches.connect(adminContract).pruneSignedBatches(validatorsAddresses, deleteTo);
 
       expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(0);
       expect((await signedBatches.getSignatures(hash)).length).to.be.equal(0);
