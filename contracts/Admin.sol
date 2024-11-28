@@ -91,7 +91,7 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         if (MIN_NUMBER_OF_TRANSACTIONS + _deleteToNonce > claims.lastConfirmedTxNonce(_chainId))
             revert ConfirmedTransactionsProtectedFromPruning();
 
-        claims.pruneConfirmedTransactions(_chainId, _chainId);
+        claims.pruneConfirmedTransactions(_chainId, _deleteToNonce);
         //TODO add event everywhere
     }
 
