@@ -10,7 +10,7 @@ describe("Admin Functions", function () {
   });
 
   describe("Chain Token Quantity", function () {
-    it("Should revert any claim if not called by fundAdmin", async function () {
+    it("Should revert updateChainTokenQuantity if not called by fundAdmin", async function () {
       const { admin, validators } = await loadFixture(deployBridgeFixture);
 
       await expect(admin.connect(validators[0]).updateChainTokenQuantity(1, true, 100)).to.be.revertedWithCustomError(
@@ -25,7 +25,7 @@ describe("Admin Functions", function () {
         "ChainIsNotRegistered"
       );
     });
-    it("Should revert if setChainTokenQuantity in Clais is not called by Admin contract", async function () {
+    it("Should revert if updateChainTokenQuantity in Clais is not called by Admin contract", async function () {
       const { admin, claims } = await loadFixture(deployBridgeFixture);
       await expect(claims.updateChainTokenQuantity(1, true, 100)).to.be.revertedWithCustomError(
         claims,
@@ -33,9 +33,7 @@ describe("Admin Functions", function () {
       );
     });
     it("Should increase chainTokenQuantity after calling updateChainTokenQuantity", async function () {
-      const { admin, bridge, claims, validators, chain1, validatorsCardanoData } = await loadFixture(
-        deployBridgeFixture
-      );
+      const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
       await bridge.registerChain(chain1, 100, validatorsCardanoData);
 
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
@@ -51,7 +49,7 @@ describe("Admin Functions", function () {
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(200);
     });
     it("Should revert if decreae amount is higher than available chainTokenQuantity", async function () {
-      const { admin, bridge, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+      const { admin, bridge, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
       await bridge.registerChain(chain1, 100, validatorsCardanoData);
 
       await expect(admin.updateChainTokenQuantity(1, false, 200)).to.be.revertedWithCustomError(
@@ -60,15 +58,13 @@ describe("Admin Functions", function () {
       );
     });
     it("Should decrease chainTokenQuantity by required amount", async function () {
-      const { admin, bridge, claims, validators, chain1, validatorsCardanoData } = await loadFixture(
-        deployBridgeFixture
-      );
+      const { admin, bridge, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
       await bridge.registerChain(chain1, 100, validatorsCardanoData);
 
       await admin.updateChainTokenQuantity(chain1.id, false, 50);
     });
     it("Should emit event after decreasing chain token quantity with updateChainTokenQuantity", async function () {
-      const { bridge, admin, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+      const { bridge, admin, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
       await bridge.registerChain(chain1, 100, validatorsCardanoData);
 
@@ -97,7 +93,7 @@ describe("Admin Functions", function () {
 
       expect(await admin.fundAdmin()).to.be.equal(validators[0].address);
     });
-    it("Should emit ChangedFundAdmin when new fundAdmin is set ", async function () {
+    it("Should emit ChangedFundAdmin when new fundAdmin is set", async function () {
       const { admin, validators } = await loadFixture(deployBridgeFixture);
 
       await expect(await admin.setFundAdmin(validators[0].address))
@@ -122,7 +118,7 @@ describe("Admin Functions", function () {
       );
     });
 
-    it("Should revert when defund is called and chain is not registered", async function () {
+    it("Should revert when defund is called on chain that is not registered", async function () {
       const { admin, validators } = await loadFixture(deployBridgeFixture);
 
       await admin.setFundAdmin(validators[0].address);
@@ -131,7 +127,7 @@ describe("Admin Functions", function () {
         "ChainIsNotRegistered"
       );
     });
-    it("Should revert when defund amount is higher then availableTokens amount", async function () {
+    it("Should revert when defund amount is higher than availableTokens amount", async function () {
       const { admin, bridge, claims, owner, validators, chain1, validatorsCardanoData } = await loadFixture(
         deployBridgeFixture
       );
@@ -157,7 +153,7 @@ describe("Admin Functions", function () {
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(99);
     });
     it("Should emit ChainDefunded when defund is exdcuted", async function () {
-      const { admin, bridge, claims, owner, validators, chain1, validatorsCardanoData } = await loadFixture(
+      const { admin, bridge, owner, validators, chain1, validatorsCardanoData } = await loadFixture(
         deployBridgeFixture
       );
 
@@ -171,7 +167,7 @@ describe("Admin Functions", function () {
         .to.emit(admin, "ChainDefunded")
         .withArgs(1, 1);
     });
-    it("Should add confirmedTransactioin when defund is exdcuted", async function () {
+    it("Should add confirmedTransaction when defund is exdcuted", async function () {
       const { admin, bridge, claims, owner, validators, chain1, validatorsCardanoData } = await loadFixture(
         deployBridgeFixture
       );
