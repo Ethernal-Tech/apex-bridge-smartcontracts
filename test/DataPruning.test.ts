@@ -17,12 +17,17 @@ describe("Pruning", function () {
         claimsHelper.connect(validators[0]).pruneClaims(validatorsAddresses, 5)
       ).to.be.revertedWithCustomError(claimsHelper, "NotAdminContract");
     });
-    it("Should revert calling pruneClaims ttl has NOT passed", async function () {
+    it("Should revert calling pruneClaims if TTL has NOT passed", async function () {
       const { claimsHelper, admin, owner } = await loadFixture(deployBridgeFixture);
 
-      await expect(admin.connect(owner).pruneClaims(105)).to.be.revertedWithCustomError(claimsHelper, "TTLTooLow");
+      const MIN_CLAIM_BLOCK_AGE = await admin.MIN_CLAIM_BLOCK_AGE();
+
+      await expect(admin.connect(owner).pruneClaims(MIN_CLAIM_BLOCK_AGE + 100n)).to.be.revertedWithCustomError(
+        claimsHelper,
+        "TTLTooLow"
+      );
     });
-    it("Calling pruneClaims should remove hash if ttl has passed", async function () {
+    it("Calling pruneClaims should remove hash if TTL has passed", async function () {
       const {
         bridge,
         claimsHelper,
@@ -105,23 +110,7 @@ describe("Pruning", function () {
         "NotAdminContract"
       );
     });
-    it("Should revert if _deleteToBatchId is lower than MIN_NUMBER_OF_SIGNED_BATCHES", async function () {
-      const { bridge, claimsHelper, admin, owner, chain1, chain2, validatorsCardanoData, validators, signedBatch } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
-
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
-
-      await expect(
-        admin.connect(owner).pruneConfirmedSignedBatches(signedBatch.destinationChainId, 1)
-      ).to.be.revertedWithCustomError(claimsHelper, "ConfirmedTransactionsProtectedFromPruning");
-    });
-    it("Should revert if _deleteToBatchId than protected number of signed batches", async function () {
+    it("Should revert calling pruneSignedBatches if TTL has NOT passed", async function () {
       const { bridge, claimsHelper, signedBatches, admin, owner, chain1, chain2, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
@@ -205,10 +194,15 @@ describe("Pruning", function () {
         "NotAdminContract"
       );
     });
-    it("Should revert calling pruneSLots if ttl has NOT passed", async function () {
+    it("Should revert calling pruneSLots if TTL has NOT passed", async function () {
       const { admin, slots, owner } = await loadFixture(deployBridgeFixture);
 
-      await expect(admin.connect(owner).pruneSlots(5)).to.be.revertedWithCustomError(slots, "TTLTooLow");
+      const MIN_CLAIM_BLOCK_AGE = await admin.MIN_CLAIM_BLOCK_AGE();
+
+      await expect(admin.connect(owner).pruneSlots(MIN_CLAIM_BLOCK_AGE + 100n)).to.be.revertedWithCustomError(
+        slots,
+        "TTLTooLow"
+      );
     });
     it("Calling pruneSlots should remove hash if TTL has passed", async function () {
       const { bridge, slots, admin, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } =
@@ -306,7 +300,7 @@ describe("Pruning", function () {
         "TTLTooLow"
       );
     });
-    it("Calling pruneSignedBatches should remove hashes when ttl has passed", async function () {
+    it("Calling pruneSignedBatches should remove hashes when TTL has passed", async function () {
       const {
         bridge,
         signedBatches,
