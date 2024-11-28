@@ -408,6 +408,36 @@ describe("Pruning", function () {
         admin.connect(owner).pruneConfirmedTransactions(claimsBRC[0].bridgingRequestClaims[0].destinationChainId, 3)
       ).to.be.revertedWithCustomError(claims, "AlreadyPruned");
     });
+    it("Should revert if confirmedTransaction is protected", async function () {
+      const { bridge, claims, admin, owner, chain1, chain2, validators, validatorsCardanoData } = await loadFixture(
+        deployBridgeFixture
+      );
+      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+
+      const claimsBRC = generateValidatorClaimsBRCArray();
+
+      for (let i = 0; i < claimsBRC.length; i++) {
+        for (let j = 0; j < 4; j++) {
+          await bridge.connect(validators[j]).submitClaims(claimsBRC[i]);
+        }
+      }
+
+      expect(
+        await claims.nextUnprunedConfirmedTransaction(claimsBRC[0].bridgingRequestClaims[0].destinationChainId)
+      ).to.equal(0);
+
+      const MIN_NUMBER_OF_TRANSACTIONS = await admin.MIN_NUMBER_OF_TRANSACTIONS();
+
+      await expect(
+        admin
+          .connect(owner)
+          .pruneConfirmedTransactions(
+            claimsBRC[0].bridgingRequestClaims[0].destinationChainId,
+            MIN_NUMBER_OF_TRANSACTIONS + 100n
+          )
+      ).to.be.revertedWithCustomError(claims, "ConfirmedTransactionsProtectedFromPruning");
+    });
     it("Should prune confirmedSignedTransactions when conditions are met", async function () {
       const { bridge, claims, admin, owner, chain1, chain2, validators, validatorsCardanoData } = await loadFixture(
         deployBridgeFixture
