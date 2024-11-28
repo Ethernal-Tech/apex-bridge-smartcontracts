@@ -21,7 +21,7 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     address public fundAdmin;
 
     uint64 public constant MIN_NUMBER_OF_TRANSACTIONS = 2; //TODO SET THIS VALUE TO AGREED ON
-    uint256 public constant MIN_CLAIM_BLOCK_AGE = 200; //TODO SET THIS VALUE TO AGREED ON
+    uint256 public constant MIN_CLAIM_BLOCK_AGE = 100; //TODO SET THIS VALUE TO AGREED ON
     uint256 public constant MIN_NUMBER_OF_SIGNED_BATCHES = 2; //TODO SET THIS VALUE TO AGREED ON
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -113,11 +113,7 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     function pruneSignedBatches(uint256 _deleteToBlock) external onlyOwner {
         if (MIN_CLAIM_BLOCK_AGE + _deleteToBlock > block.number) revert TTLTooLow();
 
-        signedBatches.pruneSignedBatches(
-            validators.getQuorumNumberOfValidators(),
-            validators.getValidatorsAddresses(),
-            _deleteToBlock
-        );
+        signedBatches.pruneSignedBatches(validators.getValidatorsAddresses(), _deleteToBlock);
     }
 
     function pruneSlots(uint256 _deleteToBlock) external onlyOwner {

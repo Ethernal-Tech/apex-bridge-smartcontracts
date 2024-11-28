@@ -8,15 +8,9 @@ describe("Batch Pruning", function () {
       const { bridge, claimsHelper, admin, owner, chain1, chain2, validators, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      const validatorsAddresses = [];
-      for (let i = 0; i < validators.length; i++) {
-        validatorsAddresses.push(validators[i].address);
-      }
-
       const claimsBRC = generateValidatorClaimsBRCArray();
       const claimsBEC = generateValidatorClaimsBECArray();
       const claimsBECF = generateValidatorClaimsBEFCArray();
-      const claimsRRC = generateValidatorClaimsRRCArray();
 
       await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
       await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
@@ -39,29 +33,17 @@ describe("Batch Pruning", function () {
 
       expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(60);
 
-      const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
-
       const MIN_CLAIM_BLOCK_AGE = await admin.MIN_CLAIM_BLOCK_AGE();
 
-      await claimsHelper.connect(adminContract).pruneClaims(validatorsAddresses, MIN_CLAIM_BLOCK_AGE + 31n);
-
-      expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(MIN_CLAIM_BLOCK_AGE - 140n);
-
-      for (let i = 0; i < claimsRRC.length; i += 2) {
-        for (let j = 0; j < 4; j++) {
-          await bridge.connect(validators[j]).submitClaims(claimsRRC[i]);
-        }
+      for (let i = 0; i < MIN_CLAIM_BLOCK_AGE; i++) {
+        await ethers.provider.send("evm_mine");
       }
 
-      for (let i = 1; i < claimsRRC.length; i += 2) {
-        for (let j = 0; j < 4; j++) {
-          await bridge.connect(validators[j]).submitClaims(claimsRRC[i]);
-        }
-      }
+      const currentBlockNumber = await ethers.provider.getBlockNumber();
 
-      expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(59);
+      const deleteTo = Number(currentBlockNumber) - Number(MIN_CLAIM_BLOCK_AGE) - Number(90);
 
-      await claimsHelper.connect(adminContract).pruneClaims(validatorsAddresses, 116);
+      await admin.connect(owner).pruneClaims(deleteTo);
 
       expect((await claimsHelper.getClaimsHashes()).length).to.be.equal(30);
     });
@@ -317,7 +299,7 @@ describe("Batch Pruning", function () {
 
       const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
 
-      await signedBatches.connect(adminContract).pruneSignedBatches(4, validatorsAddresses, MIN_CLAIM_BLOCK_AGE - 1n);
+      await signedBatches.connect(adminContract).pruneSignedBatches(validatorsAddresses, MIN_CLAIM_BLOCK_AGE - 1n);
 
       expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(0);
 
@@ -329,7 +311,7 @@ describe("Batch Pruning", function () {
 
       expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(20);
 
-      await signedBatches.connect(adminContract).pruneSignedBatches(4, validatorsAddresses, 31);
+      await signedBatches.connect(adminContract).pruneSignedBatches(validatorsAddresses, 31);
 
       expect((await signedBatches.connect(owner).getSignedBatchesHashes()).length).to.be.equal(10);
     });

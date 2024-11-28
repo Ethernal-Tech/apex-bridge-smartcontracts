@@ -24,9 +24,9 @@ describe("Chain Registration", function () {
     it("Should revert new chain if not set by owner", async function () {
       const { bridge, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
-      await expect(
-        bridge.connect(validators[0]).registerChain(chain1, 100, validatorsCardanoData)
-      ).to.be.revertedWithCustomError(bridge, "OwnableUnauthorizedAccount");
+      await expect(bridge.connect(validators[0]).registerChain(chain1, 100, validatorsCardanoData)).to.be.revertedWith(
+        "Ownable: caller is not the owner"
+      );
     });
 
     it("Should add new chain if requested by owner", async function () {
@@ -68,7 +68,7 @@ describe("Chain Registration", function () {
 
       await expect(
         bridge.connect(validators[0]).setChainAdditionalData(chain1.id, multisigAddr, feeAddr)
-      ).to.be.revertedWithCustomError(bridge, "OwnableUnauthorizedAccount");
+      ).to.be.revertedWith("Ownable: caller is not the owner");
 
       await bridge
         .connect(validators[0])
@@ -350,7 +350,7 @@ describe("Chain Registration", function () {
 
     await expect(
       bridge.connect(validators[0]).setChainAdditionalData(chain1.id, multisigAddr, feeAddr)
-    ).to.be.revertedWithCustomError(bridge, "OwnableUnauthorizedAccount");
+    ).to.be.revertedWith("Ownable: caller is not the owner");
 
     await bridge
       .connect(validators[0])

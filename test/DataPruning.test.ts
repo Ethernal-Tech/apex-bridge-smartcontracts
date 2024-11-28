@@ -290,7 +290,7 @@ describe("Pruning", function () {
       }
 
       await expect(
-        signedBatches.connect(validators[0]).pruneSignedBatches(4, validatorsAddresses, 5)
+        signedBatches.connect(validators[0]).pruneSignedBatches(validatorsAddresses, 5)
       ).to.be.revertedWithCustomError(signedBatches, "NotAdminContract");
     });
     it("Should revert if min TTL has not yet passed", async function () {
@@ -366,7 +366,7 @@ describe("Pruning", function () {
 
       const adminContract = await impersonateAsContractAndMintFunds(await admin.getAddress());
 
-      await signedBatches.connect(adminContract).pruneSignedBatches(4, validatorsAddresses, MIN_CLAIM_BLOCK_AGE - 69n);
+      await signedBatches.connect(adminContract).pruneSignedBatches(validatorsAddresses, MIN_CLAIM_BLOCK_AGE - 69n);
 
       expect((await signedBatches.getSignedBatchesHashes()).length).to.be.equal(0);
       expect((await signedBatches.getSignatures(hash)).length).to.be.equal(0);

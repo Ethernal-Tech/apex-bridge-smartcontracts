@@ -87,7 +87,7 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         uint256 i = 0;
         while (i < slotsHashes.length) {
             bytes32 _hashValue = slotsHashes[i].hashValue;
-            if (block.number - slotsHashes[i].blockNumber >= _deleteToBlock) {
+            if (slotsHashes[i].blockNumber < _deleteToBlock) {
                 for (uint256 j = 0; j < _validators.length; j++) {
                     delete hasVoted[_hashValue][_validators[j]];
                 }

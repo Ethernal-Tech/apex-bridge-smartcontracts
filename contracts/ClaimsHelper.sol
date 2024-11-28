@@ -112,7 +112,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         uint256 i = 0;
         while (i < claimsHashes.length) {
             bytes32 _hashValue = claimsHashes[i].hashValue;
-            if (block.number - claimsHashes[i].blockNumber >= _deleteToBlock) {
+            if (claimsHashes[i].blockNumber < _deleteToBlock) {
                 for (uint256 j = 0; j < _validators.length; j++) {
                     delete hasVoted[_hashValue][_validators[j]];
                 }
