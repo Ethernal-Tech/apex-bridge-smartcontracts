@@ -167,4 +167,6 @@ interface IBridgeStructs {
     event FundAdminChanged(address _newFundAdmin);
     event UpdatedChainTokenQuantity(uint indexed chainId, bool isIncrement, uint256 tokenQuantity);
     event DefundFailedAfterMultipleRetries();
+    event UpdatedMaxNumberOfTransactions(uint256 _maxNumberOfTransactions);
+    event UpdatedTimeoutBlocksNumber(uint256 _timeoutBlocksNumber);
 }
