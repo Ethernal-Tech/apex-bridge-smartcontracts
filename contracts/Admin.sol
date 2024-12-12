@@ -65,6 +65,16 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         emit FundAdminChanged(_fundAdmin);
     }
 
+    function updateMaxNumberOfTransactions(uint16 _maxNumberOfTransactions) external onlyOwner {
+        claims.updateMaxNumberOfTransactions(_maxNumberOfTransactions);
+        emit UpdatedMaxNumberOfTransactions(_maxNumberOfTransactions);
+    }
+
+    function updateTimeoutBlocksNumber(uint8 _timeoutBlocksNumber) external onlyOwner {
+        claims.updateTimeoutBlocksNumber(_timeoutBlocksNumber);
+        emit UpdatedTimeoutBlocksNumber(_timeoutBlocksNumber);
+    }
+
     modifier onlyFundAdmin() {
         if (msg.sender != fundAdmin) revert NotFundAdmin();
         _;
