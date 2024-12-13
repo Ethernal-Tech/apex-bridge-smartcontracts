@@ -32,6 +32,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     // BlockchainId -> TokenQuantity
     mapping(uint8 => uint256) public chainTokenQuantity;
 
+    // BlockchainId -> WrappedTokenQuantity
+    mapping(uint8 => uint256) public chainWrappedTokenQuantity;
+
     // BlockchainId -> nonce -> ConfirmedTransaction
     mapping(uint8 => mapping(uint64 => ConfirmedTransaction)) public confirmedTransactions;
 
@@ -150,21 +153,29 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             return;
         }
 
-        uint256 _receiversSum = _claim.totalAmount;
+        uint256 _nativeCurrencyAmountDestination = _claim.nativeCurrencyAmountDestination;
+        uint256 _wrappedTokenAmountDestination = _claim.wrappedTokenAmountDestination;
         uint8 _destinationChainId = _claim.destinationChainId;
 
-        if (chainTokenQuantity[_destinationChainId] < _receiversSum) {
+        if (chainTokenQuantity[_destinationChainId] < _nativeCurrencyAmountDestination) {
             emit NotEnoughFunds("BRC", i, chainTokenQuantity[_destinationChainId]);
+            return;
+        }
+
+        if (chainWrappedTokenQuantity[_destinationChainId] < _wrappedTokenAmountDestination) {
+            emit NotEnoughFunds("BRC", i, chainWrappedTokenQuantity[_destinationChainId]);
             return;
         }
 
         uint256 _votesCnt = claimsHelper.setVoted(_caller, _claimHash);
 
         if (_votesCnt == _quorumCnt) {
-            chainTokenQuantity[_destinationChainId] -= _receiversSum;
+            chainTokenQuantity[_destinationChainId] -= _nativeCurrencyAmountDestination;
+            chainWrappedTokenQuantity[_destinationChainId] -= _wrappedTokenAmountDestination;
 
             if (_claim.retryCounter == 0) {
-                chainTokenQuantity[_claim.sourceChainId] += _receiversSum;
+                chainTokenQuantity[_claim.sourceChainId] += _claim.nativeCurrencyAmountSource;
+                chainWrappedTokenQuantity[_claim.sourceChainId] += _claim.wrappedTokenAmountSource;
             }
 
             uint256 _confirmedTxCount = getBatchingTxsCount(_destinationChainId);
@@ -268,10 +279,13 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         if (_quorumReached) {
             uint8 chainId = _claim.chainId;
             uint256 changeAmount = _claim.amount;
+            uint256 changeWrappedAmount = _claim.amountWrapped;
             if (_claim.isIncrement) {
                 chainTokenQuantity[chainId] += changeAmount;
+                chainWrappedTokenQuantity[chainId] += changeWrappedAmount;
             } else if (chainTokenQuantity[chainId] >= changeAmount) {
                 chainTokenQuantity[chainId] -= changeAmount;
+                chainWrappedTokenQuantity[chainId] -= changeWrappedAmount;
             } else {
                 emit InsufficientFunds(chainId, changeAmount);
             }
@@ -283,7 +297,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint64 nextNonce = ++lastConfirmedTxNonce[destinationChainId];
 
         ConfirmedTransaction storage confirmedTx = confirmedTransactions[destinationChainId][nextNonce];
-        confirmedTx.totalAmount = _claim.totalAmount;
+        uint256 totalAmount;
         confirmedTx.blockHeight = block.number;
         confirmedTx.observedTransactionHash = _claim.observedTransactionHash;
         confirmedTx.sourceChainId = _claim.sourceChainId;
@@ -294,7 +308,10 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint256 receiversLength = _claim.receivers.length;
         for (uint i; i < receiversLength; i++) {
             confirmedTx.receivers.push(_claim.receivers[i]);
+            totalAmount += _claim.receivers[i].amount;
         }
+
+        confirmedTx.totalAmount = totalAmount;
     }
 
     function setVoted(address _voter, bytes32 _hash) external onlyBridge returns (uint256) {
@@ -344,9 +361,14 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         claimsHelper.resetCurrentBatchBlock(_chainId);
     }
 
-    function setChainRegistered(uint8 _chainId, uint256 _initialTokenSupply) external onlyBridge {
+    function setChainRegistered(
+        uint8 _chainId,
+        uint256 _initialTokenSupply,
+        uint256 _initialWrappedTokenSupply
+    ) external onlyBridge {
         isChainRegistered[_chainId] = true;
         chainTokenQuantity[_chainId] = _initialTokenSupply;
+        chainWrappedTokenQuantity[_chainId] = _initialWrappedTokenSupply;
         nextTimeoutBlock[_chainId] = block.number + timeoutBlocksNumber;
         claimsHelper.resetCurrentBatchBlock(_chainId);
     }
@@ -363,7 +385,10 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         BridgingRequestClaim memory _brc = BridgingRequestClaim({
             observedTransactionHash: defundHash,
             receivers: new Receiver[](1),
-            totalAmount: _amount,
+            nativeCurrencyAmountSource: _amount,
+            wrappedTokenAmountSource: 0,
+            nativeCurrencyAmountDestination: 0,
+            wrappedTokenAmountDestination: 0,
             retryCounter: 0,
             sourceChainId: _chainId,
             destinationChainId: _chainId

@@ -55,7 +55,10 @@ interface IBridgeStructs {
         bytes32 observedTransactionHash;
         // key is the address on destination UTXO chain; value is the amount of tokens
         Receiver[] receivers;
-        uint256 totalAmount;
+        uint256 nativeCurrencyAmountSource;
+        uint256 wrappedTokenAmountSource;
+        uint256 nativeCurrencyAmountDestination;
+        uint256 wrappedTokenAmountDestination;
         uint256 retryCounter;
         uint8 sourceChainId;
         uint8 destinationChainId;
@@ -106,6 +109,7 @@ interface IBridgeStructs {
     struct HotWalletIncrementClaim {
         uint8 chainId;
         uint256 amount;
+        uint256 amountWrapped;
         bool isIncrement;
     }
 
