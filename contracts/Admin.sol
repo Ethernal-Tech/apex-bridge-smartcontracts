@@ -31,14 +31,21 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         claims = Claims(_claimsAddress);
     }
 
-    function updateChainTokenQuantity(uint8 _chainId, bool _isIncrease, uint256 _quantity) external onlyFundAdmin {
+    function updateChainTokenQuantity(
+        uint8 _chainId,
+        bool _isIncrease,
+        uint256 _chainTokenQuantity,
+        uint256 _chainWrappedTokenQuantity
+    ) external onlyFundAdmin {
         if (!claims.isChainRegistered(_chainId)) revert ChainIsNotRegistered(_chainId);
-        if (claims.chainTokenQuantity(_chainId) < _quantity)
-            revert NegativeChainTokenAmount(claims.chainTokenQuantity(_chainId), _quantity);
+        if (!_isIncrease && claims.chainTokenQuantity(_chainId) < _chainTokenQuantity)
+            revert NegativeChainTokenAmount(claims.chainTokenQuantity(_chainId), _chainTokenQuantity);
+        if (!_isIncrease && claims.chainWrappedTokenQuantity(_chainId) < _chainWrappedTokenQuantity)
+            revert NegativeChainTokenAmount(claims.chainWrappedTokenQuantity(_chainId), _chainWrappedTokenQuantity);
 
-        claims.updateChainTokenQuantity(_chainId, _isIncrease, _quantity);
+        claims.updateChainTokenQuantity(_chainId, _isIncrease, _chainTokenQuantity, _chainWrappedTokenQuantity);
 
-        emit UpdatedChainTokenQuantity(_chainId, _isIncrease, _quantity);
+        emit UpdatedChainTokenQuantity(_chainId, _isIncrease, _chainTokenQuantity, _chainWrappedTokenQuantity);
     }
 
     function getChainTokenQuantity(uint8 _chainId) external view returns (uint256) {
