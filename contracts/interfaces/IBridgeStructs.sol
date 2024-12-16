@@ -28,6 +28,7 @@ interface IBridgeStructs {
     struct ConfirmedTransaction {
         uint256 blockHeight;
         uint256 totalAmount;
+        uint256 totalWrappedAmount;
         uint256 retryCounter;
         uint64 nonce;
         uint8 sourceChainId;
@@ -115,6 +116,7 @@ interface IBridgeStructs {
 
     struct Receiver {
         uint256 amount;
+        uint256 amountWrapped;
         string destinationAddress;
     }
 

@@ -143,6 +143,7 @@ export async function deployBridgeFixture() {
         receivers: [
           {
             amount: 100,
+            amountWrapped: 0,
             destinationAddress: "0x123...",
           },
         ],
@@ -167,7 +168,8 @@ export async function deployBridgeFixture() {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
         receivers: [
           {
-            amount: 100,
+            amount: 0,
+            amountWrapped: 100,
             destinationAddress: "0x123...",
           },
         ],
@@ -194,6 +196,7 @@ export async function deployBridgeFixture() {
           {
             destinationAddress: "0x234...",
             amount: 100,
+            amountWrapped: 0,
           },
         ],
         nativeCurrencyAmountSource: 100,

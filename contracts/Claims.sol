@@ -297,7 +297,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint64 nextNonce = ++lastConfirmedTxNonce[destinationChainId];
 
         ConfirmedTransaction storage confirmedTx = confirmedTransactions[destinationChainId][nextNonce];
-        uint256 totalAmount;
+        confirmedTx.totalAmount = _claim.nativeCurrencyAmountDestination;
+        confirmedTx.totalWrappedAmount = _claim.wrappedTokenAmountDestination;
         confirmedTx.blockHeight = block.number;
         confirmedTx.observedTransactionHash = _claim.observedTransactionHash;
         confirmedTx.sourceChainId = _claim.sourceChainId;
@@ -308,10 +309,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint256 receiversLength = _claim.receivers.length;
         for (uint i; i < receiversLength; i++) {
             confirmedTx.receivers.push(_claim.receivers[i]);
-            totalAmount += _claim.receivers[i].amount;
         }
-
-        confirmedTx.totalAmount = totalAmount;
     }
 
     function setVoted(address _voter, bytes32 _hash) external onlyBridge returns (uint256) {
@@ -381,23 +379,30 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return claimsHelper.hasVoted(_hash, _voter);
     }
 
-    function defund(uint8 _chainId, uint256 _amount, string calldata _defundAddress) external onlyAdminContract {
+    function defund(
+        uint8 _chainId,
+        uint256 _amount,
+        uint256 _amountWrapped,
+        string calldata _defundAddress
+    ) external onlyAdminContract {
         BridgingRequestClaim memory _brc = BridgingRequestClaim({
             observedTransactionHash: defundHash,
             receivers: new Receiver[](1),
-            nativeCurrencyAmountSource: _amount,
+            nativeCurrencyAmountSource: 0,
             wrappedTokenAmountSource: 0,
-            nativeCurrencyAmountDestination: 0,
-            wrappedTokenAmountDestination: 0,
+            nativeCurrencyAmountDestination: _amount,
+            wrappedTokenAmountDestination: _amountWrapped,
             retryCounter: 0,
             sourceChainId: _chainId,
             destinationChainId: _chainId
         });
 
         _brc.receivers[0].amount = _amount;
+        _brc.receivers[0].amountWrapped = _amountWrapped;
         _brc.receivers[0].destinationAddress = _defundAddress;
 
         chainTokenQuantity[_chainId] -= _amount;
+        chainWrappedTokenQuantity[_chainId] -= _amountWrapped;
 
         uint256 _confirmedTxCount = getBatchingTxsCount(_chainId);
 
@@ -419,6 +424,10 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function getChainTokenQuantity(uint8 _chainId) external view returns (uint256) {
         return chainTokenQuantity[_chainId];
+    }
+
+    function getChainWrappedTokenQuantity(uint8 _chainId) external view returns (uint256) {
+        return chainWrappedTokenQuantity[_chainId];
     }
 
     function updateChainTokenQuantity(

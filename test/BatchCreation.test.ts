@@ -427,13 +427,17 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
       const tokenAmountDestination = await claims.getChainTokenQuantity(signedBatch.destinationChainId);
+      const tokenWrappedAmountDestination = await claims.getChainWrappedTokenQuantity(signedBatch.destinationChainId);
 
-      let sumAmounts = 0;
+      let sumAmount = 0;
+      let sumWrappedAmount = 0;
       for (let i = 0; i < validatorClaimsBRC.bridgingRequestClaims[0].receivers.length; i++) {
-        sumAmounts += validatorClaimsBRC.bridgingRequestClaims[0].receivers[i].amount;
+        sumAmount += validatorClaimsBRC.bridgingRequestClaims[0].receivers[i].amount;
+        sumWrappedAmount += validatorClaimsBRC.bridgingRequestClaims[0].receivers[i].amountWrapped;
       }
 
-      expect(100 - sumAmounts).to.equal(tokenAmountDestination);
+      expect(100 - sumAmount).to.equal(tokenAmountDestination);
+      expect(100 - sumWrappedAmount).to.equal(tokenWrappedAmountDestination);
     });
 
     it("Should delete multisigSignatures and feePayerMultisigSignatures for confirmed signed batches", async function () {

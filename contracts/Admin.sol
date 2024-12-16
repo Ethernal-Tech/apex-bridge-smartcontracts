@@ -52,7 +52,12 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         return claims.chainTokenQuantity(_chainId);
     }
 
-    function defund(uint8 _chainId, string calldata _defundAddress, uint256 _amount) external onlyFundAdmin {
+    function defund(
+        uint8 _chainId,
+        uint256 _amount,
+        uint256 _amountWrapped,
+        string calldata _defundAddress
+    ) external onlyFundAdmin {
         if (!claims.isChainRegistered(_chainId)) {
             revert ChainIsNotRegistered(_chainId);
         }
@@ -61,7 +66,11 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
             revert DefundRequestTooHigh(_chainId, claims.getChainTokenQuantity(_chainId), _amount);
         }
 
-        claims.defund(_chainId, _amount, _defundAddress);
+        if (claims.getChainWrappedTokenQuantity(_chainId) < _amountWrapped) {
+            revert DefundRequestTooHigh(_chainId, claims.getChainWrappedTokenQuantity(_chainId), _amountWrapped);
+        }
+
+        claims.defund(_chainId, _amount, _amountWrapped, _defundAddress);
 
         emit ChainDefunded(_chainId, _amount);
     }
