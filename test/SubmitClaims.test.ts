@@ -157,6 +157,9 @@ describe("Submit Claims", function () {
       await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorsCardanoData);
 
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(1000);
+      expect(
+        await claims.chainWrappedTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)
+      ).to.equal(1000);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -164,6 +167,36 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(1100);
+      expect(
+        await claims.chainWrappedTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)
+      ).to.equal(1000);
+    });
+
+    it("Should add requred amount of wrapped tokens on source chain when Bridging Request Claim is confirmed and it is NOT a retry", async function () {
+      const { bridge, claims, owner, chain1, chain2, validators, validatorClaimsBRCWrapped, validatorsCardanoData } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorsCardanoData);
+
+      expect(
+        await claims.chainTokenQuantity(validatorClaimsBRCWrapped.bridgingRequestClaims[0].sourceChainId)
+      ).to.equal(1000);
+      expect(
+        await claims.chainWrappedTokenQuantity(validatorClaimsBRCWrapped.bridgingRequestClaims[0].sourceChainId)
+      ).to.equal(1000);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRCWrapped);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRCWrapped);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRCWrapped);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRCWrapped);
+
+      expect(
+        await claims.chainTokenQuantity(validatorClaimsBRCWrapped.bridgingRequestClaims[0].sourceChainId)
+      ).to.equal(1000);
+      expect(
+        await claims.chainWrappedTokenQuantity(validatorClaimsBRCWrapped.bridgingRequestClaims[0].sourceChainId)
+      ).to.equal(1100);
     });
 
     it("Should NOT add requred amount of tokens on source chain when Bridging Request Claim is confirmed and it is a retry", async function () {
