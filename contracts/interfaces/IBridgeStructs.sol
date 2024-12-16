@@ -176,4 +176,6 @@ interface IBridgeStructs {
         uint256 chainWrappedTokenQuantity
     );
     event DefundFailedAfterMultipleRetries();
+    event UpdatedMaxNumberOfTransactions(uint256 _maxNumberOfTransactions);
+    event UpdatedTimeoutBlocksNumber(uint256 _timeoutBlocksNumber);
 }

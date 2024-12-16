@@ -453,6 +453,14 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         return _txHashes;
     }
 
+    function updateMaxNumberOfTransactions(uint16 _maxNumberOfTransactions) external onlyAdminContract {
+        maxNumberOfTransactions = _maxNumberOfTransactions;
+    }
+
+    function updateTimeoutBlocksNumber(uint8 _timeoutBlocksNumber) external onlyAdminContract {
+        timeoutBlocksNumber = _timeoutBlocksNumber;
+    }
+
     modifier onlyBridge() {
         if (msg.sender != bridgeAddress) revert NotBridge();
         _;
