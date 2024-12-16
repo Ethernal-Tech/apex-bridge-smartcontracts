@@ -37,6 +37,8 @@ describe("Chain Registration", function () {
       await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
 
       expect(await claims.isChainRegistered(chain1.id)).to.be.true;
+      expect(await claims.chainTokenQuantity(chain1.id)).to.be.equal(100);
+      expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.be.equal(100);
     });
 
     it("Should set correct nextTimeoutBlock when chain is registered by owner", async function () {
@@ -123,6 +125,8 @@ describe("Chain Registration", function () {
         .registerChainGovernance(chain1.id, chain1.chainType, 100, 100, validatorsCardanoData[4].data);
 
       expect(await claims.isChainRegistered(chain1.id)).to.be.true;
+      expect(await claims.chainTokenQuantity(chain1.id)).to.be.equal(100);
+      expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.be.equal(100);
 
       await expect(
         bridge

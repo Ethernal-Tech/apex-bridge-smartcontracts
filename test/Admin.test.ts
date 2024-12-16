@@ -52,7 +52,7 @@ describe("Admin Functions", function () {
       );
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(200);
     });
-    it("Should revert if decreae amount is higher than available chainTokenQuantity", async function () {
+    it("Should revert if decrese amount is higher than available chainTokenQuantity", async function () {
       const { admin, bridge, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
       await bridge.registerChain(chain1, 100, 100, validatorsCardanoData);
 
