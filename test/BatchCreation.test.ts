@@ -253,18 +253,9 @@ describe("Batch Creation", function () {
       expect(confBatch.bitmap).to.equal(30);
     });
 
-    it("SignedBatch should be added to signedBatches if there are enough votes", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        signedBatch,
-        validatorsCardanoData,
-        validatorClaimsBRC,
-      } = await loadFixture(deployBridgeFixture);
+    it("Should not create ConfirmedBatch if not called by Validator", async function () {
+      const { bridge, owner, chain1, chain2, validators, validatorsCardanoData, signedBatch, validatorClaimsBRC } =
+        await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
       await bridge.connect(owner).registerChain(chain2, 100, 100, validatorsCardanoData);
@@ -279,25 +270,33 @@ describe("Batch Creation", function () {
         await ethers.provider.send("evm_mine");
       }
 
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await expect(bridge.connect(owner).submitSignedBatchEVM(signedBatch)).to.be.revertedWithCustomError(
+        bridge,
+        "NotValidator"
+      );
+    });
 
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatch); // resubmit
-      const confBatchNothing = await claimsHelper
-        .connect(validators[0])
-        .getConfirmedSignedBatchData(signedBatch.destinationChainId, signedBatch.id);
-      expect(confBatchNothing.firstTxNonceId + confBatchNothing.lastTxNonceId).to.equal(0);
+    it("Should not create ConfirmedBatch if not called by Validator", async function () {
+      const { bridge, owner, chain1, chain2, validators, validatorsCardanoData, signedBatch, validatorClaimsBRC } =
+        await loadFixture(deployBridgeFixture);
 
-      // consensus
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorsCardanoData);
 
-      const confBatch = await claimsHelper
-        .connect(validators[0])
-        .getConfirmedSignedBatchData(signedBatch.destinationChainId, signedBatch.id);
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
 
-      expect(confBatch.firstTxNonceId).to.equal(signedBatch.firstTxNonceId);
-      expect(confBatch.lastTxNonceId).to.equal(signedBatch.lastTxNonceId);
+      // wait for next timeout
+      for (let i = 0; i < 3; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      await expect(bridge.connect(owner).submitSignedBatchEVM(signedBatch)).to.be.revertedWithCustomError(
+        bridge,
+        "NotValidator"
+      );
     });
 
     it("Should create ConfirmedBatch if there are enough votes", async function () {

@@ -56,6 +56,15 @@ describe("Admin Functions", function () {
       const { admin, bridge, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
       await bridge.registerChain(chain1, 100, 100, validatorsCardanoData);
 
+      await expect(admin.updateChainTokenQuantity(1, false, 200, 50)).to.be.revertedWithCustomError(
+        admin,
+        "NegativeChainTokenAmount"
+      );
+    });
+    it("Should revert if decrese wrapped amount is higher than available chainTokenQuantity", async function () {
+      const { admin, bridge, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+      await bridge.registerChain(chain1, 100, 100, validatorsCardanoData);
+
       await expect(admin.updateChainTokenQuantity(1, false, 50, 200)).to.be.revertedWithCustomError(
         admin,
         "NegativeChainTokenAmount"
