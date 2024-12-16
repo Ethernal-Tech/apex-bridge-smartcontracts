@@ -139,8 +139,8 @@ describe("Claims Contract", function () {
         validatorsCardanoData,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1, 1, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1, 1, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 1, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1, 1000, validatorsCardanoData);
 
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
@@ -171,6 +171,56 @@ describe("Claims Contract", function () {
       const hash = ethers.keccak256(encoded40);
 
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC))
+        .to.emit(claims, "NotEnoughFunds")
+        .withArgs("BRC", 0, 1);
+
+      expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
+    });
+    it("Should skip Bridging Request Claim if there is not enough bridging wrapped tokens and emit NotEnoughFunds event", async function () {
+      const {
+        bridge,
+        claims,
+        claimsHelper,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsBRCWrapped,
+        validatorsCardanoData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, 1, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1, validatorsCardanoData);
+
+      const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
+      const encoded = abiCoder.encode(
+        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint256", "uint256", "uint256", "uint8", "uint8"],
+        [
+          validatorClaimsBRCWrapped.bridgingRequestClaims[0].observedTransactionHash,
+          [
+            [
+              validatorClaimsBRCWrapped.bridgingRequestClaims[0].receivers[0].amount,
+              validatorClaimsBRCWrapped.bridgingRequestClaims[0].receivers[0].destinationAddress,
+            ],
+          ],
+          validatorClaimsBRCWrapped.bridgingRequestClaims[0].nativeCurrencyAmountSource,
+          validatorClaimsBRCWrapped.bridgingRequestClaims[0].wrappedTokenAmountSource,
+          validatorClaimsBRCWrapped.bridgingRequestClaims[0].nativeCurrencyAmountDestination,
+          validatorClaimsBRCWrapped.bridgingRequestClaims[0].wrappedTokenAmountDestination,
+          validatorClaimsBRCWrapped.bridgingRequestClaims[0].sourceChainId,
+          validatorClaimsBRCWrapped.bridgingRequestClaims[0].destinationChainId,
+        ]
+      );
+
+      const encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
+
+      const hash = ethers.keccak256(encoded40);
+
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRCWrapped))
         .to.emit(claims, "NotEnoughFunds")
         .withArgs("BRC", 0, 1);
 

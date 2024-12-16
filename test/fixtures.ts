@@ -161,6 +161,31 @@ export async function deployBridgeFixture() {
     refundExecutedClaims: [],
     hotWalletIncrementClaims: [],
   };
+  const validatorClaimsBRCWrapped = {
+    bridgingRequestClaims: [
+      {
+        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        receivers: [
+          {
+            amount: 100,
+            destinationAddress: "0x123...",
+          },
+        ],
+        nativeCurrencyAmountSource: 0,
+        wrappedTokenAmountSource: 100,
+        nativeCurrencyAmountDestination: 0,
+        wrappedTokenAmountDestination: 100,
+        retryCounter: 0,
+        sourceChainId: 1,
+        destinationChainId: 2,
+      },
+    ],
+    batchExecutedClaims: [],
+    batchExecutionFailedClaims: [],
+    refundRequestClaims: [],
+    refundExecutedClaims: [],
+    hotWalletIncrementClaims: [],
+  };
   const validatorClaimsBRC_ConfirmedTransactions = {
     bridgingRequestClaims: [
       {
@@ -438,6 +463,7 @@ export async function deployBridgeFixture() {
     validatorClaimsREC,
     validatorClaimsHWIC,
     validatorClaimsBRCerror,
+    validatorClaimsBRCWrapped,
     validatorClaimsBECerror,
     validatorClaimsBEFCerror,
     validatorClaimsRRCerror,
