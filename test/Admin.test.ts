@@ -33,7 +33,7 @@ describe("Admin Functions", function () {
     });
     it("Should increase chainTokenQuantity after calling updateChainTokenQuantity", async function () {
       const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, validatorsCardanoData);
+      await bridge.registerChain(chain1, 100, 100, validatorsCardanoData);
 
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
       expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.equal(100);
@@ -54,7 +54,7 @@ describe("Admin Functions", function () {
     });
     it("Should revert if decreae amount is higher than available chainTokenQuantity", async function () {
       const { admin, bridge, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, validatorsCardanoData);
+      await bridge.registerChain(chain1, 100, 100, validatorsCardanoData);
 
       await expect(admin.updateChainTokenQuantity(1, false, 50, 200)).to.be.revertedWithCustomError(
         admin,
@@ -62,8 +62,8 @@ describe("Admin Functions", function () {
       );
     });
     it("Should decrease chainTokenQuantity by required amount", async function () {
-      const { admin, bridge, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, validatorsCardanoData);
+      const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+      await bridge.registerChain(chain1, 100, 100, validatorsCardanoData);
 
       await admin.updateChainTokenQuantity(chain1.id, false, 50, 50);
 
