@@ -61,6 +61,9 @@ describe("Submit Claims", function () {
       expect((await claims.confirmedTransactions(destinationChainId, nounce)).totalAmount).to.equal(
         validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount
       );
+      expect((await claims.confirmedTransactions(destinationChainId, nounce)).totalWrappedAmount).to.equal(
+        validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amountWrapped
+      );
       expect((await claims.confirmedTransactions(destinationChainId, nounce)).blockHeight).to.equal(
         await ethers.provider.getBlockNumber()
       );
