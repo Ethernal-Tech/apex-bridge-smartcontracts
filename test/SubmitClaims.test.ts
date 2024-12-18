@@ -641,7 +641,7 @@ describe("Submit Claims", function () {
 
       expect(await claims.lastBatchedTxNonce(_destinationChain)).to.equal(1);
     });
-    it("Should increase chainTokenQuantity for destination chain when Bridging Excuted Failed Claim is confirmed", async function () {
+    it("Should increase chainTokenQuantity and chainWrappedTokenQuantity for destination chain when Bridging Excuted Failed Claim is confirmed", async function () {
       const {
         bridge,
         claims,
@@ -662,6 +662,10 @@ describe("Submit Claims", function () {
         validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId
       );
 
+      const chain2WrappedTokenQuantityStart = await claims.chainWrappedTokenQuantity(
+        validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId
+      );
+
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -676,6 +680,10 @@ describe("Submit Claims", function () {
         validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId
       );
 
+      const chain2WrappedTokenQuantityBefore = await claims.chainWrappedTokenQuantity(
+        validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId
+      );
+
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
@@ -685,10 +693,19 @@ describe("Submit Claims", function () {
         validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId
       );
 
+      const chain2WrappedTokenQuantityAfter = await claims.chainWrappedTokenQuantity(
+        validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId
+      );
+
       expect(chain2TokenQuantityAfter).to.be.equal(
         chain2TokenQuantityBefore + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource)
       );
       expect(chain2TokenQuantityAfter).to.be.equal(chain2TokenQuantityStart);
+
+      expect(chain2WrappedTokenQuantityAfter).to.be.equal(
+        chain2WrappedTokenQuantityBefore + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountSource)
+      );
+      expect(chain2WrappedTokenQuantityAfter).to.be.equal(chain2WrappedTokenQuantityStart);
     });
   });
 
