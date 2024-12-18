@@ -435,13 +435,18 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function updateChainTokenQuantity(
         uint8 _chainId,
         bool _isIncrease,
-        uint256 _chainTokenAmount,
-        uint256 _chainWrappedTokenAmount
+        uint256 _chainTokenAmount
     ) external onlyAdminContract {
         chainTokenQuantity[_chainId] = _isIncrease
             ? chainTokenQuantity[_chainId] + _chainTokenAmount
             : chainTokenQuantity[_chainId] - _chainTokenAmount;
+    }
 
+    function updateChainWrappedTokenQuantity(
+        uint8 _chainId,
+        bool _isIncrease,
+        uint256 _chainWrappedTokenAmount
+    ) external onlyAdminContract {
         chainWrappedTokenQuantity[_chainId] = _isIncrease
             ? chainWrappedTokenQuantity[_chainId] + _chainWrappedTokenAmount
             : chainWrappedTokenQuantity[_chainId] - _chainWrappedTokenAmount;
