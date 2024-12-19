@@ -27,6 +27,7 @@ abstract contract IBridge is IBridgeStructs {
     function registerChain(
         Chain calldata _chain,
         uint256 _tokenQuantity,
+        uint256 _wrappedTokenQuantity,
         ValidatorAddressChainData[] calldata _validatorData
     ) external virtual;
 
@@ -34,6 +35,7 @@ abstract contract IBridge is IBridgeStructs {
         uint8 _chainId,
         uint8 _chainType,
         uint256 _tokenQuantity,
+        uint256 _wrappedTokenQuantity,
         ValidatorChainData calldata _validatorChainData
     ) external virtual;
 

@@ -35,8 +35,8 @@ describe("Confirmed Transacrions", function () {
         claims,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -96,8 +96,8 @@ describe("Confirmed Transacrions", function () {
       const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData, claims, hre } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorsCardanoData);
 
       const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
 
@@ -182,8 +182,8 @@ describe("Confirmed Transacrions", function () {
       const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData, claims, hre } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorsCardanoData);
 
       const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
 

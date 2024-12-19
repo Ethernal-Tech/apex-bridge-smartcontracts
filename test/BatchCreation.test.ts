@@ -31,8 +31,8 @@ describe("Batch Creation", function () {
       const { bridge, validators, owner, chain1, chain2, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -142,8 +142,8 @@ describe("Batch Creation", function () {
       const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 10000, 10000, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
 
@@ -161,8 +161,8 @@ describe("Batch Creation", function () {
       const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 10000, 10000, validatorsCardanoData);
 
       const validatorClaimsBRC2 = {
         ...validatorClaimsBRC,
@@ -191,8 +191,8 @@ describe("Batch Creation", function () {
       const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 10000, 10000, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -220,8 +220,8 @@ describe("Batch Creation", function () {
         validatorClaimsBRC,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -253,21 +253,12 @@ describe("Batch Creation", function () {
       expect(confBatch.bitmap).to.equal(30);
     });
 
-    it("SignedBatch should be added to signedBatches if there are enough votes", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        signedBatch,
-        validatorsCardanoData,
-        validatorClaimsBRC,
-      } = await loadFixture(deployBridgeFixture);
+    it("Should not create ConfirmedBatch if not called by Validator", async function () {
+      const { bridge, owner, chain1, chain2, validators, validatorsCardanoData, signedBatch, validatorClaimsBRC } =
+        await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -279,33 +270,41 @@ describe("Batch Creation", function () {
         await ethers.provider.send("evm_mine");
       }
 
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await expect(bridge.connect(owner).submitSignedBatchEVM(signedBatch)).to.be.revertedWithCustomError(
+        bridge,
+        "NotValidator"
+      );
+    });
 
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatch); // resubmit
-      const confBatchNothing = await claimsHelper
-        .connect(validators[0])
-        .getConfirmedSignedBatchData(signedBatch.destinationChainId, signedBatch.id);
-      expect(confBatchNothing.firstTxNonceId + confBatchNothing.lastTxNonceId).to.equal(0);
+    it("Should not create ConfirmedBatch if not called by Validator", async function () {
+      const { bridge, owner, chain1, chain2, validators, validatorsCardanoData, signedBatch, validatorClaimsBRC } =
+        await loadFixture(deployBridgeFixture);
 
-      // consensus
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorsCardanoData);
 
-      const confBatch = await claimsHelper
-        .connect(validators[0])
-        .getConfirmedSignedBatchData(signedBatch.destinationChainId, signedBatch.id);
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
 
-      expect(confBatch.firstTxNonceId).to.equal(signedBatch.firstTxNonceId);
-      expect(confBatch.lastTxNonceId).to.equal(signedBatch.lastTxNonceId);
+      // wait for next timeout
+      for (let i = 0; i < 3; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      await expect(bridge.connect(owner).submitSignedBatchEVM(signedBatch)).to.be.revertedWithCustomError(
+        bridge,
+        "NotValidator"
+      );
     });
 
     it("Should create ConfirmedBatch if there are enough votes", async function () {
       const { bridge, owner, chain1, chain2, validators, validatorsCardanoData, signedBatch, validatorClaimsBRC } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -357,8 +356,8 @@ describe("Batch Creation", function () {
         validatorClaimsBEC,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorsCardanoData);
 
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
@@ -408,8 +407,8 @@ describe("Batch Creation", function () {
         claims,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -427,13 +426,17 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
       const tokenAmountDestination = await claims.getChainTokenQuantity(signedBatch.destinationChainId);
+      const tokenWrappedAmountDestination = await claims.getChainWrappedTokenQuantity(signedBatch.destinationChainId);
 
-      let sumAmounts = 0;
+      let sumAmount = 0;
+      let sumWrappedAmount = 0;
       for (let i = 0; i < validatorClaimsBRC.bridgingRequestClaims[0].receivers.length; i++) {
-        sumAmounts += validatorClaimsBRC.bridgingRequestClaims[0].receivers[i].amount;
+        sumAmount += validatorClaimsBRC.bridgingRequestClaims[0].receivers[i].amount;
+        sumWrappedAmount += validatorClaimsBRC.bridgingRequestClaims[0].receivers[i].amountWrapped;
       }
 
-      expect(100 - sumAmounts).to.equal(tokenAmountDestination);
+      expect(100 - sumAmount).to.equal(tokenAmountDestination);
+      expect(100 - sumWrappedAmount).to.equal(tokenWrappedAmountDestination);
     });
 
     it("Should delete multisigSignatures and feePayerMultisigSignatures for confirmed signed batches", async function () {
@@ -449,8 +452,8 @@ describe("Batch Creation", function () {
         validatorClaimsBRC,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
