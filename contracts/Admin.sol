@@ -63,6 +63,10 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         return claims.chainTokenQuantity(_chainId);
     }
 
+    function getChainWrappedTokenQuantity(uint8 _chainId) external view returns (uint256) {
+        return claims.chainWrappedTokenQuantity(_chainId);
+    }
+
     function defund(
         uint8 _chainId,
         uint256 _amount,

@@ -612,17 +612,18 @@ describe("Claims Contract", function () {
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["HWIC"]);
       const encoded = abiCoder.encode(
-        ["uint8", "uint256", "uint256", "bool"],
+        ["uint8", "uint256", "uint256", "bool", "bool"],
         [
           validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId,
           validatorClaimsHWIC.hotWalletIncrementClaims[0].amount,
           validatorClaimsHWIC.hotWalletIncrementClaims[0].amountWrapped,
           validatorClaimsHWIC.hotWalletIncrementClaims[0].isIncrement,
+          validatorClaimsHWIC.hotWalletIncrementClaims[0].isIncrementWrapped,
         ]
       );
 
       const encoded40 =
-        "0x00000000000000000000000000000000000000000000000000000000000000a0" +
+        "0x00000000000000000000000000000000000000000000000000000000000000c0" +
         encoded.substring(2) +
         encodedPrefix.substring(66);
 
@@ -667,6 +668,25 @@ describe("Claims Contract", function () {
         100 + validatorClaimsHWIC.hotWalletIncrementClaims[0].amount
       );
     });
+    it("Should increment totalWrappedQuantity if there is consensus on Hot Wallet Increment Claim", async function () {
+      const { bridge, claims, owner, validators, chain1, validatorClaimsHWIC, validatorsCardanoData } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
+
+      expect(await claims.chainWrappedTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(
+        100
+      );
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsHWIC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsHWIC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsHWIC);
+
+      expect(await claims.chainWrappedTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(
+        100 + validatorClaimsHWIC.hotWalletIncrementClaims[0].amountWrapped
+      );
+    });
     it("Should decrease totalQuantity if there is consensus on Hot Wallet Increment Claim", async function () {
       const { bridge, claims, owner, validators, chain1, validatorClaimsHWIC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
@@ -686,6 +706,27 @@ describe("Claims Contract", function () {
         100 - validatorClaimsHWIC.hotWalletIncrementClaims[0].amount
       );
     });
+    it("Should decrease totalWrappedQuantity if there is consensus on Hot Wallet Increment Claim", async function () {
+      const { bridge, claims, owner, validators, chain1, validatorClaimsHWIC, validatorsCardanoData } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
+
+      validatorClaimsHWIC.hotWalletIncrementClaims[0].isIncrementWrapped = false;
+
+      expect(await claims.chainWrappedTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(
+        100
+      );
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsHWIC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsHWIC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsHWIC);
+
+      expect(await claims.chainWrappedTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(
+        100 - validatorClaimsHWIC.hotWalletIncrementClaims[0].amountWrapped
+      );
+    });
     it("Should emit InsufficientFunds if there is consensus on Hot Wallet Increment Claim but decrease is higher than available amount", async function () {
       const { bridge, claims, owner, validators, chain1, validatorClaimsHWIC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
@@ -696,6 +737,28 @@ describe("Claims Contract", function () {
       validatorClaimsHWIC.hotWalletIncrementClaims[0].amount = 200;
 
       expect(await claims.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(100);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsHWIC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsHWIC);
+
+      await expect(bridge.connect(validators[3]).submitClaims(validatorClaimsHWIC))
+        .to.emit(claims, "InsufficientFunds")
+        .withArgs(1, 200);
+    });
+
+    it("Should emit InsufficientFunds if there is consensus on Hot Wallet Increment Claim but decrease is higher than available amount", async function () {
+      const { bridge, claims, owner, validators, chain1, validatorClaimsHWIC, validatorsCardanoData } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
+
+      validatorClaimsHWIC.hotWalletIncrementClaims[0].isIncrementWrapped = false;
+      validatorClaimsHWIC.hotWalletIncrementClaims[0].amountWrapped = 200;
+
+      expect(await claims.chainWrappedTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(
+        100
+      );
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsHWIC);

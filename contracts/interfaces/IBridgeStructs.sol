@@ -112,6 +112,7 @@ interface IBridgeStructs {
         uint256 amount;
         uint256 amountWrapped;
         bool isIncrement;
+        bool isIncrementWrapped;
     }
 
     struct Receiver {
