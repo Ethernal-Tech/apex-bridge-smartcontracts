@@ -28,6 +28,7 @@ interface IBridgeStructs {
     struct ConfirmedTransaction {
         uint256 blockHeight;
         uint256 totalAmount;
+        uint256 totalWrappedAmount;
         uint256 retryCounter;
         uint64 nonce;
         uint8 sourceChainId;
@@ -55,7 +56,10 @@ interface IBridgeStructs {
         bytes32 observedTransactionHash;
         // key is the address on destination UTXO chain; value is the amount of tokens
         Receiver[] receivers;
-        uint256 totalAmount;
+        uint256 nativeCurrencyAmountSource;
+        uint256 wrappedTokenAmountSource;
+        uint256 nativeCurrencyAmountDestination;
+        uint256 wrappedTokenAmountDestination;
         uint256 retryCounter;
         uint8 sourceChainId;
         uint8 destinationChainId;
@@ -106,11 +110,14 @@ interface IBridgeStructs {
     struct HotWalletIncrementClaim {
         uint8 chainId;
         uint256 amount;
+        uint256 amountWrapped;
         bool isIncrement;
+        bool isIncrementWrapped;
     }
 
     struct Receiver {
         uint256 amount;
+        uint256 amountWrapped;
         string destinationAddress;
     }
 
@@ -165,7 +172,8 @@ interface IBridgeStructs {
     event InsufficientFunds(uint256 availableAmount, uint256 withdrawalAmount);
     event ChainDefunded(uint8 _chainId, uint256 _amount);
     event FundAdminChanged(address _newFundAdmin);
-    event UpdatedChainTokenQuantity(uint indexed chainId, bool isIncrement, uint256 tokenQuantity);
+    event UpdatedChainTokenQuantity(uint indexed chainId, bool isIncrement, uint256 chainTokenQuantity);
+    event UpdatedChainWrappedTokenQuantity(uint indexed chainId, bool isIncrement, uint256 chainWrappedTokenQuantity);
     event DefundFailedAfterMultipleRetries();
     event UpdatedMaxNumberOfTransactions(uint256 _maxNumberOfTransactions);
     event UpdatedTimeoutBlocksNumber(uint256 _timeoutBlocksNumber);

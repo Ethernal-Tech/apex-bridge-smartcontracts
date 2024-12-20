@@ -18,8 +18,8 @@ describe("Submit Claims", function () {
       const { bridge, claims, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 10000, 10000, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -40,8 +40,8 @@ describe("Submit Claims", function () {
       const { bridge, claims, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 10000, 10000, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -61,6 +61,9 @@ describe("Submit Claims", function () {
       expect((await claims.confirmedTransactions(destinationChainId, nounce)).totalAmount).to.equal(
         validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount
       );
+      expect((await claims.confirmedTransactions(destinationChainId, nounce)).totalWrappedAmount).to.equal(
+        validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amountWrapped
+      );
       expect((await claims.confirmedTransactions(destinationChainId, nounce)).blockHeight).to.equal(
         await ethers.provider.getBlockNumber()
       );
@@ -70,22 +73,36 @@ describe("Submit Claims", function () {
       const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 10000, 10000, validatorsCardanoData);
 
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
       const encoded = abiCoder.encode(
-        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint256", "uint8", "uint8"],
+        [
+          "bytes32",
+          "tuple(uint64, uint64, string)[]",
+          "uint256",
+          "uint256",
+          "uint256",
+          "uint256",
+          "uint256",
+          "uint8",
+          "uint8",
+        ],
         [
           validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
           [
             [
               validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount,
+              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amountWrapped,
               validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
             ],
           ],
-          validatorClaimsBRC.bridgingRequestClaims[0].totalAmount,
+          validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource,
+          validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountSource,
+          validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination,
+          validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountDestination,
           validatorClaimsBRC.bridgingRequestClaims[0].retryCounter,
           validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
           validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
@@ -121,8 +138,8 @@ describe("Submit Claims", function () {
       const { bridge, claims, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 10000, 10000, validatorsCardanoData);
 
       const currentBlock = await ethers.provider.getBlockNumber();
 
@@ -150,10 +167,13 @@ describe("Submit Claims", function () {
       const { bridge, claims, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorsCardanoData);
 
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(1000);
+      expect(
+        await claims.chainWrappedTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)
+      ).to.equal(1000);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -161,14 +181,44 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(1100);
+      expect(
+        await claims.chainWrappedTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)
+      ).to.equal(1000);
+    });
+
+    it("Should add requred amount of wrapped tokens on source chain when Bridging Request Claim is confirmed and it is NOT a retry", async function () {
+      const { bridge, claims, owner, chain1, chain2, validators, validatorClaimsBRCWrapped, validatorsCardanoData } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorsCardanoData);
+
+      expect(
+        await claims.chainTokenQuantity(validatorClaimsBRCWrapped.bridgingRequestClaims[0].sourceChainId)
+      ).to.equal(1000);
+      expect(
+        await claims.chainWrappedTokenQuantity(validatorClaimsBRCWrapped.bridgingRequestClaims[0].sourceChainId)
+      ).to.equal(1000);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRCWrapped);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRCWrapped);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRCWrapped);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRCWrapped);
+
+      expect(
+        await claims.chainTokenQuantity(validatorClaimsBRCWrapped.bridgingRequestClaims[0].sourceChainId)
+      ).to.equal(1000);
+      expect(
+        await claims.chainWrappedTokenQuantity(validatorClaimsBRCWrapped.bridgingRequestClaims[0].sourceChainId)
+      ).to.equal(1100);
     });
 
     it("Should NOT add requred amount of tokens on source chain when Bridging Request Claim is confirmed and it is a retry", async function () {
       const { bridge, claims, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorsCardanoData);
 
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(1000);
 
@@ -188,8 +238,8 @@ describe("Submit Claims", function () {
       const { bridge, claims, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorsCardanoData);
 
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(1000);
 
@@ -218,8 +268,8 @@ describe("Submit Claims", function () {
         validatorsCardanoData,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorsCardanoData);
 
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
@@ -256,8 +306,8 @@ describe("Submit Claims", function () {
       const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBEC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 10000, 10000, validatorsCardanoData);
 
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["BEC"]);
@@ -309,8 +359,8 @@ describe("Submit Claims", function () {
         validatorsCardanoData,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -358,8 +408,8 @@ describe("Submit Claims", function () {
         validatorsCardanoData,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorsCardanoData);
 
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
@@ -398,8 +448,8 @@ describe("Submit Claims", function () {
         validatorsCardanoData,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorsCardanoData);
 
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
@@ -433,8 +483,8 @@ describe("Submit Claims", function () {
       const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBEFC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 10000, 10000, validatorsCardanoData);
 
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["BEFC"]);
@@ -486,8 +536,8 @@ describe("Submit Claims", function () {
         validatorsCardanoData,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorsCardanoData);
 
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
@@ -525,8 +575,8 @@ describe("Submit Claims", function () {
         validatorsCardanoData,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorsCardanoData);
 
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
@@ -567,8 +617,8 @@ describe("Submit Claims", function () {
         validatorsCardanoData,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorsCardanoData);
 
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
@@ -591,7 +641,7 @@ describe("Submit Claims", function () {
 
       expect(await claims.lastBatchedTxNonce(_destinationChain)).to.equal(1);
     });
-    it("Should increase chainTokenQuantity for destination chain when Bridging Excuted Failed Claim is confirmed", async function () {
+    it("Should increase chainTokenQuantity and chainWrappedTokenQuantity for destination chain when Bridging Excuted Failed Claim is confirmed", async function () {
       const {
         bridge,
         claims,
@@ -605,10 +655,14 @@ describe("Submit Claims", function () {
         validatorsCardanoData,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorsCardanoData);
 
       const chain2TokenQuantityStart = await claims.chainTokenQuantity(
+        validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId
+      );
+
+      const chain2WrappedTokenQuantityStart = await claims.chainWrappedTokenQuantity(
         validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId
       );
 
@@ -626,6 +680,10 @@ describe("Submit Claims", function () {
         validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId
       );
 
+      const chain2WrappedTokenQuantityBefore = await claims.chainWrappedTokenQuantity(
+        validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId
+      );
+
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
@@ -635,10 +693,19 @@ describe("Submit Claims", function () {
         validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId
       );
 
+      const chain2WrappedTokenQuantityAfter = await claims.chainWrappedTokenQuantity(
+        validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId
+      );
+
       expect(chain2TokenQuantityAfter).to.be.equal(
-        chain2TokenQuantityBefore + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmount)
+        chain2TokenQuantityBefore + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource)
       );
       expect(chain2TokenQuantityAfter).to.be.equal(chain2TokenQuantityStart);
+
+      expect(chain2WrappedTokenQuantityAfter).to.be.equal(
+        chain2WrappedTokenQuantityBefore + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountSource)
+      );
+      expect(chain2WrappedTokenQuantityAfter).to.be.equal(chain2WrappedTokenQuantityStart);
     });
   });
 
@@ -647,7 +714,7 @@ describe("Submit Claims", function () {
       const { bridge, claimsHelper, owner, chain2, validators, validatorClaimsRRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorsCardanoData);
 
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
@@ -695,7 +762,7 @@ describe("Submit Claims", function () {
         deployBridgeFixture
       );
 
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
@@ -714,7 +781,7 @@ describe("Submit Claims", function () {
       const { bridge, claimsHelper, owner, chain2, validators, validatorClaimsREC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorsCardanoData);
 
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["REC"]);
@@ -758,7 +825,7 @@ describe("Submit Claims", function () {
         deployBridgeFixture
       );
 
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorsCardanoData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsREC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsREC);

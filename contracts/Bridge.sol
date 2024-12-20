@@ -119,12 +119,13 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     function registerChain(
         Chain calldata _chain,
         uint256 _tokenQuantity,
+        uint256 _wrappedTokenQuantity,
         ValidatorAddressChainData[] calldata _chainDatas
     ) public override onlyOwner {
         uint8 _chainId = _chain.id;
         validators.setValidatorsChainData(_chainId, _chainDatas);
         chains.push(_chain);
-        claims.setChainRegistered(_chainId, _tokenQuantity);
+        claims.setChainRegistered(_chainId, _tokenQuantity, _wrappedTokenQuantity);
         emit newChainRegistered(_chainId);
     }
 
@@ -132,6 +133,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint8 _chainId,
         uint8 _chainType,
         uint256 _tokenQuantity,
+        uint256 _wrappedTokenQuantity,
         ValidatorChainData calldata _validatorChainData
     ) external override onlyValidator {
         if (claims.isChainRegistered(_chainId)) {
@@ -153,7 +155,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         if (claims.setVoted(msg.sender, chainHash) == validators.validatorsCount()) {
             chains.push(Chain(_chainId, _chainType, "", ""));
 
-            claims.setChainRegistered(_chainId, _tokenQuantity);
+            claims.setChainRegistered(_chainId, _tokenQuantity, _wrappedTokenQuantity);
             emit newChainRegistered(_chainId);
         } else {
             emit newChainProposal(_chainId, msg.sender);
