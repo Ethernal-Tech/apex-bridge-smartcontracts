@@ -41,6 +41,40 @@ describe("Chain Registration", function () {
       expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.be.equal(100);
     });
 
+    it("Should update chain if requested by owner and chain already exists", async function () {
+      const { bridge, claims, validatorsc, owner, chain1, validatorsCardanoData } = await loadFixture(
+        deployBridgeFixture
+      );
+
+      expect(await claims.isChainRegistered(chain1.id)).to.be.false;
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+
+      expect(await claims.isChainRegistered(chain1.id)).to.be.true;
+      expect(await bridge.getAllRegisteredChains()).to.have.length(1);
+      expect((await bridge.getAllRegisteredChains())[0].id).to.equal(1);
+      expect(await claims.getChainTokenQuantity(chain1.id)).to.equal(100); //it should not be changed
+      expect(await validatorsc.getValidatorsChainData(chain1.id)).to.have.length(5);
+      expect((await validatorsc.getValidatorsChainData(chain1.id))[0].key[0]).to.equal(
+        validatorsCardanoData[0].data.key[0]
+      );
+
+      validatorsCardanoData[0].data.key[0] = BigInt(10);
+
+      await bridge.connect(owner).registerChain(chain1, 10, validatorsCardanoData);
+
+      expect(await claims.isChainRegistered(chain1.id)).to.be.true;
+      expect(await bridge.getAllRegisteredChains()).to.have.length(1);
+      expect((await bridge.getAllRegisteredChains())[0].id).to.equal(1);
+      expect(await claims.getChainTokenQuantity(chain1.id)).to.equal(100); //it should not be changed
+      expect(await validatorsc.getValidatorsChainData(chain1.id)).to.have.length(5);
+      expect((await validatorsc.getValidatorsChainData(chain1.id))[0].key[0]).to.equal(
+        validatorsCardanoData[0].data.key[0]
+      );
+
+      validatorsCardanoData[0].data.key[0] = BigInt(0);
+    });
+
     it("Should set correct nextTimeoutBlock when chain is registered by owner", async function () {
       const { bridge, claims, owner, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
