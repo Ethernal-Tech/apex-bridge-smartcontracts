@@ -134,7 +134,8 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint8 _chainId,
         uint8 _chainType,
         uint256 _tokenQuantity,
-        ValidatorChainData calldata _validatorChainData
+        ValidatorChainData calldata _validatorChainData,
+        bytes[2] calldata _signatures
     ) external override onlyValidator {
         if (claims.isChainRegistered(_chainId)) {
             revert ChainAlreadyRegistered(_chainId);
@@ -149,6 +150,20 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         // TODO:
         // if _chain.chainType == 1 verify signatures for both verifyingKey and verifyingFeeKey
         // if _chain.chainType == 2 verify signatures for BLS specified in verifyingKey
+
+        //Converting msg.sender to string is expensive, then concaration is also expensive, so maybe we can go like this
+        bytes32 messageHash = keccak256(abi.encode("Hello world of apex-bridge:", msg.sender));
+
+        //This part I still do not get. I'll have differente signatures for the same message and same keys, but for diffrent address?
+        if (_chainType == 1) {
+            if (!validators.isBlsSignatureValid(messageHash, _signatures[1], _validatorChainData.key)) {
+                revert InvalidSignature();
+            }
+        }
+
+        if (!validators.isBlsSignatureValid(messageHash, _signatures[0], _validatorChainData.key)) {
+            revert InvalidSignature();
+        }
 
         validators.addValidatorChainData(_chainId, msg.sender, _validatorChainData);
 
