@@ -135,7 +135,8 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint8 _chainType,
         uint256 _tokenQuantity,
         ValidatorChainData calldata _validatorChainData,
-        bytes[2] calldata _signatures
+        bytes calldata _keySignatures,
+        bytes calldata _keyFeeSignatures
     ) external override onlyValidator {
         if (claims.isChainRegistered(_chainId)) {
             revert ChainAlreadyRegistered(_chainId);
@@ -147,22 +148,20 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
             revert AlreadyProposed(_chainId);
         }
 
-        // TODO:
-        // if _chain.chainType == 1 verify signatures for both verifyingKey and verifyingFeeKey
-        // if _chain.chainType == 2 verify signatures for BLS specified in verifyingKey
+        bytes memory messageHashBytes = abi.encodePacked("Hello world of apex-bridge:", msg.sender);
+        bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", msg.sender));
 
-        //Converting msg.sender to string is expensive, then concaration is also expensive, so maybe we can go like this
-        bytes32 messageHash = keccak256(abi.encode("Hello world of apex-bridge:", msg.sender));
-
-        //This part I still do not get. I'll have differente signatures for the same message and same keys, but for diffrent address?
         if (_chainType == 1) {
-            if (!validators.isBlsSignatureValid(messageHash, _signatures[1], _validatorChainData.key)) {
+            if (
+                !validators.isSignatureValid(messageHashBytes, _keySignatures, _validatorChainData.key[0], false) ||
+                !validators.isSignatureValid(messageHashBytes, _keyFeeSignatures, _validatorChainData.key[1], false)
+            ) {
                 revert InvalidSignature();
             }
-        }
-
-        if (!validators.isBlsSignatureValid(messageHash, _signatures[0], _validatorChainData.key)) {
-            revert InvalidSignature();
+        } else if (_chainType == 2) {
+            if (!validators.isBlsSignatureValid(messageHashBytes32, _keySignatures, _validatorChainData.key)) {
+                revert InvalidSignature();
+            }
         }
 
         validators.addValidatorChainData(_chainId, msg.sender, _validatorChainData);
