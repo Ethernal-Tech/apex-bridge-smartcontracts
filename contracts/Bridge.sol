@@ -148,8 +148,9 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
             revert AlreadyProposed(_chainId);
         }
 
+        bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", msg.sender));
+
         if (_chainType == 0) {
-            bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", msg.sender));
             bytes memory messageHashBytes = bytes32ToBytesAssembly(messageHashBytes32);
             if (
                 !validators.isSignatureValid(messageHashBytes, _keySignature, _validatorChainData.key[0], false) ||
@@ -158,7 +159,6 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
                 revert InvalidSignature();
             }
         } else if (_chainType == 1) {
-            bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", msg.sender));
             if (!validators.isBlsSignatureValid(messageHashBytes32, _keySignature, _validatorChainData.key)) {
                 revert InvalidSignature();
             }
