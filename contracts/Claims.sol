@@ -393,12 +393,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function getChainTokenQuantity(uint8 _chainId) external view returns (uint256) {
-        uint256 tokenQuantity = chainTokenQuantity[_chainId];
-
-        if (tokenQuantity == 0) {
-            revert("Can't find chain token quantity");
-        }
-        return tokenQuantity;
+        return chainTokenQuantity[_chainId];
     }
 
     function updateChainTokenQuantity(
