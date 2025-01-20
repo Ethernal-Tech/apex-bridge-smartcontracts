@@ -10,6 +10,7 @@ import "./Claims.sol";
 import "./SignedBatches.sol";
 import "./Slots.sol";
 import "./Validators.sol";
+import "hardhat/console.sol";
 
 contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
@@ -148,9 +149,9 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
             revert AlreadyProposed(_chainId);
         }
 
-        bytes memory messageHashBytes = abi.encodePacked("Hello world of apex-bridge:", msg.sender);
-
         if (_chainType == 0) {
+            bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", msg.sender));
+            bytes memory messageHashBytes = bytes32ToBytesAssembly(messageHashBytes32);
             if (
                 !validators.isSignatureValid(messageHashBytes, _keySignature, _validatorChainData.key[0], false) ||
                 !validators.isSignatureValid(messageHashBytes, _keyFeeSignature, _validatorChainData.key[1], false)
@@ -158,10 +159,12 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
                 revert InvalidSignature();
             }
         } else if (_chainType == 1) {
-            bytes32 messageHashBytes32 = keccak256(messageHashBytes);
+            bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", msg.sender));
             if (!validators.isBlsSignatureValid(messageHashBytes32, _keySignature, _validatorChainData.key)) {
                 revert InvalidSignature();
             }
+        } else {
+            revert InvalidData("chainType");
         }
 
         validators.addValidatorChainData(_chainId, msg.sender, _validatorChainData);
@@ -239,6 +242,16 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint64 _batchId
     ) external view override returns (TxDataInfo[] memory) {
         return claims.getBatchTransactions(_chainId, _batchId);
+    }
+
+    function bytes32ToBytesAssembly(bytes32 input) public pure returns (bytes memory) {
+        bytes memory output = new bytes(32);
+
+        assembly {
+            mstore(add(output, 32), input)
+        }
+
+        return output;
     }
 
     modifier onlyValidator() {
