@@ -1,4 +1,4 @@
-import { ethers } from "hardhat";
+import { ethers, artifacts } from "hardhat";
 import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin } from "../typechain-types";
 
 export async function deployBridgeFixture() {
@@ -121,6 +121,16 @@ export async function deployBridgeFixture() {
   await validatorsc.setDependencies(bridge.target);
 
   await admin.setDependencies(claims.target);
+
+  // Deploy the MockPrecompile contract
+  const MockPrecompile = await ethers.getContractFactory("MockPrecompile");
+  const mockPrecompileTrue = await MockPrecompile.deploy(true);
+  const artifactTrue = await artifacts.readArtifact("MockPrecompile");
+  const bytecodeTrue = artifactTrue.deployedBytecode;
+
+  const mockPrecompileFalse = await MockPrecompile.deploy(false);
+  const artifactFalse = await artifacts.readArtifact("MockPrecompile");
+  const bytecodeFalse = artifactFalse.deployedBytecode;
 
   const chain1 = {
     id: 1,
@@ -466,5 +476,7 @@ export async function deployBridgeFixture() {
     validatorsCardanoData,
     validators,
     cardanoBlocks,
+    bytecodeTrue,
+    bytecodeFalse,
   };
 }

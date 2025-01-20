@@ -1,6 +1,6 @@
 import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { artifacts, ethers } from "hardhat";
 import { deployBridgeFixture } from "./fixtures";
 
 describe("Chain Registration", function () {
@@ -290,12 +290,14 @@ describe("Chain Registration", function () {
     });
 
     it("Should revert chain proposal if validator message is not signed correctly", async function () {
-      const { bridge, claimsHelper, validators, chain1, validatorsCardanoData } = await loadFixture(
+      const { bridge, validators, chain1, validatorsCardanoData, bytecodeFalse } = await loadFixture(
         deployBridgeFixture
       );
 
-      const result = await setCode("0x0000000000000000000000000000000000002060", "0x60206000F3"); // should return false for precompile
-      console.log("EVO GA REZULTAT", result);
+      const precompileAddress = "0x0000000000000000000000000000000000002050";
+      await setCode(precompileAddress, bytecodeFalse);
+
+      //await setCode("0x0000000000000000000000000000000000002050", "0x60006000F3"); // should return false for precompile
 
       await expect(
         bridge
@@ -308,7 +310,7 @@ describe("Chain Registration", function () {
             "0x7465737400000000000000000000000000000000000000000000000000000000",
             "0x7465737400000000000000000000000000000000000000000000000000000000"
           )
-      ).to.be.revertedWithCustomError(claimsHelper, "AlreadyProposed");
+      ).to.be.revertedWithCustomError(bridge, "InvalidSignature");
     });
 
     it("Should emit new chain proposal", async function () {
