@@ -34,7 +34,9 @@ abstract contract IBridge is IBridgeStructs {
         uint8 _chainId,
         uint8 _chainType,
         uint256 _tokenQuantity,
-        ValidatorChainData calldata _validatorChainData
+        ValidatorChainData calldata _validatorChainData,
+        bytes calldata _keySignatures,
+        bytes calldata _keyFeeSignatures
     ) external virtual;
 
     // Queries
