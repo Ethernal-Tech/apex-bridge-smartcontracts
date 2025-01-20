@@ -1,4 +1,4 @@
-import { ethers } from "hardhat";
+import { ethers, artifacts } from "hardhat";
 import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin } from "../typechain-types";
 
 export async function deployBridgeFixture() {
@@ -133,7 +133,7 @@ export async function deployBridgeFixture() {
     id: 2,
     addressMultisig: "addr_test1vr8zy7jk35n9yyw4jg0r4z98eygmrqxvz5sch4dva9c8s2qjv2edc",
     addressFeePayer: "addr_test1vz8g63va7qat4ajyja4sndp06rv3penf3htqcwt6x4znyacfpea75",
-    chainType: 0,
+    chainType: 1, // nexus chain
   };
 
   const validatorClaimsBRC = {

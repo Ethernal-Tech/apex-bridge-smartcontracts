@@ -16,7 +16,16 @@ describe("Performance", function () {
 
     for (let i = 0; i < (validators.length * 2) / 3 + 1; i++) {
       // fourth one is quorum
-      const tx = await bridge.connect(validators[i]).registerChainGovernance(chain1.id, chain1.chainType, 100, validatorsCardanoData[0].data);
+      const tx = await bridge
+        .connect(validators[i])
+        .registerChainGovernance(
+          chain1.id,
+          chain1.chainType,
+          100,
+          validatorsCardanoData[0].data,
+          "0x7465737400000000000000000000000000000000000000000000000000000000",
+          "0x7465737400000000000000000000000000000000000000000000000000000000"
+        );
       const receipt = await tx.wait();
       console.log(`Gas spent on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
     }
@@ -64,8 +73,17 @@ describe("Performance", function () {
   });
 
   it("submitClaims BEC", async function () {
-    const { bridge, chain1, chain2, owner, validators, validatorClaimsBRC, signedBatch, validatorsCardanoData, validatorClaimsBEC } =
-      await loadFixture(deployBridgeFixture);
+    const {
+      bridge,
+      chain1,
+      chain2,
+      owner,
+      validators,
+      validatorClaimsBRC,
+      signedBatch,
+      validatorsCardanoData,
+      validatorClaimsBEC,
+    } = await loadFixture(deployBridgeFixture);
 
     await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
     await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);

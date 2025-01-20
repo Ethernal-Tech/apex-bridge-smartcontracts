@@ -3,11 +3,6 @@ import { expect } from "chai";
 import { deployBridgeFixture } from "./fixtures";
 
 describe("Slots Contract", function () {
-  beforeEach(async () => {
-    // mock isSignatureValid precompile to always return true
-    await setCode("0x0000000000000000000000000000000000002050", "0x600160005260206000F3");
-  });
-
   describe("Slot management", function () {
     it("Should revert if chain is not registered", async function () {
       const { bridge, validators, cardanoBlocks } = await loadFixture(deployBridgeFixture);
