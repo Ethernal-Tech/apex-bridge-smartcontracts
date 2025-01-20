@@ -150,14 +150,14 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
         bytes memory messageHashBytes = abi.encodePacked("Hello world of apex-bridge:", msg.sender);
 
-        if (_chainType == 1) {
+        if (_chainType == 0) {
             if (
                 !validators.isSignatureValid(messageHashBytes, _keySignature, _validatorChainData.key[0], false) ||
                 !validators.isSignatureValid(messageHashBytes, _keyFeeSignature, _validatorChainData.key[1], false)
             ) {
                 revert InvalidSignature();
             }
-        } else if (_chainType == 2) {
+        } else if (_chainType == 1) {
             bytes32 messageHashBytes32 = keccak256(messageHashBytes);
             if (!validators.isBlsSignatureValid(messageHashBytes32, _keySignature, _validatorChainData.key)) {
                 revert InvalidSignature();
