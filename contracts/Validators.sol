@@ -112,7 +112,8 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         uint8 _chainId,
         ValidatorAddressChainData[] calldata _chainDatas
     ) external onlyBridge {
-        if (validatorsCount != _chainDatas.length) {
+        uint8 validatorsCnt = validatorsCount;
+        if (validatorsCnt != _chainDatas.length) {
             revert InvalidData("validators count");
         }
 
@@ -120,9 +121,9 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         delete chainData[_chainId];
 
         // set validator chain data for each validator
-        for (uint i; i < validatorsCount; i++) {
+        for (uint i; i < validatorsCnt; i++) {
             chainData[_chainId].push();
-            
+
             ValidatorAddressChainData calldata dt = _chainDatas[i];
             uint8 indx = addressValidatorIndex[dt.addr];
             if (indx == 0) {
