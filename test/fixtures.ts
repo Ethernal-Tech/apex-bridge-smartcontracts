@@ -122,16 +122,6 @@ export async function deployBridgeFixture() {
 
   await admin.setDependencies(claims.target);
 
-  // Deploy the MockPrecompile contract
-  const MockPrecompile = await ethers.getContractFactory("MockPrecompile");
-  const mockPrecompileTrue = await MockPrecompile.deploy(true);
-  const artifactTrue = await artifacts.readArtifact("MockPrecompile");
-  const bytecodeTrue = artifactTrue.deployedBytecode;
-
-  const mockPrecompileFalse = await MockPrecompile.deploy(false);
-  const artifactFalse = await artifacts.readArtifact("MockPrecompile");
-  const bytecodeFalse = artifactFalse.deployedBytecode;
-
   const chain1 = {
     id: 1,
     addressMultisig: "addr_test1vqeux7xwusdju9dvsj8h7mca9aup2k439kfmwy773xxc2hcu7zy99",
@@ -476,7 +466,5 @@ export async function deployBridgeFixture() {
     validatorsCardanoData,
     validators,
     cardanoBlocks,
-    bytecodeTrue,
-    bytecodeFalse,
   };
 }

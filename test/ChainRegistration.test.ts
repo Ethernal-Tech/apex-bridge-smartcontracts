@@ -294,10 +294,7 @@ describe("Chain Registration", function () {
         deployBridgeFixture
       );
 
-      const precompileAddress = "0x0000000000000000000000000000000000002050";
-      await setCode(precompileAddress, bytecodeFalse);
-
-      //await setCode("0x0000000000000000000000000000000000002050", "0x60006000F3"); // should return false for precompile
+      await setCode("0x0000000000000000000000000000000000002050", "0x60206000F3");
 
       await expect(
         bridge
