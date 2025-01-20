@@ -40,6 +40,14 @@ describe("Admin Functions", function () {
       await admin.updateChainTokenQuantity(chain1.id, true, 100);
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(200);
     });
+    it("Should increase chainTokenQuantity after calling updateChainTokenQuantity with a value higher than the current one", async function () {
+      const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+      await bridge.registerChain(chain1, 100, validatorsCardanoData);
+
+      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
+      await admin.updateChainTokenQuantity(chain1.id, true, 200);
+      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(300);
+    });
     it("Should emit event after increaseint chain token quantity with updateChainTokenQuantity", async function () {
       const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
       await bridge.registerChain(chain1, 100, validatorsCardanoData);
@@ -58,10 +66,11 @@ describe("Admin Functions", function () {
       );
     });
     it("Should decrease chainTokenQuantity by required amount", async function () {
-      const { admin, bridge, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+      const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
       await bridge.registerChain(chain1, 100, validatorsCardanoData);
 
       await admin.updateChainTokenQuantity(chain1.id, false, 50);
+      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(50);
     });
     it("Should emit event after decreasing chain token quantity with updateChainTokenQuantity", async function () {
       const { bridge, admin, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
