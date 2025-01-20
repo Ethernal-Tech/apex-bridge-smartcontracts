@@ -10,7 +10,6 @@ import "./Claims.sol";
 import "./SignedBatches.sol";
 import "./Slots.sol";
 import "./Validators.sol";
-import "hardhat/console.sol";
 
 contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
