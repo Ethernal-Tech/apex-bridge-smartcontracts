@@ -135,8 +135,8 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint8 _chainType,
         uint256 _tokenQuantity,
         ValidatorChainData calldata _validatorChainData,
-        bytes calldata _keySignatures,
-        bytes calldata _keyFeeSignatures
+        bytes calldata _keySignature,
+        bytes calldata _keyFeeSignature
     ) external override onlyValidator {
         if (claims.isChainRegistered(_chainId)) {
             revert ChainAlreadyRegistered(_chainId);
@@ -149,17 +149,17 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         }
 
         bytes memory messageHashBytes = abi.encodePacked("Hello world of apex-bridge:", msg.sender);
-        bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", msg.sender));
 
         if (_chainType == 1) {
             if (
-                !validators.isSignatureValid(messageHashBytes, _keySignatures, _validatorChainData.key[0], false) ||
-                !validators.isSignatureValid(messageHashBytes, _keyFeeSignatures, _validatorChainData.key[1], false)
+                !validators.isSignatureValid(messageHashBytes, _keySignature, _validatorChainData.key[0], false) ||
+                !validators.isSignatureValid(messageHashBytes, _keyFeeSignature, _validatorChainData.key[1], false)
             ) {
                 revert InvalidSignature();
             }
         } else if (_chainType == 2) {
-            if (!validators.isBlsSignatureValid(messageHashBytes32, _keySignatures, _validatorChainData.key)) {
+            bytes32 messageHashBytes32 = keccak256(messageHashBytes);
+            if (!validators.isBlsSignatureValid(messageHashBytes32, _keySignature, _validatorChainData.key)) {
                 revert InvalidSignature();
             }
         }
