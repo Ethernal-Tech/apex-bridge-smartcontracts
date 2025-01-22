@@ -146,6 +146,7 @@ interface IBridgeStructs {
     error NotClaims();
     error NotSignedBatches();
     error NotFundAdmin();
+    error NotUpgradeAdmin();
     error NotAdminContract();
     error NotSignedBatchesOrBridge();
     error NotSignedBatchesOrClaims();
