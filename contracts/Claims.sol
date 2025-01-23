@@ -259,6 +259,14 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function _submitClaimHWIC(HotWalletIncrementClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode("HWIC", _claim));
 
+        uint8 chainId = _claim.chainId;
+        uint256 changeAmount = _claim.amount;
+
+        if (!_claim.isIncrement && chainTokenQuantity[chainId] < changeAmount) {
+            emit InsufficientFunds(chainTokenQuantity[chainId], changeAmount);
+            return;
+        }
+
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
             claimHash,
@@ -266,14 +274,10 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
-            uint8 chainId = _claim.chainId;
-            uint256 changeAmount = _claim.amount;
             if (_claim.isIncrement) {
                 chainTokenQuantity[chainId] += changeAmount;
-            } else if (chainTokenQuantity[chainId] >= changeAmount) {
-                chainTokenQuantity[chainId] -= changeAmount;
             } else {
-                revert InsufficientFunds(chainTokenQuantity[chainId], changeAmount);
+                chainTokenQuantity[chainId] -= changeAmount;
             }
         }
     }
