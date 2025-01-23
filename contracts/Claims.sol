@@ -258,14 +258,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function _submitClaimHWIC(HotWalletIncrementClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode("HWIC", _claim));
-
+        
         uint8 chainId = _claim.chainId;
         uint256 changeAmount = _claim.amount;
-
-        if (!_claim.isIncrement && chainTokenQuantity[chainId] < changeAmount) {
-            emit InsufficientFunds(chainTokenQuantity[chainId], changeAmount);
-            return;
-        }
 
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
@@ -274,11 +269,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
-            if (_claim.isIncrement) {
-                chainTokenQuantity[chainId] += changeAmount;
-            } else {
-                chainTokenQuantity[chainId] -= changeAmount;
-            }
+            chainTokenQuantity[chainId] += changeAmount;
         }
     }
 
@@ -402,10 +393,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function updateChainTokenQuantity(
         uint8 _chainId,
-        bool _isIncrease,
         uint256 _tokenAmount
     ) external onlyAdminContract {
-        _isIncrease ? chainTokenQuantity[_chainId] += _tokenAmount : chainTokenQuantity[_chainId] -= _tokenAmount;
+        chainTokenQuantity[_chainId] += _tokenAmount;
     }
 
     function getBatchTransactions(uint8 _chainId, uint64 _batchId) external view returns (TxDataInfo[] memory) {
