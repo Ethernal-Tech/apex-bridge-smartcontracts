@@ -159,11 +159,11 @@ interface IBridgeStructs {
     error DefundRequestTooHigh(uint8 _chainId, uint256 _availableAmount, uint256 _requestedAmount);
     error ZeroAddress();
     error NegativeChainTokenAmount(uint256 _availableAmount, uint256 _decreaseAmount);
+    error InsufficientFunds(uint256 _availableAmount, uint256 _withdrawalAmount);
 
     event newChainProposal(uint8 indexed _chainId, address indexed sender);
     event newChainRegistered(uint8 indexed _chainId);
     event NotEnoughFunds(string claimeType, uint256 index, uint256 availableAmount);
-    event InsufficientFunds(uint256 availableAmount, uint256 withdrawalAmount);
     event ChainDefunded(uint8 _chainId, uint256 _amount);
     event FundAdminChanged(address _newFundAdmin);
     event UpdatedChainTokenQuantity(uint indexed chainId, bool isIncrement, uint256 tokenQuantity);
