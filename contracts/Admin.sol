@@ -31,14 +31,12 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
         claims = Claims(_claimsAddress);
     }
 
-    function updateChainTokenQuantity(uint8 _chainId, bool _isIncrease, uint256 _quantity) external onlyFundAdmin {
+    function updateChainTokenQuantity(uint8 _chainId, uint256 _quantity) external onlyFundAdmin {
         if (!claims.isChainRegistered(_chainId)) revert ChainIsNotRegistered(_chainId);
-        if (!_isIncrease && claims.chainTokenQuantity(_chainId) < _quantity)
-            revert NegativeChainTokenAmount(claims.chainTokenQuantity(_chainId), _quantity);
 
-        claims.updateChainTokenQuantity(_chainId, _isIncrease, _quantity);
+        claims.updateChainTokenQuantity(_chainId, _quantity);
 
-        emit UpdatedChainTokenQuantity(_chainId, _isIncrease, _quantity);
+        emit UpdatedChainTokenQuantity(_chainId, _quantity);
     }
 
     function getChainTokenQuantity(uint8 _chainId) external view returns (uint256) {
