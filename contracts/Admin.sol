@@ -50,8 +50,10 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
             revert ChainIsNotRegistered(_chainId);
         }
 
-        if (claims.getChainTokenQuantity(_chainId) < _amount) {
-            revert DefundRequestTooHigh(_chainId, claims.getChainTokenQuantity(_chainId), _amount);
+        uint256 _chainTokenQuantity = claims.getChainTokenQuantity(_chainId);
+
+        if (_chainTokenQuantity < _amount) {
+            revert DefundRequestTooHigh(_chainId, _chainTokenQuantity, _amount);
         }
 
         claims.defund(_chainId, _amount, _defundAddress);
