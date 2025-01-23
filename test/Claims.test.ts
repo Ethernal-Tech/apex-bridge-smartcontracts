@@ -612,7 +612,7 @@ describe("Claims Contract", function () {
         100 - validatorClaimsHWIC.hotWalletIncrementClaims[0].amount
       );
     });
-    it("Should revert with InsufficientFunds if there is consensus on Hot Wallet Increment Claim but decrease is higher than available amount", async function () {
+    it("Should emit InsufficientFunds if there is consensus on Hot Wallet Increment Claim but decrease is higher than available amount", async function () {
       const { bridge, claims, owner, validators, chain1, validatorClaimsHWIC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
@@ -628,7 +628,7 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsHWIC);
 
       await expect(bridge.connect(validators[3]).submitClaims(validatorClaimsHWIC))
-        .to.be.revertedWithCustomError(claims, "InsufficientFunds")
+        .to.emit(claims, "InsufficientFunds")
         .withArgs(100, 200);
     });
 
