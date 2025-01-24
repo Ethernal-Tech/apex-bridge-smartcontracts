@@ -266,15 +266,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
-            uint8 chainId = _claim.chainId;
-            uint256 changeAmount = _claim.amount;
-            if (_claim.isIncrement) {
-                chainTokenQuantity[chainId] += changeAmount;
-            } else if (chainTokenQuantity[chainId] >= changeAmount) {
-                chainTokenQuantity[chainId] -= changeAmount;
-            } else {
-                emit InsufficientFunds(chainId, changeAmount);
-            }
+            chainTokenQuantity[_claim.chainId] += _claim.amount;
         }
     }
 

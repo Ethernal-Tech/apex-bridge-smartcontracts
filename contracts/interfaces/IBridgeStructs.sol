@@ -106,7 +106,6 @@ interface IBridgeStructs {
     struct HotWalletIncrementClaim {
         uint8 chainId;
         uint256 amount;
-        bool isIncrement;
     }
 
     struct Receiver {
@@ -163,7 +162,6 @@ interface IBridgeStructs {
     event newChainProposal(uint8 indexed _chainId, address indexed sender);
     event newChainRegistered(uint8 indexed _chainId);
     event NotEnoughFunds(string claimeType, uint256 index, uint256 availableAmount);
-    event InsufficientFunds(uint256 availableAmount, uint256 withdrawalAmount);
     event ChainDefunded(uint8 _chainId, uint256 _amount);
     event FundAdminChanged(address _newFundAdmin);
     event UpdatedChainTokenQuantity(uint indexed chainId, bool isIncrement, uint256 tokenQuantity);
