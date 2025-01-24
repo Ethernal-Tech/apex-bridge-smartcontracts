@@ -266,15 +266,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
-            uint8 chainId = _claim.chainId;
-            uint256 changeAmount = _claim.amount;
-            if (_claim.isIncrement) {
-                chainTokenQuantity[chainId] += changeAmount;
-            } else if (chainTokenQuantity[chainId] >= changeAmount) {
-                chainTokenQuantity[chainId] -= changeAmount;
-            } else {
-                emit InsufficientFunds(chainId, changeAmount);
-            }
+            chainTokenQuantity[_claim.chainId] += _claim.amount;
         }
     }
 
@@ -360,6 +352,16 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function defund(uint8 _chainId, uint256 _amount, string calldata _defundAddress) external onlyAdminContract {
+        if (!isChainRegistered[_chainId]) {
+            revert ChainIsNotRegistered(_chainId);
+        }
+
+        uint256 _currentAmount = chainTokenQuantity[_chainId];
+
+        if (_currentAmount < _amount) {
+            revert DefundRequestTooHigh(_chainId, _currentAmount, _amount);
+        }
+
         BridgingRequestClaim memory _brc = BridgingRequestClaim({
             observedTransactionHash: defundHash,
             receivers: new Receiver[](1),
@@ -372,7 +374,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         _brc.receivers[0].amount = _amount;
         _brc.receivers[0].destinationAddress = _defundAddress;
 
-        chainTokenQuantity[_chainId] -= _amount;
+        chainTokenQuantity[_chainId] = _currentAmount - _amount;
 
         uint256 _confirmedTxCount = getBatchingTxsCount(_chainId);
 

@@ -41,16 +41,7 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     }
 
     function defund(uint8 _chainId, string calldata _defundAddress, uint256 _amount) external onlyFundAdmin {
-        if (!claims.isChainRegistered(_chainId)) {
-            revert ChainIsNotRegistered(_chainId);
-        }
-
-        if (claims.getChainTokenQuantity(_chainId) < _amount) {
-            revert DefundRequestTooHigh(_chainId, claims.getChainTokenQuantity(_chainId), _amount);
-        }
-
         claims.defund(_chainId, _amount, _defundAddress);
-
         emit ChainDefunded(_chainId, _amount);
     }
 
