@@ -32,14 +32,7 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     }
 
     function updateChainTokenQuantity(uint8 _chainId, bool _isIncrease, uint256 _quantity) external onlyFundAdmin {
-        if (!claims.isChainRegistered(_chainId)) revert ChainIsNotRegistered(_chainId);
-
-        uint256 _chainTokenQuantity = claims.chainTokenQuantity(_chainId);
-        if (!_isIncrease && _chainTokenQuantity < _quantity)
-            revert NegativeChainTokenAmount(_chainTokenQuantity, _quantity);
-
         claims.updateChainTokenQuantity(_chainId, _isIncrease, _quantity);
-
         emit UpdatedChainTokenQuantity(_chainId, _isIncrease, _quantity);
     }
 
