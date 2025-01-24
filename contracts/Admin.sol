@@ -32,12 +32,7 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     }
 
     function updateChainTokenQuantity(uint8 _chainId, bool _isIncrease, uint256 _quantity) external onlyFundAdmin {
-        if (!claims.isChainRegistered(_chainId)) revert ChainIsNotRegistered(_chainId);
-        if (!_isIncrease && claims.chainTokenQuantity(_chainId) < _quantity)
-            revert NegativeChainTokenAmount(claims.chainTokenQuantity(_chainId), _quantity);
-
         claims.updateChainTokenQuantity(_chainId, _isIncrease, _quantity);
-
         emit UpdatedChainTokenQuantity(_chainId, _isIncrease, _quantity);
     }
 
@@ -46,16 +41,7 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     }
 
     function defund(uint8 _chainId, string calldata _defundAddress, uint256 _amount) external onlyFundAdmin {
-        if (!claims.isChainRegistered(_chainId)) {
-            revert ChainIsNotRegistered(_chainId);
-        }
-
-        if (claims.getChainTokenQuantity(_chainId) < _amount) {
-            revert DefundRequestTooHigh(_chainId, claims.getChainTokenQuantity(_chainId), _amount);
-        }
-
         claims.defund(_chainId, _amount, _defundAddress);
-
         emit ChainDefunded(_chainId, _amount);
     }
 
