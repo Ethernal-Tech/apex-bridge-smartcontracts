@@ -51,7 +51,7 @@ describe("Chain Registration", function () {
       expect(await claims.isChainRegistered(chain1.id)).to.be.true;
       expect(await bridge.getAllRegisteredChains()).to.have.length(1);
       expect((await bridge.getAllRegisteredChains())[0].id).to.equal(1);
-      expect(await claims.getChainTokenQuantity(chain1.id)).to.equal(100); //it should not be changed
+      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100); //it should not be changed
       expect(await validatorsc.getValidatorsChainData(chain1.id)).to.have.length(5);
       expect((await validatorsc.getValidatorsChainData(chain1.id))[0].key[0]).to.equal(
         validatorsCardanoData[0].data.key[0]
@@ -64,7 +64,7 @@ describe("Chain Registration", function () {
       expect(await claims.isChainRegistered(chain1.id)).to.be.true;
       expect(await bridge.getAllRegisteredChains()).to.have.length(1);
       expect((await bridge.getAllRegisteredChains())[0].id).to.equal(1);
-      expect(await claims.getChainTokenQuantity(chain1.id)).to.equal(100); //it should not be changed
+      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100); //it should not be changed
       expect(await validatorsc.getValidatorsChainData(chain1.id)).to.have.length(5);
       expect((await validatorsc.getValidatorsChainData(chain1.id))[0].key[0]).to.equal(
         validatorsCardanoData[0].data.key[0]

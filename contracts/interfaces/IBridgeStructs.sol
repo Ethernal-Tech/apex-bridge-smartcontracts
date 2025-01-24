@@ -29,9 +29,9 @@ interface IBridgeStructs {
         uint256 blockHeight;
         uint256 totalAmount;
         uint256 retryCounter;
+        bytes32 observedTransactionHash;
         uint64 nonce;
         uint8 sourceChainId;
-        bytes32 observedTransactionHash;
         uint8 transactionType; // 0 = normal, 1 = defund, 2 = refund
         Receiver[] receivers;
     }
