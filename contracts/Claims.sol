@@ -226,7 +226,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 uint8 _txType = _ctx.transactionType;
                 if (_txType == 0) {
                     chainTokenQuantity[chainId] += _ctx.totalAmount;
-                } else if (_txType == 1) {
+                } else {
                     if (_ctx.retryCounter < MAX_NUMBER_OF_DEFUND_RETRIES) {
                         uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
                         confirmedTransactions[chainId][nextNonce] = _ctx;
@@ -236,9 +236,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                         chainTokenQuantity[chainId] += _ctx.totalAmount;
                         emit DefundFailedAfterMultipleRetries();
                     }
-                } else {
-                    //REFUND TO DO
                 }
+                // refund will be implemented through new if case
             }
 
             lastBatchedTxNonce[chainId] = _lastTxNouce;
