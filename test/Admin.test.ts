@@ -26,21 +26,27 @@ describe("Admin Functions", function () {
       );
     });
     it("Should revert if setChainTokenQuantity in Clais is not called by Admin contract", async function () {
-      const { admin, claims } = await loadFixture(deployBridgeFixture);
+      const { claims } = await loadFixture(deployBridgeFixture);
       await expect(claims.updateChainTokenQuantity(1, true, 100)).to.be.revertedWithCustomError(
         claims,
         "NotAdminContract"
       );
     });
     it("Should increase chainTokenQuantity after calling updateChainTokenQuantity", async function () {
-      const { admin, bridge, claims, validators, chain1, validatorsCardanoData } = await loadFixture(
-        deployBridgeFixture
-      );
+      const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
       await bridge.registerChain(chain1, 100, validatorsCardanoData);
 
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
       await admin.updateChainTokenQuantity(chain1.id, true, 100);
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(200);
+    });
+    it("Should increase chainTokenQuantity after calling updateChainTokenQuantity with a value higher than the current one", async function () {
+      const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+      await bridge.registerChain(chain1, 100, validatorsCardanoData);
+
+      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
+      await admin.updateChainTokenQuantity(chain1.id, true, 200);
+      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(300);
     });
     it("Should emit event after increaseint chain token quantity with updateChainTokenQuantity", async function () {
       const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
@@ -51,7 +57,7 @@ describe("Admin Functions", function () {
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(200);
     });
     it("Should revert if decreae amount is higher than available chainTokenQuantity", async function () {
-      const { admin, bridge, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+      const { admin, bridge, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
       await bridge.registerChain(chain1, 100, validatorsCardanoData);
 
       await expect(admin.updateChainTokenQuantity(1, false, 200)).to.be.revertedWithCustomError(
@@ -60,15 +66,14 @@ describe("Admin Functions", function () {
       );
     });
     it("Should decrease chainTokenQuantity by required amount", async function () {
-      const { admin, bridge, claims, validators, chain1, validatorsCardanoData } = await loadFixture(
-        deployBridgeFixture
-      );
+      const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
       await bridge.registerChain(chain1, 100, validatorsCardanoData);
 
       await admin.updateChainTokenQuantity(chain1.id, false, 50);
+      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(50);
     });
     it("Should emit event after decreasing chain token quantity with updateChainTokenQuantity", async function () {
-      const { bridge, admin, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+      const { bridge, admin, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
       await bridge.registerChain(chain1, 100, validatorsCardanoData);
 
@@ -79,9 +84,8 @@ describe("Admin Functions", function () {
     it("Should revert setFundAdmin is not called by owner", async function () {
       const { admin, validators } = await loadFixture(deployBridgeFixture);
 
-      await expect(admin.connect(validators[0]).setFundAdmin(validators[0])).to.be.revertedWithCustomError(
-        admin,
-        "OwnableUnauthorizedAccount"
+      await expect(admin.connect(validators[0]).setFundAdmin(validators[0])).to.be.revertedWith(
+        "Ownable: caller is not the owner"
       );
     });
 
@@ -158,7 +162,7 @@ describe("Admin Functions", function () {
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(99);
     });
     it("Should emit ChainDefunded when defund is exdcuted", async function () {
-      const { admin, bridge, claims, owner, validators, chain1, validatorsCardanoData } = await loadFixture(
+      const { admin, bridge, owner, validators, chain1, validatorsCardanoData } = await loadFixture(
         deployBridgeFixture
       );
 
@@ -273,80 +277,118 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(29);
     });
-    // it("Should reject defund after maximum number of retries", async function () {
-    //   const {
-    //     admin,
-    //     bridge,
-    //     claims,
-    //     claimsHelper,
-    //     owner,
-    //     chain1,
-    //     chain2,
-    //     validators,
-    //     signedBatchDefund,
-    //     signedBatchDefundRetry,
-    //     validatorsCardanoData,
-    //     validatorClaimsBRC,
-    //     validatorClaimsBEFC,
-    //     validatorClaimsBEFCDefundRetry,
-    //   } = await loadFixture(deployBridgeFixture);
+    it("Should reject defund after maximum number of retries", async function () {
+      const {
+        admin,
+        bridge,
+        claims,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        signedBatch,
+        validatorsCardanoData,
+        validatorClaimsBEFC,
+      } = await loadFixture(deployBridgeFixture);
 
-    //   await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-    //   await bridge.connect(owner).registerChain(chain2, 200, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 200, validatorsCardanoData);
 
-    //   await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-    //   await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-    //   await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-    //   await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
+      await admin.setFundAdmin(validators[0].address);
 
-    //   expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(1);
+      await admin.connect(validators[0]).defund(chain2.id, "address", 1);
 
-    //   await admin.setFundAdmin(validators[0].address);
+      const retryCounter = await claims.MAX_NUMBER_OF_DEFUND_RETRIES();
 
-    //   await admin.connect(validators[0]).defund(chain2.id, "address", 1);
+      for (let i = 0; i <= retryCounter; i++) {
+        expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(i + 1);
+        expect((await claims.confirmedTransactions(chain2.id, i + 1)).retryCounter).to.equal(i);
 
-    //   expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(2);
+        // wait for next timeout
+        for (let i = 0; i < 3; i++) {
+          await ethers.provider.send("evm_mine");
+        }
 
-    //   // wait for next timeout
-    //   for (let i = 0; i < 3; i++) {
-    //     await ethers.provider.send("evm_mine");
-    //   }
+        signedBatch.firstTxNonceId = i + 1;
+        signedBatch.lastTxNonceId = i + 1;
+        signedBatch.id = i + 1;
 
-    //   await bridge.connect(validators[0]).submitSignedBatch(signedBatchDefund);
-    //   await bridge.connect(validators[1]).submitSignedBatch(signedBatchDefund);
-    //   await bridge.connect(validators[2]).submitSignedBatch(signedBatchDefund);
-    //   await bridge.connect(validators[3]).submitSignedBatch(signedBatchDefund);
+        await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+        await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+        await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+        await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+        await bridge.connect(validators[4]).submitSignedBatch(signedBatch);
 
-    //   await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
-    //   await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
-    //   await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
-    //   await bridge.connect(validators[4]).submitClaims(validatorClaimsBEFC);
+        validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId = i + 1;
 
-    //   // wait for next timeout
-    //   for (let i = 0; i < 5; i++) {
-    //     await ethers.provider.send("evm_mine");
-    //   }
+        await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+        await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+        await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
 
-    //   await bridge.connect(validators[0]).submitSignedBatch(signedBatchDefundRetry);
-    //   await bridge.connect(validators[1]).submitSignedBatch(signedBatchDefundRetry);
-    //   await bridge.connect(validators[2]).submitSignedBatch(signedBatchDefundRetry);
-    //   await bridge.connect(validators[3]).submitSignedBatch(signedBatchDefundRetry);
+        if (i == Number(retryCounter)) {
+          await expect(await bridge.connect(validators[4]).submitClaims(validatorClaimsBEFC)).to.emit(
+            claims,
+            "DefundFailedAfterMultipleRetries"
+          );
+        } else {
+          await bridge.connect(validators[4]).submitClaims(validatorClaimsBEFC);
 
-    //   const confBatch = await claimsHelper
-    //     .connect(validators[0])
-    //     .getConfirmedSignedBatchData(signedBatchDefundRetry.destinationChainId, signedBatchDefundRetry.id);
+          expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(i + 2);
 
-    //   expect(confBatch.firstTxNonceId).to.equal(signedBatchDefundRetry.firstTxNonceId);
-    //   expect(confBatch.lastTxNonceId).to.equal(signedBatchDefundRetry.lastTxNonceId);
+          expect((await claims.confirmedTransactions(chain2.id, i + 2)).retryCounter).to.equal(i + 1);
+        }
+      }
 
-    //   await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFCDefundRetry);
-    //   await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFCDefundRetry);
-    //   await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFCDefundRetry);
+      // //reseting signedBatch
+      signedBatch.firstTxNonceId = 1;
+      signedBatch.lastTxNonceId = 1;
+      signedBatch.id = 1;
 
-    //   await expect(await bridge.connect(validators[4]).submitClaims(validatorClaimsBEFCDefundRetry)).to.emit(
-    //     claims,
-    //     "DefundFailedAfterMultipleRetries"
-    //   );
-    // });
+      //reseting validatorClaimsBEFC
+      validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId = 1;
+    });
+  });
+  describe("Update bridge configurationy", function () {
+    it("Calling updateMaxNumberOfTransactions should revert if not called by owner", async function () {
+      const { admin, validators } = await loadFixture(deployBridgeFixture);
+
+      await expect(admin.connect(validators[0]).updateMaxNumberOfTransactions(1)).to.be.revertedWith(
+        "Ownable: caller is not the owner"
+      );
+    });
+    it("Calling updateMaxNumberOfTransactions should update maxNumberOfTransactions", async function () {
+      const { admin, claims, owner } = await loadFixture(deployBridgeFixture);
+
+      await admin.connect(owner).updateMaxNumberOfTransactions(4);
+
+      expect(await claims.maxNumberOfTransactions()).to.equal(4);
+    });
+    it("Calling updateMaxNumberOfTransactions should triger UpdatedMaxNumberOfTransactions event", async function () {
+      const { admin, owner } = await loadFixture(deployBridgeFixture);
+
+      await expect(admin.connect(owner).updateMaxNumberOfTransactions(4)).to.emit(
+        admin,
+        "UpdatedMaxNumberOfTransactions"
+      );
+    });
+    it("Calling timeoutBlocksNumber should revert if not called by owner", async function () {
+      const { admin, validators } = await loadFixture(deployBridgeFixture);
+
+      await expect(admin.connect(validators[0]).updateTimeoutBlocksNumber(1)).to.be.revertedWith(
+        "Ownable: caller is not the owner"
+      );
+    });
+    it("Calling timeoutBlocksNumber should update timeoutBlocksNumber", async function () {
+      const { admin, claims, owner } = await loadFixture(deployBridgeFixture);
+
+      await admin.connect(owner).updateTimeoutBlocksNumber(4);
+
+      expect(await claims.timeoutBlocksNumber()).to.equal(4);
+    });
+    it("Calling timeoutBlocksNumber should triger UpdatgedTimeoutBlocksNumber event", async function () {
+      const { admin, owner } = await loadFixture(deployBridgeFixture);
+
+      await expect(admin.connect(owner).updateTimeoutBlocksNumber(4)).to.emit(admin, "UpdatedTimeoutBlocksNumber");
+    });
   });
 });

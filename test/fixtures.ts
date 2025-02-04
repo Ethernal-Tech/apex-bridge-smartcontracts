@@ -1,4 +1,4 @@
-import { ethers } from "hardhat";
+import { ethers, artifacts } from "hardhat";
 import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin } from "../typechain-types";
 
 export async function deployBridgeFixture() {
@@ -40,27 +40,27 @@ export async function deployBridgeFixture() {
 
   const bridgeProxy = await BridgeProxy.deploy(
     await bridgeLogic.getAddress(),
-    Bridge.interface.encodeFunctionData("initialize", [owner.address])
+    Bridge.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
   const claimsHelperProxy = await ClaimsHelperProxy.deploy(
     await claimsHelperLogic.getAddress(),
-    ClaimsHelper.interface.encodeFunctionData("initialize", [owner.address])
+    ClaimsHelper.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
   const claimsProxy = await ClaimsProxy.deploy(
     await claimsLogic.getAddress(),
-    Claims.interface.encodeFunctionData("initialize", [owner.address, 2, 5])
+    Claims.interface.encodeFunctionData("initialize", [owner.address, owner.address, 2, 5])
   );
 
   const signedBatchesProxy = await SignedBatchesProxy.deploy(
     await signedBatchesLogic.getAddress(),
-    SignedBatches.interface.encodeFunctionData("initialize", [owner.address])
+    SignedBatches.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
   const slotsProxy = await SlotsProxy.deploy(
     await slotsLogic.getAddress(),
-    Slots.interface.encodeFunctionData("initialize", [owner.address])
+    Slots.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
   const validatorsAddresses = [
@@ -73,12 +73,12 @@ export async function deployBridgeFixture() {
 
   const validatorsProxy = await ValidatorscProxy.deploy(
     await validatorscLogic.getAddress(),
-    Validators.interface.encodeFunctionData("initialize", [owner.address, validatorsAddresses])
+    Validators.interface.encodeFunctionData("initialize", [owner.address, owner.address, validatorsAddresses])
   );
 
   const adminProxy = await AdminProxy.deploy(
     await adminLogic.getAddress(),
-    Admin.interface.encodeFunctionData("initialize", [owner.address])
+    Admin.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
   //casting proxy contracts to contract logic
@@ -133,7 +133,7 @@ export async function deployBridgeFixture() {
     id: 2,
     addressMultisig: "addr_test1vr8zy7jk35n9yyw4jg0r4z98eygmrqxvz5sch4dva9c8s2qjv2edc",
     addressFeePayer: "addr_test1vz8g63va7qat4ajyja4sndp06rv3penf3htqcwt6x4znyacfpea75",
-    chainType: 0,
+    chainType: 1, // nexus chain
   };
 
   const validatorClaimsBRC = {
@@ -316,7 +316,6 @@ export async function deployBridgeFixture() {
       {
         chainId: 1,
         amount: 100,
-        isIncrement: true,
       },
     ],
   };
@@ -339,16 +338,6 @@ export async function deployBridgeFixture() {
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     firstTxNonceId: 1,
     lastTxNonceId: 2,
-  };
-
-  const signedBatchDefundRetry = {
-    id: 2,
-    destinationChainId: 2,
-    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
-    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
-    firstTxNonceId: 3,
-    lastTxNonceId: 3,
   };
 
   const cardanoBlocks = [
@@ -393,7 +382,6 @@ export async function deployBridgeFixture() {
     validatorClaimsBRC,
     validatorClaimsBEC,
     validatorClaimsBEFC,
-    validatorClaimsBEFCDefundRetry,
     validatorClaimsRRC,
     validatorClaimsHWIC,
     validatorClaimsBRCerror,
@@ -403,7 +391,6 @@ export async function deployBridgeFixture() {
     validatorClaimsBRC_ConfirmedTransactions,
     signedBatch,
     signedBatchDefund,
-    signedBatchDefundRetry,
     validatorsCardanoData,
     validators,
     cardanoBlocks,

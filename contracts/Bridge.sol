@@ -2,8 +2,8 @@
 pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridge.sol";
 import "./Claims.sol";
@@ -12,6 +12,8 @@ import "./Slots.sol";
 import "./Validators.sol";
 
 contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+    address private upgradeAdmin;
+
     Claims private claims;
     SignedBatches private signedBatches;
     Slots private slots;
@@ -24,12 +26,12 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         _disableInitializers();
     }
 
-    function initialize(address _owner) public initializer {
-        __Ownable_init(_owner);
-        __UUPSUpgradeable_init();
+    function initialize(address _owner, address _upgradeAdmin) public initializer {
+        _transferOwnership(_owner);
+        upgradeAdmin = _upgradeAdmin;
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
 
     function setDependencies(
         address _claimsAddress,
@@ -117,20 +119,24 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     function registerChain(
         Chain calldata _chain,
         uint256 _tokenQuantity,
-        ValidatorAddressChainData[] calldata _chainDatas
+        ValidatorAddressChainData[] calldata _chainData
     ) public override onlyOwner {
         uint8 _chainId = _chain.id;
-        validators.setValidatorsChainData(_chainId, _chainDatas);
-        chains.push(_chain);
-        claims.setChainRegistered(_chainId, _tokenQuantity);
-        emit newChainRegistered(_chainId);
+        validators.setValidatorsChainData(_chainId, _chainData);
+        if (!claims.isChainRegistered(_chainId)) {
+            chains.push(_chain);
+            claims.setChainRegistered(_chainId, _tokenQuantity);
+            emit newChainRegistered(_chainId);
+        }
     }
 
     function registerChainGovernance(
         uint8 _chainId,
         uint8 _chainType,
         uint256 _tokenQuantity,
-        ValidatorChainData calldata _validatorChainData
+        ValidatorChainData calldata _validatorChainData,
+        bytes calldata _keySignature,
+        bytes calldata _keyFeeSignature
     ) external override onlyValidator {
         if (claims.isChainRegistered(_chainId)) {
             revert ChainAlreadyRegistered(_chainId);
@@ -142,9 +148,23 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
             revert AlreadyProposed(_chainId);
         }
 
-        // TODO:
-        // if _chain.chainType == 1 verify signatures for both verifyingKey and verifyingFeeKey
-        // if _chain.chainType == 2 verify signatures for BLS specified in verifyingKey
+        bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", msg.sender));
+
+        if (_chainType == 0) {
+            bytes memory messageHashBytes = _bytes32ToBytesAssembly(messageHashBytes32);
+            if (
+                !validators.isSignatureValid(messageHashBytes, _keySignature, _validatorChainData.key[0], false) ||
+                !validators.isSignatureValid(messageHashBytes, _keyFeeSignature, _validatorChainData.key[1], false)
+            ) {
+                revert InvalidSignature();
+            }
+        } else if (_chainType == 1) {
+            if (!validators.isBlsSignatureValid(messageHashBytes32, _keySignature, _validatorChainData.key)) {
+                revert InvalidSignature();
+            }
+        } else {
+            revert InvalidData("chainType");
+        }
 
         validators.addValidatorChainData(_chainId, msg.sender, _validatorChainData);
 
@@ -223,6 +243,16 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         return claims.getBatchTransactions(_chainId, _batchId);
     }
 
+    function _bytes32ToBytesAssembly(bytes32 input) internal pure returns (bytes memory) {
+        bytes memory output = new bytes(32);
+
+        assembly {
+            mstore(add(output, 32), input)
+        }
+
+        return output;
+    }
+
     modifier onlyValidator() {
         if (!validators.isValidator(msg.sender)) revert NotValidator();
         _;
@@ -230,6 +260,11 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     modifier onlyClaims() {
         if (msg.sender != address(claims)) revert NotClaims();
+        _;
+    }
+
+    modifier onlyUpgradeAdmin() {
+        if (msg.sender != upgradeAdmin) revert NotOwner();
         _;
     }
 }

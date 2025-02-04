@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
 
 contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+    address private upgradeAdmin;
+
     // slither-disable too-many-digits
     address constant PRECOMPILE = 0x0000000000000000000000000000000000002050;
     uint32 constant PRECOMPILE_GAS = 50000;
@@ -17,8 +19,6 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
 
     // BlockchainId -> ValidatorChainData[]
     mapping(uint8 => ValidatorChainData[]) private chainData;
-    // current validators set bridge addresses
-    address[] private validatorsAddresses;
     // validator address index(+1) in chainData mapping
     mapping(address => uint8) private addressValidatorIndex;
 
@@ -29,17 +29,16 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         _disableInitializers();
     }
 
-    function initialize(address _owner, address[] calldata _validators) public initializer {
-        __Ownable_init(_owner);
-        __UUPSUpgradeable_init();
+    function initialize(address _owner, address _upgradeAdmin, address[] calldata _validators) public initializer {
+        _transferOwnership(_owner);
+        upgradeAdmin = _upgradeAdmin;
         for (uint8 i; i < _validators.length; i++) {
             addressValidatorIndex[_validators[i]] = i + 1;
-            validatorsAddresses.push(_validators[i]);
         }
         validatorsCount = uint8(_validators.length);
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
 
     function setDependencies(address _bridgeAddress) external onlyOwner {
         bridgeAddress = _bridgeAddress;
@@ -110,18 +109,17 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         uint8 _chainId,
         ValidatorAddressChainData[] calldata _chainDatas
     ) external onlyBridge {
-        if (validatorsCount != _chainDatas.length) {
+        uint8 validatorsCnt = validatorsCount;
+        if (validatorsCnt != _chainDatas.length) {
             revert InvalidData("validators count");
         }
 
         // recreate array with n elements
         delete chainData[_chainId];
+        
         for (uint i; i < validatorsCount; i++) {
             chainData[_chainId].push();
-        }
-
-        // set validator chain data for each validator
-        for (uint i; i < validatorsCount; i++) {
+            
             ValidatorAddressChainData calldata dt = _chainDatas[i];
             uint8 indx = addressValidatorIndex[dt.addr];
             if (indx == 0) {
@@ -162,6 +160,11 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
 
     modifier onlyBridge() {
         if (msg.sender != bridgeAddress) revert NotBridge();
+        _;
+    }
+
+    modifier onlyUpgradeAdmin() {
+        if (msg.sender != upgradeAdmin) revert NotOwner();
         _;
     }
 }

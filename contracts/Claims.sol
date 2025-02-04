@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
 import "./Bridge.sol";
@@ -10,6 +10,8 @@ import "./ClaimsHelper.sol";
 import "./Validators.sol";
 
 contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+    address private upgradeAdmin;
+
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
     Validators private validators;
@@ -48,16 +50,17 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function initialize(
         address _owner,
+        address _upgradeAdmin,
         uint16 _maxNumberOfTransactions,
         uint8 _timeoutBlocksNumber
     ) public initializer {
-        __Ownable_init(_owner);
-        __UUPSUpgradeable_init();
+        _transferOwnership(_owner);
+        upgradeAdmin = _upgradeAdmin;
         maxNumberOfTransactions = _maxNumberOfTransactions;
         timeoutBlocksNumber = _timeoutBlocksNumber;
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
 
     function setDependencies(
         address _bridgeAddress,
@@ -209,19 +212,22 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             uint64 _lastTxNouce = _confirmedSignedBatch.lastTxNonceId;
 
             for (uint64 i = _firstTxNonce; i <= _lastTxNouce; i++) {
-                if (confirmedTransactions[chainId][i].transactionType == 0) {
-                    chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
-                } else if (confirmedTransactions[chainId][i].transactionType == 1) {
-                    if (confirmedTransactions[chainId][i].retryCounter < MAX_NUMBER_OF_DEFUND_RETRIES) {
+                ConfirmedTransaction storage _ctx = confirmedTransactions[chainId][i];
+                uint8 _txType = _ctx.transactionType;
+                if (_txType == 0) {
+                    chainTokenQuantity[chainId] += _ctx.totalAmount;
+                } else {
+                    if (_ctx.retryCounter < MAX_NUMBER_OF_DEFUND_RETRIES) {
                         uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
-                        confirmedTransactions[chainId][nextNonce] = confirmedTransactions[chainId][i];
+                        confirmedTransactions[chainId][nextNonce] = _ctx;
                         confirmedTransactions[chainId][nextNonce].nonce = nextNonce;
                         confirmedTransactions[chainId][nextNonce].retryCounter++;
                     } else {
-                        chainTokenQuantity[chainId] += confirmedTransactions[chainId][i].totalAmount;
+                        chainTokenQuantity[chainId] += _ctx.totalAmount;
                         emit DefundFailedAfterMultipleRetries();
                     }
                 }
+                // refund will be implemented through new if case
             }
 
             lastBatchedTxNonce[chainId] = _lastTxNouce;
@@ -265,15 +271,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
-            uint8 chainId = _claim.chainId;
-            uint256 changeAmount = _claim.amount;
-            if (_claim.isIncrement) {
-                chainTokenQuantity[chainId] += changeAmount;
-            } else if (chainTokenQuantity[chainId] >= changeAmount) {
-                chainTokenQuantity[chainId] -= changeAmount;
-            } else {
-                emit InsufficientFunds(chainId, changeAmount);
-            }
+            chainTokenQuantity[_claim.chainId] += _claim.amount;
         }
     }
 
@@ -340,21 +338,21 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function getBatchingTxsCount(uint8 _chainId) public view returns (uint64 counterConfirmedTransactions) {
         uint64 lastConfirmedTxNonceForChain = lastConfirmedTxNonce[_chainId];
         uint64 lastBatchedTxNonceForChain = lastBatchedTxNonce[_chainId];
+        uint256 timeoutBlock = nextTimeoutBlock[_chainId];
+        uint64 maxTxsCount = maxNumberOfTransactions;
 
-        uint256 txsToProcess = ((lastConfirmedTxNonceForChain - lastBatchedTxNonceForChain) >= maxNumberOfTransactions)
-            ? maxNumberOfTransactions
-            : (lastConfirmedTxNonceForChain - lastBatchedTxNonceForChain);
+        uint64 txsToProcess = lastConfirmedTxNonceForChain - lastBatchedTxNonceForChain >= maxTxsCount
+            ? maxTxsCount
+            : lastConfirmedTxNonceForChain - lastBatchedTxNonceForChain;
 
-        counterConfirmedTransactions = 0;
+        uint64 txIndx = lastBatchedTxNonceForChain + 1;
 
         while (counterConfirmedTransactions < txsToProcess) {
-            uint256 blockHeight = confirmedTransactions[_chainId][
-                lastBatchedTxNonceForChain + counterConfirmedTransactions + 1
-            ].blockHeight;
-            if (blockHeight >= nextTimeoutBlock[_chainId]) {
+            if (confirmedTransactions[_chainId][txIndx].blockHeight >= timeoutBlock) {
                 break;
             }
             counterConfirmedTransactions++;
+            txIndx++;
         }
     }
 
@@ -378,6 +376,16 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function defund(uint8 _chainId, uint256 _amount, string calldata _defundAddress) external onlyAdminContract {
+        if (!isChainRegistered[_chainId]) {
+            revert ChainIsNotRegistered(_chainId);
+        }
+
+        uint256 _currentAmount = chainTokenQuantity[_chainId];
+
+        if (_currentAmount < _amount) {
+            revert DefundRequestTooHigh(_chainId, _currentAmount, _amount);
+        }
+
         BridgingRequestClaim memory _brc = BridgingRequestClaim({
             observedTransactionHash: defundHash,
             receivers: new Receiver[](1),
@@ -390,7 +398,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         _brc.receivers[0].amount = _amount;
         _brc.receivers[0].destinationAddress = _defundAddress;
 
-        chainTokenQuantity[_chainId] -= _amount;
+        chainTokenQuantity[_chainId] = _currentAmount - _amount;
 
         uint256 _confirmedTxCount = getBatchingTxsCount(_chainId);
 
@@ -410,16 +418,25 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function getChainTokenQuantity(uint8 _chainId) external view returns (uint256) {
-        return chainTokenQuantity[_chainId];
-    }
-
     function updateChainTokenQuantity(
         uint8 _chainId,
         bool _isIncrease,
         uint256 _tokenAmount
     ) external onlyAdminContract {
-        _isIncrease ? chainTokenQuantity[_chainId] += _tokenAmount : chainTokenQuantity[_chainId] -= _tokenAmount;
+        if (!isChainRegistered[_chainId]) {
+            revert ChainIsNotRegistered(_chainId);
+        }
+
+        uint256 _currentAmount = chainTokenQuantity[_chainId];
+        if (_isIncrease) {
+            chainTokenQuantity[_chainId] = _currentAmount + _tokenAmount;
+        } else {
+            if (_currentAmount < _tokenAmount) {
+                revert NegativeChainTokenAmount(_currentAmount, _tokenAmount);
+            }
+
+            chainTokenQuantity[_chainId] = _currentAmount - _tokenAmount;
+        }
     }
 
     function getBatchTransactions(uint8 _chainId, uint64 _batchId) external view returns (TxDataInfo[] memory) {
@@ -432,13 +449,19 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         TxDataInfo[] memory _txHashes = new TxDataInfo[](_lastTxNonce - _firstTxNonce + 1);
         for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
-            _txHashes[i - _firstTxNonce] = TxDataInfo(
-                confirmedTransactions[_chainId][i].sourceChainId,
-                confirmedTransactions[_chainId][i].observedTransactionHash
-            );
+            ConfirmedTransaction storage ctx = confirmedTransactions[_chainId][i];
+            _txHashes[i - _firstTxNonce] = TxDataInfo(ctx.sourceChainId, ctx.observedTransactionHash);
         }
 
         return _txHashes;
+    }
+
+    function updateMaxNumberOfTransactions(uint16 _maxNumberOfTransactions) external onlyAdminContract {
+        maxNumberOfTransactions = _maxNumberOfTransactions;
+    }
+
+    function updateTimeoutBlocksNumber(uint8 _timeoutBlocksNumber) external onlyAdminContract {
+        timeoutBlocksNumber = _timeoutBlocksNumber;
     }
 
     modifier onlyBridge() {
@@ -448,6 +471,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     modifier onlyAdminContract() {
         if (msg.sender != adminContractAddress) revert NotAdminContract();
+        _;
+    }
+
+    modifier onlyUpgradeAdmin() {
+        if (msg.sender != upgradeAdmin) revert NotOwner();
         _;
     }
 }
