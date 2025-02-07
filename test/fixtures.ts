@@ -365,8 +365,6 @@ export async function deployBridgeFixture() {
         chainId: 1,
         amount: 100,
         amountWrapped: 100,
-        isIncrement: true,
-        isIncrementWrapped: true,
       },
     ],
   };

@@ -425,8 +425,8 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      const tokenAmountDestination = await claims.getChainTokenQuantity(signedBatch.destinationChainId);
-      const tokenWrappedAmountDestination = await claims.getChainWrappedTokenQuantity(signedBatch.destinationChainId);
+      const tokenAmountDestination = await claims.chainTokenQuantity(signedBatch.destinationChainId);
+      const tokenWrappedAmountDestination = await claims.chainWrappedTokenQuantity(signedBatch.destinationChainId);
 
       let sumAmount = 0;
       let sumWrappedAmount = 0;

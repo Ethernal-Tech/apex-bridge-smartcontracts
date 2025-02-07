@@ -69,7 +69,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         bytes32 _hash,
         uint256 _quorumCnt
     ) external onlySignedBatchesOrClaims returns (bool) {
-        if (hasVoted[_hash][_voter] || numberOfVotes[_hash] >= _quorumCnt) {
+        if (isVoteRestricted(_voter, _hash, _quorumCnt)) {
             return false;
         }
 
@@ -77,7 +77,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         return ++numberOfVotes[_hash] >= _quorumCnt;
     }
 
-    function isVoteRestricted(address _voter, bytes32 _hash, uint256 _quorumCnt) external view returns (bool) {
+    function isVoteRestricted(address _voter, bytes32 _hash, uint256 _quorumCnt) public view returns (bool) {
         return hasVoted[_hash][_voter] || numberOfVotes[_hash] >= _quorumCnt;
     }
 

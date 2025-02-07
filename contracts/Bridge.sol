@@ -154,7 +154,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
         if (_chainType != 0) revert InvalidData("chainType");
 
-        bytes memory messageHashBytes = bytes32ToBytesAssembly(messageHashBytes32);
+        bytes memory messageHashBytes = _bytes32ToBytesAssembly(messageHashBytes32);
         if (
             !validators.isSignatureValid(messageHashBytes, _keySignature, _validatorChainData.key[0], false) ||
             !validators.isSignatureValid(messageHashBytes, _keyFeeSignature, _validatorChainData.key[1], false)
@@ -239,7 +239,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         return claims.getBatchTransactions(_chainId, _batchId);
     }
 
-    function bytes32ToBytesAssembly(bytes32 input) public pure returns (bytes memory) {
+    function _bytes32ToBytesAssembly(bytes32 input) internal pure returns (bytes memory) {
         bytes memory output = new bytes(32);
 
         assembly {
