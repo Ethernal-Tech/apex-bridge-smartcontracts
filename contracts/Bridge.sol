@@ -136,7 +136,9 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint8 _chainType,
         uint256 _tokenQuantity,
         uint256 _wrappedTokenQuantity,
-        ValidatorChainData calldata _validatorChainData
+        ValidatorChainData calldata _validatorChainData,
+        bytes calldata _keySignature,
+        bytes calldata _keyFeeSignature
     ) external override onlyValidator {
         if (claims.isChainRegistered(_chainId)) {
             revert ChainAlreadyRegistered(_chainId);
@@ -148,9 +150,17 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
             revert AlreadyProposed(_chainId);
         }
 
-        // TODO:
-        // if _chain.chainType == 1 verify signatures for both verifyingKey and verifyingFeeKey
-        // if _chain.chainType == 2 verify signatures for BLS specified in verifyingKey
+        bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", msg.sender));
+
+        if (_chainType != 0) revert InvalidData("chainType");
+
+        bytes memory messageHashBytes = bytes32ToBytesAssembly(messageHashBytes32);
+        if (
+            !validators.isSignatureValid(messageHashBytes, _keySignature, _validatorChainData.key[0], false) ||
+            !validators.isSignatureValid(messageHashBytes, _keyFeeSignature, _validatorChainData.key[1], false)
+        ) {
+            revert InvalidSignature();
+        }
 
         validators.addValidatorChainData(_chainId, msg.sender, _validatorChainData);
 
@@ -227,6 +237,16 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint64 _batchId
     ) external view override returns (TxDataInfo[] memory) {
         return claims.getBatchTransactions(_chainId, _batchId);
+    }
+
+    function bytes32ToBytesAssembly(bytes32 input) public pure returns (bytes memory) {
+        bytes memory output = new bytes(32);
+
+        assembly {
+            mstore(add(output, 32), input)
+        }
+
+        return output;
     }
 
     modifier onlyValidator() {
