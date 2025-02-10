@@ -116,10 +116,10 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
 
         // recreate array with n elements
         delete chainData[_chainId];
-        
-        for (uint i; i < validatorsCount; i++) {
+
+        for (uint i; i < validatorsCnt; i++) {
             chainData[_chainId].push();
-            
+
             ValidatorAddressChainData calldata dt = _chainDatas[i];
             uint8 indx = addressValidatorIndex[dt.addr];
             if (indx == 0) {
