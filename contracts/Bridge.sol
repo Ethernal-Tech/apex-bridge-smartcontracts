@@ -152,14 +152,20 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
         bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", msg.sender));
 
-        if (_chainType != 0) revert InvalidData("chainType");
-
-        bytes memory messageHashBytes = _bytes32ToBytesAssembly(messageHashBytes32);
-        if (
-            !validators.isSignatureValid(messageHashBytes, _keySignature, _validatorChainData.key[0], false) ||
-            !validators.isSignatureValid(messageHashBytes, _keyFeeSignature, _validatorChainData.key[1], false)
-        ) {
-            revert InvalidSignature();
+        if (_chainType == 0) {
+            bytes memory messageHashBytes = _bytes32ToBytesAssembly(messageHashBytes32);
+            if (
+                !validators.isSignatureValid(messageHashBytes, _keySignature, _validatorChainData.key[0], false) ||
+                !validators.isSignatureValid(messageHashBytes, _keyFeeSignature, _validatorChainData.key[1], false)
+            ) {
+                revert InvalidSignature();
+            }
+        } else if (_chainType == 1) {
+            if (!validators.isBlsSignatureValid(messageHashBytes32, _keySignature, _validatorChainData.key)) {
+                revert InvalidSignature();
+            }
+        } else {
+            revert InvalidData("chainType");
         }
 
         validators.addValidatorChainData(_chainId, msg.sender, _validatorChainData);
