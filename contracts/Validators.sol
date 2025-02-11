@@ -19,8 +19,6 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
 
     // BlockchainId -> ValidatorChainData[]
     mapping(uint8 => ValidatorChainData[]) private chainData;
-    // current validators set bridge addresses
-    address[] private validatorsAddresses;
     // validator address index(+1) in chainData mapping
     mapping(address => uint8) private addressValidatorIndex;
 
@@ -36,7 +34,6 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         upgradeAdmin = _upgradeAdmin;
         for (uint8 i; i < _validators.length; i++) {
             addressValidatorIndex[_validators[i]] = i + 1;
-            validatorsAddresses.push(_validators[i]);
         }
         validatorsCount = uint8(_validators.length);
     }
@@ -112,18 +109,17 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         uint8 _chainId,
         ValidatorAddressChainData[] calldata _chainDatas
     ) external onlyBridge {
-        if (validatorsCount != _chainDatas.length) {
+        uint8 validatorsCnt = validatorsCount;
+        if (validatorsCnt != _chainDatas.length) {
             revert InvalidData("validators count");
         }
 
         // recreate array with n elements
         delete chainData[_chainId];
+
         for (uint i; i < validatorsCount; i++) {
             chainData[_chainId].push();
-        }
 
-        // set validator chain data for each validator
-        for (uint i; i < validatorsCount; i++) {
             ValidatorAddressChainData calldata dt = _chainDatas[i];
             uint8 indx = addressValidatorIndex[dt.addr];
             if (indx == 0) {

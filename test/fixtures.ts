@@ -1,4 +1,4 @@
-import { ethers } from "hardhat";
+import { ethers, artifacts } from "hardhat";
 import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin } from "../typechain-types";
 
 export async function deployBridgeFixture() {
@@ -365,8 +365,6 @@ export async function deployBridgeFixture() {
         chainId: 1,
         amount: 100,
         amountWrapped: 100,
-        isIncrement: true,
-        isIncrementWrapped: true,
       },
     ],
   };

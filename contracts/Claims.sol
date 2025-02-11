@@ -238,7 +238,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 if (_txType == 0) {
                     chainTokenQuantity[chainId] += _ctx.totalAmount;
                     chainWrappedTokenQuantity[chainId] += _ctx.totalWrappedAmount;
-                } else if (_txType == 1) {
+                } else {
                     if (_ctx.retryCounter < MAX_NUMBER_OF_DEFUND_RETRIES) {
                         uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
                         confirmedTransactions[chainId][nextNonce] = _ctx;
@@ -249,9 +249,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                         chainWrappedTokenQuantity[chainId] += _ctx.totalWrappedAmount;
                         emit DefundFailedAfterMultipleRetries();
                     }
-                } else {
-                    //REFUND TO DO
                 }
+                // refund will be implemented through new if case
             }
 
             lastBatchedTxNonce[chainId] = _lastTxNouce;
@@ -279,25 +278,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
-            uint8 chainId = _claim.chainId;
-            uint256 changeAmount = _claim.amount;
-            uint256 changeWrappedAmount = _claim.amountWrapped;
-
-            if (_claim.isIncrement) {
-                chainTokenQuantity[chainId] += changeAmount;
-            } else if (chainTokenQuantity[chainId] >= changeAmount) {
-                chainTokenQuantity[chainId] -= changeAmount;
-            } else {
-                emit InsufficientFunds(chainId, changeAmount);
-            }
-
-            if (_claim.isIncrementWrapped) {
-                chainWrappedTokenQuantity[chainId] += changeWrappedAmount;
-            } else if (chainWrappedTokenQuantity[chainId] >= changeWrappedAmount) {
-                chainWrappedTokenQuantity[chainId] -= changeWrappedAmount;
-            } else {
-                emit InsufficientFunds(chainId, changeWrappedAmount);
-            }
+            chainTokenQuantity[_claim.chainId] += _claim.amount;
+            chainWrappedTokenQuantity[_claim.chainId] += _claim.amountWrapped;
         }
     }
 
@@ -394,6 +376,21 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint256 _amountWrapped,
         string calldata _defundAddress
     ) external onlyAdminContract {
+        if (!isChainRegistered[_chainId]) {
+            revert ChainIsNotRegistered(_chainId);
+        }
+
+        uint256 _currentAmount = chainTokenQuantity[_chainId];
+        uint256 _currentWrappedAmount = chainWrappedTokenQuantity[_chainId];
+
+        if (_currentAmount < _amount) {
+            revert DefundRequestTooHigh(_chainId, _currentAmount, _amount);
+        }
+
+        if (_currentWrappedAmount < _amountWrapped) {
+            revert DefundRequestTooHigh(_chainId, _currentWrappedAmount, _amountWrapped);
+        }
+
         BridgingRequestClaim memory _brc = BridgingRequestClaim({
             observedTransactionHash: defundHash,
             receivers: new Receiver[](1),
@@ -410,8 +407,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         _brc.receivers[0].amountWrapped = _amountWrapped;
         _brc.receivers[0].destinationAddress = _defundAddress;
 
-        chainTokenQuantity[_chainId] -= _amount;
-        chainWrappedTokenQuantity[_chainId] -= _amountWrapped;
+        chainTokenQuantity[_chainId] = _currentAmount - _amount;
+        chainWrappedTokenQuantity[_chainId] = _currentWrappedAmount - _amountWrapped;
 
         uint256 _confirmedTxCount = getBatchingTxsCount(_chainId);
 
@@ -431,22 +428,24 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function getChainTokenQuantity(uint8 _chainId) external view returns (uint256) {
-        return chainTokenQuantity[_chainId];
-    }
-
-    function getChainWrappedTokenQuantity(uint8 _chainId) external view returns (uint256) {
-        return chainWrappedTokenQuantity[_chainId];
-    }
-
     function updateChainTokenQuantity(
         uint8 _chainId,
         bool _isIncrease,
         uint256 _chainTokenAmount
     ) external onlyAdminContract {
-        chainTokenQuantity[_chainId] = _isIncrease
-            ? chainTokenQuantity[_chainId] + _chainTokenAmount
-            : chainTokenQuantity[_chainId] - _chainTokenAmount;
+        if (!isChainRegistered[_chainId]) {
+            revert ChainIsNotRegistered(_chainId);
+        }
+
+        uint256 _currentAmount = chainTokenQuantity[_chainId];
+        if (_isIncrease) {
+            chainTokenQuantity[_chainId] = _currentAmount + _chainTokenAmount;
+        } else {
+            if (_currentAmount < _chainTokenAmount) {
+                revert NegativeChainTokenAmount(_currentAmount, _chainTokenAmount);
+            }
+            chainTokenQuantity[_chainId] = _currentAmount - _chainTokenAmount;
+        }
     }
 
     function updateChainWrappedTokenQuantity(
@@ -454,9 +453,19 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         bool _isIncrease,
         uint256 _chainWrappedTokenAmount
     ) external onlyAdminContract {
-        chainWrappedTokenQuantity[_chainId] = _isIncrease
-            ? chainWrappedTokenQuantity[_chainId] + _chainWrappedTokenAmount
-            : chainWrappedTokenQuantity[_chainId] - _chainWrappedTokenAmount;
+        if (!isChainRegistered[_chainId]) {
+            revert ChainIsNotRegistered(_chainId);
+        }
+
+        uint256 _currentWrappedAmount = chainWrappedTokenQuantity[_chainId];
+        if (_isIncrease) {
+            chainWrappedTokenQuantity[_chainId] = _currentWrappedAmount + _chainWrappedTokenAmount;
+        } else {
+            if (_currentWrappedAmount < _chainWrappedTokenAmount) {
+                revert NegativeChainTokenAmount(_currentWrappedAmount, _chainWrappedTokenAmount);
+            }
+            chainWrappedTokenQuantity[_chainId] = _currentWrappedAmount - _chainWrappedTokenAmount;
+        }
     }
 
     function getBatchTransactions(uint8 _chainId, uint64 _batchId) external view returns (TxDataInfo[] memory) {
