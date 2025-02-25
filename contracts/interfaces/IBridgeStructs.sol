@@ -25,6 +25,22 @@ interface IBridgeStructs {
         uint64 id;
     }
 
+    struct SignedConsolidation {
+        uint64 id;
+        uint8 destinationChainId;
+        bytes signature;
+        bytes feeSignature;
+        bytes rawTransaction;
+    }
+
+    struct ConfirmedConsolidation {
+        bytes[] signatures;
+        bytes[] feeSignatures;
+        uint256 bitmap;
+        bytes rawTransaction;
+        uint64 id;
+    }
+
     struct ConfirmedTransaction {
         uint256 blockHeight;
         uint256 totalAmount;

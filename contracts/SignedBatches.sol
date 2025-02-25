@@ -31,6 +31,9 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
     // BlockchainId -> ConfirmedBatch
     mapping(uint8 => ConfirmedBatch) private lastConfirmedBatch;
 
+    // BlockchainId -> ConfirmedConsolidation
+    mapping(uint8 => ConfirmedConsolidation) private lastConfirmedConsolidation;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -120,6 +123,67 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
 
     function getNumberOfSignatures(bytes32 _hash) external view returns (uint256, uint256) {
         return (signatures[_hash].length, feeSignatures[_hash].length);
+    }
+
+    function submitConsolidation(SignedConsolidation calldata _signedConsolidation, address _caller) external onlyBridge {
+        uint8 _destinationChainId = _signedConsolidation.destinationChainId;
+        uint64 _scId = lastConfirmedConsolidation[_destinationChainId].id + 1;
+
+        if (_signedConsolidation.id != _scId) {
+            return;
+        }
+
+        bytes32 _scHash = keccak256(
+            abi.encodePacked(
+                _signedConsolidation.id,
+                _destinationChainId,
+                _signedConsolidation.rawTransaction
+            )
+        );
+
+        // check if caller already voted for same hash
+        if (hasVoted[_scHash][_caller]) {
+            return;
+        }
+
+        uint256 _quorumCount = validators.getQuorumNumberOfValidators();
+        uint256 _numberOfVotes = signatures[_scHash].length;
+        uint8 validatorIdx = validators.getValidatorIndex(_caller) - 1;
+
+        hasVoted[_scHash][_caller] = true;
+
+        signatures[_scHash].push(_signedConsolidation.signature);
+        feeSignatures[_scHash].push(_signedConsolidation.feeSignature);
+        unchecked {
+            bitmap[_scHash] = bitmap[_scHash] | (1 << validatorIdx);
+        }
+
+        // check if quorum reached (+1 is last vote)
+        if (_numberOfVotes + 1 >= _quorumCount) {
+            lastConfirmedConsolidation[_destinationChainId] = ConfirmedConsolidation(
+                signatures[_scHash],
+                feeSignatures[_scHash],
+                bitmap[_scHash],
+                _signedConsolidation.rawTransaction,
+                _scId
+            );
+
+            delete signatures[_scHash];
+            delete feeSignatures[_scHash];
+            delete bitmap[_scHash];
+        }
+    }
+
+    function getConfirmedConsolidationId(uint8 _destinationChain) external view returns (uint64) {
+        return lastConfirmedConsolidation[_destinationChain].id;
+    }
+
+    function getConfirmedConsolidation(uint8 _destinationChain) external view returns (ConfirmedConsolidation memory _consolidation) {
+        return lastConfirmedConsolidation[_destinationChain];
+    }
+
+    function getConfirmedConsolidationTransaction(uint8 _destinationChain) external view returns (bytes memory) {
+        return lastConfirmedConsolidation[_destinationChain].rawTransaction;
     }
 
     modifier onlyBridge() {

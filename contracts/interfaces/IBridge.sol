@@ -16,6 +16,9 @@ abstract contract IBridge is IBridgeStructs {
     // Slots
     function submitLastObservedBlocks(uint8 chainId, CardanoBlock[] calldata blocks) external virtual;
 
+    // UTXO Consolidation
+    function submitSignedConsolidation(SignedConsolidation calldata _signedConsolidation) external virtual;
+
     // set additional chain data (sc address for nexus)
     function setChainAdditionalData(
         uint8 _chainId,
@@ -48,6 +51,9 @@ abstract contract IBridge is IBridgeStructs {
     // Calls shouldCreateBatch and returns next batch id if batch should be created of 0 if not
     function getNextBatchId(uint8 _destinationChain) external view virtual returns (uint64 _result);
 
+    // returns the next consolidation id
+    function getNextConsolidationId(uint8 _destinationChain) external view virtual returns (uint64 _result);
+
     // Will return confirmed transactions until NEXT_BATCH_TIMEOUT_BLOCK or maximum number of transactions that
     // can be included in the batch, if the maximum number of transactions in a batch has been exceeded
     function getConfirmedTransactions(
@@ -56,6 +62,8 @@ abstract contract IBridge is IBridgeStructs {
 
     function getConfirmedBatch(uint8 _destinationChain) external view virtual returns (ConfirmedBatch memory _batch);
 
+    function getConfirmedConsolidation(uint8 _destinationChain) external view virtual returns (ConfirmedConsolidation memory _consolidation);
+
     function getValidatorsChainData(uint8 _chainId) external view virtual returns (ValidatorChainData[] memory);
 
     function getLastObservedBlock(uint8 _sourceChain) external view virtual returns (CardanoBlock memory _cblock);
@@ -63,6 +71,8 @@ abstract contract IBridge is IBridgeStructs {
     function getAllRegisteredChains() external view virtual returns (Chain[] memory _chains);
 
     function getRawTransactionFromLastBatch(uint8 _destinationChain) external view virtual returns (bytes memory);
+
+    function getRawTransactionFromLastConsolidation(uint8 _destinationChain) external view virtual returns (bytes memory);
 
     function getBatchTransactions(uint8 _chainId, uint64 _batchId) external virtual returns (TxDataInfo[] memory);
 }

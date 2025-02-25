@@ -97,6 +97,27 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         slots.updateBlocks(_chainId, _blocks, msg.sender);
     }
 
+    // UTXO consolidation
+    function submitSignedConsolidation(SignedConsolidation calldata _signedConsolidation) external override onlyValidator {
+        if (!claims.shouldCreateBatch(_signedConsolidation.destinationChainId)) {
+            return;
+        }
+
+        if (
+            !validators.areSignaturesValid(
+                _signedConsolidation.destinationChainId,
+                _signedConsolidation.rawTransaction,
+                _signedConsolidation.signature,
+                _signedConsolidation.feeSignature,
+                msg.sender
+            )
+        ) {
+            revert InvalidSignature();
+        }
+
+        signedBatches.submitConsolidation(_signedConsolidation, msg.sender);
+    }
+
     // Chain registration by Owner
     function setChainAdditionalData(
         uint8 _chainId,
@@ -195,6 +216,12 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         return batchId + 1;
     }
 
+    function getNextConsolidationId(uint8 _destinationChain) external view override returns (uint64 _result) {
+        uint64 consolidationId = signedBatches.getConfirmedConsolidationId(_destinationChain);
+
+        return consolidationId + 1;
+    }
+
     // Will return confirmed transactions until NEXT_BATCH_TIMEOUT_BLOCK or maximum number of transactions that
     // can be included in the batch, if the maximum number of transactions in a batch has been exceeded
     function getConfirmedTransactions(
@@ -220,6 +247,10 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         return signedBatches.getConfirmedBatch(_destinationChain);
     }
 
+    function getConfirmedConsolidation(uint8 _destinationChain) external view override returns (ConfirmedConsolidation memory _consolidation) {
+        return signedBatches.getConfirmedConsolidation(_destinationChain);
+    }
+
     function getValidatorsChainData(uint8 _chainId) external view override returns (ValidatorChainData[] memory) {
         return validators.getValidatorsChainData(_chainId);
     }
@@ -234,6 +265,10 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     function getRawTransactionFromLastBatch(uint8 _destinationChain) external view override returns (bytes memory) {
         return signedBatches.getConfirmedBatchTransaction(_destinationChain);
+    }
+
+    function getRawTransactionFromLastConsolidation(uint8 _destinationChain) external view override returns (bytes memory) {
+        return signedBatches.getConfirmedConsolidationTransaction(_destinationChain);
     }
 
     function getBatchTransactions(
