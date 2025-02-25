@@ -125,7 +125,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         return (signatures[_hash].length, feeSignatures[_hash].length);
     }
 
-    function submitConsolidation(SignedConsolidation calldata _signedConsolidation, address _caller) external onlyBridge {
+    function submitSignedConsolidation(SignedConsolidation calldata _signedConsolidation, address _caller) external onlyBridge {
         uint8 _destinationChainId = _signedConsolidation.destinationChainId;
         uint64 _scId = lastConfirmedConsolidation[_destinationChainId].id + 1;
 

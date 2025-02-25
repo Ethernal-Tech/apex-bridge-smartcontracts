@@ -115,7 +115,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
             revert InvalidSignature();
         }
 
-        signedBatches.submitConsolidation(_signedConsolidation, msg.sender);
+        signedBatches.submitSignedConsolidation(_signedConsolidation, msg.sender);
     }
 
     // Chain registration by Owner
@@ -217,6 +217,10 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     function getNextConsolidationId(uint8 _destinationChain) external view override returns (uint64 _result) {
+        if (!shouldCreateBatch(_destinationChain)) {
+            return 0;
+        }
+        
         uint64 consolidationId = signedBatches.getConfirmedConsolidationId(_destinationChain);
 
         return consolidationId + 1;
