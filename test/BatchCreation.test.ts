@@ -28,31 +28,20 @@ describe("Batch Creation", function () {
 
   describe("Consolidation creation", function() {
     it("SignedConsolidation submition should return imediatelly if chain is not registered", async function () {
-      const { bridge, validators, owner, chain1, chain2, validatorClaimsBRC, validatorsCardanoData } =
+      const { bridge, validators } =
         await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
-
-      // wait for next timeout
-      for (let i = 0; i < 3; i++) {
-        await ethers.provider.send("evm_mine");
-      }
 
       const signedConsolidation_UnregisteredChain = {
         id: 1,
-        destinationChainId: "unregisteredChainId1",
+        destinationChainId: 3,
         rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
         signature: "0x7465737400000000000000000000000000000000000000000000000000000000",
         feeSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
       };
 
-      await expect(bridge.connect(validators[0]).submitSignedConsolidation(signedConsolidation_UnregisteredChain)); // submitSignedConsolidation should return for unregistered chain
+      await expect(
+        bridge.connect(validators[0]).submitSignedConsolidation(signedConsolidation_UnregisteredChain)
+      ).to.revertedWithCustomError(bridge, "ChainIsNotRegistered"); // submitSignedConsolidation should return for unregistered chain
     });
 
     it("SignedConsolidation submition should be reverted if not called by validator", async function () {
@@ -112,96 +101,10 @@ describe("Batch Creation", function () {
 
       expect(await signedBatches.hasVoted(hashFalse, validators[0].address)).to.equal(false);
     });
-
-    it("SignedConsolidation submition should do nothing if shouldCreateBatch is false", async function () {
-      const { bridge, claimsHelper, validators, signedConsolidation } = await loadFixture(deployBridgeFixture);
-
-      const hash = ethers.solidityPackedKeccak256(
-        ["uint64", "uint8", "bytes"],
-        [
-          signedConsolidation.id,
-          signedConsolidation.destinationChainId,
-          signedConsolidation.rawTransaction,
-        ]
-      );
-
-      await bridge.connect(validators[0]).submitSignedConsolidation(signedConsolidation);
-
-      expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.equal(false);
-    });
-
-    it("getNextConsolidationId should return 0 if there are no confirmed claims", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-
-      expect(await bridge.getNextConsolidationId(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(0);
-
-      // wait for next timeout
-      for (let i = 0; i < 10; i++) {
-        await ethers.provider.send("evm_mine");
-      }
-
-      expect(await bridge.getNextConsolidationId(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(0);
-    });
-
-    it("getNextConsolidationId should return correct id if there are enough confirmed claims", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
-
-      const validatorClaimsBRC2 = {
-        ...validatorClaimsBRC,
-        bridgingRequestClaims: [
-          {
-            ...validatorClaimsBRC.bridgingRequestClaims[0],
-            observedTransactionHash: "0x7465737900000000000000000000000000000000000000000000000000000000",
-          },
-        ],
-      };
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC2);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC2);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC2);
-      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC2);
-
-      expect(await bridge.getNextConsolidationId(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(1);
-    });
-
-    it("getNextConsolidationId should return correct id if there is timeout", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
-
-      // wait for timeout
-      await ethers.provider.send("evm_mine");
-      await ethers.provider.send("evm_mine");
-
-      expect(await bridge.getNextConsolidationId(2)).to.equal(1);
-    });
     
     it("SignedConsolidation should be added to signedConsolidations if there are enough votes", async function () {
       const {
         bridge,
-        claimsHelper,
         signedBatches,
         owner,
         chain1,

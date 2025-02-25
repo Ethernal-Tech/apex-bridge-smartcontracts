@@ -99,10 +99,9 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     // UTXO consolidation
     function submitSignedConsolidation(SignedConsolidation calldata _signedConsolidation) external override onlyValidator {
-        if (!claims.shouldCreateBatch(_signedConsolidation.destinationChainId)) {
-            return;
+        if (!claims.isChainRegistered(_signedConsolidation.destinationChainId)) {
+            revert ChainIsNotRegistered(_signedConsolidation.destinationChainId);
         }
-
         if (
             !validators.areSignaturesValid(
                 _signedConsolidation.destinationChainId,
@@ -217,10 +216,6 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     function getNextConsolidationId(uint8 _destinationChain) external view override returns (uint64 _result) {
-        if (!shouldCreateBatch(_destinationChain)) {
-            return 0;
-        }
-        
         uint64 consolidationId = signedBatches.getConfirmedConsolidationId(_destinationChain);
 
         return consolidationId + 1;
