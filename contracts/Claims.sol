@@ -115,8 +115,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint256 refundRequestClaimsLength = _claims.refundRequestClaims.length;
         for (uint i; i < refundRequestClaimsLength; i++) {
             RefundRequestClaim calldata _claim = _claims.refundRequestClaims[i];
-            if (!isChainRegistered[_claim.chainId]) {
-                revert ChainIsNotRegistered(_claim.chainId);
+            if (!isChainRegistered[_claim.originChainId]) {
+                revert ChainIsNotRegistered(_claim.originChainId);
             }
 
             _submitClaimsRRC(_claim, _caller);
@@ -425,7 +425,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         TxDataInfo[] memory _txHashes = new TxDataInfo[](_lastTxNonce - _firstTxNonce + 1);
         for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
             ConfirmedTransaction storage ctx = confirmedTransactions[_chainId][i];
-            _txHashes[i - _firstTxNonce] = TxDataInfo(ctx.sourceChainId, ctx.observedTransactionHash);
+            _txHashes[i - _firstTxNonce] = TxDataInfo(
+                ctx.sourceChainId,
+                ctx.observedTransactionHash,
+                ctx.transactionType
+            );
         }
 
         return _txHashes;
