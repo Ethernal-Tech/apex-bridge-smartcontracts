@@ -330,15 +330,17 @@ describe("Claims Contract", function () {
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
       const encoded = abiCoder.encode(
-        ["bytes32", "bytes32", "bytes", "bytes", "uint64", "uint8", "string"],
+        ["bytes32", "bytes32", "bytes", "bytes", "uint64", "uint8", "string", "uint256", "bool"],
         [
-          validatorClaimsRRC.refundRequestClaims[0].observedTransactionHash,
-          validatorClaimsRRC.refundRequestClaims[0].previousRefundTxHash,
-          validatorClaimsRRC.refundRequestClaims[0].signature,
-          validatorClaimsRRC.refundRequestClaims[0].rawTransaction,
+          validatorClaimsRRC.refundRequestClaims[0].originTransactionHash,
+          validatorClaimsRRC.refundRequestClaims[0].refundTransactionHash,
+          validatorClaimsRRC.refundRequestClaims[0].outputIndexes,
+          validatorClaimsRRC.refundRequestClaims[0].unused,
           validatorClaimsRRC.refundRequestClaims[0].retryCounter,
-          validatorClaimsRRC.refundRequestClaims[0].chainId,
-          validatorClaimsRRC.refundRequestClaims[0].receiver,
+          validatorClaimsRRC.refundRequestClaims[0].originChainId,
+          validatorClaimsRRC.refundRequestClaims[0].originSenderAddress,
+          validatorClaimsRRC.refundRequestClaims[0].originAmount,
+          validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet,
         ]
       );
 
@@ -370,15 +372,17 @@ describe("Claims Contract", function () {
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
       const encoded = abiCoder.encode(
-        ["bytes32", "bytes32", "bytes", "bytes", "uint64", "uint8", "string"],
+        ["bytes32", "bytes32", "bytes", "bytes", "uint64", "uint8", "string", "uint256", "bool"],
         [
-          validatorClaimsRRC.refundRequestClaims[0].observedTransactionHash,
-          validatorClaimsRRC.refundRequestClaims[0].previousRefundTxHash,
-          validatorClaimsRRC.refundRequestClaims[0].signature,
-          validatorClaimsRRC.refundRequestClaims[0].rawTransaction,
+          validatorClaimsRRC.refundRequestClaims[0].originTransactionHash,
+          validatorClaimsRRC.refundRequestClaims[0].refundTransactionHash,
+          validatorClaimsRRC.refundRequestClaims[0].outputIndexes,
+          validatorClaimsRRC.refundRequestClaims[0].unused,
           validatorClaimsRRC.refundRequestClaims[0].retryCounter,
-          validatorClaimsRRC.refundRequestClaims[0].chainId,
-          validatorClaimsRRC.refundRequestClaims[0].receiver,
+          validatorClaimsRRC.refundRequestClaims[0].originChainId,
+          validatorClaimsRRC.refundRequestClaims[0].originSenderAddress,
+          validatorClaimsRRC.refundRequestClaims[0].originAmount,
+          validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet,
         ]
       );
 
@@ -542,6 +546,7 @@ describe("Claims Contract", function () {
         [
           BigInt(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId).toString(),
           validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
+          0,
         ],
       ]);
     });
