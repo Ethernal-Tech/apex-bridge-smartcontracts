@@ -129,19 +129,4 @@ describe("Performance", function () {
       console.log(`Gas spent on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
     }
   });
-
-  it("submitClaims REC", async function () {
-    const { bridge, owner, validators, chain2, validatorClaimsREC, validatorsCardanoData } = await loadFixture(
-      deployBridgeFixture
-    );
-
-    await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
-
-    for (let i = 0; i < validators.length; i++) {
-      // fourth one is quorum
-      const tx = await bridge.connect(validators[i]).submitClaims(validatorClaimsREC);
-      const receipt = await tx.wait();
-      console.log(`Gas spent on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
-    }
-  });
 });
