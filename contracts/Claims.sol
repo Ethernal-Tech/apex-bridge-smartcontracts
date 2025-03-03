@@ -122,16 +122,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             _submitClaimsRRC(_claim, _caller);
         }
 
-        uint256 refundExecutedClaimsLength = _claims.refundExecutedClaims.length;
-        for (uint i; i < refundExecutedClaimsLength; i++) {
-            RefundExecutedClaim calldata _claim = _claims.refundExecutedClaims[i];
-            if (!isChainRegistered[_claim.chainId]) {
-                revert ChainIsNotRegistered(_claim.chainId);
-            }
-
-            _submitClaimsREC(_claim, _caller);
-        }
-
         uint256 hotWalletIncrementClaimsLength = _claims.hotWalletIncrementClaims.length;
         for (uint i; i < hotWalletIncrementClaimsLength; i++) {
             HotWalletIncrementClaim calldata _claim = _claims.hotWalletIncrementClaims[i];
@@ -258,11 +248,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function _submitClaimsRRC(RefundRequestClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode("RRC", _claim));
-        claimsHelper.setVotedOnlyIfNeeded(_caller, claimHash, validators.getQuorumNumberOfValidators());
-    }
-
-    function _submitClaimsREC(RefundExecutedClaim calldata _claim, address _caller) internal {
-        bytes32 claimHash = keccak256(abi.encode("REC", _claim));
         claimsHelper.setVotedOnlyIfNeeded(_caller, claimHash, validators.getQuorumNumberOfValidators());
     }
 

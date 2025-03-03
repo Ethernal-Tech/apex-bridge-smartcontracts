@@ -159,7 +159,6 @@ export async function deployBridgeFixture() {
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
     hotWalletIncrementClaims: [],
   };
   const validatorClaimsBRC_ConfirmedTransactions = {
@@ -185,7 +184,6 @@ export async function deployBridgeFixture() {
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
     hotWalletIncrementClaims: [],
   };
 
@@ -211,7 +209,6 @@ export async function deployBridgeFixture() {
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
     hotWalletIncrementClaims: [],
   };
 
@@ -226,7 +223,6 @@ export async function deployBridgeFixture() {
     ],
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
     hotWalletIncrementClaims: [],
   };
 
@@ -241,7 +237,6 @@ export async function deployBridgeFixture() {
     ],
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
     hotWalletIncrementClaims: [],
   };
 
@@ -256,7 +251,6 @@ export async function deployBridgeFixture() {
       },
     ],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
     hotWalletIncrementClaims: [],
   };
 
@@ -271,7 +265,6 @@ export async function deployBridgeFixture() {
       },
     ],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
     hotWalletIncrementClaims: [],
   };
 
@@ -290,7 +283,6 @@ export async function deployBridgeFixture() {
         receiver: "receiver1",
       },
     ],
-    refundExecutedClaims: [],
     hotWalletIncrementClaims: [],
   };
 
@@ -313,26 +305,6 @@ export async function deployBridgeFixture() {
         retryCounter: 1,
       },
     ],
-    refundExecutedClaims: [],
-    hotWalletIncrementClaims: [],
-  };
-
-  const validatorClaimsREC = {
-    bridgingRequestClaims: [],
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [],
-    refundExecutedClaims: [
-      {
-        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        chainId: 2,
-        refundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
-        utxo: {
-          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          txIndex: 0,
-        },
-      },
-    ],
     hotWalletIncrementClaims: [],
   };
 
@@ -341,51 +313,12 @@ export async function deployBridgeFixture() {
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
     hotWalletIncrementClaims: [
       {
         chainId: 1,
         amount: 100,
       },
     ],
-  };
-
-  const validatorClaimsRECerror = {
-    bridgingRequestClaims: [],
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [],
-    refundExecutedClaims: [
-      {
-        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        chainId: 2,
-        refundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
-        utxo: {
-          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          txIndex: 0,
-        },
-      },
-    ],
-    hotWalletIncrementClaims: [],
-  };
-
-  const validatorClaimsRECObserverdFalse = {
-    bridgingRequestClaims: [],
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [],
-    refundExecutedClaims: [
-      {
-        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        chainId: 2,
-        refundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
-        utxo: {
-          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          txIndex: 0,
-        },
-      },
-    ],
-    hotWalletIncrementClaims: [],
   };
 
   const signedBatch = {
@@ -464,14 +397,11 @@ export async function deployBridgeFixture() {
     validatorClaimsBEC,
     validatorClaimsBEFC,
     validatorClaimsRRC,
-    validatorClaimsREC,
     validatorClaimsHWIC,
     validatorClaimsBRCerror,
     validatorClaimsBECerror,
     validatorClaimsBEFCerror,
     validatorClaimsRRCerror,
-    validatorClaimsRECerror,
-    validatorClaimsRECObserverdFalse,
     validatorClaimsBRC_ConfirmedTransactions,
     signedBatch,
     signedBatchConsolidation,
