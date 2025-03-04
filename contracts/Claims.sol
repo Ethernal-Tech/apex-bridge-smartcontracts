@@ -227,7 +227,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 uint8 _txType = _ctx.transactionType;
                 if (_txType == 0) {
                     chainTokenQuantity[chainId] += _ctx.totalAmount;
-                } else {
+                } else if (_txType == 1) {
                     if (_ctx.retryCounter < MAX_NUMBER_OF_DEFUND_RETRIES) {
                         uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
                         confirmedTransactions[chainId][nextNonce] = _ctx;
@@ -237,8 +237,10 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                         chainTokenQuantity[chainId] += _ctx.totalAmount;
                         emit DefundFailedAfterMultipleRetries();
                     }
+                } else if (_ctx.shouldDecrementHotWallet) {
+                    // refund failed on destination, return totalAmount to hot wallet
+                    chainTokenQuantity[chainId] += _ctx.totalAmount;
                 }
-                // refund will be implemented through new if case
             }
 
             lastBatchedTxNonce[chainId] = _lastTxNouce;
@@ -248,7 +250,33 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function _submitClaimsRRC(RefundRequestClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode("RRC", _claim));
-        claimsHelper.setVotedOnlyIfNeeded(_caller, claimHash, validators.getQuorumNumberOfValidators());
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
+            _caller,
+            claimHash,
+            validators.getQuorumNumberOfValidators()
+        );
+
+        if (_quorumReached) {
+            uint8 originChainId = _claim.originChainId;
+
+            uint256 _confirmedTxCount = getBatchingTxsCount(originChainId);
+
+            if (_claim.shouldDecrementHotWallet) {
+                // refund after failing on destination chain, return originAmount to hot wallet
+                chainTokenQuantity[originChainId] -= _claim.originAmount;
+            }
+
+            _setConfirmedTransactionsRRC(_claim);
+
+            if (
+                (claimsHelper.currentBatchBlock(originChainId) == -1) && // there is no batch in progress
+                (_confirmedTxCount == 0) && // check if there is no other confirmed transactions
+                (block.number >= nextTimeoutBlock[originChainId])
+            ) // check if the current block number is greater or equal than the NEXT_BATCH_TIMEOUT_BLOCK
+            {
+                nextTimeoutBlock[originChainId] = block.number + timeoutBlocksNumber;
+            }
+        }
     }
 
     function _submitClaimHWIC(HotWalletIncrementClaim calldata _claim, address _caller) internal {
@@ -282,6 +310,25 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         for (uint i; i < receiversLength; i++) {
             confirmedTx.receivers.push(_claim.receivers[i]);
         }
+    }
+
+    function _setConfirmedTransactionsRRC(RefundRequestClaim memory _claim) internal {
+        uint8 chainId = _claim.originChainId;
+        uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
+
+        ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nextNonce];
+        confirmedTx.totalAmount = _claim.originAmount;
+        confirmedTx.blockHeight = block.number;
+        confirmedTx.observedTransactionHash = _claim.originTransactionHash;
+        confirmedTx.sourceChainId = chainId;
+        confirmedTx.nonce = nextNonce;
+        confirmedTx.retryCounter = _claim.retryCounter;
+        confirmedTx.transactionType = 2;
+        confirmedTx.shouldDecrementHotWallet = _claim.shouldDecrementHotWallet;
+
+        Receiver memory receiver = Receiver(_claim.originAmount, _claim.originSenderAddress);
+
+        confirmedTx.receivers.push(receiver);
     }
 
     function setVoted(address _voter, bytes32 _hash) external onlyBridge returns (uint256) {
