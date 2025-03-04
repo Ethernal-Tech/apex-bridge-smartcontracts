@@ -237,9 +237,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                         chainTokenQuantity[chainId] += _ctx.totalAmount;
                         emit DefundFailedAfterMultipleRetries();
                     }
-                } else if (_ctx.shouldDecrementHotWallet) {
-                    // refund failed on destination, return totalAmount to hot wallet
-                    chainTokenQuantity[chainId] += _ctx.totalAmount;
                 }
             }
 
@@ -261,7 +258,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             uint256 _confirmedTxCount = getBatchingTxsCount(originChainId);
 
-            if (_claim.shouldDecrementHotWallet) {
+            if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
                 // refund after failing on destination chain, return originAmount to hot wallet
                 chainTokenQuantity[originChainId] -= _claim.originAmount;
             }

@@ -266,7 +266,7 @@ export async function deployBridgeFixture() {
         refundTransactionHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
         outputIndexes: "0x7465737400000000000000000000000000000000000000000000000000000000",
         unused: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        retryCounter: 1,
+        retryCounter: 0,
         originChainId: 2,
         originSenderAddress: "receiver1",
         originAmount: 100,
