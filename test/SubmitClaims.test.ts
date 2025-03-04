@@ -772,10 +772,9 @@ describe("Submit Claims", function () {
       expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
     });
 
-    it("Should TODO when  Refund Request Claims is confirmed", async function () {
-      const { bridge, owner, validators, chain2, validatorClaimsRRC, validatorsCardanoData } = await loadFixture(
-        deployBridgeFixture
-      );
+    it("Should not change Hot Wallet status when Refund Request Claims is confirmed (wrong metadata, not enough funds)", async function () {
+      const { bridge, claims, owner, validators, chain2, validatorClaimsRRC, validatorsCardanoData } =
+        await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
 
@@ -783,11 +782,266 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsRRC);
 
-      // TODO: check some data that is not changed after refund request claim consensus is not reached
+      const hotWalletState = await claims.chainTokenQuantity(validatorClaimsRRC.refundRequestClaims[0].originChainId);
 
       await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
 
-      // TODO: check some data that is changed after refund request claim consensus is reached
+      expect(await claims.chainTokenQuantity(validatorClaimsRRC.refundRequestClaims[0].originChainId)).to.equal(
+        hotWalletState
+      );
+    });
+    it("Should decrease Hot Wallet status when Refund Request Claims has shouldDecrementHotWallet set to true", async function () {
+      const { bridge, claims, owner, validators, chain2, validatorClaimsRRC, validatorsCardanoData } =
+        await loadFixture(deployBridgeFixture);
+
+      validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = true;
+
+      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsRRC);
+
+      const hotWalletState =
+        (await claims.chainTokenQuantity(validatorClaimsRRC.refundRequestClaims[0].originChainId)) -
+        BigInt(validatorClaimsRRC.refundRequestClaims[0].originAmount);
+
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
+
+      expect(await claims.chainTokenQuantity(validatorClaimsRRC.refundRequestClaims[0].originChainId)).to.equal(
+        hotWalletState
+      );
+      validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = false;
+    });
+    it("Use Case 1: BRC -> BEFC -> RRC", async function () {
+      const {
+        bridge,
+        claims,
+        owner,
+        validators,
+        chain1,
+        chain2,
+        validatorClaimsBRC,
+        validatorClaimsBEFC,
+        validatorClaimsRRC,
+        signedBatch,
+        validatorsCardanoData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+
+      let hotWalletStateOriginalSource = await claims.chainTokenQuantity(
+        validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId
+      );
+
+      let hotWalletStateOriginalDestination = await claims.chainTokenQuantity(
+        validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId
+      );
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
+        hotWalletStateOriginalSource + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmount)
+      );
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
+        hotWalletStateOriginalDestination - BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmount)
+      );
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
+        hotWalletStateOriginalSource + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmount)
+      );
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
+        hotWalletStateOriginalDestination
+      );
+
+      validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = true;
+      validatorClaimsRRC.refundRequestClaims[0].originChainId = chain1.id;
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
+        hotWalletStateOriginalSource
+      );
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
+        hotWalletStateOriginalDestination
+      );
+
+      validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = false;
+      validatorClaimsRRC.refundRequestClaims[0].originChainId = chain2.id;
+    });
+    it("Use Case 2: BRC -> BEFC -> RRC -> BEFC -> RRC", async function () {
+      const {
+        bridge,
+        claims,
+        owner,
+        validators,
+        chain1,
+        chain2,
+        validatorClaimsBRC,
+        validatorClaimsBEFC,
+        validatorClaimsRRC,
+        signedBatch,
+        validatorsCardanoData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+
+      let hotWalletStateOriginalSource = await claims.chainTokenQuantity(
+        validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId
+      );
+
+      let hotWalletStateOriginalDestination = await claims.chainTokenQuantity(
+        validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId
+      );
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
+        hotWalletStateOriginalSource + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmount)
+      );
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
+        hotWalletStateOriginalDestination - BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmount)
+      );
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
+        hotWalletStateOriginalSource + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmount)
+      );
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
+        hotWalletStateOriginalDestination
+      );
+
+      validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = true;
+      validatorClaimsRRC.refundRequestClaims[0].originChainId = chain1.id;
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
+        hotWalletStateOriginalSource
+      );
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
+        hotWalletStateOriginalDestination
+      );
+
+      signedBatch.id = 1;
+      signedBatch.firstTxNonceId = 1;
+      signedBatch.lastTxNonceId = 1;
+      signedBatch.destinationChainId = chain1.id;
+
+      // wait for next timeout
+      for (let i = 0; i < 4; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId = 2;
+
+      validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId = 1;
+      validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId = chain1.id;
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
+        hotWalletStateOriginalSource
+      );
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
+        hotWalletStateOriginalDestination
+      );
+
+      validatorClaimsRRC.refundRequestClaims[0].retryCounter = 1;
+
+      validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = false;
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
+        hotWalletStateOriginalSource
+      );
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
+        hotWalletStateOriginalDestination
+      );
+
+      signedBatch.id = 2;
+      signedBatch.firstTxNonceId = 2;
+      signedBatch.lastTxNonceId = 2;
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId = 2;
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
+        hotWalletStateOriginalSource
+      );
+
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
+        hotWalletStateOriginalDestination
+      );
+
+      validatorClaimsRRC.refundRequestClaims[0].originChainId = chain2.id;
+      validatorClaimsRRC.refundRequestClaims[0].retryCounter = 0;
+      validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId = 1;
+      signedBatch.id = 1;
+      signedBatch.firstTxNonceId = 1;
+      signedBatch.lastTxNonceId = 1;
     });
   });
 });
