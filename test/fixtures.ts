@@ -140,14 +140,14 @@ export async function deployBridgeFixture() {
     bridgingRequestClaims: [
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        totalAmount: 100,
+        retryCounter: 0,
         receivers: [
           {
             amount: 100,
             destinationAddress: "0x123...",
           },
         ],
-        totalAmount: 100,
-        retryCounter: 0,
         sourceChainId: 1,
         destinationChainId: 2,
       },
@@ -161,14 +161,14 @@ export async function deployBridgeFixture() {
     bridgingRequestClaims: [
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        totalAmount: 100,
+        retryCounter: 0,
         receivers: [
           {
             destinationAddress: "0x234...",
             amount: 100,
           },
         ],
-        totalAmount: 100,
-        retryCounter: 0,
         sourceChainId: 1,
         destinationChainId: 2,
       },
@@ -183,14 +183,14 @@ export async function deployBridgeFixture() {
     bridgingRequestClaims: [
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        retryCounter: 0,
+        sourceChainId: 1,
         receivers: [
           {
             destinationAddress: "0x123...11111111",
             amount: 100,
           },
         ],
-        retryCounter: 0,
-        sourceChainId: 1,
         destinationChainId: 2,
       },
     ],
@@ -264,12 +264,11 @@ export async function deployBridgeFixture() {
       {
         originTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
         refundTransactionHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
+        originAmount: 100,
         outputIndexes: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        unused: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        originSenderAddress: "receiver1",
         retryCounter: 0,
         originChainId: 2,
-        originSenderAddress: "receiver1",
-        originAmount: 100,
         shouldDecrementHotWallet: false,
       },
     ],
@@ -284,12 +283,11 @@ export async function deployBridgeFixture() {
       {
         originTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
         refundTransactionHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
+        originAmount: 100,
         outputIndexes: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        unused: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        originSenderAddress: "receiver1111111111",
         retryCounter: 1,
         originChainId: 2,
-        originSenderAddress: "receiver1111111111",
-        originAmount: 100,
         shouldDecrementHotWallet: false,
       },
     ],
@@ -311,12 +309,12 @@ export async function deployBridgeFixture() {
 
   const signedBatch = {
     id: 1,
-    destinationChainId: 2,
-    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
-    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     firstTxNonceId: 1,
     lastTxNonceId: 1,
+    destinationChainId: 2,
+    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
+    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
+    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
     isConsolidation: false,
   };
 
@@ -333,12 +331,12 @@ export async function deployBridgeFixture() {
 
   const signedBatchDefund = {
     id: 1,
-    destinationChainId: 2,
-    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
-    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     firstTxNonceId: 1,
     lastTxNonceId: 2,
+    destinationChainId: 2,
+    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
+    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
+    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
     isConsolidation: false,
   };
 
