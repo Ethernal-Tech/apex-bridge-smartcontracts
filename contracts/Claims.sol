@@ -193,8 +193,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 chainId,
                 batchId
             );
-            claimsHelper.resetCurrentBatchBlock(chainId);
+            // do not process included transactions or modify batch creation state if it is a consolidation
+            if (_confirmedSignedBatch.isConsolidation) {
+                return;
+            }
 
+            claimsHelper.resetCurrentBatchBlock(chainId);
             lastBatchedTxNonce[chainId] = _confirmedSignedBatch.lastTxNonceId;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
         }
@@ -211,12 +215,14 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
-            claimsHelper.resetCurrentBatchBlock(chainId);
-
             ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
                 chainId,
                 batchId
             );
+            // do not process included transactions or modify batch creation state if it is a consolidation
+            if (_confirmedSignedBatch.isConsolidation) {
+                return;
+            }
 
             uint64 _firstTxNonce = _confirmedSignedBatch.firstTxNonceId;
             uint64 _lastTxNouce = _confirmedSignedBatch.lastTxNonceId;
@@ -240,6 +246,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 // refund will be implemented through new if case
             }
 
+            claimsHelper.resetCurrentBatchBlock(chainId);
             lastBatchedTxNonce[chainId] = _lastTxNouce;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
         }

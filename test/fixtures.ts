@@ -396,6 +396,7 @@ export async function deployBridgeFixture() {
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     firstTxNonceId: 1,
     lastTxNonceId: 1,
+    isConsolidation: false,
   };
 
   const signedBatchDefund = {
@@ -406,6 +407,7 @@ export async function deployBridgeFixture() {
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     firstTxNonceId: 1,
     lastTxNonceId: 2,
+    isConsolidation: false,
   };
 
   const cardanoBlocks = [
