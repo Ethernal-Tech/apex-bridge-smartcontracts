@@ -399,6 +399,41 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
+    it("Should emit NotEnoughFunds and skip Refund Request Claim for failed BRC on destination if there is not enough funds", async function () {
+      const { bridge, claims, owner, chain2, validators, validatorsCardanoData, validatorClaimsRRC } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain2, 1, validatorsCardanoData);
+
+      validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = true;
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsRRC);
+
+      const tx = await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
+      const receipt = await tx.wait();
+
+      const iface = new ethers.Interface([
+        "event NotEnoughFunds(string claimeType, uint256 index, uint256 availableAmount)",
+      ]);
+
+      const event = receipt.logs
+        .map((log) => {
+          try {
+            return iface.parseLog(log);
+          } catch {
+            return null;
+          }
+        })
+        .filter((log) => log !== null)
+        .find((log) => log.name === "NotEnoughFunds");
+
+      expect(event).to.not.be.undefined;
+      expect(event.fragment.name).to.equal("NotEnoughFunds");
+
+      validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = false;
+    });
   });
 
   describe("Submit new Hot Wallet Increment Claim", function () {
