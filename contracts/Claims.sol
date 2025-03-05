@@ -455,8 +455,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
             ConfirmedTransaction storage ctx = confirmedTransactions[_chainId][i];
             _txHashes[i - _firstTxNonce] = TxDataInfo(
-                ctx.sourceChainId,
                 ctx.observedTransactionHash,
+                ctx.sourceChainId,
                 ctx.transactionType
             );
         }
