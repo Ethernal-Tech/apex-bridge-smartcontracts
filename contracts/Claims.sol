@@ -259,6 +259,10 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             uint256 _confirmedTxCount = getBatchingTxsCount(originChainId);
 
             if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
+                if (chainTokenQuantity[originChainId] < _claim.originAmount) {
+                    emit NotEnoughFunds("RRC", 0, chainTokenQuantity[originChainId]);
+                    return;
+                }
                 // refund after failing on destination chain, return originAmount to hot wallet
                 chainTokenQuantity[originChainId] -= _claim.originAmount;
             }
@@ -321,7 +325,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         confirmedTx.nonce = nextNonce;
         confirmedTx.retryCounter = _claim.retryCounter;
         confirmedTx.transactionType = 2;
-        confirmedTx.shouldDecrementHotWallet = _claim.shouldDecrementHotWallet;
 
         Receiver memory receiver = Receiver(_claim.originAmount, _claim.originSenderAddress);
 
