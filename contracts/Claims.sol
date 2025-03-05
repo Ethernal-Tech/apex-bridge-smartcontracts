@@ -189,6 +189,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
+            // current batch block must be reset in any case because otherwise bridge will be blocked
+            claimsHelper.resetCurrentBatchBlock(chainId);
+            
             ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
                 chainId,
                 batchId
@@ -198,7 +201,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 return;
             }
 
-            claimsHelper.resetCurrentBatchBlock(chainId);
             lastBatchedTxNonce[chainId] = _confirmedSignedBatch.lastTxNonceId;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
         }
@@ -215,6 +217,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
+            // current batch block must be reset in any case because otherwise bridge will be blocked
+            claimsHelper.resetCurrentBatchBlock(chainId);
+            
             ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
                 chainId,
                 batchId
@@ -246,7 +251,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 // refund will be implemented through new if case
             }
 
-            claimsHelper.resetCurrentBatchBlock(chainId);
             lastBatchedTxNonce[chainId] = _lastTxNouce;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
         }
