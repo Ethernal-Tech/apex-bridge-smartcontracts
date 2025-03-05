@@ -422,12 +422,16 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function getBatchTransactions(uint8 _chainId, uint64 _batchId) external view returns (TxDataInfo[] memory) {
-        ConfirmedSignedBatchData memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
+        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
             _chainId,
             _batchId
         );
-        uint64 _firstTxNonce = confirmedSignedBatch.firstTxNonceId;
-        uint64 _lastTxNonce = confirmedSignedBatch.lastTxNonceId;
+        if (_confirmedSignedBatch.isConsolidation) {
+            return new TxDataInfo[](0);
+        }
+
+        uint64 _firstTxNonce = _confirmedSignedBatch.firstTxNonceId;
+        uint64 _lastTxNonce = _confirmedSignedBatch.lastTxNonceId;
 
         TxDataInfo[] memory _txHashes = new TxDataInfo[](_lastTxNonce - _firstTxNonce + 1);
         for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
