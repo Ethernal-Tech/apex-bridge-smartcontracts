@@ -246,8 +246,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _submitClaimsRRC(RefundRequestClaim calldata _claim, address _caller) internal {
-        bytes32 claimHash = keccak256(abi.encode("RRC", _claim));
-
         uint8 originChainId = _claim.originChainId;
 
         if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
@@ -256,6 +254,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 return;
             }
         }
+
+        bytes32 claimHash = keccak256(abi.encode("RRC", _claim));
 
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
