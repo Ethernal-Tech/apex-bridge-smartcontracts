@@ -253,16 +253,19 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             validators.getQuorumNumberOfValidators()
         );
 
-        if (_quorumReached) {
-            uint8 originChainId = _claim.originChainId;
+        uint8 originChainId = _claim.originChainId;
 
+        if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
+            if (chainTokenQuantity[originChainId] < _claim.originAmount) {
+                emit NotEnoughFunds("RRC", 0, chainTokenQuantity[originChainId]);
+                return;
+            }
+        }
+
+        if (_quorumReached) {
             uint256 _confirmedTxCount = getBatchingTxsCount(originChainId);
 
             if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
-                if (chainTokenQuantity[originChainId] < _claim.originAmount) {
-                    emit NotEnoughFunds("RRC", 0, chainTokenQuantity[originChainId]);
-                    return;
-                }
                 // refund after failing on destination chain, return originAmount to hot wallet
                 chainTokenQuantity[originChainId] -= _claim.originAmount;
             }
