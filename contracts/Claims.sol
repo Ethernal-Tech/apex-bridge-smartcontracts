@@ -273,14 +273,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             _setConfirmedTransactionsRRC(_claim);
 
-            if (
-                (claimsHelper.currentBatchBlock(originChainId) == -1) && // there is no batch in progress
-                (_confirmedTxCount == 0) && // check if there is no other confirmed transactions
-                (block.number >= nextTimeoutBlock[originChainId])
-            ) // check if the current block number is greater or equal than the NEXT_BATCH_TIMEOUT_BLOCK
-            {
-                nextTimeoutBlock[originChainId] = block.number + timeoutBlocksNumber;
-            }
+            _updateNextTimeoutBlockIfNeeded(originChainId, _confirmedTxCount);
         }
     }
 
@@ -330,9 +323,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         confirmedTx.retryCounter = _claim.retryCounter;
         confirmedTx.transactionType = 2;
 
-        Receiver memory receiver = Receiver(_claim.originAmount, _claim.originSenderAddress);
-
-        confirmedTx.receivers.push(receiver);
+        confirmedTx.receivers.push(Receiver(_claim.originAmount, _claim.originSenderAddress));
     }
 
     function setVoted(address _voter, bytes32 _hash) external onlyBridge returns (uint256) {
