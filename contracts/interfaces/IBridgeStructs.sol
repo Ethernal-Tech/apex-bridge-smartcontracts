@@ -4,17 +4,19 @@ pragma solidity ^0.8.24;
 interface IBridgeStructs {
     struct SignedBatch {
         uint64 id;
-        uint64 firstTxNonceId;
-        uint64 lastTxNonceId;
+        uint64 firstTxNonceId; // does not matter if isConsolidation is true
+        uint64 lastTxNonceId; // does not matter if isConsolidation is true
         uint8 destinationChainId;
         bytes signature;
         bytes feeSignature;
         bytes rawTransaction;
+        bool isConsolidation;
     }
 
     struct ConfirmedSignedBatchData {
         uint64 firstTxNonceId;
         uint64 lastTxNonceId;
+        bool isConsolidation;
     }
 
     struct ConfirmedBatch {
@@ -23,6 +25,7 @@ interface IBridgeStructs {
         uint256 bitmap;
         bytes rawTransaction;
         uint64 id;
+        bool isConsolidation;
     }
 
     struct ConfirmedTransaction {

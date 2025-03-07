@@ -718,5 +718,35 @@ describe("Claims Contract", function () {
         ],
       ]);
     });
+
+    it("getBatchTransactions should return empty tx if it is a consolidation batch", async function () {
+      const {
+        bridge,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsBRC,
+        signedBatchConsolidation,
+        claims,
+        validatorsCardanoData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatchConsolidation);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatchConsolidation);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatchConsolidation);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatchConsolidation);
+
+      const txs = await claims.getBatchTransactions(signedBatchConsolidation.destinationChainId, signedBatchConsolidation.id);
+      expect(txs).to.deep.equal([]);
+    });
   });
 });

@@ -67,7 +67,8 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
                 _signedBatch.firstTxNonceId,
                 _signedBatch.lastTxNonceId,
                 _destinationChainId,
-                _signedBatch.rawTransaction
+                _signedBatch.rawTransaction,
+                _signedBatch.isConsolidation
             )
         );
 
@@ -95,7 +96,8 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
                 feeSignatures[_sbHash],
                 bitmap[_sbHash],
                 _signedBatch.rawTransaction,
-                _sbId
+                _sbId,
+                _signedBatch.isConsolidation
             );
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
