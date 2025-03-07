@@ -189,11 +189,17 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
+            // current batch block must be reset in any case because otherwise bridge will be blocked
+            claimsHelper.resetCurrentBatchBlock(chainId);
+
             ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
                 chainId,
                 batchId
             );
-            claimsHelper.resetCurrentBatchBlock(chainId);
+            // do not process included transactions or modify batch creation state if it is a consolidation
+            if (_confirmedSignedBatch.isConsolidation) {
+                return;
+            }
 
             lastBatchedTxNonce[chainId] = _confirmedSignedBatch.lastTxNonceId;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
@@ -211,12 +217,17 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
+            // current batch block must be reset in any case because otherwise bridge will be blocked
             claimsHelper.resetCurrentBatchBlock(chainId);
 
             ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
                 chainId,
                 batchId
             );
+            // do not process included transactions or modify batch creation state if it is a consolidation
+            if (_confirmedSignedBatch.isConsolidation) {
+                return;
+            }
 
             uint64 _firstTxNonce = _confirmedSignedBatch.firstTxNonceId;
             uint64 _lastTxNouce = _confirmedSignedBatch.lastTxNonceId;
@@ -415,12 +426,16 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function getBatchTransactions(uint8 _chainId, uint64 _batchId) external view returns (TxDataInfo[] memory) {
-        ConfirmedSignedBatchData memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
+        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
             _chainId,
             _batchId
         );
-        uint64 _firstTxNonce = confirmedSignedBatch.firstTxNonceId;
-        uint64 _lastTxNonce = confirmedSignedBatch.lastTxNonceId;
+        if (_confirmedSignedBatch.isConsolidation) {
+            return new TxDataInfo[](0);
+        }
+
+        uint64 _firstTxNonce = _confirmedSignedBatch.firstTxNonceId;
+        uint64 _lastTxNonce = _confirmedSignedBatch.lastTxNonceId;
 
         TxDataInfo[] memory _txHashes = new TxDataInfo[](_lastTxNonce - _firstTxNonce + 1);
         for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
