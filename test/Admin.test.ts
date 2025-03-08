@@ -301,6 +301,7 @@ describe("Admin Functions", function () {
       const retryCounter = await claims.MAX_NUMBER_OF_DEFUND_RETRIES();
 
       for (let i = 0; i <= retryCounter; i++) {
+        console.log("EVO GA I", i);
         expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(i + 1);
         expect((await claims.confirmedTransactions(chain2.id, i + 1)).retryCounter).to.equal(i);
 

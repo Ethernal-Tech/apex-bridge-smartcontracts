@@ -92,12 +92,11 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         // check if quorum reached (+1 is last vote)
         if (_numberOfVotes + 1 >= _quorumCount) {
             lastConfirmedBatch[_destinationChainId] = ConfirmedBatch(
-                signatures[_sbHash],
-                feeSignatures[_sbHash],
+                _sbId,
                 bitmap[_sbHash],
                 _signedBatch.rawTransaction,
-                _sbId,
-                _signedBatch.isConsolidation
+                signatures[_sbHash],
+                feeSignatures[_sbHash]
             );
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
