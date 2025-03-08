@@ -85,7 +85,7 @@ describe("Batch Creation", function () {
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
-          false,
+          signedBatch.isConsolidation,
         ]
       );
 
