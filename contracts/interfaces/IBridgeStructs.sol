@@ -74,8 +74,7 @@ interface IBridgeStructs {
     struct BatchExecutionFailedClaim {
         // hash of tx on the source chain
         bytes32 observedTransactionHash;
-        // hash of the refund transaction
-        bytes32 refundTxHash;
+        uint64 batchNonceId;
         // chain id where the refund was executed
         uint8 chainId;
     }

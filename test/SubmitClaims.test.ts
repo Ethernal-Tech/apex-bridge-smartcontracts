@@ -76,17 +76,17 @@ describe("Submit Claims", function () {
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
       const encoded = abiCoder.encode(
-        ["bytes32", "uint256", "uint256", "tuple(uint64, string)[]", "uint8", "uint8"],
+        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint256", "uint8", "uint8"],
         [
           validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
-          validatorClaimsBRC.bridgingRequestClaims[0].totalAmount,
-          validatorClaimsBRC.bridgingRequestClaims[0].retryCounter,
           [
             [
               validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount,
               validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
             ],
           ],
+          validatorClaimsBRC.bridgingRequestClaims[0].totalAmount,
+          validatorClaimsBRC.bridgingRequestClaims[0].retryCounter,
           validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
           validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
         ]
