@@ -56,9 +56,9 @@ interface IBridgeStructs {
         // hash of tx on the source chain
         bytes32 observedTransactionHash;
         // key is the address on destination UTXO chain; value is the amount of tokens
+        Receiver[] receivers;
         uint256 totalAmount;
         uint256 retryCounter;
-        Receiver[] receivers;
         uint8 sourceChainId;
         uint8 destinationChainId;
     }
@@ -74,8 +74,9 @@ interface IBridgeStructs {
     struct BatchExecutionFailedClaim {
         // hash of tx on the source chain
         bytes32 observedTransactionHash;
-        // where the batch execution failed
-        uint64 batchNonceId;
+        // hash of the refund transaction
+        bytes32 refundTxHash;
+        // chain id where the refund was executed
         uint8 chainId;
     }
 
