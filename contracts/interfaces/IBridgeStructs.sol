@@ -75,7 +75,7 @@ interface IBridgeStructs {
         // hash of tx on the source chain
         bytes32 observedTransactionHash;
         // where the batch execution failed
-        bytes32 refundTxHash;
+        uint64 batchNonceId;
         // chain id where the refund was executed
         uint8 chainId;
     }
