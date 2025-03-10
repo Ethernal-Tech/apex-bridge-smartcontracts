@@ -49,7 +49,6 @@ interface IBridgeStructs {
         BatchExecutedClaim[] batchExecutedClaims;
         BatchExecutionFailedClaim[] batchExecutionFailedClaims;
         RefundRequestClaim[] refundRequestClaims;
-        RefundExecutedClaim[] refundExecutedClaims;
         HotWalletIncrementClaim[] hotWalletIncrementClaims;
     }
 
@@ -77,33 +76,29 @@ interface IBridgeStructs {
         bytes32 observedTransactionHash;
         // where the batch execution failed
         uint64 batchNonceId;
+        // chain id where the refund was executed
         uint8 chainId;
     }
 
     struct RefundRequestClaim {
-        // hash of tx on the source chain
-        bytes32 observedTransactionHash;
-        // hash of the previous refund transaction; only set in case of retry
-        bytes32 previousRefundTxHash;
-        // validatorsArray signature over raw transaction
-        // note: only multisig signs refund txs
-        bytes signature;
-        // the refund transaction itself
-        bytes rawTransaction;
-        // retry attempt counter
+        // Hash of the original transaction on the source chain
+        bytes32 originTransactionHash;
+        // Hash of the manual refund request tx - will not be used in the first version
+        bytes32 refundTransactionHash;
+        // Amount of tokens deposited to the multisig address in original transaction
+        uint256 originAmount;
+        // serialized uint16 list of indexes of all multisig outputs that contain unknown native tokens
+        bytes outputIndexes;
+        // Address of the user who sent the original transaction (tx inputs)
+        // If there are multiple input addresses, only one should be picked (by some algorithm)
+        string originSenderAddress;
+        // Number of times the refund transaction has been attempted on-chain
         uint64 retryCounter;
-        // chain id where the refund tx will be executed
-        uint8 chainId;
-        string receiver;
-    }
-
-    struct RefundExecutedClaim {
-        // hash of tx on the source chain
-        bytes32 observedTransactionHash;
-        // hash of the refund transaction
-        bytes32 refundTxHash;
-        // chain id where the refund was executed
-        uint8 chainId;
+        // ID of the chain where the refund will be executed (or the original source chain)
+        uint8 originChainId;
+        // will be false if refund is requested because of invalid metadata or
+        // bridging request claim was never submitted (NotEnoughFunds)
+        bool shouldDecrementHotWallet;
     }
 
     struct HotWalletIncrementClaim {
@@ -135,8 +130,9 @@ interface IBridgeStructs {
     }
 
     struct TxDataInfo {
-        uint8 sourceChainId;
         bytes32 observedTransactionHash;
+        uint8 sourceChainId;
+        uint8 transactionType;
     }
 
     error AlreadyConfirmed(bytes32 _claimTransactionHash);

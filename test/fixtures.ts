@@ -140,18 +140,14 @@ export async function deployBridgeFixture() {
     bridgingRequestClaims: [
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        totalAmount: 100,
+        retryCounter: 0,
         receivers: [
           {
             amount: 100,
             destinationAddress: "0x123...",
           },
         ],
-        outputUTXO: {
-          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          txIndex: 1,
-        },
-        totalAmount: 100,
-        retryCounter: 0,
         sourceChainId: 1,
         destinationChainId: 2,
       },
@@ -159,25 +155,20 @@ export async function deployBridgeFixture() {
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
     hotWalletIncrementClaims: [],
   };
   const validatorClaimsBRC_ConfirmedTransactions = {
     bridgingRequestClaims: [
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        totalAmount: 100,
+        retryCounter: 0,
         receivers: [
           {
             destinationAddress: "0x234...",
             amount: 100,
           },
         ],
-        outputUTXO: {
-          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          txIndex: 0,
-        },
-        totalAmount: 100,
-        retryCounter: 0,
         sourceChainId: 1,
         destinationChainId: 2,
       },
@@ -185,7 +176,6 @@ export async function deployBridgeFixture() {
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
     hotWalletIncrementClaims: [],
   };
 
@@ -193,25 +183,20 @@ export async function deployBridgeFixture() {
     bridgingRequestClaims: [
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        retryCounter: 0,
+        sourceChainId: 1,
         receivers: [
           {
             destinationAddress: "0x123...11111111",
             amount: 100,
           },
         ],
-        outputUTXO: {
-          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          txIndex: 0,
-        },
-        retryCounter: 0,
-        sourceChainId: 1,
         destinationChainId: 2,
       },
     ],
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
     hotWalletIncrementClaims: [],
   };
 
@@ -226,7 +211,6 @@ export async function deployBridgeFixture() {
     ],
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
     hotWalletIncrementClaims: [],
   };
 
@@ -241,7 +225,6 @@ export async function deployBridgeFixture() {
     ],
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
     hotWalletIncrementClaims: [],
   };
 
@@ -256,7 +239,6 @@ export async function deployBridgeFixture() {
       },
     ],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
     hotWalletIncrementClaims: [],
   };
 
@@ -271,7 +253,6 @@ export async function deployBridgeFixture() {
       },
     ],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
     hotWalletIncrementClaims: [],
   };
 
@@ -281,16 +262,16 @@ export async function deployBridgeFixture() {
     batchExecutionFailedClaims: [],
     refundRequestClaims: [
       {
-        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        previousRefundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
-        signature: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        retryCounter: 1,
-        chainId: 2,
-        receiver: "receiver1",
+        originTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        refundTransactionHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
+        originAmount: 100,
+        outputIndexes: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        originSenderAddress: "receiver1",
+        retryCounter: 0,
+        originChainId: 2,
+        shouldDecrementHotWallet: false,
       },
     ],
-    refundExecutedClaims: [],
     hotWalletIncrementClaims: [],
   };
 
@@ -300,37 +281,14 @@ export async function deployBridgeFixture() {
     batchExecutionFailedClaims: [],
     refundRequestClaims: [
       {
-        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        previousRefundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
-        chainId: 2,
-        receiver: "receiver1111111111",
-        utxo: {
-          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          txIndex: 0,
-        },
-        rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        signature: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        originTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        refundTransactionHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
+        originAmount: 100,
+        outputIndexes: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        originSenderAddress: "receiver1111111111",
         retryCounter: 1,
-      },
-    ],
-    refundExecutedClaims: [],
-    hotWalletIncrementClaims: [],
-  };
-
-  const validatorClaimsREC = {
-    bridgingRequestClaims: [],
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [],
-    refundExecutedClaims: [
-      {
-        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        chainId: 2,
-        refundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
-        utxo: {
-          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          txIndex: 0,
-        },
+        originChainId: 2,
+        shouldDecrementHotWallet: false,
       },
     ],
     hotWalletIncrementClaims: [],
@@ -341,7 +299,6 @@ export async function deployBridgeFixture() {
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
-    refundExecutedClaims: [],
     hotWalletIncrementClaims: [
       {
         chainId: 1,
@@ -350,52 +307,14 @@ export async function deployBridgeFixture() {
     ],
   };
 
-  const validatorClaimsRECerror = {
-    bridgingRequestClaims: [],
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [],
-    refundExecutedClaims: [
-      {
-        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        chainId: 2,
-        refundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
-        utxo: {
-          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          txIndex: 0,
-        },
-      },
-    ],
-    hotWalletIncrementClaims: [],
-  };
-
-  const validatorClaimsRECObserverdFalse = {
-    bridgingRequestClaims: [],
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [],
-    refundExecutedClaims: [
-      {
-        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        chainId: 2,
-        refundTxHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
-        utxo: {
-          txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-          txIndex: 0,
-        },
-      },
-    ],
-    hotWalletIncrementClaims: [],
-  };
-
   const signedBatch = {
     id: 1,
-    destinationChainId: 2,
-    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
-    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     firstTxNonceId: 1,
     lastTxNonceId: 1,
+    destinationChainId: 2,
+    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
+    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
+    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
     isConsolidation: false,
   };
 
@@ -412,12 +331,12 @@ export async function deployBridgeFixture() {
 
   const signedBatchDefund = {
     id: 1,
-    destinationChainId: 2,
-    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
-    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     firstTxNonceId: 1,
     lastTxNonceId: 2,
+    destinationChainId: 2,
+    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
+    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
+    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
     isConsolidation: false,
   };
 
@@ -464,14 +383,11 @@ export async function deployBridgeFixture() {
     validatorClaimsBEC,
     validatorClaimsBEFC,
     validatorClaimsRRC,
-    validatorClaimsREC,
     validatorClaimsHWIC,
     validatorClaimsBRCerror,
     validatorClaimsBECerror,
     validatorClaimsBEFCerror,
     validatorClaimsRRCerror,
-    validatorClaimsRECerror,
-    validatorClaimsRECObserverdFalse,
     validatorClaimsBRC_ConfirmedTransactions,
     signedBatch,
     signedBatchConsolidation,
