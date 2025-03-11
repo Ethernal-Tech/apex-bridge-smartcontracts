@@ -56,8 +56,8 @@ contract ApexStakeManager is Initializable, Ownable2StepUpgradeable {
 
     mapping(address => ApexStakeValidator) public validators;
 
-    modifier onlyValidator(address validator) {
-        if (!validators[validator].isActive) revert Unauthorized("VALIDATOR");
+    modifier onlyValidator() {
+        if (!validators[msg.sender].isActive) revert Unauthorized("VALIDATOR");
         _;
     }
 
@@ -83,11 +83,11 @@ contract ApexStakeManager is Initializable, Ownable2StepUpgradeable {
         _transferOwnership(_owner);
     }
 
-    function stake(uint256 amount) external onlyValidator(msg.sender) {
+    function stake(uint256 amount) external onlyValidator() {
         // do nothing
     }
 
-    function unstake(uint256 amount) external onlyValidator(msg.sender) {
+    function unstake(uint256 amount) external onlyValidator() {
         // do nothing
     }
 
