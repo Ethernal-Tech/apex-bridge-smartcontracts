@@ -52,7 +52,6 @@ contract ApexStakeManager is Initializable, Ownable2StepUpgradeable {
     IBLS private bls;
     bytes32 public domain;
 
-    // totalValidatorsStake will be always genesis number of validators
     uint256 private totalValidatorsStake;
 
     mapping(address => ApexStakeValidator) public validators;
