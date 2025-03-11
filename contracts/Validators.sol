@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -116,10 +116,10 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
 
         // recreate array with n elements
         delete chainData[_chainId];
-        
+
         for (uint i; i < validatorsCount; i++) {
             chainData[_chainId].push();
-            
+
             ValidatorAddressChainData calldata dt = _chainDatas[i];
             uint8 indx = addressValidatorIndex[dt.addr];
             if (indx == 0) {
