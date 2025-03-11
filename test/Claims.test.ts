@@ -403,14 +403,12 @@ describe("Claims Contract", function () {
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
       const encoded = abiCoder.encode(
-        ["bytes32", "bytes32", "uint256", "uint256", "bytes", "string", "uint64", "uint8", "bool"],
+        ["bytes32", "bytes32", "bytes", "bytes", "uint64", "uint8", "string"],
         [
-          validatorClaimsRRC.refundRequestClaims[0].originTransactionHash,
-          validatorClaimsRRC.refundRequestClaims[0].refundTransactionHash,
-          validatorClaimsRRC.refundRequestClaims[0].originAmount,
-          validatorClaimsRRC.refundRequestClaims[0].originWrappedAmount,
-          validatorClaimsRRC.refundRequestClaims[0].outputIndexes,
-          validatorClaimsRRC.refundRequestClaims[0].originSenderAddress,
+          validatorClaimsRRC.refundRequestClaims[0].observedTransactionHash,
+          validatorClaimsRRC.refundRequestClaims[0].previousRefundTxHash,
+          validatorClaimsRRC.refundRequestClaims[0].signature,
+          validatorClaimsRRC.refundRequestClaims[0].rawTransaction,
           validatorClaimsRRC.refundRequestClaims[0].retryCounter,
           validatorClaimsRRC.refundRequestClaims[0].originChainId,
           validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet,
@@ -445,14 +443,12 @@ describe("Claims Contract", function () {
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
       const encoded = abiCoder.encode(
-        ["bytes32", "bytes32", "uint256", "uint256", "bytes", "string", "uint64", "uint8", "bool"],
+        ["bytes32", "bytes32", "bytes", "bytes", "uint64", "uint8", "string"],
         [
-          validatorClaimsRRC.refundRequestClaims[0].originTransactionHash,
-          validatorClaimsRRC.refundRequestClaims[0].refundTransactionHash,
-          validatorClaimsRRC.refundRequestClaims[0].originAmount,
-          validatorClaimsRRC.refundRequestClaims[0].originWrappedAmount,
-          validatorClaimsRRC.refundRequestClaims[0].outputIndexes,
-          validatorClaimsRRC.refundRequestClaims[0].originSenderAddress,
+          validatorClaimsRRC.refundRequestClaims[0].observedTransactionHash,
+          validatorClaimsRRC.refundRequestClaims[0].previousRefundTxHash,
+          validatorClaimsRRC.refundRequestClaims[0].signature,
+          validatorClaimsRRC.refundRequestClaims[0].rawTransaction,
           validatorClaimsRRC.refundRequestClaims[0].retryCounter,
           validatorClaimsRRC.refundRequestClaims[0].originChainId,
           validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet,
@@ -474,12 +470,23 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
+  });
 
-    it("Should emit NotEnoughFunds and skip Refund Request Claim for failed BRC on destination if there is not enough funds", async function () {
-      const { bridge, claims, owner, chain2, validators, validatorsCardanoData, validatorClaimsRRC } =
+  describe("Submit new Refund Executed Claim", function () {
+    it("Should revert if chain is not registered", async function () {
+      const { bridge, validators, validatorClaimsREC } = await loadFixture(deployBridgeFixture);
+
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsREC)).to.be.revertedWithCustomError(
+        bridge,
+        "ChainIsNotRegistered"
+      );
+    });
+
+    it("Should skip if Refund Executed Claim is already confirmed", async function () {
+      const { bridge, claimsHelper, owner, validators, chain2, validatorClaimsREC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain2, 1, 1, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
 
       validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = true;
 

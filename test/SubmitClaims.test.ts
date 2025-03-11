@@ -880,7 +880,7 @@ describe("Submit Claims", function () {
       );
       validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = false;
     });
-
+    
     it("Should not decrease Hot Wallet status when Refund Request Claims has shouldDecrementHotWallet set to true and it is NOT 0 retry", async function () {
       const { bridge, claims, owner, validators, chain2, validatorClaimsRRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
@@ -1006,7 +1006,7 @@ describe("Submit Claims", function () {
       validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = false;
       validatorClaimsRRC.refundRequestClaims[0].originChainId = chain2.id;
     });
-
+    
     it("Use Case 2: BRC -> BEFC -> RRC -> BEFC -> RRC -> BEFC", async function () {
       const {
         bridge,
