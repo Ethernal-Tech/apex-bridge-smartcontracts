@@ -61,6 +61,11 @@ contract ApexStakeManager is Initializable, Ownable2StepUpgradeable {
         _;
     }
 
+    modifier onlyWhitelistedValidator() {
+        if (!validators[msg.sender].isWhitelisted) revert Unauthorized("WHITELIST");
+        _;
+    }
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -83,11 +88,11 @@ contract ApexStakeManager is Initializable, Ownable2StepUpgradeable {
         _transferOwnership(_owner);
     }
 
-    function stake(uint256 amount) external onlyValidator() {
+    function stake(uint256 amount) external onlyValidator {
         // do nothing
     }
 
-    function unstake(uint256 amount) external onlyValidator() {
+    function unstake(uint256 amount) external onlyValidator {
         // do nothing
     }
 
@@ -106,10 +111,7 @@ contract ApexStakeManager is Initializable, Ownable2StepUpgradeable {
         }
     }
 
-    function registerByAdmin(
-        address _validatorAddr,
-        uint256[4] calldata _pubkey
-    ) external onlyOwner {
+    function registerValidatorByAdmin(address _validatorAddr, uint256[4] calldata _pubkey) external onlyOwner {
         ApexStakeValidator storage validator = validators[_validatorAddr];
         if (!validator.isActive) {
             totalValidatorsStake += 1;
@@ -121,7 +123,7 @@ contract ApexStakeManager is Initializable, Ownable2StepUpgradeable {
         emit ValidatorRegistered(_validatorAddr, _pubkey, 1);
     }
 
-    function unregisterByAdmin(address _validatorAddr) external onlyOwner {
+    function unregisterValidatorByAdmin(address _validatorAddr) external onlyOwner {
         ApexStakeValidator storage validator = validators[_validatorAddr];
         if (validator.isActive || validator.isWhitelisted) {
             if (validator.isActive) {
@@ -132,10 +134,13 @@ contract ApexStakeManager is Initializable, Ownable2StepUpgradeable {
         }
     }
 
-    function register(uint256[2] calldata _signature, uint256[4] calldata _pubkey, uint256 _stakeAmount) external {
-        ApexStakeValidator storage validator = validators[msg.sender];
-        if (!validator.isWhitelisted) revert Unauthorized("WHITELIST");
+    function register(
+        uint256[2] calldata _signature,
+        uint256[4] calldata _pubkey,
+        uint256 _stakeAmount
+    ) external onlyWhitelistedValidator {
         _verifyValidatorRegistration(msg.sender, _signature, _pubkey);
+        ApexStakeValidator storage validator = validators[msg.sender];
         if (!validator.isActive) {
             totalValidatorsStake += 1;
         }
