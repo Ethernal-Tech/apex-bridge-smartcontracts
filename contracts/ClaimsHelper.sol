@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -58,7 +58,8 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
 
         confirmedSignedBatches[destinationChainId][signedBatchId] = ConfirmedSignedBatchData(
             _signedBatch.firstTxNonceId,
-            _signedBatch.lastTxNonceId
+            _signedBatch.lastTxNonceId,
+            _signedBatch.isConsolidation
         );
         currentBatchBlock[destinationChainId] = int256(block.number);
     }

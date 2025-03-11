@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -118,21 +118,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint256 refundRequestClaimsLength = _claims.refundRequestClaims.length;
         for (uint i; i < refundRequestClaimsLength; i++) {
             RefundRequestClaim calldata _claim = _claims.refundRequestClaims[i];
-            if (!isChainRegistered[_claim.chainId]) {
-                revert ChainIsNotRegistered(_claim.chainId);
+            if (!isChainRegistered[_claim.originChainId]) {
+                revert ChainIsNotRegistered(_claim.originChainId);
             }
 
             _submitClaimsRRC(_claim, _caller);
-        }
-
-        uint256 refundExecutedClaimsLength = _claims.refundExecutedClaims.length;
-        for (uint i; i < refundExecutedClaimsLength; i++) {
-            RefundExecutedClaim calldata _claim = _claims.refundExecutedClaims[i];
-            if (!isChainRegistered[_claim.chainId]) {
-                revert ChainIsNotRegistered(_claim.chainId);
-            }
-
-            _submitClaimsREC(_claim, _caller);
         }
 
         uint256 hotWalletIncrementClaimsLength = _claims.hotWalletIncrementClaims.length;
@@ -200,11 +190,17 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
+            // current batch block must be reset in any case because otherwise bridge will be blocked
+            claimsHelper.resetCurrentBatchBlock(chainId);
+
             ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
                 chainId,
                 batchId
             );
-            claimsHelper.resetCurrentBatchBlock(chainId);
+            // do not process included transactions or modify batch creation state if it is a consolidation
+            if (_confirmedSignedBatch.isConsolidation) {
+                return;
+            }
 
             lastBatchedTxNonce[chainId] = _confirmedSignedBatch.lastTxNonceId;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
@@ -222,12 +218,17 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         if (_quorumReached) {
+            // current batch block must be reset in any case because otherwise bridge will be blocked
             claimsHelper.resetCurrentBatchBlock(chainId);
 
             ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
                 chainId,
                 batchId
             );
+            // do not process included transactions or modify batch creation state if it is a consolidation
+            if (_confirmedSignedBatch.isConsolidation) {
+                return;
+            }
 
             uint64 _firstTxNonce = _confirmedSignedBatch.firstTxNonceId;
             uint64 _lastTxNouce = _confirmedSignedBatch.lastTxNonceId;
@@ -238,7 +239,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 if (_txType == 0) {
                     chainTokenQuantity[chainId] += _ctx.totalAmount;
                     chainWrappedTokenQuantity[chainId] += _ctx.totalWrappedAmount;
-                } else {
+                } else if (_txType == 1) {
                     if (_ctx.retryCounter < MAX_NUMBER_OF_DEFUND_RETRIES) {
                         uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
                         confirmedTransactions[chainId][nextNonce] = _ctx;
@@ -250,7 +251,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                         emit DefundFailedAfterMultipleRetries();
                     }
                 }
-                // refund will be implemented through new if case
             }
 
             lastBatchedTxNonce[chainId] = _lastTxNouce;
@@ -259,13 +259,40 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _submitClaimsRRC(RefundRequestClaim calldata _claim, address _caller) internal {
-        bytes32 claimHash = keccak256(abi.encode("RRC", _claim));
-        claimsHelper.setVotedOnlyIfNeeded(_caller, claimHash, validators.getQuorumNumberOfValidators());
-    }
+        uint8 originChainId = _claim.originChainId;
 
-    function _submitClaimsREC(RefundExecutedClaim calldata _claim, address _caller) internal {
-        bytes32 claimHash = keccak256(abi.encode("REC", _claim));
-        claimsHelper.setVotedOnlyIfNeeded(_caller, claimHash, validators.getQuorumNumberOfValidators());
+        if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
+            if (chainTokenQuantity[originChainId] < _claim.originAmount) {
+                emit NotEnoughFunds("RRC", 0, chainTokenQuantity[originChainId]);
+                return;
+            }
+
+            if (chainWrappedTokenQuantity[originChainId] < _claim.originWrappedAmount) {
+                emit NotEnoughFunds("RRC", 0, chainWrappedTokenQuantity[originChainId]);
+                return;
+            }
+        }
+
+        bytes32 claimHash = keccak256(abi.encode("RRC", _claim));
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
+            _caller,
+            claimHash,
+            validators.getQuorumNumberOfValidators()
+        );
+
+        if (_quorumReached) {
+            uint256 _confirmedTxCount = getBatchingTxsCount(originChainId);
+
+            if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
+                // refund after failing on destination chain, return funds to hot wallet
+                chainTokenQuantity[originChainId] -= _claim.originAmount;
+                chainWrappedTokenQuantity[originChainId] -= _claim.originWrappedAmount;
+            }
+
+            _setConfirmedTransactionsRRC(_claim);
+
+            _updateNextTimeoutBlockIfNeeded(originChainId, _confirmedTxCount);
+        }
     }
 
     function _submitClaimHWIC(HotWalletIncrementClaim calldata _claim, address _caller) internal {
@@ -301,6 +328,25 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         for (uint i; i < receiversLength; i++) {
             confirmedTx.receivers.push(_claim.receivers[i]);
         }
+    }
+
+    function _setConfirmedTransactionsRRC(RefundRequestClaim memory _claim) internal {
+        uint8 chainId = _claim.originChainId;
+        uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
+
+        ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nextNonce];
+        confirmedTx.totalAmount = _claim.originAmount;
+        confirmedTx.totalWrappedAmount = _claim.originWrappedAmount;
+        confirmedTx.blockHeight = block.number;
+        confirmedTx.observedTransactionHash = _claim.originTransactionHash;
+        confirmedTx.sourceChainId = chainId;
+        confirmedTx.nonce = nextNonce;
+        confirmedTx.retryCounter = _claim.retryCounter;
+        confirmedTx.transactionType = 2;
+
+        confirmedTx.receivers.push(
+            Receiver(_claim.originAmount, _claim.originWrappedAmount, _claim.originSenderAddress)
+        );
     }
 
     function setVoted(address _voter, bytes32 _hash) external onlyBridge returns (uint256) {
@@ -469,17 +515,25 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function getBatchTransactions(uint8 _chainId, uint64 _batchId) external view returns (TxDataInfo[] memory) {
-        ConfirmedSignedBatchData memory confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
+        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
             _chainId,
             _batchId
         );
-        uint64 _firstTxNonce = confirmedSignedBatch.firstTxNonceId;
-        uint64 _lastTxNonce = confirmedSignedBatch.lastTxNonceId;
+        if (_confirmedSignedBatch.isConsolidation) {
+            return new TxDataInfo[](0);
+        }
+
+        uint64 _firstTxNonce = _confirmedSignedBatch.firstTxNonceId;
+        uint64 _lastTxNonce = _confirmedSignedBatch.lastTxNonceId;
 
         TxDataInfo[] memory _txHashes = new TxDataInfo[](_lastTxNonce - _firstTxNonce + 1);
         for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
             ConfirmedTransaction storage ctx = confirmedTransactions[_chainId][i];
-            _txHashes[i - _firstTxNonce] = TxDataInfo(ctx.sourceChainId, ctx.observedTransactionHash);
+            _txHashes[i - _firstTxNonce] = TxDataInfo(
+                ctx.observedTransactionHash,
+                ctx.sourceChainId,
+                ctx.transactionType
+            );
         }
 
         return _txHashes;

@@ -78,13 +78,14 @@ describe("Batch Creation", function () {
       const { bridge, signedBatches, validators, signedBatch } = await loadFixture(deployBridgeFixture);
 
       const encoded = ethers.solidityPacked(
-        ["uint64", "uint64", "uint64", "uint8", "bytes"],
+        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
         [
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
+          false,
         ]
       );
 
@@ -100,13 +101,14 @@ describe("Batch Creation", function () {
       signedBatch.id = 1000; //invalid id
 
       const encodedFalse = ethers.solidityPacked(
-        ["uint64", "uint64", "uint64", "uint8", "bytes"],
+        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
         [
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
+          false,
         ]
       );
 
@@ -123,13 +125,14 @@ describe("Batch Creation", function () {
       const { bridge, claimsHelper, validators, signedBatch } = await loadFixture(deployBridgeFixture);
 
       const hash = ethers.solidityPackedKeccak256(
-        ["uint64", "uint64", "uint64", "uint8", "bytes"],
+        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
         [
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
+          false,
         ]
       );
 
@@ -470,13 +473,14 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
 
       const encoded = ethers.solidityPacked(
-        ["uint64", "uint64", "uint64", "uint8", "bytes"],
+        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
         [
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
+          false,
         ]
       );
 
@@ -493,6 +497,46 @@ describe("Batch Creation", function () {
 
       expect(numberOfSignatures[0]).to.equal(0);
       expect(numberOfSignatures[1]).to.equal(0);
+    });
+
+    it("Should not update nextTimeoutBlock when it is a consolidation batch", async function () {
+      const {
+        bridge,
+        claims,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsBRC,
+        validatorClaimsBEC,
+        signedBatchConsolidation,
+        validatorsCardanoData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorsCardanoData);
+
+      const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatchConsolidation);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatchConsolidation);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatchConsolidation);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatchConsolidation);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBEC);
+
+      const nextBatchBlock = await claims.nextTimeoutBlock(_destinationChain);
+      const currentBlock = await ethers.provider.getBlockNumber();
+
+      expect(nextBatchBlock).to.lessThan(currentBlock + 1);
     });
   });
 });

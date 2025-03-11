@@ -111,10 +111,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[0])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[0].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -122,10 +122,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[1])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[1].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -133,10 +133,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[2])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[2].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -144,10 +144,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[3])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[3].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -155,10 +155,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[4])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[4].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -181,10 +181,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[0])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[0].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -192,10 +192,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[1])
         .registerChainGovernance(
-          chain1.id, 
+          chain1.id,
           chain1.chainType,
-          100, 
-          100, 
+          100,
+          100,
           validatorsCardanoData[1].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -203,10 +203,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[2])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[2].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -217,10 +217,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[3])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[3].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -231,10 +231,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[4])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[4].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -248,10 +248,10 @@ describe("Chain Registration", function () {
         bridge
           .connect(validators[4])
           .registerChainGovernance(
-            chain1.id, 
-            chain1.chainType, 
-            100, 
-            100, 
+            chain1.id,
+            chain1.chainType,
+            100,
+            100,
             validatorsCardanoData[4].data,
             "0x7465737400000000000000000000000000000000000000000000000000000000",
             "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -266,10 +266,10 @@ describe("Chain Registration", function () {
         bridge
           .connect(owner)
           .registerChainGovernance(
-            chain1.id, 
-            chain1.chainType, 
-            100, 
-            100, 
+            chain1.id,
+            chain1.chainType,
+            100,
+            100,
             validatorsCardanoData[0].data,
             "0x7465737400000000000000000000000000000000000000000000000000000000",
             "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -285,10 +285,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[0])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[0].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -298,10 +298,10 @@ describe("Chain Registration", function () {
         bridge
           .connect(validators[0])
           .registerChainGovernance(
-            chain1.id, 
-            chain1.chainType, 
-            100, 
-            100, 
+            chain1.id,
+            chain1.chainType,
+            100,
+            100,
             validatorsCardanoData[0].data,
             "0x7465737400000000000000000000000000000000000000000000000000000000",
             "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -334,10 +334,10 @@ describe("Chain Registration", function () {
         bridge
           .connect(validators[0])
           .registerChainGovernance(
-            chain1.id, 
-            chain1.chainType, 
-            100, 
-            100, 
+            chain1.id,
+            chain1.chainType,
+            100,
+            100,
             validatorsCardanoData[0].data,
             "0x7465737400000000000000000000000000000000000000000000000000000000",
             "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -353,10 +353,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[0])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[0].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -364,10 +364,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[1])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[1].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -375,10 +375,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[2])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[2].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -386,10 +386,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[3])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[3].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -400,10 +400,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[4])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[4].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -418,10 +418,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[0])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[0].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -429,10 +429,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[1])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[1].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -440,10 +440,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[2])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[2].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -451,10 +451,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[3])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[3].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -465,10 +465,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[4])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[4].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -485,10 +485,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[0])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[0].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -497,10 +497,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[1])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[1].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -509,10 +509,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[2])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[2].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -521,10 +521,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[3])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[3].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -534,15 +534,15 @@ describe("Chain Registration", function () {
         bridge
           .connect(validators[4])
           .registerChainGovernance(
-            chain1.id, 
-            chain1.chainType, 
-            100, 
-            100, 
+            chain1.id,
+            chain1.chainType,
+            100,
+            100,
             validatorsCardanoData[4].data,
             "0x7465737400000000000000000000000000000000000000000000000000000000",
             "0x7465737400000000000000000000000000000000000000000000000000000000"
           )
-        )
+      )
         .to.emit(bridge, "newChainRegistered")
         .withArgs(1);
     });
@@ -553,10 +553,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[0])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[0].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -564,10 +564,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[1])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[1].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -575,10 +575,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[2])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[2].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -586,10 +586,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[3])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[3].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -597,10 +597,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[4])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[4].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -609,10 +609,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[0])
         .registerChainGovernance(
-          chain2.id, 
-          chain2.chainType, 
-          100, 
-          100, 
+          chain2.id,
+          chain2.chainType,
+          100,
+          100,
           validatorsCardanoData[0].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -620,10 +620,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[1])
         .registerChainGovernance(
-          chain2.id, 
-          chain2.chainType, 
-          100, 
-          100, 
+          chain2.id,
+          chain2.chainType,
+          100,
+          100,
           validatorsCardanoData[1].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -631,10 +631,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[2])
         .registerChainGovernance(
-          chain2.id, 
-          chain2.chainType, 
-          100, 
-          100, 
+          chain2.id,
+          chain2.chainType,
+          100,
+          100,
           validatorsCardanoData[2].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -642,10 +642,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[3])
         .registerChainGovernance(
-          chain2.id, 
-          chain2.chainType, 
-          100, 
-          100, 
+          chain2.id,
+          chain2.chainType,
+          100,
+          100,
           validatorsCardanoData[3].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -653,10 +653,10 @@ describe("Chain Registration", function () {
       await bridge
         .connect(validators[4])
         .registerChainGovernance(
-          chain2.id, 
-          chain2.chainType, 
-          100, 
-          100, 
+          chain2.id,
+          chain2.chainType,
+          100,
+          100,
           validatorsCardanoData[4].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -735,10 +735,10 @@ describe("Chain Registration", function () {
     await bridge
       .connect(validators[0])
       .registerChainGovernance(
-        chain1.id, 
-        chain1.chainType, 
-        100, 
-        100, 
+        chain1.id,
+        chain1.chainType,
+        100,
+        100,
         validatorsCardanoData[0].data,
         "0x7465737400000000000000000000000000000000000000000000000000000000",
         "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -746,10 +746,10 @@ describe("Chain Registration", function () {
     await bridge
       .connect(validators[1])
       .registerChainGovernance(
-        chain1.id, 
-        chain1.chainType, 
-        100, 
-        100, 
+        chain1.id,
+        chain1.chainType,
+        100,
+        100,
         validatorsCardanoData[1].data,
         "0x7465737400000000000000000000000000000000000000000000000000000000",
         "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -757,10 +757,10 @@ describe("Chain Registration", function () {
     await bridge
       .connect(validators[2])
       .registerChainGovernance(
-        chain1.id, 
-        chain1.chainType, 
-        100, 
-        100, 
+        chain1.id,
+        chain1.chainType,
+        100,
+        100,
         validatorsCardanoData[2].data,
         "0x7465737400000000000000000000000000000000000000000000000000000000",
         "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -768,10 +768,10 @@ describe("Chain Registration", function () {
     await bridge
       .connect(validators[3])
       .registerChainGovernance(
-        chain1.id, 
-        chain1.chainType, 
-        100, 
-        100, 
+        chain1.id,
+        chain1.chainType,
+        100,
+        100,
         validatorsCardanoData[3].data,
         "0x7465737400000000000000000000000000000000000000000000000000000000",
         "0x7465737400000000000000000000000000000000000000000000000000000000"
@@ -779,10 +779,10 @@ describe("Chain Registration", function () {
     await bridge
       .connect(validators[4])
       .registerChainGovernance(
-        chain1.id, 
-        chain1.chainType, 
-        100, 
-        100, 
+        chain1.id,
+        chain1.chainType,
+        100,
+        100,
         validatorsCardanoData[4].data,
         "0x7465737400000000000000000000000000000000000000000000000000000000",
         "0x7465737400000000000000000000000000000000000000000000000000000000"
