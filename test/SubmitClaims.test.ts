@@ -682,7 +682,7 @@ describe("Submit Claims", function () {
 
       expect(nextBatchBlock).to.lessThan(currentBlock);
     });
-    
+
     it("Should update lastBatchedTxNonce when Bridging Excuted Failed Claim is confirmed", async function () {
       const {
         bridge,
@@ -809,7 +809,7 @@ describe("Submit Claims", function () {
           validatorClaimsRRC.refundRequestClaims[0].originSenderAddress,
           validatorClaimsRRC.refundRequestClaims[0].retryCounter,
           validatorClaimsRRC.refundRequestClaims[0].originChainId,
-           validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet,
+          validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet,
         ]
       );
 
@@ -887,9 +887,9 @@ describe("Submit Claims", function () {
 
       validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = true;
       validatorClaimsRRC.refundRequestClaims[0].retryCounter = 1;
-  
+
       await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorsCardanoData);
- 
+
       await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsRRC);
@@ -938,8 +938,8 @@ describe("Submit Claims", function () {
 
       let hotWalletWrappedStateOriginalDestination = await claims.chainWrappedTokenQuantity(
         validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId
-      ); 
-      
+      );
+
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -952,7 +952,7 @@ describe("Submit Claims", function () {
       expect(await claims.chainWrappedTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
         hotWalletWrappedStateOriginalSource + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountSource)
       );
- 
+
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
         hotWalletStateOriginalDestination - BigInt(validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination)
       );
@@ -960,17 +960,17 @@ describe("Submit Claims", function () {
       expect(await claims.chainWrappedTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
         hotWalletWrappedStateOriginalDestination + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountDestination)
       );
- 
+
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
- 
+
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
- 
+
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
         hotWalletStateOriginalSource + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource)
       );
@@ -978,7 +978,7 @@ describe("Submit Claims", function () {
       expect(await claims.chainWrappedTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
         hotWalletWrappedStateOriginalSource + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountSource)
       );
- 
+
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
         hotWalletStateOriginalDestination
       );
@@ -986,23 +986,23 @@ describe("Submit Claims", function () {
       expect(await claims.chainWrappedTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
         hotWalletWrappedStateOriginalDestination
       );
- 
+
       validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = true;
       validatorClaimsRRC.refundRequestClaims[0].originChainId = chain1.id;
- 
+
       await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
- 
+
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
         hotWalletStateOriginalSource
       );
- 
+
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
         hotWalletStateOriginalDestination
       );
- 
+
       validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = false;
       validatorClaimsRRC.refundRequestClaims[0].originChainId = chain2.id;
     });
@@ -1120,19 +1120,19 @@ describe("Submit Claims", function () {
       signedBatch.firstTxNonceId = 1;
       signedBatch.lastTxNonceId = 1;
       signedBatch.destinationChainId = chain1.id;
- 
+
       // wait for next timeout
       for (let i = 0; i < 4; i++) {
         await ethers.provider.send("evm_mine");
       }
- 
+
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
- 
+
       // --- START BEFC 2 ---
- 
+
       validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId = 2;
       validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId = 1;
       validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId = chain1.id;
@@ -1153,9 +1153,9 @@ describe("Submit Claims", function () {
       // --- END BEFC 2 ---
 
       // --- START RRC 2 ---
- 
+
       validatorClaimsRRC.refundRequestClaims[0].retryCounter = 1;
- 
+
       await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsRRC);

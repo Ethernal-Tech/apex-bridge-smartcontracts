@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -260,7 +260,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function _submitClaimsRRC(RefundRequestClaim calldata _claim, address _caller) internal {
         uint8 originChainId = _claim.originChainId;
- 
+
         if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
             if (chainTokenQuantity[originChainId] < _claim.originAmount) {
                 emit NotEnoughFunds("RRC", 0, chainTokenQuantity[originChainId]);
@@ -279,7 +279,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             claimHash,
             validators.getQuorumNumberOfValidators()
         );
- 
+
         if (_quorumReached) {
             uint256 _confirmedTxCount = getBatchingTxsCount(originChainId);
 
@@ -290,7 +290,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
 
             _setConfirmedTransactionsRRC(_claim);
- 
+
             _updateNextTimeoutBlockIfNeeded(originChainId, _confirmedTxCount);
         }
     }
@@ -333,7 +333,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function _setConfirmedTransactionsRRC(RefundRequestClaim memory _claim) internal {
         uint8 chainId = _claim.originChainId;
         uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
- 
+
         ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nextNonce];
         confirmedTx.totalAmount = _claim.originAmount;
         confirmedTx.totalWrappedAmount = _claim.originWrappedAmount;
@@ -344,7 +344,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         confirmedTx.retryCounter = _claim.retryCounter;
         confirmedTx.transactionType = 2;
 
-        confirmedTx.receivers.push(Receiver(_claim.originAmount, _claim.originWrappedAmount, _claim.originSenderAddress));
+        confirmedTx.receivers.push(
+            Receiver(_claim.originAmount, _claim.originWrappedAmount, _claim.originSenderAddress)
+        );
     }
 
     function setVoted(address _voter, bytes32 _hash) external onlyBridge returns (uint256) {

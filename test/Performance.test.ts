@@ -19,10 +19,10 @@ describe("Performance", function () {
       const tx = await bridge
         .connect(validators[i])
         .registerChainGovernance(
-          chain1.id, 
-          chain1.chainType, 
-          100, 
-          100, 
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
           validatorsCardanoData[0].data,
           "0x7465737400000000000000000000000000000000000000000000000000000000",
           "0x7465737400000000000000000000000000000000000000000000000000000000"
