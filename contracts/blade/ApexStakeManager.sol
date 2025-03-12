@@ -137,7 +137,7 @@ contract ApexStakeManager is Initializable, Ownable2StepUpgradeable {
     function register(
         uint256[2] calldata _signature,
         uint256[4] calldata _pubkey,
-        uint256 _stakeAmount
+        uint256 /* _stakeAmount */
     ) external onlyWhitelistedValidator {
         _verifyValidatorRegistration(msg.sender, _signature, _pubkey);
         ApexStakeValidator storage validator = validators[msg.sender];
@@ -147,7 +147,7 @@ contract ApexStakeManager is Initializable, Ownable2StepUpgradeable {
         validator.isActive = true;
         validator.blsKey = _pubkey;
         validator.addr = msg.sender;
-        emit ValidatorRegistered(msg.sender, _pubkey, _stakeAmount);
+        emit ValidatorRegistered(msg.sender, _pubkey, 1);
     }
 
     function getValidator(address _validatorAddr) external view returns (ApexStakeValidator memory) {
