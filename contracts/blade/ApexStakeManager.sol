@@ -88,11 +88,11 @@ contract ApexStakeManager is Initializable, Ownable2StepUpgradeable {
         _transferOwnership(_owner);
     }
 
-    function stake(uint256 amount) external onlyValidator {
+    function stake(uint256 /* _amount */) external onlyValidator {
         // do nothing
     }
 
-    function unstake(uint256 amount) external onlyValidator {
+    function unstake(uint256 /* _amount */) external onlyValidator {
         // do nothing
     }
 
@@ -104,10 +104,10 @@ contract ApexStakeManager is Initializable, Ownable2StepUpgradeable {
         return validators[_validatorAddr].isActive ? 1 : 0;
     }
 
-    function whitelistValidators(address[] calldata validators_) external onlyOwner {
-        uint256 length = validators_.length;
+    function whitelistValidators(address[] calldata _validatorsAddrs) external onlyOwner {
+        uint256 length = _validatorsAddrs.length;
         for (uint256 i = 0; i < length; i += 1) {
-            _addToWhitelist(validators_[i]);
+            _addToWhitelist(_validatorsAddrs[i]);
         }
     }
 
@@ -158,32 +158,32 @@ contract ApexStakeManager is Initializable, Ownable2StepUpgradeable {
         // do nothing
     }
 
-    function withdrawable(address) external pure returns (uint256 amount) {
+    function withdrawable(address /* _validatorAddr */) external pure returns (uint256 amount) {
         return 0;
     }
 
-    function pendingWithdrawals(address) external pure returns (uint256) {
+    function pendingWithdrawals(address /* _validatorAddr */) external pure returns (uint256) {
         return 0;
     }
 
-    function totalSupplyAt(uint256) external view returns (uint256) {
+    function totalSupplyAt(uint256 /* _epochNumber */) external view returns (uint256) {
         // the reward is zero, so the return value of this function is irrelevant
         return totalValidatorsStake;
     }
 
-    function balanceOfAt(address _validatorAddr, uint256) external view returns (uint256) {
+    function balanceOfAt(address _validatorAddr, uint256 /* _epochNumber */) external view returns (uint256) {
         // the reward is zero, so the return value of this function is irrelevant
         return validators[_validatorAddr].isActive ? 1 : 0;
     }
 
-    function _addToWhitelist(address validatorAddr) internal {
-        validators[validatorAddr].isWhitelisted = true;
-        emit AddedToWhitelist(validatorAddr);
+    function _addToWhitelist(address _validatorAddr) internal {
+        validators[_validatorAddr].isWhitelisted = true;
+        emit AddedToWhitelist(_validatorAddr);
     }
 
-    function _removeFromWhitelist(address validatorAddr) internal {
-        validators[validatorAddr].isWhitelisted = false;
-        emit RemovedFromWhitelist(validatorAddr);
+    function _removeFromWhitelist(address _validatorAddr) internal {
+        validators[_validatorAddr].isWhitelisted = false;
+        emit RemovedFromWhitelist(_validatorAddr);
     }
 
     function _verifyValidatorRegistration(
