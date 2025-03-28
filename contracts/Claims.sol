@@ -8,6 +8,7 @@ import "./interfaces/IBridgeStructs.sol";
 import "./Bridge.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
+import "hardhat/console.sol";
 
 contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
@@ -75,21 +76,31 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
+        console.log("Claims submitClaims 1");
         uint256 bridgingRequestClaimsLength = _claims.bridgingRequestClaims.length;
+        console.log("Claims submitClaims 2");
         for (uint i; i < bridgingRequestClaimsLength; i++) {
+        console.log("Claims submitClaims 3");
             BridgingRequestClaim calldata _claim = _claims.bridgingRequestClaims[i];
+        console.log("Claims submitClaims 4");
             uint8 sourceChainId = _claim.sourceChainId;
+        console.log("Claims submitClaims 5");
             uint8 destinationChainId = _claim.destinationChainId;
+        console.log("Claims submitClaims 6");
 
             if (!isChainRegistered[sourceChainId]) {
+        console.log("Claims submitClaims 7 source not registered");
                 revert ChainIsNotRegistered(sourceChainId);
             }
 
             if (!isChainRegistered[destinationChainId]) {
+        console.log("Claims submitClaims 8 dest not registered");
                 revert ChainIsNotRegistered(destinationChainId);
             }
 
+        console.log("Claims submitClaims 9");
             _submitClaimsBRC(_claim, i, _caller);
+        console.log("Claims submitClaims 10");
         }
 
         uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
@@ -134,21 +145,35 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _submitClaimsBRC(BridgingRequestClaim calldata _claim, uint256 i, address _caller) internal {
+        console.log("Claims _submitClaimsBRC 1");
         uint256 _quorumCnt = validators.getQuorumNumberOfValidators();
+        console.log("Claims _submitClaimsBRC 2");
         bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
+        console.log("Claims _submitClaimsBRC 3");
         if (claimsHelper.isVoteRestricted(_caller, _claimHash, _quorumCnt)) {
+        console.log("Claims _submitClaimsBRC 4 vote restricted");
             return;
         }
 
+        console.log("Claims _submitClaimsBRC 5");
         uint256 _receiversSum = _claim.totalAmount;
+        console.log("Claims _submitClaimsBRC 6");
         uint8 _destinationChainId = _claim.destinationChainId;
 
+        console.log("Claims _submitClaimsBRC 7");
+
         if (chainTokenQuantity[_destinationChainId] < _receiversSum) {
+        console.log("Claims _submitClaimsBRC 8");
             emit NotEnoughFunds("BRC", i, chainTokenQuantity[_destinationChainId]);
+
+        console.log("Claims _submitClaimsBRC 9");
             return;
         }
 
+        console.log("Claims _submitClaimsBRC 10");
         uint256 _votesCnt = claimsHelper.setVoted(_caller, _claimHash);
+
+        console.log("Claims _submitClaimsBRC 11");
 
         if (_votesCnt == _quorumCnt) {
             chainTokenQuantity[_destinationChainId] -= _receiversSum;

@@ -10,6 +10,7 @@ import "./Claims.sol";
 import "./SignedBatches.sol";
 import "./Slots.sol";
 import "./Validators.sol";
+import "hardhat/console.sol";
 
 contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
@@ -47,7 +48,9 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     // Claims
     function submitClaims(ValidatorClaims calldata _claims) external override onlyValidator {
+        console.log("Bridge submitClaims 1");
         claims.submitClaims(_claims, msg.sender);
+        console.log("Bridge submitClaims 2");
     }
 
     // Batches
