@@ -322,6 +322,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         confirmedTx.nonce = nextNonce;
         confirmedTx.retryCounter = _claim.retryCounter;
         confirmedTx.transactionType = 2;
+        confirmedTx.outputIndexes = _claim.outputIndexes;
 
         confirmedTx.receivers.push(Receiver(_claim.originAmount, _claim.originSenderAddress));
     }
