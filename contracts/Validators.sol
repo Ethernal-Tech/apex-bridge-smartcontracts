@@ -21,7 +21,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     mapping(uint8 => ValidatorChainData[]) private chainData;
     // validator address index(+1) in chainData mapping
     mapping(address => uint8) private addressValidatorIndex;
-
+    // max possible number of validators is 127
     uint8 public validatorsCount;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -30,6 +30,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     }
 
     function initialize(address _owner, address _upgradeAdmin, address[] calldata _validators) public initializer {
+        require(_validators.length < 128, "Too many validators (max 127)");
         _transferOwnership(_owner);
         upgradeAdmin = _upgradeAdmin;
         for (uint8 i; i < _validators.length; i++) {
