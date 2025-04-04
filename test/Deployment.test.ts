@@ -27,7 +27,6 @@ describe("Deployment", function () {
 
   it("Should set 5 validator with quorum of 4", async function () {
     const { validatorsc } = await loadFixture(deployBridgeFixture);
-
     // for 5 validators, quorum is 4
     expect(await validatorsc.getQuorumNumberOfValidators()).to.equal(4);
   })
@@ -36,6 +35,12 @@ describe("Deployment", function () {
     const validatorsc = await getValidatorsSc(6);
     // for 6 validators, quorum is 5
     expect(await validatorsc.getQuorumNumberOfValidators()).to.equal(5);
+  });
+
+  it("Should set 6 validator with quorum of 127", async function () {
+    const validatorsc = await getValidatorsSc(127);
+    // for 6 validators, quorum is 5
+    expect(await validatorsc.getQuorumNumberOfValidators()).to.equal(85);
   });
 
   it("Revert if there are too many validators", async function () {

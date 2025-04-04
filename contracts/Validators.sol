@@ -152,7 +152,10 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     }
 
     function getQuorumNumberOfValidators() external view returns (uint8 _quorum) {
-        return (validatorsCount * 2) / 3 + 1;
+        // maximum of 127 validators is enforced during initialization
+        unchecked {
+            return (validatorsCount * 2) / 3 + 1;
+        }
     }
 
     modifier onlyBridge() {
