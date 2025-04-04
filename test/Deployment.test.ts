@@ -5,6 +5,26 @@ import { ethers } from "hardhat";
 import { Validators } from "../typechain-types";
 
 describe("Deployment", function () {
+  let getValidatorsSc = async function (cnt: number) {
+    const Validators = await ethers.getContractFactory("Validators");
+    const ValidatorscProxy = await ethers.getContractFactory("ERC1967Proxy");
+
+    const validatorscLogic = await Validators.deploy();
+
+    const [owner, validator] = await ethers.getSigners();
+    let validatorsAddresses = []
+    for (let i = 1; i <= cnt; i++) {
+      validatorsAddresses.push(validator.address)
+    }
+
+    const validatorsProxy = await ValidatorscProxy.deploy(
+      await validatorscLogic.getAddress(),
+      Validators.interface.encodeFunctionData("initialize", [owner.address, owner.address, validatorsAddresses])
+    );
+
+    return (await ethers.getContractFactory("Validators")).attach(validatorsProxy.target) as Validators;
+  }
+
   it("Should set 5 validator with quorum of 4", async function () {
     const { validatorsc } = await loadFixture(deployBridgeFixture);
 
@@ -13,30 +33,12 @@ describe("Deployment", function () {
   })
 
   it("Should set 6 validator with quorum of 5", async function () {
-    const Validators = await ethers.getContractFactory("Validators");
-    const ValidatorscProxy = await ethers.getContractFactory("ERC1967Proxy");
-
-    const validatorscLogic = await Validators.deploy();
-
-    const [owner, validator1, validator2, validator3, validator4, validator5, validator6] = await ethers.getSigners();
-    const validatorsAddresses = [
-      validator1.address,
-      validator2.address,
-      validator3.address,
-      validator4.address,
-      validator5.address,
-      validator6.address,
-    ];
-
-    const validatorsProxy = await ValidatorscProxy.deploy(
-      await validatorscLogic.getAddress(),
-      Validators.interface.encodeFunctionData("initialize", [owner.address, owner.address, validatorsAddresses])
-    );
-
-    const ValidatorsDeployed = await ethers.getContractFactory("Validators");
-    const validatorsc2 = ValidatorsDeployed.attach(validatorsProxy.target) as Validators;
-
+    const validatorsc = await getValidatorsSc(6);
     // for 6 validators, quorum is 5
-    expect(await validatorsc2.getQuorumNumberOfValidators()).to.equal(5);
+    expect(await validatorsc.getQuorumNumberOfValidators()).to.equal(5);
+  });
+
+  it("Revert if there are too many validators", async function () {
+    await expect(getValidatorsSc(128)).to.revertedWith("Too many validators (max 127)");;
   });
 });
