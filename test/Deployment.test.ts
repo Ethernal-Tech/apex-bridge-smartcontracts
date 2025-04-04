@@ -5,14 +5,13 @@ import { ethers } from "hardhat";
 import { Validators } from "../typechain-types";
 
 describe("Deployment", function () {
-  let getValidatorsSc = async function (cnt: number) {
+  const getValidatorsSc = async function (cnt: number) {
     const Validators = await ethers.getContractFactory("Validators");
     const ValidatorscProxy = await ethers.getContractFactory("ERC1967Proxy");
-
     const validatorscLogic = await Validators.deploy();
-
     const [owner, validator] = await ethers.getSigners();
-    let validatorsAddresses = []
+
+    const validatorsAddresses = []
     for (let i = 1; i <= cnt; i++) {
       validatorsAddresses.push(validator.address)
     }
