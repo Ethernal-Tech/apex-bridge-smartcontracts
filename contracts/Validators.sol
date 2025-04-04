@@ -21,7 +21,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     mapping(uint8 => ValidatorChainData[]) private chainData;
     // validator address index(+1) in chainData mapping
     mapping(address => uint8) private addressValidatorIndex;
-
+    // max possible number of validators is 127
     uint8 public validatorsCount;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -30,6 +30,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     }
 
     function initialize(address _owner, address _upgradeAdmin, address[] calldata _validators) public initializer {
+        require(_validators.length < 128, "Too many validators (max 127)");
         _transferOwnership(_owner);
         upgradeAdmin = _upgradeAdmin;
         for (uint8 i; i < _validators.length; i++) {
@@ -151,11 +152,10 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     }
 
     function getQuorumNumberOfValidators() external view returns (uint8 _quorum) {
-        // return (validatorsCount * 2) / 3 + ((validatorsCount * 2) % 3 == 0 ? 0 : 1); is same as (A + B - 1) / B
-        assembly {
-            _quorum := div(add(mul(sload(validatorsCount.slot), 2), 2), 3)
+        // maximum of 127 validators is enforced during initialization
+        unchecked {
+            return (validatorsCount * 2) / 3 + 1;
         }
-        return _quorum;
     }
 
     modifier onlyBridge() {
