@@ -5,12 +5,14 @@ import { ethers } from "hardhat";
 import { Validators } from "../typechain-types";
 
 describe("Deployment", function () {
-  it("getQuorumNumberOfValidators should work correctly", async function () {
+  it("Should set 5 validator with quorum of 4", async function () {
     const { validatorsc } = await loadFixture(deployBridgeFixture);
 
     // for 5 validators, quorum is 4
     expect(await validatorsc.getQuorumNumberOfValidators()).to.equal(4);
+  })
 
+  it("Should set 6 validator with quorum of 5", async function () {
     const Validators = await ethers.getContractFactory("Validators");
     const ValidatorscProxy = await ethers.getContractFactory("ERC1967Proxy");
 
