@@ -42,6 +42,14 @@ describe("Deployment", function () {
     expect(await validatorsc.getQuorumNumberOfValidators()).to.equal(85);
   });
 
+  it("Quorum formula should work correctly", async function () {
+    for (let i = 1; i <= 127; i++) {
+      const validatorsc = await getValidatorsSc(i);
+      // for 6 validators, quorum is 5
+      expect(await validatorsc.getQuorumNumberOfValidators()).to.equal(Math.floor(i * 2 / 3) + 1);
+    }
+  });
+
   it("Revert if there are too many validators", async function () {
     await expect(getValidatorsSc(128)).to.revertedWith("Too many validators (max 127)");
   });
