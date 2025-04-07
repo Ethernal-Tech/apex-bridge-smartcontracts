@@ -49,22 +49,25 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       const destinationChainId = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
-      const nounce = await claims.lastConfirmedTxNonce(destinationChainId);
+      const nonce = await claims.lastConfirmedTxNonce(destinationChainId);
 
-      expect((await claims.confirmedTransactions(destinationChainId, nounce)).observedTransactionHash).to.equal(
+      expect((await claims.confirmedTransactions(destinationChainId, nonce)).observedTransactionHash).to.equal(
         validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash
       );
-      expect((await claims.confirmedTransactions(destinationChainId, nounce)).sourceChainId).to.equal(
+      expect((await claims.confirmedTransactions(destinationChainId, nonce)).sourceChainId).to.equal(
         validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId
       );
-      expect((await claims.confirmedTransactions(destinationChainId, nounce)).nonce).to.equal(nounce);
-      expect((await claims.confirmedTransactions(destinationChainId, nounce)).totalAmount).to.equal(
+      expect((await claims.confirmedTransactions(destinationChainId, nonce)).outputIndexes).to.equal(
+        '0x'
+      );
+      expect((await claims.confirmedTransactions(destinationChainId, nonce)).nonce).to.equal(nonce);
+      expect((await claims.confirmedTransactions(destinationChainId, nonce)).totalAmount).to.equal(
         validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount
       );
-      expect((await claims.confirmedTransactions(destinationChainId, nounce)).totalWrappedAmount).to.equal(
+      expect((await claims.confirmedTransactions(destinationChainId, nonce)).totalWrappedAmount).to.equal(
         validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amountWrapped
       );
-      expect((await claims.confirmedTransactions(destinationChainId, nounce)).blockHeight).to.equal(
+      expect((await claims.confirmedTransactions(destinationChainId, nonce)).blockHeight).to.equal(
         await ethers.provider.getBlockNumber()
       );
     });
@@ -837,6 +840,33 @@ describe("Submit Claims", function () {
       expect(await claimsHelper.hasVoted(hash, validators[2].address)).to.be.true;
       expect(await claimsHelper.hasVoted(hash, validators[3].address)).to.be.true;
       expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+    });
+
+    it("Should store new confirmedTransactions when Refund Request Claim is confirmed", async function () {
+      const { bridge, claims, owner, validators, chain2, validatorClaimsBRC, validatorClaimsRRC, validatorsCardanoData } =
+      await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
+
+      const chainID = validatorClaimsRRC.refundRequestClaims[0].originChainId;
+
+      const nonce = await claims.lastConfirmedTxNonce(chainID);
+
+      expect((await claims.confirmedTransactions(chainID, nonce)).sourceChainId).to.equal(
+        validatorClaimsRRC.refundRequestClaims[0].originChainId
+      );
+      expect((await claims.confirmedTransactions(chainID, nonce)).nonce).to.equal(nonce);
+      expect((await claims.confirmedTransactions(chainID, nonce)).outputIndexes).to.equal(
+        validatorClaimsRRC.refundRequestClaims[0].outputIndexes
+      );
+      expect((await claims.confirmedTransactions(chainID, nonce)).blockHeight).to.equal(
+        await ethers.provider.getBlockNumber()
+      );
     });
 
     it("Should not change Hot Wallet status when Refund Request Claims is confirmed (wrong metadata, not enough funds)", async function () {
