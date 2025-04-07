@@ -51,6 +51,6 @@ describe("Deployment", function () {
   });
 
   it("Revert if there are too many validators", async function () {
-    await expect(getValidatorsSc(128)).to.revertedWith("Too many validators (max 127)");;
+    await expect(getValidatorsSc(128)).to.revertedWith("Too many validators (max 127)");
   });
 });
