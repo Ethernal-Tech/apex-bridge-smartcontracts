@@ -344,6 +344,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         confirmedTx.retryCounter = _claim.retryCounter;
         confirmedTx.transactionType = 2;
         confirmedTx.outputIndexes = _claim.outputIndexes;
+        confirmedTx.alreadyTriedBatch = _claim.shouldDecrementHotWallet;
 
         confirmedTx.receivers.push(
             Receiver(_claim.originAmount, _claim.originWrappedAmount, _claim.originSenderAddress)
