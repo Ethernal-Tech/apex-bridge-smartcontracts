@@ -37,7 +37,9 @@ interface IBridgeStructs {
         uint64 nonce;
         uint8 sourceChainId;
         uint8 transactionType; // 0 = normal, 1 = defund, 2 = refund
+        bool alreadyTriedBatch;
         Receiver[] receivers;
+        bytes outputIndexes;
     }
 
     struct CardanoBlock {
