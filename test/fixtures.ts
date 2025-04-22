@@ -214,6 +214,20 @@ export async function deployBridgeFixture() {
     hotWalletIncrementClaims: [],
   };
 
+  const validatorClaimsBEC_another = {
+    bridgingRequestClaims: [],
+    batchExecutedClaims: [
+      {
+        observedTransactionHash: "0x7465737500000000000000000000000000000000000000000000000000000001",
+        chainId: 2,
+        batchNonceId: 1,
+      },
+    ],
+    batchExecutionFailedClaims: [],
+    refundRequestClaims: [],
+    hotWalletIncrementClaims: [],
+  };
+
   const validatorClaimsBECerror = {
     bridgingRequestClaims: [],
     batchExecutedClaims: [
@@ -234,6 +248,20 @@ export async function deployBridgeFixture() {
     batchExecutionFailedClaims: [
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        chainId: 2,
+        batchNonceId: 1,
+      },
+    ],
+    refundRequestClaims: [],
+    hotWalletIncrementClaims: [],
+  };
+
+  const validatorClaimsBEFC_another = {
+    bridgingRequestClaims: [],
+    batchExecutedClaims: [],
+    batchExecutionFailedClaims: [
+      {
+        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000001",
         chainId: 2,
         batchNonceId: 1,
       },
@@ -381,7 +409,9 @@ export async function deployBridgeFixture() {
     validatorCardanoData,
     validatorClaimsBRC,
     validatorClaimsBEC,
+    validatorClaimsBEC_another,
     validatorClaimsBEFC,
+    validatorClaimsBEFC_another,
     validatorClaimsRRC,
     validatorClaimsHWIC,
     validatorClaimsBRCerror,

@@ -186,6 +186,15 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 chainId,
                 batchId
             );
+
+            if (
+                _confirmedSignedBatch.firstTxNonceId == 0 &&
+                _confirmedSignedBatch.lastTxNonceId == 0 &&
+                _confirmedSignedBatch.isConsolidation == false
+            ) {
+                revert BatchNotFound(chainId, batchId);
+            }
+
             // do not process included transactions or modify batch creation state if it is a consolidation
             if (_confirmedSignedBatch.isConsolidation) {
                 return;
@@ -193,6 +202,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             lastBatchedTxNonce[chainId] = _confirmedSignedBatch.lastTxNonceId;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
+
+            claimsHelper.deleteConfirmedSignedBatch(chainId, batchId);
         }
     }
 
@@ -214,6 +225,15 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
                 chainId,
                 batchId
             );
+
+            if (
+                _confirmedSignedBatch.firstTxNonceId == 0 &&
+                _confirmedSignedBatch.lastTxNonceId == 0 &&
+                _confirmedSignedBatch.isConsolidation == false
+            ) {
+                revert BatchNotFound(chainId, batchId);
+            }
+
             // do not process included transactions or modify batch creation state if it is a consolidation
             if (_confirmedSignedBatch.isConsolidation) {
                 return;
@@ -242,6 +262,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             lastBatchedTxNonce[chainId] = _lastTxNouce;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
+
+            claimsHelper.deleteConfirmedSignedBatch(chainId, batchId);
         }
     }
 
