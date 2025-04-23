@@ -178,8 +178,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         // Once a quorum has been reached on either BEC or BEFC for a batch, the first and last transaction
-        // nonces of for that batch is set to 0, thus signaling that the batch has been processed. Any further BEC or BEFC
-        // claims for the same batch will not be processed. This is to prevent double processing of the same batch.
+        // nonces of for that batch are deleted, thus signaling that the batch has been processed. Any further BEC or BEFC
+        // claims for the same batch will not be processed. This is to prevent double processing of the same batch,
+        // and also to prevent processing of batches with invalid IDs.
         // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
         if (
             _confirmedSignedBatch.firstTxNonceId == 0 &&
@@ -223,8 +224,9 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
 
         // Once a quorum has been reached on either BEC or BEFC for a batch, the first and last transaction
-        // nonces of for that batch is set to 0, thus signaling that the batch has been processed. Any further BEC or BEFC
-        // claims for the same batch will not be processed. This is to prevent double processing of the same batch.
+        // nonces of for that batch are deleted, thus signaling that the batch has been processed. Any further BEC or BEFC
+        // claims for the same batch will not be processed. This is to prevent double processing of the same batch,
+        // and also to prevent processing of batches with invalid IDs.
         // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
         if (
             _confirmedSignedBatch.firstTxNonceId == 0 &&
