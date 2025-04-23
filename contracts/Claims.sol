@@ -166,11 +166,23 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _submitClaimsBEC(BatchExecutedClaim calldata _claim, address _caller) internal {
-        // The BatchExecutionInfo event should be emitted even if the validator has already voted
-        // or if consensus has already been reached. Same goes for BEFC
-        bytes32 claimHash = keccak256(abi.encode("BEC", _claim));
         uint8 chainId = _claim.chainId;
         uint64 batchId = _claim.batchNonceId;
+
+        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
+            chainId,
+            batchId
+        );
+
+        if (
+            _confirmedSignedBatch.firstTxNonceId == 0 &&
+            _confirmedSignedBatch.lastTxNonceId == 0 &&
+            !_confirmedSignedBatch.isConsolidation
+        ) {
+            return;
+        }
+
+        bytes32 claimHash = keccak256(abi.encode("BEC", _claim));
 
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
@@ -181,19 +193,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         if (_quorumReached) {
             // current batch block must be reset in any case because otherwise bridge will be blocked
             claimsHelper.resetCurrentBatchBlock(chainId);
-
-            ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
-                chainId,
-                batchId
-            );
-
-            if (
-                _confirmedSignedBatch.firstTxNonceId == 0 &&
-                _confirmedSignedBatch.lastTxNonceId == 0 &&
-                _confirmedSignedBatch.isConsolidation == false
-            ) {
-                revert BatchNotFound(chainId, batchId);
-            }
 
             // do not process included transactions or modify batch creation state if it is a consolidation
             if (_confirmedSignedBatch.isConsolidation) {
@@ -208,9 +207,24 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _submitClaimsBEFC(BatchExecutionFailedClaim calldata _claim, address _caller) internal {
-        bytes32 claimHash = keccak256(abi.encode("BEFC", _claim));
         uint8 chainId = _claim.chainId;
         uint64 batchId = _claim.batchNonceId;
+
+        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
+            chainId,
+            batchId
+        );
+
+        if (
+            _confirmedSignedBatch.firstTxNonceId == 0 &&
+            _confirmedSignedBatch.lastTxNonceId == 0 &&
+            !_confirmedSignedBatch.isConsolidation
+        ) {
+            return;
+        }
+
+        bytes32 claimHash = keccak256(abi.encode("BEFC", _claim));
+
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
             claimHash,
@@ -220,19 +234,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         if (_quorumReached) {
             // current batch block must be reset in any case because otherwise bridge will be blocked
             claimsHelper.resetCurrentBatchBlock(chainId);
-
-            ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
-                chainId,
-                batchId
-            );
-
-            if (
-                _confirmedSignedBatch.firstTxNonceId == 0 &&
-                _confirmedSignedBatch.lastTxNonceId == 0 &&
-                _confirmedSignedBatch.isConsolidation == false
-            ) {
-                revert BatchNotFound(chainId, batchId);
-            }
 
             // do not process included transactions or modify batch creation state if it is a consolidation
             if (_confirmedSignedBatch.isConsolidation) {

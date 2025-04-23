@@ -159,7 +159,6 @@ interface IBridgeStructs {
     error DefundRequestTooHigh(uint8 _chainId, uint256 _availableAmount, uint256 _requestedAmount);
     error ZeroAddress();
     error NegativeChainTokenAmount(uint256 _availableAmount, uint256 _decreaseAmount);
-    error BatchNotFound(uint8 _chainId, uint64 _batchId);
 
     event newChainProposal(uint8 indexed _chainId, address indexed sender);
     event newChainRegistered(uint8 indexed _chainId);
