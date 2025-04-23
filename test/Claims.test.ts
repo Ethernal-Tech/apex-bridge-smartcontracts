@@ -399,6 +399,7 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
+
     it("Should emit NotEnoughFunds and skip Refund Request Claim for failed BRC on destination if there is not enough funds", async function () {
       const { bridge, claims, owner, chain2, validators, validatorsCardanoData, validatorClaimsRRC } =
         await loadFixture(deployBridgeFixture);
@@ -433,6 +434,73 @@ describe("Claims Contract", function () {
       expect(event.fragment.name).to.equal("NotEnoughFunds");
 
       validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = false;
+    });
+
+    it("Should skip if refundTransactionHash is not empty in Refund Request Claims", async function () {
+      const {
+        bridge,
+        claimsHelper,
+        owner,
+        validators,
+        chain2,
+        validatorClaimsRRC,
+        validatorClaimsRRCwrongHash,
+        validatorsCardanoData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+
+      let abiCoder = new ethers.AbiCoder();
+      let encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
+      let encoded = abiCoder.encode(
+        ["bytes32", "bytes32", "uint256", "bytes", "string", "uint64", "uint8", "bool"],
+        [
+          validatorClaimsRRC.refundRequestClaims[0].originTransactionHash,
+          validatorClaimsRRC.refundRequestClaims[0].refundTransactionHash,
+          validatorClaimsRRC.refundRequestClaims[0].originAmount,
+          validatorClaimsRRC.refundRequestClaims[0].outputIndexes,
+          validatorClaimsRRC.refundRequestClaims[0].originSenderAddress,
+          validatorClaimsRRC.refundRequestClaims[0].retryCounter,
+          validatorClaimsRRC.refundRequestClaims[0].originChainId,
+          validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet,
+        ]
+      );
+
+      let encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
+
+      let hash = ethers.keccak256(encoded40);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
+
+      expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
+
+      encoded = abiCoder.encode(
+        ["bytes32", "bytes32", "uint256", "bytes", "string", "uint64", "uint8", "bool"],
+        [
+          validatorClaimsRRCwrongHash.refundRequestClaims[0].originTransactionHash,
+          validatorClaimsRRCwrongHash.refundRequestClaims[0].refundTransactionHash,
+          validatorClaimsRRCwrongHash.refundRequestClaims[0].originAmount,
+          validatorClaimsRRCwrongHash.refundRequestClaims[0].outputIndexes,
+          validatorClaimsRRCwrongHash.refundRequestClaims[0].originSenderAddress,
+          validatorClaimsRRCwrongHash.refundRequestClaims[0].retryCounter,
+          validatorClaimsRRCwrongHash.refundRequestClaims[0].originChainId,
+          validatorClaimsRRCwrongHash.refundRequestClaims[0].shouldDecrementHotWallet,
+        ]
+      );
+
+      encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
+
+      hash = ethers.keccak256(encoded40);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsRRCwrongHash);
+
+      expect(await claimsHelper.numberOfVotes(hash)).to.equal(0);
     });
   });
 

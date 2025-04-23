@@ -248,6 +248,13 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function _submitClaimsRRC(RefundRequestClaim calldata _claim, address _caller) internal {
         uint8 originChainId = _claim.originChainId;
 
+        // temporary check until automatic refund is implemented
+        // once automatic refund is implemented, this check should be that
+        // either originTransactionHash or refundTransactionHash should be empty
+        if (_claim.refundTransactionHash != bytes32(0)) {
+            return;
+        }
+
         if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
             if (chainTokenQuantity[originChainId] < _claim.originAmount) {
                 emit NotEnoughFunds("RRC", 0, chainTokenQuantity[originChainId]);
