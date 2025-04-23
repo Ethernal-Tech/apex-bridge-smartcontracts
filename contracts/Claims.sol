@@ -291,6 +291,20 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             return;
         }
 
+        // temporary check until automatic refund is implemented
+        // once automatic refund is implemented, this check should be that
+        // either originTransactionHash or refundTransactionHash should be empty
+        if (_claim.refundTransactionHash != bytes32(0)) {
+            return;
+        }
+
+        // temporary check until automatic refund is implemented
+        // once automatic refund is implemented, this check should be that
+        // either originTransactionHash or refundTransactionHash should be empty
+        if (_claim.refundTransactionHash != bytes32(0)) {
+            return;
+        }
+
         // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
         if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
             if (chainTokenQuantity[originChainId] < _claim.originAmount) {
