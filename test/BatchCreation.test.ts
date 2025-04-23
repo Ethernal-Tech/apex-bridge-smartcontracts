@@ -66,6 +66,25 @@ describe("Batch Creation", function () {
       );
     });
 
+    it("Should revert signedBatch submition if signature is not valid", async function () {
+      const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, signedBatch, validatorsCardanoData } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      await setCode("0x0000000000000000000000000000000000002050", "0x60206000F3"); // should return false for precompile
+      await expect(bridge.connect(validators[0]).submitSignedBatch(signedBatch)).to.be.revertedWithCustomError(
+        bridge,
+        "InvalidSignature"
+      );
+    });
+
     it("SignedBatch submition in SignedBatches SC should be reverted if not called by Bridge SC", async function () {
       const { bridge, signedBatches, owner, signedBatch } = await loadFixture(deployBridgeFixture);
 

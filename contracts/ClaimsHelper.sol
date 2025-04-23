@@ -88,6 +88,10 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
         return v;
     }
 
+    function deleteConfirmedSignedBatch(uint8 chainId, uint64 batchId) external onlyClaims {
+        confirmedSignedBatches[chainId][batchId] = ConfirmedSignedBatchData(0, 0, false);
+    }
+
     modifier onlySignedBatchesOrClaims() {
         if (msg.sender != signedBatchesAddress && msg.sender != claimsAddress) revert NotSignedBatchesOrClaims();
         _;

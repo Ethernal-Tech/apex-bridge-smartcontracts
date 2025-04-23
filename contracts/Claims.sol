@@ -136,6 +136,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function _submitClaimsBRC(BridgingRequestClaim calldata _claim, uint256 i, address _caller) internal {
         uint256 _quorumCnt = validators.getQuorumNumberOfValidators();
         bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
+
+        // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
         if (claimsHelper.isVoteRestricted(_caller, _claimHash, _quorumCnt)) {
             return;
         }
@@ -143,6 +145,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint256 _receiversSum = _claim.totalAmount;
         uint8 _destinationChainId = _claim.destinationChainId;
 
+        // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
         if (chainTokenQuantity[_destinationChainId] < _receiversSum) {
             emit NotEnoughFunds("BRC", i, chainTokenQuantity[_destinationChainId]);
             return;
@@ -166,11 +169,28 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function _submitClaimsBEC(BatchExecutedClaim calldata _claim, address _caller) internal {
-        // The BatchExecutionInfo event should be emitted even if the validator has already voted
-        // or if consensus has already been reached. Same goes for BEFC
-        bytes32 claimHash = keccak256(abi.encode("BEC", _claim));
         uint8 chainId = _claim.chainId;
         uint64 batchId = _claim.batchNonceId;
+
+        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
+            chainId,
+            batchId
+        );
+
+        // Once a quorum has been reached on either BEC or BEFC for a batch, the first and last transaction
+        // nonces for that batch are deleted, thus signaling that the batch has been processed. Any further BEC or BEFC
+        // claims for the same batch will not be processed. This is to prevent double processing of the same batch,
+        // and also to prevent processing of batches with invalid IDs.
+        // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
+        if (
+            _confirmedSignedBatch.firstTxNonceId == 0 &&
+            _confirmedSignedBatch.lastTxNonceId == 0 &&
+            !_confirmedSignedBatch.isConsolidation
+        ) {
+            return;
+        }
+
+        bytes32 claimHash = keccak256(abi.encode("BEC", _claim));
 
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
@@ -182,10 +202,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             // current batch block must be reset in any case because otherwise bridge will be blocked
             claimsHelper.resetCurrentBatchBlock(chainId);
 
-            ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
-                chainId,
-                batchId
-            );
             // do not process included transactions or modify batch creation state if it is a consolidation
             if (_confirmedSignedBatch.isConsolidation) {
                 return;
@@ -193,13 +209,35 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             lastBatchedTxNonce[chainId] = _confirmedSignedBatch.lastTxNonceId;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
+
+            claimsHelper.deleteConfirmedSignedBatch(chainId, batchId);
         }
     }
 
     function _submitClaimsBEFC(BatchExecutionFailedClaim calldata _claim, address _caller) internal {
-        bytes32 claimHash = keccak256(abi.encode("BEFC", _claim));
         uint8 chainId = _claim.chainId;
         uint64 batchId = _claim.batchNonceId;
+
+        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
+            chainId,
+            batchId
+        );
+
+        // Once a quorum has been reached on either BEC or BEFC for a batch, the first and last transaction
+        // nonces for that batch are deleted, thus signaling that the batch has been processed. Any further BEC or BEFC
+        // claims for the same batch will not be processed. This is to prevent double processing of the same batch,
+        // and also to prevent processing of batches with invalid IDs.
+        // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
+        if (
+            _confirmedSignedBatch.firstTxNonceId == 0 &&
+            _confirmedSignedBatch.lastTxNonceId == 0 &&
+            !_confirmedSignedBatch.isConsolidation
+        ) {
+            return;
+        }
+
+        bytes32 claimHash = keccak256(abi.encode("BEFC", _claim));
+
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
             claimHash,
@@ -210,10 +248,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             // current batch block must be reset in any case because otherwise bridge will be blocked
             claimsHelper.resetCurrentBatchBlock(chainId);
 
-            ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
-                chainId,
-                batchId
-            );
             // do not process included transactions or modify batch creation state if it is a consolidation
             if (_confirmedSignedBatch.isConsolidation) {
                 return;
@@ -242,12 +276,15 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
             lastBatchedTxNonce[chainId] = _lastTxNouce;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
+
+            claimsHelper.deleteConfirmedSignedBatch(chainId, batchId);
         }
     }
 
     function _submitClaimsRRC(RefundRequestClaim calldata _claim, address _caller) internal {
         uint8 originChainId = _claim.originChainId;
 
+        // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
         if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
             if (chainTokenQuantity[originChainId] < _claim.originAmount) {
                 emit NotEnoughFunds("RRC", 0, chainTokenQuantity[originChainId]);
@@ -459,12 +496,13 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             _chainId,
             _batchId
         );
-        if (_confirmedSignedBatch.isConsolidation) {
-            return new TxDataInfo[](0);
-        }
 
         uint64 _firstTxNonce = _confirmedSignedBatch.firstTxNonceId;
         uint64 _lastTxNonce = _confirmedSignedBatch.lastTxNonceId;
+
+        if (_confirmedSignedBatch.isConsolidation || (_firstTxNonce == 0 && _lastTxNonce == 0)) {
+            return new TxDataInfo[](0);
+        }
 
         TxDataInfo[] memory _txHashes = new TxDataInfo[](_lastTxNonce - _firstTxNonce + 1);
         for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
