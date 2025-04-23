@@ -482,12 +482,13 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             _chainId,
             _batchId
         );
-        if (_confirmedSignedBatch.isConsolidation) {
-            return new TxDataInfo[](0);
-        }
 
         uint64 _firstTxNonce = _confirmedSignedBatch.firstTxNonceId;
         uint64 _lastTxNonce = _confirmedSignedBatch.lastTxNonceId;
+
+        if (_confirmedSignedBatch.isConsolidation || (_firstTxNonce == 0 && _lastTxNonce == 0)) {
+            return new TxDataInfo[](0);
+        }
 
         TxDataInfo[] memory _txHashes = new TxDataInfo[](_lastTxNonce - _firstTxNonce + 1);
         for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
