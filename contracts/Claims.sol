@@ -136,6 +136,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function _submitClaimsBRC(BridgingRequestClaim calldata _claim, uint256 i, address _caller) internal {
         uint256 _quorumCnt = validators.getQuorumNumberOfValidators();
         bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
+
+        // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
         if (claimsHelper.isVoteRestricted(_caller, _claimHash, _quorumCnt)) {
             return;
         }
@@ -143,6 +145,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint256 _receiversSum = _claim.totalAmount;
         uint8 _destinationChainId = _claim.destinationChainId;
 
+        // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
         if (chainTokenQuantity[_destinationChainId] < _receiversSum) {
             emit NotEnoughFunds("BRC", i, chainTokenQuantity[_destinationChainId]);
             return;
@@ -174,6 +177,10 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             batchId
         );
 
+        // Once a quorum has been reached on either BEC or BEFC for a batch, the first and last transaction
+        // nonces of for that batch is set to 0, thus signaling that the batch has been processed. Any further BEC or BEFC
+        // claims for the same batch will not be processed. This is to prevent double processing of the same batch.
+        // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
         if (
             _confirmedSignedBatch.firstTxNonceId == 0 &&
             _confirmedSignedBatch.lastTxNonceId == 0 &&
@@ -215,6 +222,10 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             batchId
         );
 
+        // Once a quorum has been reached on either BEC or BEFC for a batch, the first and last transaction
+        // nonces of for that batch is set to 0, thus signaling that the batch has been processed. Any further BEC or BEFC
+        // claims for the same batch will not be processed. This is to prevent double processing of the same batch.
+        // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
         if (
             _confirmedSignedBatch.firstTxNonceId == 0 &&
             _confirmedSignedBatch.lastTxNonceId == 0 &&
@@ -271,6 +282,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     function _submitClaimsRRC(RefundRequestClaim calldata _claim, address _caller) internal {
         uint8 originChainId = _claim.originChainId;
 
+        // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
         if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
             if (chainTokenQuantity[originChainId] < _claim.originAmount) {
                 emit NotEnoughFunds("RRC", 0, chainTokenQuantity[originChainId]);

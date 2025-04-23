@@ -72,7 +72,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             )
         );
 
-        // check if caller already voted for same hash
+        // check if caller already voted for same hash and skip if he did
         if (hasVoted[_sbHash][_caller]) {
             return;
         }
