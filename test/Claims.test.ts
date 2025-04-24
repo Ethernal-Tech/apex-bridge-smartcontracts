@@ -21,14 +21,14 @@ describe("Claims Contract", function () {
     });
 
     it("Should revert if there are too many receivers in BRC", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorsCardanoData, validatorClaimsBRCtooManyReceivers } =
+      const { bridge, owner, chain1, chain2, validators, validatorsCardanoData, validatorClaimsBRC_tooManyReceivers } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
       await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
 
       await expect(
-        bridge.connect(validators[0]).submitClaims(validatorClaimsBRCtooManyReceivers)
+        bridge.connect(validators[0]).submitClaims(validatorClaimsBRC_tooManyReceivers)
       ).to.be.revertedWithCustomError(bridge, "TooManyReceivers");
     });
 
@@ -155,15 +155,15 @@ describe("Claims Contract", function () {
         chain1,
         chain2,
         validators,
-        validatorClaimsBRCBunch16,
-        validatorClaimsBRCBunch17,
+        validatorClaimsBRC_bunch32,
+        validatorClaimsBRC_bunch33,
         validatorsCardanoData,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
       await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
 
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRCBunch16);
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC_bunch32);
 
       const hashes = [
         "0x9c7d76ea19efbeccf02a1fd85fd9471b9075e99a329a80eeb7ae4d145c7eff66",
@@ -190,10 +190,9 @@ describe("Claims Contract", function () {
         expect(await claimsHelper.numberOfVotes(hashes[i])).to.equal(1);
       }
 
-      await expect(bridge.connect(validators[1]).submitClaims(validatorClaimsBRCBunch17)).to.be.revertedWithCustomError(
-        bridge,
-        "MaxNumberOfClaims"
-      );
+      await expect(
+        bridge.connect(validators[1]).submitClaims(validatorClaimsBRC_bunch33)
+      ).to.be.revertedWithCustomError(bridge, "MaxNumberOfClaims");
     });
   });
 
@@ -557,75 +556,6 @@ describe("Claims Contract", function () {
       // Second claim should not be confirmed
       expect(await claimsHelper.numberOfVotes(hashBEC_another)).to.equal(3);
     });
-    it("Should revert Batch Executed Claims if there are more than 16 in the array", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        validatorClaimsBRC,
-        validatorClaimsBECBunch16,
-        validatorClaimsBECBunch17,
-        signedBatch,
-        validatorsCardanoData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
-
-      const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
-
-      await ethers.provider.send("evm_mine");
-      await ethers.provider.send("evm_mine");
-
-      const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(_destinationChain);
-      expect(confirmedTxs.length).to.equal(1);
-
-      expect(await bridge.shouldCreateBatch(_destinationChain)).to.be.true;
-
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
-
-      const hashes = [
-        "0xf7cfe206a07418f729a41b08776a354931b0cc3f7a775bb5fef4acf8d5411abf",
-        "0x031ee3f485bea1c56c8746dc9e797ce93944bf82a519455b296473bd69a86fcc",
-        "0x61217bad1bc03bd71502e0d80b236c2f47ba123a07a62a9305326e3e567bc361",
-        "0xe2fccefc5d04cf295384fde220f6a8f301b0da6fb102ba4a4c34ce6619700fa7",
-        "0x67b7b80ffbcaab3398b3683391fd0867f38683563c8cd68730f123a0afaa16aa",
-        "0xd3495db9ead62b687408126dc5540032daae1a0e5a4f681ee3ef559de661e8eb",
-        "0x97eca5501e03f788159f19acdee6ba958c6b2a6acbd0441663da24e3a27ee436",
-        "0xd575fb7e6b9c6f9dda778db58f6b0b818178cb992785a442b4e63b4b1b829bd1",
-        "0x86564fa45a13fb41f2a7b3997feb0e5d2e4aaa1853d674dd7c5ef6fcc7f0c8ba",
-        "0x583d073269b3c1df2372e2b2494272c7b2806d4be3d6c0a6229e6ad871b5c175",
-        "0x17f25dff6d2cfa3bff88157d02c3ef46bfaabadd745493f0ec6e792b76c4cf6d",
-        "0xee2437dd96faa5a73cca93758faccf68dffb4a05739053bfc1e553b56d926122",
-        "0x0e76e9fa435b07271badaef8fd23a8a9b195dbde898e96b1ba8c10f11d553047",
-        "0x9f98a60c03a88ec53d8473c65dbdeedc938382597a985043b2e735a6cb0dd27f",
-        "0x73fec44aa83d4c442554b6aced053585f61d6d86290b6842514dd9fc2c620fdc",
-        "0x4d497b9c6682ce7e05f645818db8267ff2de85c458b855a9d1849d1d2aaafd62",
-      ];
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBECBunch16);
-
-      for (let i = 0; i < 16; i++) {
-        expect(await claimsHelper.hasVoted(hashes[i], validators[0].address)).to.be.true;
-        expect(await claimsHelper.numberOfVotes(hashes[i])).to.equal(1);
-      }
-
-      await expect(bridge.connect(validators[1]).submitClaims(validatorClaimsBECBunch17)).to.be.revertedWithCustomError(
-        bridge,
-        "MaxNumberOfClaims"
-      );
-    });
   });
 
   describe("Submit new Batch Execution Failed Claims", function () {
@@ -984,74 +914,6 @@ describe("Claims Contract", function () {
       // First claim should now be confirmed
       expect(await claimsHelper.numberOfVotes(hashBEFC_another)).to.equal(3);
     });
-    it("Should revert Batch Executed Failed Claims if there are more than 16 in the array", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        validatorClaimsBRC,
-        validatorClaimsBEFCBunch16,
-        validatorClaimsBEFCBunch17,
-        signedBatch,
-        validatorsCardanoData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
-
-      const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
-
-      await ethers.provider.send("evm_mine");
-      await ethers.provider.send("evm_mine");
-
-      const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(_destinationChain);
-      expect(confirmedTxs.length).to.equal(1);
-
-      expect(await bridge.shouldCreateBatch(_destinationChain)).to.be.true;
-
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
-
-      const hashes = [
-        "0x641d6a990651f3f65551ce817fec8c49f973cb93a92688a96bde6df5fddd6abf",
-        "0xfe05f68292dc7499039dc066b653805b5e7bd64e68041f9a162ebfbd55cc58b1",
-        "0xcd504d001c7b818a825d43e4e3122c0de7e190f00b1488a2c084f58368a1daa4",
-        "0xb69367ad134607e648cf3fbe862cd7855c3c25041296c962de24b6ae83160935",
-        "0x3c79a1a34dea143ea03b4fa68352798db472f34950c5838e40fae60cb9d5f488",
-        "0x23b4b5688b457800153871848f8954af7e1f4000eb3e1f80120e053ce1d8d2ae",
-        "0x29b5c0a40230d8ed0342dab1dd74d35d31c7d509eca66dbce423b0a125c81b97",
-        "0x63c9d9da14bbecd75f19e174d62c1eefa40b89993b19e86c8690139ca8f1f29d",
-        "0x2503b7a5f1e55a9c015c259d1003f7562092ad59b4378416cc573c6f48afe1b7",
-        "0xe4f10898c772156b97c48ee9b236fcdae369773d1d30f4afdd286a0d668d4100",
-        "0x348ad3847e9316d9a15d4456c82be6a30f437c9431290590a5d1ff24e75f0153",
-        "0x67a0922f647c3b94f5c383d669d18f67a2dd41255e2f4e3d98d7b54d4e4a5254",
-        "0x9fa7038c85fb4c1cd4993c39d5860d42c6de27b668140214d36f70b89a0a19b2",
-        "0x9232ae2eb3e60efb8847f83c48a6aaa38ee48bc7eef5754c502fed00378d559c",
-        "0x020e3fe116d18c7f7c0569cbfe942f74ae7e7a2ccc4a9564d1b8904f1ff92e0d",
-        "0x5aa33899136ee4d61559dc5b4383681afcbabece6b19e96bec6242832efc624c",
-      ];
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFCBunch16);
-
-      for (let i = 0; i < 16; i++) {
-        expect(await claimsHelper.hasVoted(hashes[i], validators[0].address)).to.be.true;
-        expect(await claimsHelper.numberOfVotes(hashes[i])).to.equal(1);
-      }
-
-      await expect(
-        bridge.connect(validators[1]).submitClaims(validatorClaimsBEFCBunch17)
-      ).to.be.revertedWithCustomError(bridge, "MaxNumberOfClaims");
-    });
   });
 
   describe("Submit new Refund Request Claims", function () {
@@ -1142,75 +1004,7 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
-    it("Should revert Refund Request Claims if there are more than 16 in the array", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        validatorClaimsBRC,
-        validatorClaimsRRCBunch16,
-        validatorClaimsRRCBunch17,
-        signedBatch,
-        validatorsCardanoData,
-      } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
-
-      const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
-
-      await ethers.provider.send("evm_mine");
-      await ethers.provider.send("evm_mine");
-
-      const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(_destinationChain);
-      expect(confirmedTxs.length).to.equal(1);
-
-      expect(await bridge.shouldCreateBatch(_destinationChain)).to.be.true;
-
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
-
-      const hashes = [
-        "0x5ade7c1cb6bfa6f4ea5c596c0694960fc02c40b1b9730901bb1c24a25e5c7594",
-        "0x4bed11ef68e709d2dc080b54b24aed965dcfd0bccff9672a0cadbf53cdf62160",
-        "0x792647b8e1015af302b11ea44a44983d3d800a7271cb787c69e960133b718107",
-        "0xfd300aec54419781c86efcd98e831c40e9a04787ea582a5c2eb97ab956a25d23",
-        "0x4c6408d7f5a1a831e6f9118ed9449e151b30b745bfd7452c7c9a55c4465367ce",
-        "0x703463c8bc8e8bf3cdb56f52ee1655ef1faf7af90a5ab9f28174abe8ca8793d7",
-        "0x02f46c463fc9d02fc2a7e375e119c66313cac12d1a3e70abe7c7f92a04055a7c",
-        "0xaace0996440bd9e1076a04f8e27b04c4f11e28353551b9e7cbab7e47ecfa6930",
-        "0x3ea8874d08a5c681ffc155ed54f6b4e3b2683bda1063cbf5c45cce90d109991e",
-        "0x47a61128b4557b92d12e91911bbb96656978a6e167c7171909e72dd087917044",
-        "0x36aacc904e68fac80a3ac066588b97fd2aa32982f5238b88ce3bd2ef2da04c28",
-        "0xe2768561fb60362ddffd8013a90ea1af410a1fb97c7d25075089cfcbd50bc0fc",
-        "0x51dfe887e3b6b48d427d88d28dade508a887d3fecdacbde3e3a30edb02586e0d",
-        "0xd55e4fc2266aff82b9c91e0edabcc7022b2ebc633bd9cb6b5c77507692f50ee2",
-        "0xac66804f7a4a7ba70d0a08921f493b424c2cb5814eded7516f69180b0cd7a561",
-        "0x5e76f6d74f358ff1d3ff6f0ca86ffbe14a96905fba1277249617d378f46fcf63",
-      ];
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsRRCBunch16);
-
-      for (let i = 0; i < 16; i++) {
-        expect(await claimsHelper.hasVoted(hashes[i], validators[0].address)).to.be.true;
-        expect(await claimsHelper.numberOfVotes(hashes[i])).to.equal(1);
-      }
-
-      await expect(bridge.connect(validators[1]).submitClaims(validatorClaimsRRCBunch17)).to.be.revertedWithCustomError(
-        bridge,
-        "MaxNumberOfClaims"
-      );
-    });
     it("Should emit NotEnoughFunds and skip Refund Request Claim for failed BRC on destination if there is not enough funds", async function () {
       const { bridge, claims, owner, chain2, validators, validatorsCardanoData, validatorClaimsRRC } =
         await loadFixture(deployBridgeFixture);
@@ -1254,7 +1048,7 @@ describe("Claims Contract", function () {
         validators,
         chain2,
         validatorClaimsRRC,
-        validatorClaimsRRCwrongHash,
+        validatorClaimsRRC_wrongHash,
         validatorsCardanoData,
       } = await loadFixture(deployBridgeFixture);
 
@@ -1290,14 +1084,14 @@ describe("Claims Contract", function () {
       encoded = abiCoder.encode(
         ["bytes32", "bytes32", "uint256", "bytes", "string", "uint64", "uint8", "bool"],
         [
-          validatorClaimsRRCwrongHash.refundRequestClaims[0].originTransactionHash,
-          validatorClaimsRRCwrongHash.refundRequestClaims[0].refundTransactionHash,
-          validatorClaimsRRCwrongHash.refundRequestClaims[0].originAmount,
-          validatorClaimsRRCwrongHash.refundRequestClaims[0].outputIndexes,
-          validatorClaimsRRCwrongHash.refundRequestClaims[0].originSenderAddress,
-          validatorClaimsRRCwrongHash.refundRequestClaims[0].retryCounter,
-          validatorClaimsRRCwrongHash.refundRequestClaims[0].originChainId,
-          validatorClaimsRRCwrongHash.refundRequestClaims[0].shouldDecrementHotWallet,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].originTransactionHash,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].refundTransactionHash,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].originAmount,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].outputIndexes,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].originSenderAddress,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].retryCounter,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].originChainId,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].shouldDecrementHotWallet,
         ]
       );
 
@@ -1309,7 +1103,7 @@ describe("Claims Contract", function () {
       hash = ethers.keccak256(encoded40);
 
       await expect(
-        bridge.connect(validators[0]).submitClaims(validatorClaimsRRCwrongHash)
+        bridge.connect(validators[0]).submitClaims(validatorClaimsRRC_wrongHash)
       ).to.be.revertedWithCustomError(bridge, "InvalidData");
     });
   });
@@ -1394,52 +1188,6 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC);
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
-    });
-    it("Should revert Hot Wallet Increment Claims if there are more than 16 in the array", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        validatorClaimsHWICBunch16,
-        validatorClaimsHWICBunch17,
-        validatorsCardanoData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsHWICBunch16);
-
-      const hashes = [
-        "0x4ec43138854a8260f51de42ae197fcd87f5d22a6ea8499e1c0b261e1e4ffa575",
-        "0x7395af495d140732946b871541531af0d50ccde1c77de1590dc39e5f297d9ef1",
-        "0x2feed2b1978cfdc6b7561a03f0da87b417887e7978e5514b373d9239df8adcdf",
-        "0xa13b8a1530bee447462068dc6c11d24763f7474bcf3d7448a36256fce2fe39dc",
-        "0x4e5a4e378fbc1e57beace02b507ff3b6cd9bc6e3d78d64bed1f07e6b02461750",
-        "0xf6c63d406604663ba83fba2fcd90a4b0d637a71568f111ad0f4abc9d42b59907",
-        "0xc7f95ef7a8bb5bde32eb841f3b41cb3c1508d3e468a419020dc07f056f293ab1",
-        "0x82c15ae63bc56752b40c0fb60db928fdd172b8a8956a8846e86abb9098e8ed06",
-        "0x80cd2a6698d1cadcd7db564da9d3fce624f2719debe11f39dfe29fd50522b0e3",
-        "0xd6c071c575270998514023a9d8b47777750b432483fdbfc0c5a5ff436f34a78e",
-        "0x64345855c0afe505defeaa7a28500d5bf714be843ec87435e4e92cff2aa76b64",
-        "0x9e1feae4e34903175b82ff9f05a04b0dbb41554c7abe93aa9524c2b10f1c4acc",
-        "0x16f64ae2d5d11eabdd558f942349692da1c8c32106416209b199044b06cc198f",
-        "0x9447d0405e7dce8b38d3d36922dd6b3e8f2586db4e0828cdd44304473920bf84",
-        "0xe93c608985589af07f04920c359d711a39f3fc5dc8c37fe8314bcf8c959686c0",
-        "0x4c93af92c9687540cdd8519768d4e670ac895bcd9579b732709fb5d396f6c9be",
-      ];
-
-      for (let i = 0; i < 16; i++) {
-        expect(await claimsHelper.hasVoted(hashes[i], validators[0].address)).to.be.true;
-        expect(await claimsHelper.numberOfVotes(hashes[i])).to.equal(1);
-      }
-
-      await expect(
-        bridge.connect(validators[1]).submitClaims(validatorClaimsHWICBunch17)
-      ).to.be.revertedWithCustomError(bridge, "MaxNumberOfClaims");
     });
     it("Should NOT increment totalQuantity if there is still no consensus on Hot Wallet Increment Claim", async function () {
       const { bridge, claims, owner, validators, chain1, validatorClaimsHWIC, validatorsCardanoData } =
