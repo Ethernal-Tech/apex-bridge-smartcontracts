@@ -8,7 +8,6 @@ import "./interfaces/IBridgeStructs.sol";
 import "./Bridge.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
-import "hardhat/console.sol";
 
 contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
@@ -44,6 +43,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     uint8 public constant MAX_NUMBER_OF_DEFUND_RETRIES = 3; //TO DO SET EXACT NUMBER TO BE USED
     uint8 constant MAX_NUMBER_OF_CLAIMS = 16;
+    uint8 constant MAX_NUMBER_OF_RECEIVERS = 40;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -90,6 +90,10 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
                 if (!isChainRegistered[destinationChainId]) {
                     revert ChainIsNotRegistered(destinationChainId);
+                }
+
+                if (_claim.receivers.length > MAX_NUMBER_OF_RECEIVERS) {
+                    revert TooManyReceivers(_claim.receivers.length, MAX_NUMBER_OF_RECEIVERS);
                 }
 
                 _submitClaimsBRC(_claim, i, _caller);
@@ -312,7 +316,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         bytes32 claimHash = keccak256(abi.encode("RRC", _claim));
-        console.logBytes32(claimHash);
 
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,

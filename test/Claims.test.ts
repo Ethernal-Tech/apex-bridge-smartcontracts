@@ -19,6 +19,19 @@ describe("Claims Contract", function () {
         "ChainIsNotRegistered"
       );
     });
+
+    it("Should revert if there are too many receivers in BRC", async function () {
+      const { bridge, owner, chain1, chain2, validators, validatorsCardanoData, validatorClaimsBRCtooManyReceivers } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+
+      await expect(
+        bridge.connect(validators[0]).submitClaims(validatorClaimsBRCtooManyReceivers)
+      ).to.be.revertedWithCustomError(bridge, "TooManyReceivers");
+    });
+
     it("Should skip if Bridging Request Claim is already confirmed", async function () {
       const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);

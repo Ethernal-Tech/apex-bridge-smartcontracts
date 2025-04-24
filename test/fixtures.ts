@@ -220,17 +220,18 @@ export async function deployBridgeFixture() {
     hotWalletIncrementClaims: [],
   };
 
-  const validatorClaimsBRCerror = {
+  const validatorClaimsBRCtooManyReceivers = {
     bridgingRequestClaims: [
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        totalAmount: 100,
         retryCounter: 0,
         sourceChainId: 1,
         receivers: [
-          {
-            destinationAddress: "0x123...11111111",
-            amount: 100,
-          },
+          ...Array.from({ length: 41 }, (_, i) => ({
+            destinationAddress: `0x123...${(i + 1).toString().padStart(8, "0")}`,
+            amount: 100 + i,
+          })),
         ],
         destinationChainId: 2,
       },
@@ -293,20 +294,6 @@ export async function deployBridgeFixture() {
     hotWalletIncrementClaims: [],
   };
 
-  const validatorClaimsBECerror = {
-    bridgingRequestClaims: [],
-    batchExecutedClaims: [
-      {
-        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        chainId: 2,
-        batchNonceId: 1111111111,
-      },
-    ],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [],
-    hotWalletIncrementClaims: [],
-  };
-
   const validatorClaimsBEFC = {
     bridgingRequestClaims: [],
     batchExecutedClaims: [],
@@ -355,20 +342,6 @@ export async function deployBridgeFixture() {
       chainId: 2,
       batchNonceId: i + 1,
     })),
-    refundRequestClaims: [],
-    hotWalletIncrementClaims: [],
-  };
-
-  const validatorClaimsBEFCerror = {
-    bridgingRequestClaims: [],
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [
-      {
-        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        chainId: 2,
-        batchNonceId: 111111,
-      },
-    ],
     refundRequestClaims: [],
     hotWalletIncrementClaims: [],
   };
@@ -442,25 +415,6 @@ export async function deployBridgeFixture() {
       originChainId: 2,
       shouldDecrementHotWallet: i % 2 === 0,
     })),
-    hotWalletIncrementClaims: [],
-  };
-
-  const validatorClaimsRRCerror = {
-    bridgingRequestClaims: [],
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [
-      {
-        originTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        refundTransactionHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
-        originAmount: 100,
-        outputIndexes: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        originSenderAddress: "receiver1111111111",
-        retryCounter: 1,
-        originChainId: 2,
-        shouldDecrementHotWallet: false,
-      },
-    ],
     hotWalletIncrementClaims: [],
   };
 
@@ -543,6 +497,11 @@ export async function deployBridgeFixture() {
     },
   ];
 
+  const cardanoBlocksTooManyBlocks = Array.from({ length: 41 }, (_, i) => ({
+    blockSlot: i + 1,
+    blockHash: `0x${"74657374".padEnd(64, "0")}${(i + 1).toString(16).padStart(2, "0")}`.slice(0, 66),
+  }));
+
   const validatorsCardanoData = [];
   let ind = 0;
   for (let val of validators) {
@@ -588,17 +547,15 @@ export async function deployBridgeFixture() {
     validatorClaimsHWIC,
     validatorClaimsHWICBunch16,
     validatorClaimsHWICBunch17,
-    validatorClaimsBRCerror,
-    validatorClaimsBECerror,
-    validatorClaimsBEFCerror,
-    validatorClaimsRRCerror,
     validatorClaimsRRCwrongHash,
     validatorClaimsBRC_ConfirmedTransactions,
+    validatorClaimsBRCtooManyReceivers,
     signedBatch,
     signedBatchConsolidation,
     signedBatchDefund,
     validatorsCardanoData,
     validators,
     cardanoBlocks,
+    cardanoBlocksTooManyBlocks,
   };
 }
