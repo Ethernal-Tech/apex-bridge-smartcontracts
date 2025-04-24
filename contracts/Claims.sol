@@ -90,7 +90,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             hotWalletIncrementClaimsLength;
 
         if (claimsLength > MAX_NUMBER_OF_CLAIMS) {
-            revert MaxNumberOfClaims(MAX_NUMBER_OF_CLAIMS);
+            revert TooManyClaims(claimsLength, MAX_NUMBER_OF_CLAIMS);
         }
 
         for (uint i; i < bridgingRequestClaimsLength; i++) {

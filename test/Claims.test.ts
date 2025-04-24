@@ -192,7 +192,7 @@ describe("Claims Contract", function () {
 
       await expect(
         bridge.connect(validators[1]).submitClaims(validatorClaimsBRC_bunch33)
-      ).to.be.revertedWithCustomError(bridge, "MaxNumberOfClaims");
+      ).to.be.revertedWithCustomError(bridge, "TooManyClaims");
     });
   });
 

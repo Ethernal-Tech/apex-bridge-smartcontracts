@@ -161,7 +161,7 @@ interface IBridgeStructs {
     error NegativeChainTokenAmount(uint256 _availableAmount, uint256 _decreaseAmount);
     error TooManyReceivers(uint256 _receiversCount, uint256 _maxReceiversCount);
     error TooManyBlocks(uint256 _blocksCount, uint256 _maxBlocksCount);
-    error MaxNumberOfClaims(uint256 _maxClaimsCount);
+    error TooManyClaims(uint256 _claimsCount, uint256 _maxClaimsCount);
 
     event newChainProposal(uint8 indexed _chainId, address indexed sender);
     event newChainRegistered(uint8 indexed _chainId);
