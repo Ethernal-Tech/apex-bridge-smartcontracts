@@ -78,29 +78,41 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
         uint256 bridgingRequestClaimsLength = _claims.bridgingRequestClaims.length;
-        if (bridgingRequestClaimsLength <= MAX_NUMBER_OF_CLAIMS) {
-            for (uint i; i < bridgingRequestClaimsLength; i++) {
-                BridgingRequestClaim calldata _claim = _claims.bridgingRequestClaims[i];
-                uint8 sourceChainId = _claim.sourceChainId;
-                uint8 destinationChainId = _claim.destinationChainId;
+        uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
+        uint256 batchExecutionFailedClaimsLength = _claims.batchExecutionFailedClaims.length;
+        uint256 refundRequestClaimsLength = _claims.refundRequestClaims.length;
+        uint256 hotWalletIncrementClaimsLength = _claims.hotWalletIncrementClaims.length;
 
-                if (!isChainRegistered[sourceChainId]) {
-                    revert ChainIsNotRegistered(sourceChainId);
-                }
-
-                if (!isChainRegistered[destinationChainId]) {
-                    revert ChainIsNotRegistered(destinationChainId);
-                }
-
-                if (_claim.receivers.length > MAX_NUMBER_OF_RECEIVERS) {
-                    revert TooManyReceivers(_claim.receivers.length, MAX_NUMBER_OF_RECEIVERS);
-                }
-
-                _submitClaimsBRC(_claim, i, _caller);
-            }
+        if (
+            bridgingRequestClaimsLength > MAX_NUMBER_OF_CLAIMS ||
+            batchExecutedClaimsLength > MAX_NUMBER_OF_CLAIMS ||
+            batchExecutionFailedClaimsLength > MAX_NUMBER_OF_CLAIMS ||
+            refundRequestClaimsLength > MAX_NUMBER_OF_CLAIMS ||
+            hotWalletIncrementClaimsLength > MAX_NUMBER_OF_CLAIMS
+        ) {
+            revert MaxNumberOfClaims(MAX_NUMBER_OF_CLAIMS);
         }
 
-        uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
+        for (uint i; i < bridgingRequestClaimsLength; i++) {
+            BridgingRequestClaim calldata _claim = _claims.bridgingRequestClaims[i];
+            uint8 sourceChainId = _claim.sourceChainId;
+            uint8 destinationChainId = _claim.destinationChainId;
+
+            if (!isChainRegistered[sourceChainId]) {
+                revert ChainIsNotRegistered(sourceChainId);
+            }
+
+            if (!isChainRegistered[destinationChainId]) {
+                revert ChainIsNotRegistered(destinationChainId);
+            }
+
+            if (_claim.receivers.length > MAX_NUMBER_OF_RECEIVERS) {
+                revert TooManyReceivers(_claim.receivers.length, MAX_NUMBER_OF_RECEIVERS);
+            }
+
+            _submitClaimsBRC(_claim, i, _caller);
+        }
+
         if (batchExecutedClaimsLength <= MAX_NUMBER_OF_CLAIMS) {
             for (uint i; i < batchExecutedClaimsLength; i++) {
                 BatchExecutedClaim calldata _claim = _claims.batchExecutedClaims[i];
@@ -112,7 +124,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
         }
 
-        uint256 batchExecutionFailedClaimsLength = _claims.batchExecutionFailedClaims.length;
         if (batchExecutionFailedClaimsLength <= MAX_NUMBER_OF_CLAIMS) {
             for (uint i; i < batchExecutionFailedClaimsLength; i++) {
                 BatchExecutionFailedClaim calldata _claim = _claims.batchExecutionFailedClaims[i];
@@ -124,7 +135,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
         }
 
-        uint256 refundRequestClaimsLength = _claims.refundRequestClaims.length;
         if (refundRequestClaimsLength <= MAX_NUMBER_OF_CLAIMS) {
             for (uint i; i < refundRequestClaimsLength; i++) {
                 RefundRequestClaim calldata _claim = _claims.refundRequestClaims[i];
@@ -136,7 +146,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
         }
 
-        uint256 hotWalletIncrementClaimsLength = _claims.hotWalletIncrementClaims.length;
         if (hotWalletIncrementClaimsLength <= MAX_NUMBER_OF_CLAIMS) {
             for (uint i; i < hotWalletIncrementClaimsLength; i++) {
                 HotWalletIncrementClaim calldata _claim = _claims.hotWalletIncrementClaims[i];

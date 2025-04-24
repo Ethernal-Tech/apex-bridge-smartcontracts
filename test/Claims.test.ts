@@ -147,7 +147,7 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
     });
-    it("Should skip Bridging Request Claims if there are more than 16 in the array", async function () {
+    it("Should revert Bridging Request Claims if there are more than 16 in the array", async function () {
       const {
         bridge,
         claimsHelper,
@@ -190,12 +190,10 @@ describe("Claims Contract", function () {
         expect(await claimsHelper.numberOfVotes(hashes[i])).to.equal(1);
       }
 
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRCBunch17);
-
-      for (let i = 0; i < 16; i++) {
-        expect(await claimsHelper.hasVoted(hashes[i], validators[1].address)).to.be.false;
-        expect(await claimsHelper.numberOfVotes(hashes[i])).to.equal(1);
-      }
+      await expect(bridge.connect(validators[1]).submitClaims(validatorClaimsBRCBunch17)).to.be.revertedWithCustomError(
+        bridge,
+        "MaxNumberOfClaims"
+      );
     });
   });
 
@@ -559,7 +557,7 @@ describe("Claims Contract", function () {
       // Second claim should not be confirmed
       expect(await claimsHelper.numberOfVotes(hashBEC_another)).to.equal(3);
     });
-    it("Should skip Batch Executed Claims if there are more than 16 in the array", async function () {
+    it("Should revert Batch Executed Claims if there are more than 16 in the array", async function () {
       const {
         bridge,
         claimsHelper,
@@ -623,12 +621,10 @@ describe("Claims Contract", function () {
         expect(await claimsHelper.numberOfVotes(hashes[i])).to.equal(1);
       }
 
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBECBunch17);
-
-      for (let i = 0; i < 16; i++) {
-        expect(await claimsHelper.hasVoted(hashes[i], validators[1].address)).to.be.false;
-        expect(await claimsHelper.numberOfVotes(hashes[i])).to.equal(1);
-      }
+      await expect(bridge.connect(validators[1]).submitClaims(validatorClaimsBECBunch17)).to.be.revertedWithCustomError(
+        bridge,
+        "MaxNumberOfClaims"
+      );
     });
   });
 
@@ -988,7 +984,7 @@ describe("Claims Contract", function () {
       // First claim should now be confirmed
       expect(await claimsHelper.numberOfVotes(hashBEFC_another)).to.equal(3);
     });
-    it("Should skip Batch Executed Failed Claims if there are more than 16 in the array", async function () {
+    it("Should revert Batch Executed Failed Claims if there are more than 16 in the array", async function () {
       const {
         bridge,
         claimsHelper,
@@ -1052,12 +1048,9 @@ describe("Claims Contract", function () {
         expect(await claimsHelper.numberOfVotes(hashes[i])).to.equal(1);
       }
 
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFCBunch17);
-
-      for (let i = 0; i < 16; i++) {
-        expect(await claimsHelper.hasVoted(hashes[i], validators[1].address)).to.be.false;
-        expect(await claimsHelper.numberOfVotes(hashes[i])).to.equal(1);
-      }
+      await expect(
+        bridge.connect(validators[1]).submitClaims(validatorClaimsBEFCBunch17)
+      ).to.be.revertedWithCustomError(bridge, "MaxNumberOfClaims");
     });
   });
 
@@ -1149,7 +1142,7 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
-    it("Should skip Refund Request Claims if there are more than 16 in the array", async function () {
+    it("Should revert Refund Request Claims if there are more than 16 in the array", async function () {
       const {
         bridge,
         claimsHelper,
@@ -1213,12 +1206,10 @@ describe("Claims Contract", function () {
         expect(await claimsHelper.numberOfVotes(hashes[i])).to.equal(1);
       }
 
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsRRCBunch17);
-
-      for (let i = 0; i < 16; i++) {
-        expect(await claimsHelper.hasVoted(hashes[i], validators[1].address)).to.be.false;
-        expect(await claimsHelper.numberOfVotes(hashes[i])).to.equal(1);
-      }
+      await expect(bridge.connect(validators[1]).submitClaims(validatorClaimsRRCBunch17)).to.be.revertedWithCustomError(
+        bridge,
+        "MaxNumberOfClaims"
+      );
     });
     it("Should emit NotEnoughFunds and skip Refund Request Claim for failed BRC on destination if there is not enough funds", async function () {
       const { bridge, claims, owner, chain2, validators, validatorsCardanoData, validatorClaimsRRC } =
@@ -1404,7 +1395,7 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
-    it("Should skip Hot Wallet Increment Claims if there are more than 16 in the array", async function () {
+    it("Should revert Hot Wallet Increment Claims if there are more than 16 in the array", async function () {
       const {
         bridge,
         claimsHelper,
@@ -1446,12 +1437,9 @@ describe("Claims Contract", function () {
         expect(await claimsHelper.numberOfVotes(hashes[i])).to.equal(1);
       }
 
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsHWICBunch17);
-
-      for (let i = 0; i < 16; i++) {
-        expect(await claimsHelper.hasVoted(hashes[i], validators[1].address)).to.be.false;
-        expect(await claimsHelper.numberOfVotes(hashes[i])).to.equal(1);
-      }
+      await expect(
+        bridge.connect(validators[1]).submitClaims(validatorClaimsHWICBunch17)
+      ).to.be.revertedWithCustomError(bridge, "MaxNumberOfClaims");
     });
     it("Should NOT increment totalQuantity if there is still no consensus on Hot Wallet Increment Claim", async function () {
       const { bridge, claims, owner, validators, chain1, validatorClaimsHWIC, validatorsCardanoData } =
