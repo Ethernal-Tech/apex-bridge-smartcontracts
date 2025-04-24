@@ -134,6 +134,56 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
     });
+    it("Should skip Bridging Request Claims if there are more than 16 in the array", async function () {
+      const {
+        bridge,
+        claims,
+        claimsHelper,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsBRCBunch,
+        validatorsCardanoData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRCBunch);
+
+      const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
+
+      for (let i = 0; i < 10; i++) {
+        let encoded = abiCoder.encode(
+          ["bytes32", "tuple(uint64, string)[]", "uint256", "uint8", "uint8"],
+          [
+            validatorClaimsBRCBunch.bridgingRequestClaims[i].observedTransactionHash,
+            [
+              [
+                validatorClaimsBRCBunch.bridgingRequestClaims[i].receivers[0].amount,
+                validatorClaimsBRCBunch.bridgingRequestClaims[i].receivers[0].destinationAddress,
+              ],
+            ],
+            validatorClaimsBRCBunch.bridgingRequestClaims[i].totalAmount,
+            validatorClaimsBRCBunch.bridgingRequestClaims[i].sourceChainId,
+            validatorClaimsBRCBunch.bridgingRequestClaims[i].destinationChainId,
+          ]
+        );
+
+        let encoded40 =
+          "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+          encodedPrefix.substring(66) +
+          encoded.substring(2);
+
+        let hash = ethers.keccak256(encoded40);
+        console.log("HASH TEST");
+        console.log(hash);
+
+        expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
+      }
+    });
   });
 
   describe("Submit new Batch Executed Claim", function () {

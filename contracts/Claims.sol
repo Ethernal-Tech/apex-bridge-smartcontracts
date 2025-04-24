@@ -8,6 +8,7 @@ import "./interfaces/IBridgeStructs.sol";
 import "./Bridge.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
+import "hardhat/console.sol";
 
 contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
@@ -42,6 +43,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
     mapping(uint8 => uint64) public lastBatchedTxNonce;
 
     uint8 public constant MAX_NUMBER_OF_DEFUND_RETRIES = 3; //TO DO SET EXACT NUMBER TO BE USED
+    uint8 constant MAX_NUMBER_OF_CLAIMS = 16;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -76,60 +78,70 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
         uint256 bridgingRequestClaimsLength = _claims.bridgingRequestClaims.length;
-        for (uint i; i < bridgingRequestClaimsLength; i++) {
-            BridgingRequestClaim calldata _claim = _claims.bridgingRequestClaims[i];
-            uint8 sourceChainId = _claim.sourceChainId;
-            uint8 destinationChainId = _claim.destinationChainId;
+        if (bridgingRequestClaimsLength <= MAX_NUMBER_OF_CLAIMS) {
+            for (uint i; i < bridgingRequestClaimsLength; i++) {
+                BridgingRequestClaim calldata _claim = _claims.bridgingRequestClaims[i];
+                uint8 sourceChainId = _claim.sourceChainId;
+                uint8 destinationChainId = _claim.destinationChainId;
 
-            if (!isChainRegistered[sourceChainId]) {
-                revert ChainIsNotRegistered(sourceChainId);
+                if (!isChainRegistered[sourceChainId]) {
+                    revert ChainIsNotRegistered(sourceChainId);
+                }
+
+                if (!isChainRegistered[destinationChainId]) {
+                    revert ChainIsNotRegistered(destinationChainId);
+                }
+
+                _submitClaimsBRC(_claim, i, _caller);
             }
-
-            if (!isChainRegistered[destinationChainId]) {
-                revert ChainIsNotRegistered(destinationChainId);
-            }
-
-            _submitClaimsBRC(_claim, i, _caller);
         }
 
         uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
-        for (uint i; i < batchExecutedClaimsLength; i++) {
-            BatchExecutedClaim calldata _claim = _claims.batchExecutedClaims[i];
-            if (!isChainRegistered[_claim.chainId]) {
-                revert ChainIsNotRegistered(_claim.chainId);
-            }
+        if (batchExecutedClaimsLength <= MAX_NUMBER_OF_CLAIMS) {
+            for (uint i; i < batchExecutedClaimsLength; i++) {
+                BatchExecutedClaim calldata _claim = _claims.batchExecutedClaims[i];
+                if (!isChainRegistered[_claim.chainId]) {
+                    revert ChainIsNotRegistered(_claim.chainId);
+                }
 
-            _submitClaimsBEC(_claim, _caller);
+                _submitClaimsBEC(_claim, _caller);
+            }
         }
 
         uint256 batchExecutionFailedClaimsLength = _claims.batchExecutionFailedClaims.length;
-        for (uint i; i < batchExecutionFailedClaimsLength; i++) {
-            BatchExecutionFailedClaim calldata _claim = _claims.batchExecutionFailedClaims[i];
-            if (!isChainRegistered[_claim.chainId]) {
-                revert ChainIsNotRegistered(_claim.chainId);
-            }
+        if (batchExecutionFailedClaimsLength <= MAX_NUMBER_OF_CLAIMS) {
+            for (uint i; i < batchExecutionFailedClaimsLength; i++) {
+                BatchExecutionFailedClaim calldata _claim = _claims.batchExecutionFailedClaims[i];
+                if (!isChainRegistered[_claim.chainId]) {
+                    revert ChainIsNotRegistered(_claim.chainId);
+                }
 
-            _submitClaimsBEFC(_claim, _caller);
+                _submitClaimsBEFC(_claim, _caller);
+            }
         }
 
         uint256 refundRequestClaimsLength = _claims.refundRequestClaims.length;
-        for (uint i; i < refundRequestClaimsLength; i++) {
-            RefundRequestClaim calldata _claim = _claims.refundRequestClaims[i];
-            if (!isChainRegistered[_claim.originChainId]) {
-                revert ChainIsNotRegistered(_claim.originChainId);
-            }
+        if (refundRequestClaimsLength <= MAX_NUMBER_OF_CLAIMS) {
+            for (uint i; i < refundRequestClaimsLength; i++) {
+                RefundRequestClaim calldata _claim = _claims.refundRequestClaims[i];
+                if (!isChainRegistered[_claim.originChainId]) {
+                    revert ChainIsNotRegistered(_claim.originChainId);
+                }
 
-            _submitClaimsRRC(_claim, _caller);
+                _submitClaimsRRC(_claim, _caller);
+            }
         }
 
         uint256 hotWalletIncrementClaimsLength = _claims.hotWalletIncrementClaims.length;
-        for (uint i; i < hotWalletIncrementClaimsLength; i++) {
-            HotWalletIncrementClaim calldata _claim = _claims.hotWalletIncrementClaims[i];
-            if (!isChainRegistered[_claim.chainId]) {
-                revert ChainIsNotRegistered(_claim.chainId);
-            }
+        if (hotWalletIncrementClaimsLength <= MAX_NUMBER_OF_CLAIMS) {
+            for (uint i; i < hotWalletIncrementClaimsLength; i++) {
+                HotWalletIncrementClaim calldata _claim = _claims.hotWalletIncrementClaims[i];
+                if (!isChainRegistered[_claim.chainId]) {
+                    revert ChainIsNotRegistered(_claim.chainId);
+                }
 
-            _submitClaimHWIC(_claim, _caller);
+                _submitClaimHWIC(_claim, _caller);
+            }
         }
     }
 

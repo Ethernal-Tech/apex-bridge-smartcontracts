@@ -157,6 +157,27 @@ export async function deployBridgeFixture() {
     refundRequestClaims: [],
     hotWalletIncrementClaims: [],
   };
+
+  const validatorClaimsBRCBunch = {
+    bridgingRequestClaims: Array.from({ length: 17 }, (_, i) => ({
+      observedTransactionHash: "0x" + Buffer.from(`test${i}`).toString("hex").padEnd(64, "0").slice(0, 64),
+      totalAmount: 100 + i,
+      retryCounter: 0,
+      receivers: [
+        {
+          amount: 100 + i,
+          destinationAddress: `0x123...${i}`,
+        },
+      ],
+      sourceChainId: 1,
+      destinationChainId: 2,
+    })),
+    batchExecutedClaims: [],
+    batchExecutionFailedClaims: [],
+    refundRequestClaims: [],
+    hotWalletIncrementClaims: [],
+  };
+
   const validatorClaimsBRC_ConfirmedTransactions = {
     bridgingRequestClaims: [
       {
@@ -228,6 +249,20 @@ export async function deployBridgeFixture() {
     hotWalletIncrementClaims: [],
   };
 
+  const validatorClaimsBECBunch = {
+    bridgingRequestClaims: [],
+    batchExecutedClaims: Array.from({ length: 17 }, (_, i) => ({
+      observedTransactionHash: `0x746573750000000000000000000000000000000000000000000000000000${i
+        .toString(16)
+        .padStart(2, "0")}`,
+      chainId: 2,
+      batchNonceId: i + 1,
+    })),
+    batchExecutionFailedClaims: [],
+    refundRequestClaims: [],
+    hotWalletIncrementClaims: [],
+  };
+
   const validatorClaimsBECerror = {
     bridgingRequestClaims: [],
     batchExecutedClaims: [
@@ -266,6 +301,20 @@ export async function deployBridgeFixture() {
         batchNonceId: 1,
       },
     ],
+    refundRequestClaims: [],
+    hotWalletIncrementClaims: [],
+  };
+
+  const validatorClaimsBEFCBunch = {
+    bridgingRequestClaims: [],
+    batchExecutedClaims: [],
+    batchExecutionFailedClaims: Array.from({ length: 17 }, (_, i) => ({
+      observedTransactionHash: `0x746573740000000000000000000000000000000000000000000000000000${i
+        .toString(16)
+        .padStart(2, "0")}`,
+      chainId: 2,
+      batchNonceId: i + 1,
+    })),
     refundRequestClaims: [],
     hotWalletIncrementClaims: [],
   };
@@ -322,6 +371,27 @@ export async function deployBridgeFixture() {
     hotWalletIncrementClaims: [],
   };
 
+  const validatorClaimsRRCBunch = {
+    bridgingRequestClaims: [],
+    batchExecutedClaims: [],
+    batchExecutionFailedClaims: [],
+    refundRequestClaims: Array.from({ length: 17 }, (_, i) => ({
+      originTransactionHash: `0x746573740000000000000000000000000000000000000000000000000000${i
+        .toString(16)
+        .padStart(2, "0")}`,
+      refundTransactionHash: `0x746573730000000000000000000000000000000000000000000000000000${i
+        .toString(16)
+        .padStart(2, "0")}`,
+      originAmount: 100 + i,
+      outputIndexes: `0x746573740000000000000000000000000000000000000000000000000000${i.toString(16).padStart(2, "0")}`,
+      originSenderAddress: `receiver${i + 1}`,
+      retryCounter: 0,
+      originChainId: 2,
+      shouldDecrementHotWallet: i % 2 === 0, // alternate true/false
+    })),
+    hotWalletIncrementClaims: [],
+  };
+
   const validatorClaimsRRCerror = {
     bridgingRequestClaims: [],
     batchExecutedClaims: [],
@@ -352,6 +422,17 @@ export async function deployBridgeFixture() {
         amount: 100,
       },
     ],
+  };
+
+  const validatorClaimsHWICBunch = {
+    bridgingRequestClaims: [],
+    batchExecutedClaims: [],
+    batchExecutionFailedClaims: [],
+    refundRequestClaims: [],
+    hotWalletIncrementClaims: Array.from({ length: 16 }, (_, i) => ({
+      chainId: 1 + (i % 3), // cycle between 1, 2, 3
+      amount: 100 + i * 10,
+    })),
   };
 
   const signedBatch = {
@@ -427,12 +508,17 @@ export async function deployBridgeFixture() {
     validator6,
     validatorCardanoData,
     validatorClaimsBRC,
+    validatorClaimsBRCBunch,
     validatorClaimsBEC,
     validatorClaimsBEC_another,
+    validatorClaimsBECBunch,
     validatorClaimsBEFC,
     validatorClaimsBEFC_another,
+    validatorClaimsBEFCBunch,
     validatorClaimsRRC,
+    validatorClaimsRRCBunch,
     validatorClaimsHWIC,
+    validatorClaimsHWICBunch,
     validatorClaimsBRCerror,
     validatorClaimsBECerror,
     validatorClaimsBEFCerror,
