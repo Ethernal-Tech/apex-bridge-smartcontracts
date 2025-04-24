@@ -291,7 +291,26 @@ export async function deployBridgeFixture() {
     refundRequestClaims: [
       {
         originTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        refundTransactionHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
+        refundTransactionHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
+        originAmount: 100,
+        outputIndexes: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        originSenderAddress: "receiver1",
+        retryCounter: 0,
+        originChainId: 2,
+        shouldDecrementHotWallet: false,
+      },
+    ],
+    hotWalletIncrementClaims: [],
+  };
+
+  const validatorClaimsRRCwrongHash = {
+    bridgingRequestClaims: [],
+    batchExecutedClaims: [],
+    batchExecutionFailedClaims: [],
+    refundRequestClaims: [
+      {
+        originTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        refundTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000001",
         originAmount: 100,
         outputIndexes: "0x7465737400000000000000000000000000000000000000000000000000000000",
         originSenderAddress: "receiver1",
@@ -418,6 +437,7 @@ export async function deployBridgeFixture() {
     validatorClaimsBECerror,
     validatorClaimsBEFCerror,
     validatorClaimsRRCerror,
+    validatorClaimsRRCwrongHash,
     validatorClaimsBRC_ConfirmedTransactions,
     signedBatch,
     signedBatchConsolidation,
