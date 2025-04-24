@@ -979,7 +979,7 @@ describe("Claims Contract", function () {
 
       validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = false;
     });
-    it("Should skip if refundTransactionHash is not empty in Refund Request Claims", async function () {
+    it("Should revert if refundTransactionHash is not empty in Refund Request Claims", async function () {
       const {
         bridge,
         claimsHelper,
@@ -1041,9 +1041,9 @@ describe("Claims Contract", function () {
 
       hash = ethers.keccak256(encoded40);
 
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsRRCwrongHash);
-
-      expect(await claimsHelper.numberOfVotes(hash)).to.equal(0);
+      await expect(
+        bridge.connect(validators[0]).submitClaims(validatorClaimsRRCwrongHash)
+      ).to.be.revertedWithCustomError(bridge, "InvalidData");
     });
   });
 

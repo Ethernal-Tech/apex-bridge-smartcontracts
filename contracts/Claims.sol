@@ -286,7 +286,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         // once automatic refund is implemented, this check should be that
         // either originTransactionHash or refundTransactionHash should be empty
         if (_claim.refundTransactionHash != bytes32(0)) {
-            return;
+            revert InvalidData("refundTransactionHash");
         }
 
         uint8 originChainId = _claim.originChainId;
