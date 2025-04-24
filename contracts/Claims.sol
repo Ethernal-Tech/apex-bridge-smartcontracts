@@ -8,6 +8,7 @@ import "./interfaces/IBridgeStructs.sol";
 import "./Bridge.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
+import "hardhat/console.sol";
 
 contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
@@ -311,6 +312,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         bytes32 claimHash = keccak256(abi.encode("RRC", _claim));
+        console.logBytes32(claimHash);
 
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,

@@ -274,7 +274,7 @@ export async function deployBridgeFixture() {
     batchExecutedClaims: Array.from({ length: 16 }, (_, i) => ({
       observedTransactionHash: "0x" + Buffer.from(`test${i}`).toString("hex").padEnd(64, "0").slice(0, 64),
       chainId: 2,
-      batchNonceId: i + 1,
+      batchNonceId: 1,
     })),
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
@@ -341,7 +341,7 @@ export async function deployBridgeFixture() {
     batchExecutionFailedClaims: Array.from({ length: 16 }, (_, i) => ({
       observedTransactionHash: "0x" + Buffer.from(`test${i}`).toString("hex").padEnd(64, "0").slice(0, 64),
       chainId: 2,
-      batchNonceId: i + 1,
+      batchNonceId: 1,
     })),
     refundRequestClaims: [],
     hotWalletIncrementClaims: [],
@@ -417,7 +417,7 @@ export async function deployBridgeFixture() {
     batchExecutionFailedClaims: [],
     refundRequestClaims: Array.from({ length: 16 }, (_, i) => ({
       originTransactionHash: "0x" + Buffer.from(`testOriginTx${i}`).toString("hex").padEnd(64, "0").slice(0, 64),
-      refundTransactionHash: "0x" + Buffer.from(`testRefundTx${i}`).toString("hex").padEnd(64, "0").slice(0, 64),
+      refundTransactionHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
       originAmount: 100 + i,
       outputIndexes: "0x" + Buffer.from(`testOutput${i}`).toString("hex").padEnd(64, "0").slice(0, 64),
       originSenderAddress: `receiver${i + 1}`,
@@ -434,7 +434,7 @@ export async function deployBridgeFixture() {
     batchExecutionFailedClaims: [],
     refundRequestClaims: Array.from({ length: 17 }, (_, i) => ({
       originTransactionHash: "0x" + Buffer.from(`testOriginTx${i}`).toString("hex").padEnd(64, "0").slice(0, 64),
-      refundTransactionHash: "0x" + Buffer.from(`testRefundTx${i}`).toString("hex").padEnd(64, "0").slice(0, 64),
+      refundTransactionHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
       originAmount: 100 + i,
       outputIndexes: "0x" + Buffer.from(`testOutput${i}`).toString("hex").padEnd(64, "0").slice(0, 64),
       originSenderAddress: `receiver${i + 1}`,
