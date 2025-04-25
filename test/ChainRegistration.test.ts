@@ -2,6 +2,7 @@ import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-h
 import { expect } from "chai";
 import { artifacts, ethers } from "hardhat";
 import { deployBridgeFixture } from "./fixtures";
+import { ZeroAddress } from "ethers";
 
 describe("Chain Registration", function () {
   async function impersonateAsContractAndMintFunds(contractAddress: string) {
@@ -27,6 +28,38 @@ describe("Chain Registration", function () {
       await expect(
         bridge.connect(validators[0]).registerChain(chain1, 100, validatorAddressChainData)
       ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("Should revert if there is less than 4 validatorAddressChainData", async function () {
+      const { bridge, owner, chain1 } = await loadFixture(deployBridgeFixture);
+
+      const validatorAddressChainData_empty = new Array();
+
+      await expect(
+        bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData_empty)
+      ).to.be.revertedWithCustomError(bridge, "InvalidData");
+    });
+
+    it("Should revert if validator's address is zero", async function () {
+      const { bridge, owner, validators, chain1 } = await loadFixture(deployBridgeFixture);
+
+      const validatorAddressChainData_zeroAddress = validators.map((val, index) => ({
+        addr: ZeroAddress,
+        data: {
+          key: [
+            (4n * BigInt(index)).toString(),
+            (4n * BigInt(index) + 1n).toString(),
+            (4n * BigInt(index) + 2n).toString(),
+            (4n * BigInt(index) + 3n).toString(),
+          ],
+        },
+        keySignature: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+        keyFeeSignature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+      }));
+
+      await expect(
+        bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData_zeroAddress)
+      ).to.be.revertedWithCustomError(bridge, "ZeroAddress");
     });
 
     it("Should revert Cardano chain proposal if validator message is not signed correctly", async function () {

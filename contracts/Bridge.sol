@@ -131,7 +131,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
         uint256 _validatorAddressChainDataLength = chainData.length;
 
-        if (_validatorAddressChainDataLength == 0) {
+        if (_validatorAddressChainDataLength < 4) {
             revert InvalidData("ValidatorAddressChainData");
         }
 
@@ -182,7 +182,7 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
         uint8 _chainId = _chain.id;
 
-        validators.setValidatorsChainData(_chainId, _chainData);
+        validators.setValidatorsChainData(_chainId, chainData);
 
         if (!claims.isChainRegistered(_chainId)) {
             chains.push(_chain);
