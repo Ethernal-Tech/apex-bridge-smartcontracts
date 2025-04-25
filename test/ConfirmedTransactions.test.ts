@@ -29,7 +29,7 @@ describe("Confirmed Transacrions", function () {
         chain2,
         validators,
         validatorClaimsBRC,
-        validatorClaimsBRC_ConfirmedTransactions,
+        validatorClaimsBRC_confirmedTransactions,
         validatorsCardanoData,
         hre,
         claims,
@@ -67,14 +67,14 @@ describe("Confirmed Transacrions", function () {
         await ethers.provider.send("evm_mine");
       }
 
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC_ConfirmedTransactions);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC_ConfirmedTransactions);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC_ConfirmedTransactions);
-      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC_ConfirmedTransactions);
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC_confirmedTransactions);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC_confirmedTransactions);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC_confirmedTransactions);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC_confirmedTransactions);
 
       const confirmedTxs = await bridge
         .connect(validators[0])
-        .getConfirmedTransactions(validatorClaimsBRC_ConfirmedTransactions.bridgingRequestClaims[0].destinationChainId);
+        .getConfirmedTransactions(validatorClaimsBRC_confirmedTransactions.bridgingRequestClaims[0].destinationChainId);
 
       const expectedReceiversAddress = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress;
       const expectedReceiversAmount = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount;

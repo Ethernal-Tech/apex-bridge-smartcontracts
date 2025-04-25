@@ -21,6 +21,8 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     Chain[] private chains;
 
+    uint8 constant MAX_NUMBER_OF_BLOCKS = 40;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -93,6 +95,10 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     function submitLastObservedBlocks(uint8 _chainId, CardanoBlock[] calldata _blocks) external override onlyValidator {
         if (!claims.isChainRegistered(_chainId)) {
             revert ChainIsNotRegistered(_chainId);
+        }
+
+        if (_blocks.length > MAX_NUMBER_OF_BLOCKS) {
+            revert TooManyBlocks(_blocks.length, MAX_NUMBER_OF_BLOCKS);
         }
         slots.updateBlocks(_chainId, _blocks, msg.sender);
     }

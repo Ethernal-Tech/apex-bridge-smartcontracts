@@ -19,6 +19,19 @@ describe("Claims Contract", function () {
         "ChainIsNotRegistered"
       );
     });
+
+    it("Should revert if there are too many receivers in BRC", async function () {
+      const { bridge, owner, chain1, chain2, validators, validatorsCardanoData, validatorClaimsBRC_tooManyReceivers } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+
+      await expect(
+        bridge.connect(validators[0]).submitClaims(validatorClaimsBRC_tooManyReceivers)
+      ).to.be.revertedWithCustomError(bridge, "TooManyReceivers");
+    });
+
     it("Should skip if Bridging Request Claim is already confirmed", async function () {
       const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBRC, validatorsCardanoData } =
         await loadFixture(deployBridgeFixture);
@@ -133,6 +146,53 @@ describe("Claims Contract", function () {
         .withArgs("BRC", 0, 1);
 
       expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
+    });
+    it("Should revert Bridging Request Claims if there are more than 16 in the array", async function () {
+      const {
+        bridge,
+        claimsHelper,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsBRC_bunch32,
+        validatorClaimsBRC_bunch33,
+        validatorsCardanoData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC_bunch32);
+
+      const hashes = [
+        "0x9c7d76ea19efbeccf02a1fd85fd9471b9075e99a329a80eeb7ae4d145c7eff66",
+        "0xc607faa089b0d6d690dbdc5d6f8cc4558d37b75d9393c998812c56a7f14387ce",
+        "0x136416f90a3950212c37c1eaf39ab2ea7530222ce02b3c64f7c60918ae3d4945",
+        "0x107b0f5d128bb478cd3a7e7074e2a06507ceb7a3daac7940d8c511c914ce39b2",
+        "0xe09d26f8d9f703ca3e66b3d32fe9c2dfefba08de6e05a8e3f86f259dbb3b38fb",
+        "0xbe5dcc66171801ef3f1ea37043b0900e3fc68c9f201478553c7c38d82d245978",
+        "0x84de0a9358ae5e19548f202f3ae8f2f0e607379a8a943ab52d4dd86fd354e54d",
+        "0xe594e8c9532b8b5b22789b71bf23ae801d095b35738ee127d868d0ca8a1bd3e8",
+        "0xe30de87be001a88b98b725ee957df6eea2b79e3fe6b91ae118db1ddbeaef9ace",
+        "0x895f1d256f4e8f7c0398e82e497e9d478e673195e120a8a6c4646cb9615eb400",
+        "0xc614c3121867aab6bd1f3c59db37979345ff725ec0890f731460d94d4a0bd500",
+        "0xbcc7c2f82fdc4848d88b81a9c785976160146a7aeffd07ac1abf39b23deb5ba2",
+        "0xee8a1bdd0398ad222ba7c422771ed174963a317f05fa1dc26506da061082dafd",
+        "0xb485cf028121cd2f557e4c6021dbe5ea1100b1166e4d1b51a5b5214643446803",
+        "0xc58fc17ba75fa3bd74385becdca4f88aea55b1928a7353e3ed09ab28dacc9dd0",
+        "0x58ed858c84cdb8f0c63006d80142dfa24cbfe58a78d01cdc63d26f2055738f8d",
+        "0x101711d516b9a711d2d6b96a8a9b65f21bc251070e7a11cdb4fc809d5e039728",
+      ];
+
+      for (let i = 0; i < 16; i++) {
+        expect(await claimsHelper.hasVoted(hashes[i], validators[0].address)).to.be.true;
+        expect(await claimsHelper.numberOfVotes(hashes[i])).to.equal(1);
+      }
+
+      await expect(
+        bridge.connect(validators[1]).submitClaims(validatorClaimsBRC_bunch33)
+      ).to.be.revertedWithCustomError(bridge, "TooManyClaims");
     });
   });
 
@@ -944,6 +1004,7 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
+
     it("Should emit NotEnoughFunds and skip Refund Request Claim for failed BRC on destination if there is not enough funds", async function () {
       const { bridge, claims, owner, chain2, validators, validatorsCardanoData, validatorClaimsRRC } =
         await loadFixture(deployBridgeFixture);
@@ -987,7 +1048,7 @@ describe("Claims Contract", function () {
         validators,
         chain2,
         validatorClaimsRRC,
-        validatorClaimsRRCwrongHash,
+        validatorClaimsRRC_wrongHash,
         validatorsCardanoData,
       } = await loadFixture(deployBridgeFixture);
 
@@ -1023,14 +1084,14 @@ describe("Claims Contract", function () {
       encoded = abiCoder.encode(
         ["bytes32", "bytes32", "uint256", "bytes", "string", "uint64", "uint8", "bool"],
         [
-          validatorClaimsRRCwrongHash.refundRequestClaims[0].originTransactionHash,
-          validatorClaimsRRCwrongHash.refundRequestClaims[0].refundTransactionHash,
-          validatorClaimsRRCwrongHash.refundRequestClaims[0].originAmount,
-          validatorClaimsRRCwrongHash.refundRequestClaims[0].outputIndexes,
-          validatorClaimsRRCwrongHash.refundRequestClaims[0].originSenderAddress,
-          validatorClaimsRRCwrongHash.refundRequestClaims[0].retryCounter,
-          validatorClaimsRRCwrongHash.refundRequestClaims[0].originChainId,
-          validatorClaimsRRCwrongHash.refundRequestClaims[0].shouldDecrementHotWallet,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].originTransactionHash,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].refundTransactionHash,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].originAmount,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].outputIndexes,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].originSenderAddress,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].retryCounter,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].originChainId,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].shouldDecrementHotWallet,
         ]
       );
 
@@ -1042,7 +1103,7 @@ describe("Claims Contract", function () {
       hash = ethers.keccak256(encoded40);
 
       await expect(
-        bridge.connect(validators[0]).submitClaims(validatorClaimsRRCwrongHash)
+        bridge.connect(validators[0]).submitClaims(validatorClaimsRRC_wrongHash)
       ).to.be.revertedWithCustomError(bridge, "InvalidData");
     });
   });
