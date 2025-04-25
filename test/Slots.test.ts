@@ -13,10 +13,10 @@ describe("Slots Contract", function () {
     });
 
     it("Should revert if there are too many blocks", async function () {
-      const { bridge, owner, chain1, validators, validatorsCardanoData, cardanoBlocksTooManyBlocks } =
+      const { bridge, owner, chain1, validators, validatorAddressChainData, cardanoBlocksTooManyBlocks } =
         await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
 
       await expect(
         bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocksTooManyBlocks)

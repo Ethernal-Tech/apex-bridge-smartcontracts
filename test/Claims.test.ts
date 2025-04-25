@@ -21,11 +21,18 @@ describe("Claims Contract", function () {
     });
 
     it("Should revert if there are too many receivers in BRC", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorsCardanoData, validatorClaimsBRC_tooManyReceivers } =
-        await loadFixture(deployBridgeFixture);
+      const {
+        bridge,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorAddressChainData,
+        validatorClaimsBRC_tooManyReceivers,
+      } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 10000, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 10000, validatorAddressChainData);
 
       await expect(
         bridge.connect(validators[0]).submitClaims(validatorClaimsBRC_tooManyReceivers)
@@ -156,11 +163,11 @@ describe("Claims Contract", function () {
         validators,
         validatorClaimsBRC_bunch32,
         validatorClaimsBRC_bunch33,
-        validatorsCardanoData,
+        validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 1000, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 1000, validatorAddressChainData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC_bunch32);
 
@@ -1037,7 +1044,7 @@ describe("Claims Contract", function () {
         chain2,
         validatorClaimsRRC,
         validatorClaimsRRC_wrongHash,
-        validatorsCardanoData,
+        validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);

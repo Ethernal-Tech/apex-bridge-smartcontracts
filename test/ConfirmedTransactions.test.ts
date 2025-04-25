@@ -29,7 +29,7 @@ describe("Confirmed Transacrions", function () {
         chain2,
         validators,
         validatorClaimsBRC,
-        validatorClaimsBRC_ConfirmedTransactions,
+        validatorClaimsBRC_confirmedTransactions,
         validatorAddressChainData,
         hre,
         claims,
