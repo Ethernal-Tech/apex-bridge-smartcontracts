@@ -125,10 +125,35 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     function registerChain(
         Chain calldata _chain,
         uint256 _tokenQuantity,
-        ValidatorAddressChainData[] calldata _chainData
+        ValidatorAddressChainData[] calldata _chainData,
+        bytes calldata _keySignature,
+        bytes calldata _keyFeeSignature
     ) public override onlyOwner {
         uint8 _chainId = _chain.id;
+
+        bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", msg.sender));
+
+        uint8 _chainType = _chain.chainType;
+        ValidatorChainData memory _validatorChainData = _chainData[0].data;
+
+        if (_chainType == 0) {
+            bytes memory messageHashBytes = _bytes32ToBytesAssembly(messageHashBytes32);
+            if (
+                !validators.isSignatureValid(messageHashBytes, _keySignature, _validatorChainData.key[0], false) ||
+                !validators.isSignatureValid(messageHashBytes, _keyFeeSignature, _validatorChainData.key[1], false)
+            ) {
+                revert InvalidSignature();
+            }
+        } else if (_chainType == 1) {
+            if (!validators.isBlsSignatureValid(messageHashBytes32, _keySignature, _validatorChainData.key)) {
+                revert InvalidSignature();
+            }
+        } else {
+            revert InvalidData("chainType");
+        }
+
         validators.setValidatorsChainData(_chainId, _chainData);
+
         if (!claims.isChainRegistered(_chainId)) {
             chains.push(_chain);
             claims.setChainRegistered(_chainId, _tokenQuantity);

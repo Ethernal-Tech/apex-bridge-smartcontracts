@@ -6,7 +6,15 @@ describe("Performance", function () {
   it("registerChain", async function () {
     const { bridge, chain1, owner, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
-    const tx = await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+    const tx = await bridge
+      .connect(owner)
+      .registerChain(
+        chain1,
+        100,
+        validatorsCardanoData,
+        "0x7465737400000000000000000000000000000000000000000000000000000000",
+        "0x7465737400000000000000000000000000000000000000000000000000000000"
+      );
     const receipt = await tx.wait();
     console.log(`Gas spent: ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
   });
@@ -36,8 +44,24 @@ describe("Performance", function () {
       deployBridgeFixture
     );
 
-    await bridge.connect(owner).registerChain(chain1, 10000, validatorsCardanoData);
-    await bridge.connect(owner).registerChain(chain2, 10000, validatorsCardanoData);
+    await bridge
+      .connect(owner)
+      .registerChain(
+        chain1,
+        10000,
+        validatorsCardanoData,
+        "0x7465737400000000000000000000000000000000000000000000000000000000",
+        "0x7465737400000000000000000000000000000000000000000000000000000000"
+      );
+    await bridge
+      .connect(owner)
+      .registerChain(
+        chain2,
+        10000,
+        validatorsCardanoData,
+        "0x7465737400000000000000000000000000000000000000000000000000000000",
+        "0x7465737400000000000000000000000000000000000000000000000000000000"
+      );
 
     for (let i = 0; i < validators.length; i++) {
       // fourth one is quorum
@@ -51,8 +75,24 @@ describe("Performance", function () {
     const { bridge, chain1, chain2, owner, validators, validatorClaimsBRC, signedBatch, validatorsCardanoData } =
       await loadFixture(deployBridgeFixture);
 
-    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-    await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+    await bridge
+      .connect(owner)
+      .registerChain(
+        chain1,
+        100,
+        validatorsCardanoData,
+        "0x7465737400000000000000000000000000000000000000000000000000000000",
+        "0x7465737400000000000000000000000000000000000000000000000000000000"
+      );
+    await bridge
+      .connect(owner)
+      .registerChain(
+        chain2,
+        100,
+        validatorsCardanoData,
+        "0x7465737400000000000000000000000000000000000000000000000000000000",
+        "0x7465737400000000000000000000000000000000000000000000000000000000"
+      );
 
     await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
     await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -85,8 +125,24 @@ describe("Performance", function () {
       validatorClaimsBEC,
     } = await loadFixture(deployBridgeFixture);
 
-    await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-    await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+    await bridge
+      .connect(owner)
+      .registerChain(
+        chain1,
+        100,
+        validatorsCardanoData,
+        "0x7465737400000000000000000000000000000000000000000000000000000000",
+        "0x7465737400000000000000000000000000000000000000000000000000000000"
+      );
+    await bridge
+      .connect(owner)
+      .registerChain(
+        chain2,
+        100,
+        validatorsCardanoData,
+        "0x7465737400000000000000000000000000000000000000000000000000000000",
+        "0x7465737400000000000000000000000000000000000000000000000000000000"
+      );
 
     await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
     await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -120,7 +176,15 @@ describe("Performance", function () {
       deployBridgeFixture
     );
 
-    await bridge.connect(owner).registerChain(chain2, 100, validatorsCardanoData);
+    await bridge
+      .connect(owner)
+      .registerChain(
+        chain2,
+        100,
+        validatorsCardanoData,
+        "0x7465737400000000000000000000000000000000000000000000000000000000",
+        "0x7465737400000000000000000000000000000000000000000000000000000000"
+      );
 
     for (let i = 0; i < validators.length; i++) {
       // fourth one is quorum

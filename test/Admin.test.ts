@@ -34,7 +34,13 @@ describe("Admin Functions", function () {
     });
     it("Should increase chainTokenQuantity after calling updateChainTokenQuantity", async function () {
       const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, validatorsCardanoData);
+      await bridge.registerChain(
+        chain1,
+        100,
+        validatorsCardanoData,
+        "0x7465737400000000000000000000000000000000000000000000000000000000",
+        "0x7465737400000000000000000000000000000000000000000000000000000000"
+      );
 
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
       await admin.updateChainTokenQuantity(chain1.id, true, 100);
@@ -42,7 +48,13 @@ describe("Admin Functions", function () {
     });
     it("Should increase chainTokenQuantity after calling updateChainTokenQuantity with a value higher than the current one", async function () {
       const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, validatorsCardanoData);
+      await bridge.registerChain(
+        chain1,
+        100,
+        validatorsCardanoData,
+        "0x7465737400000000000000000000000000000000000000000000000000000000",
+        "0x7465737400000000000000000000000000000000000000000000000000000000"
+      );
 
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
       await admin.updateChainTokenQuantity(chain1.id, true, 200);
@@ -50,7 +62,13 @@ describe("Admin Functions", function () {
     });
     it("Should emit event after increaseint chain token quantity with updateChainTokenQuantity", async function () {
       const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, validatorsCardanoData);
+      await bridge.registerChain(
+        chain1,
+        100,
+        validatorsCardanoData,
+        "0x7465737400000000000000000000000000000000000000000000000000000000",
+        "0x7465737400000000000000000000000000000000000000000000000000000000"
+      );
 
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
       await expect(admin.updateChainTokenQuantity(chain1.id, true, 100)).to.emit(admin, "UpdatedChainTokenQuantity");
@@ -58,7 +76,13 @@ describe("Admin Functions", function () {
     });
     it("Should revert if decreae amount is higher than available chainTokenQuantity", async function () {
       const { admin, bridge, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, validatorsCardanoData);
+      await bridge.registerChain(
+        chain1,
+        100,
+        validatorsCardanoData,
+        "0x7465737400000000000000000000000000000000000000000000000000000000",
+        "0x7465737400000000000000000000000000000000000000000000000000000000"
+      );
 
       await expect(admin.updateChainTokenQuantity(1, false, 200)).to.be.revertedWithCustomError(
         admin,
@@ -67,7 +91,13 @@ describe("Admin Functions", function () {
     });
     it("Should decrease chainTokenQuantity by required amount", async function () {
       const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, validatorsCardanoData);
+      await bridge.registerChain(
+        chain1,
+        100,
+        validatorsCardanoData,
+        "0x7465737400000000000000000000000000000000000000000000000000000000",
+        "0x7465737400000000000000000000000000000000000000000000000000000000"
+      );
 
       await admin.updateChainTokenQuantity(chain1.id, false, 50);
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(50);
@@ -75,7 +105,13 @@ describe("Admin Functions", function () {
     it("Should emit event after decreasing chain token quantity with updateChainTokenQuantity", async function () {
       const { bridge, admin, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
-      await bridge.registerChain(chain1, 100, validatorsCardanoData);
+      await bridge.registerChain(
+        chain1,
+        100,
+        validatorsCardanoData,
+        "0x7465737400000000000000000000000000000000000000000000000000000000",
+        "0x7465737400000000000000000000000000000000000000000000000000000000"
+      );
 
       await expect(admin.updateChainTokenQuantity(chain1.id, false, 50)).to.emit(admin, "UpdatedChainTokenQuantity");
     });
@@ -143,7 +179,15 @@ describe("Admin Functions", function () {
 
       await admin.setFundAdmin(validators[0].address);
 
-      await bridge.connect(owner).registerChain(chain1, 1, validatorsCardanoData);
+      await bridge
+        .connect(owner)
+        .registerChain(
+          chain1,
+          1,
+          validatorsCardanoData,
+          "0x7465737400000000000000000000000000000000000000000000000000000000",
+          "0x7465737400000000000000000000000000000000000000000000000000000000"
+        );
       await expect(admin.connect(validators[0]).defund(1, "address", 100)).to.be.revertedWithCustomError(
         claims,
         "DefundRequestTooHigh"
@@ -156,7 +200,15 @@ describe("Admin Functions", function () {
 
       await admin.setFundAdmin(validators[0].address);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge
+        .connect(owner)
+        .registerChain(
+          chain1,
+          100,
+          validatorsCardanoData,
+          "0x7465737400000000000000000000000000000000000000000000000000000000",
+          "0x7465737400000000000000000000000000000000000000000000000000000000"
+        );
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
       await admin.connect(validators[0]).defund(chain1.id, "address", 1);
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(99);
@@ -168,7 +220,15 @@ describe("Admin Functions", function () {
 
       await admin.setFundAdmin(validators[0].address);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge
+        .connect(owner)
+        .registerChain(
+          chain1,
+          100,
+          validatorsCardanoData,
+          "0x7465737400000000000000000000000000000000000000000000000000000000",
+          "0x7465737400000000000000000000000000000000000000000000000000000000"
+        );
 
       await admin.connect(validators[0]).defund(chain1.id, "address", 1);
 
@@ -183,7 +243,15 @@ describe("Admin Functions", function () {
 
       await admin.setFundAdmin(validators[0].address);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge
+        .connect(owner)
+        .registerChain(
+          chain1,
+          100,
+          validatorsCardanoData,
+          "0x7465737400000000000000000000000000000000000000000000000000000000",
+          "0x7465737400000000000000000000000000000000000000000000000000000000"
+        );
 
       await admin.connect(validators[0]).defund(chain1.id, "address", 1);
 
@@ -200,7 +268,15 @@ describe("Admin Functions", function () {
 
       await admin.setFundAdmin(validators[0].address);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge
+        .connect(owner)
+        .registerChain(
+          chain1,
+          100,
+          validatorsCardanoData,
+          "0x7465737400000000000000000000000000000000000000000000000000000000",
+          "0x7465737400000000000000000000000000000000000000000000000000000000"
+        );
 
       await admin.connect(validators[0]).defund(chain1.id, "address", 1);
 
@@ -210,7 +286,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).sourceChainId).to.equal(chain1.id);
       expect((await claims.confirmedTransactions(chain1.id, 1)).nonce).to.equal(1);
       expect((await claims.confirmedTransactions(chain1.id, 1)).retryCounter).to.equal(0);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal('0x');
+      expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(24);
     });
@@ -230,8 +306,24 @@ describe("Admin Functions", function () {
         validatorClaimsBEFC,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 200, validatorsCardanoData);
+      await bridge
+        .connect(owner)
+        .registerChain(
+          chain1,
+          100,
+          validatorsCardanoData,
+          "0x7465737400000000000000000000000000000000000000000000000000000000",
+          "0x7465737400000000000000000000000000000000000000000000000000000000"
+        );
+      await bridge
+        .connect(owner)
+        .registerChain(
+          chain2,
+          200,
+          validatorsCardanoData,
+          "0x7465737400000000000000000000000000000000000000000000000000000000",
+          "0x7465737400000000000000000000000000000000000000000000000000000000"
+        );
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -275,7 +367,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain2.id, 3)).sourceChainId).to.equal(chain2.id);
       expect((await claims.confirmedTransactions(chain2.id, 3)).nonce).to.equal(3);
       expect((await claims.confirmedTransactions(chain2.id, 3)).retryCounter).to.equal(1);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal('0x');
+      expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(29);
     });
@@ -293,8 +385,24 @@ describe("Admin Functions", function () {
         validatorClaimsBEFC,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 200, validatorsCardanoData);
+      await bridge
+        .connect(owner)
+        .registerChain(
+          chain1,
+          100,
+          validatorsCardanoData,
+          "0x7465737400000000000000000000000000000000000000000000000000000000",
+          "0x7465737400000000000000000000000000000000000000000000000000000000"
+        );
+      await bridge
+        .connect(owner)
+        .registerChain(
+          chain2,
+          200,
+          validatorsCardanoData,
+          "0x7465737400000000000000000000000000000000000000000000000000000000",
+          "0x7465737400000000000000000000000000000000000000000000000000000000"
+        );
 
       await admin.setFundAdmin(validators[0].address);
 

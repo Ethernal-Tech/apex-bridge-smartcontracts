@@ -37,7 +37,15 @@ describe("Slots Contract", function () {
         deployBridgeFixture
       );
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge
+        .connect(owner)
+        .registerChain(
+          chain1,
+          100,
+          validatorsCardanoData,
+          "0x7465737400000000000000000000000000000000000000000000000000000000",
+          "0x7465737400000000000000000000000000000000000000000000000000000000"
+        );
 
       await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
       await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
@@ -57,7 +65,15 @@ describe("Slots Contract", function () {
         deployBridgeFixture
       );
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge
+        .connect(owner)
+        .registerChain(
+          chain1,
+          100,
+          validatorsCardanoData,
+          "0x7465737400000000000000000000000000000000000000000000000000000000",
+          "0x7465737400000000000000000000000000000000000000000000000000000000"
+        );
 
       await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
       await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
@@ -77,7 +93,15 @@ describe("Slots Contract", function () {
         deployBridgeFixture
       );
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge
+        .connect(owner)
+        .registerChain(
+          chain1,
+          100,
+          validatorsCardanoData,
+          "0x7465737400000000000000000000000000000000000000000000000000000000",
+          "0x7465737400000000000000000000000000000000000000000000000000000000"
+        );
 
       await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
       await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);

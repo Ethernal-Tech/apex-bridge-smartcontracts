@@ -24,9 +24,53 @@ describe("Chain Registration", function () {
     it("Should revert new chain if not set by owner", async function () {
       const { bridge, validators, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
-      await expect(bridge.connect(validators[0]).registerChain(chain1, 100, validatorsCardanoData)).to.be.revertedWith(
-        "Ownable: caller is not the owner"
-      );
+      await expect(
+        bridge
+          .connect(validators[0])
+          .registerChain(
+            chain1,
+            100,
+            validatorsCardanoData,
+            "0x7465737400000000000000000000000000000000000000000000000000000000",
+            "0x7465737400000000000000000000000000000000000000000000000000000000"
+          )
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("Should revert Cardano chain proposal if validator message is not signed correctly", async function () {
+      const { bridge, owner, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+
+      await setCode("0x0000000000000000000000000000000000002050", "0x60206000F3");
+
+      await expect(
+        bridge
+          .connect(owner)
+          .registerChain(
+            chain1,
+            100,
+            validatorsCardanoData,
+            "0x7465737400000000000000000000000000000000000000000000000000000000",
+            "0x7465737400000000000000000000000000000000000000000000000000000000"
+          )
+      ).to.be.revertedWithCustomError(bridge, "InvalidSignature");
+    });
+
+    it("Should revert Nexus chain proposal if validator message is not signed correctly", async function () {
+      const { bridge, owner, chain2, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+
+      await setCode("0x0000000000000000000000000000000000002060", "0x60206000F3");
+
+      await expect(
+        bridge
+          .connect(owner)
+          .registerChain(
+            chain2,
+            100,
+            validatorsCardanoData,
+            "0x7465737400000000000000000000000000000000000000000000000000000000",
+            "0x7465737400000000000000000000000000000000000000000000000000000000"
+          )
+      ).to.be.revertedWithCustomError(bridge, "InvalidSignature");
     });
 
     it("Should add new chain if requested by owner", async function () {
@@ -34,7 +78,15 @@ describe("Chain Registration", function () {
 
       expect(await claims.isChainRegistered(chain1.id)).to.be.false;
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge
+        .connect(owner)
+        .registerChain(
+          chain1,
+          100,
+          validatorsCardanoData,
+          "0x7465737400000000000000000000000000000000000000000000000000000000",
+          "0x7465737400000000000000000000000000000000000000000000000000000000"
+        );
 
       expect(await claims.isChainRegistered(chain1.id)).to.be.true;
     });
@@ -46,7 +98,15 @@ describe("Chain Registration", function () {
 
       expect(await claims.isChainRegistered(chain1.id)).to.be.false;
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge
+        .connect(owner)
+        .registerChain(
+          chain1,
+          100,
+          validatorsCardanoData,
+          "0x7465737400000000000000000000000000000000000000000000000000000000",
+          "0x7465737400000000000000000000000000000000000000000000000000000000"
+        );
 
       expect(await claims.isChainRegistered(chain1.id)).to.be.true;
       expect(await bridge.getAllRegisteredChains()).to.have.length(1);
@@ -59,7 +119,15 @@ describe("Chain Registration", function () {
 
       validatorsCardanoData[0].data.key[0] = BigInt(10);
 
-      await bridge.connect(owner).registerChain(chain1, 10, validatorsCardanoData);
+      await bridge
+        .connect(owner)
+        .registerChain(
+          chain1,
+          10,
+          validatorsCardanoData,
+          "0x7465737400000000000000000000000000000000000000000000000000000000",
+          "0x7465737400000000000000000000000000000000000000000000000000000000"
+        );
 
       expect(await claims.isChainRegistered(chain1.id)).to.be.true;
       expect(await bridge.getAllRegisteredChains()).to.have.length(1);
@@ -78,7 +146,15 @@ describe("Chain Registration", function () {
 
       expect(await claims.nextTimeoutBlock(chain1.id)).to.equal(0);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData);
+      await bridge
+        .connect(owner)
+        .registerChain(
+          chain1,
+          100,
+          validatorsCardanoData,
+          "0x7465737400000000000000000000000000000000000000000000000000000000",
+          "0x7465737400000000000000000000000000000000000000000000000000000000"
+        );
 
       expect(await claims.nextTimeoutBlock(chain1.id)).to.equal(
         BigInt(await ethers.provider.getBlockNumber()) + (await claims.timeoutBlocksNumber())
@@ -88,7 +164,17 @@ describe("Chain Registration", function () {
     it("Should emit new chain registered when registered by owner", async function () {
       const { bridge, owner, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
 
-      await expect(bridge.connect(owner).registerChain(chain1, 100, validatorsCardanoData))
+      await expect(
+        bridge
+          .connect(owner)
+          .registerChain(
+            chain1,
+            100,
+            validatorsCardanoData,
+            "0x7465737400000000000000000000000000000000000000000000000000000000",
+            "0x7465737400000000000000000000000000000000000000000000000000000000"
+          )
+      )
         .to.emit(bridge, "newChainRegistered")
         .withArgs(1);
     });
