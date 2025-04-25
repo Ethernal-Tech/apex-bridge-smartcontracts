@@ -123,6 +123,8 @@ interface IBridgeStructs {
     struct ValidatorAddressChainData {
         address addr;
         ValidatorChainData data;
+        bytes keySignature;
+        bytes keyFeeSignature;
     }
 
     struct ValidatorChainData {

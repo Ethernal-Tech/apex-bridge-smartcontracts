@@ -33,20 +33,11 @@ describe("Slots Contract", function () {
     });
 
     it("Should skip if validator submitted the same CardanoBlocks twice", async function () {
-      const { bridge, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
+      const { bridge, owner, validators, chain1, validatorAddressChainData, cardanoBlocks } = await loadFixture(
         deployBridgeFixture
       );
 
-      await bridge
-        .connect(owner)
-        .registerChain(
-          chain1,
-          100,
-          validatorsCardanoData,
-          "0x7465737400000000000000000000000000000000000000000000000000000000",
-          "0x7465737400000000000000000000000000000000000000000000000000000000"
-        );
-
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
       await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
       await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
@@ -61,20 +52,11 @@ describe("Slots Contract", function () {
     });
 
     it("Should update CardanoBlock when there is quorum", async function () {
-      const { bridge, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
+      const { bridge, owner, validators, chain1, validatorAddressChainData, cardanoBlocks } = await loadFixture(
         deployBridgeFixture
       );
 
-      await bridge
-        .connect(owner)
-        .registerChain(
-          chain1,
-          100,
-          validatorsCardanoData,
-          "0x7465737400000000000000000000000000000000000000000000000000000000",
-          "0x7465737400000000000000000000000000000000000000000000000000000000"
-        );
-
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
       await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
       await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
@@ -89,20 +71,11 @@ describe("Slots Contract", function () {
     });
 
     it("Should not update CardanoBlock when slot is not newer", async function () {
-      const { bridge, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
+      const { bridge, owner, validators, chain1, validatorAddressChainData, cardanoBlocks } = await loadFixture(
         deployBridgeFixture
       );
 
-      await bridge
-        .connect(owner)
-        .registerChain(
-          chain1,
-          100,
-          validatorsCardanoData,
-          "0x7465737400000000000000000000000000000000000000000000000000000000",
-          "0x7465737400000000000000000000000000000000000000000000000000000000"
-        );
-
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
       await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
       await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);

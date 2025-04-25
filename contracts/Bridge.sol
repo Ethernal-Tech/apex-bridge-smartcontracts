@@ -125,32 +125,62 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     function registerChain(
         Chain calldata _chain,
         uint256 _tokenQuantity,
-        ValidatorAddressChainData[] calldata _chainData,
-        bytes calldata _keySignature,
-        bytes calldata _keyFeeSignature
+        ValidatorAddressChainData[] calldata _chainData
     ) public override onlyOwner {
-        uint8 _chainId = _chain.id;
+        ValidatorAddressChainData[] memory chainData = _chainData;
 
-        bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", msg.sender));
+        uint256 _validatorAddressChainDataLength = chainData.length;
+
+        if (_validatorAddressChainDataLength == 0) {
+            revert InvalidData("ValidatorAddressChainData");
+        }
 
         uint8 _chainType = _chain.chainType;
-        ValidatorChainData memory _validatorChainData = _chainData[0].data;
 
-        if (_chainType == 0) {
-            bytes memory messageHashBytes = _bytes32ToBytesAssembly(messageHashBytes32);
-            if (
-                !validators.isSignatureValid(messageHashBytes, _keySignature, _validatorChainData.key[0], false) ||
-                !validators.isSignatureValid(messageHashBytes, _keyFeeSignature, _validatorChainData.key[1], false)
-            ) {
-                revert InvalidSignature();
+        for (uint i = 0; i < _validatorAddressChainDataLength; i++) {
+            address _validatorAddress = chainData[i].addr;
+            if (_validatorAddress == address(0)) {
+                revert ZeroAddress();
             }
-        } else if (_chainType == 1) {
-            if (!validators.isBlsSignatureValid(messageHashBytes32, _keySignature, _validatorChainData.key)) {
-                revert InvalidSignature();
+
+            bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", _validatorAddress));
+
+            ValidatorChainData memory _validatorChainData = chainData[i].data;
+
+            if (_chainType == 0) {
+                bytes memory messageHashBytes = _bytes32ToBytesAssembly(messageHashBytes32);
+                if (
+                    !validators.isSignatureValid(
+                        messageHashBytes,
+                        chainData[i].keySignature,
+                        _validatorChainData.key[0],
+                        false
+                    ) ||
+                    !validators.isSignatureValid(
+                        messageHashBytes,
+                        chainData[i].keyFeeSignature,
+                        _validatorChainData.key[1],
+                        false
+                    )
+                ) {
+                    revert InvalidSignature();
+                }
+            } else if (_chainType == 1) {
+                if (
+                    !validators.isBlsSignatureValid(
+                        messageHashBytes32,
+                        chainData[i].keySignature,
+                        _validatorChainData.key
+                    )
+                ) {
+                    revert InvalidSignature();
+                }
+            } else {
+                revert InvalidData("chainType");
             }
-        } else {
-            revert InvalidData("chainType");
         }
+
+        uint8 _chainId = _chain.id;
 
         validators.setValidatorsChainData(_chainId, _chainData);
 
