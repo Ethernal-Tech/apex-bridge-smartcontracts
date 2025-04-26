@@ -398,19 +398,21 @@ export async function deployBridgeFixture() {
     blockHash: `0x${"74657374".padEnd(64, "0")}${(i + 1).toString(16).padStart(2, "0")}`.slice(0, 66),
   }));
 
-  const validatorsCardanoData = [];
-  let ind = 0;
-  for (let val of validators) {
-    validatorsCardanoData.push({
-      addr: val.address,
-      data: {
-        key: [BigInt(4 * ind), BigInt(4 * ind + 1), BigInt(4 * ind + 2), BigInt(4 * ind + 3)],
-      },
-    });
-    ind++;
-  }
+  const validatorAddressChainData = validators.map((val, index) => ({
+    addr: val.address,
+    data: {
+      key: [
+        (4n * BigInt(index)).toString(),
+        (4n * BigInt(index) + 1n).toString(),
+        (4n * BigInt(index) + 2n).toString(),
+        (4n * BigInt(index) + 3n).toString(),
+      ],
+    },
+    keySignature: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+    keyFeeSignature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+  }));
 
-  const validatorCardanoData = validatorsCardanoData[0].data;
+  const validatorCardanoData = validatorAddressChainData[0].data;
 
   return {
     hre,
@@ -425,7 +427,6 @@ export async function deployBridgeFixture() {
     chain2,
     validatorsc,
     validator6,
-    validatorCardanoData,
     validatorClaimsBRC,
     validatorClaimsBRC_bunch32,
     validatorClaimsBRC_bunch33,
@@ -441,7 +442,8 @@ export async function deployBridgeFixture() {
     signedBatch,
     signedBatchConsolidation,
     signedBatchDefund,
-    validatorsCardanoData,
+    validatorAddressChainData,
+    validatorCardanoData,
     validators,
     cardanoBlocks,
     cardanoBlocksTooManyBlocks,

@@ -127,8 +127,34 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint256 _tokenQuantity,
         ValidatorAddressChainData[] calldata _chainData
     ) public override onlyOwner {
+        uint256 _validatorAddressChainDataLength = _chainData.length;
+
+        if (_validatorAddressChainDataLength < 4) {
+            revert InvalidData("ValidatorAddressChainData");
+        }
+
+        uint8 _chainType = _chain.chainType;
+
+        for (uint i = 0; i < _validatorAddressChainDataLength; i++) {
+            address _validatorAddress = _chainData[i].addr;
+
+            if (_validatorAddress == address(0)) {
+                revert ZeroAddress();
+            }
+
+            _validateSignatures(
+                _chainType,
+                _validatorAddress,
+                _chainData[i].keySignature,
+                _chainData[i].keyFeeSignature,
+                _chainData[i].data
+            );
+        }
+
         uint8 _chainId = _chain.id;
+
         validators.setValidatorsChainData(_chainId, _chainData);
+
         if (!claims.isChainRegistered(_chainId)) {
             chains.push(_chain);
             claims.setChainRegistered(_chainId, _tokenQuantity);
@@ -154,7 +180,28 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
             revert AlreadyProposed(_chainId);
         }
 
-        bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", msg.sender));
+        _validateSignatures(_chainType, msg.sender, _keySignature, _keyFeeSignature, _validatorChainData);
+
+        validators.addValidatorChainData(_chainId, msg.sender, _validatorChainData);
+
+        if (claims.setVoted(msg.sender, chainHash) == validators.validatorsCount()) {
+            chains.push(Chain(_chainId, _chainType, "", ""));
+
+            claims.setChainRegistered(_chainId, _tokenQuantity);
+            emit newChainRegistered(_chainId);
+        } else {
+            emit newChainProposal(_chainId, msg.sender);
+        }
+    }
+
+    function _validateSignatures(
+        uint8 _chainType,
+        address _sender,
+        bytes calldata _keySignature,
+        bytes calldata _keyFeeSignature,
+        ValidatorChainData calldata _validatorChainData
+    ) internal view {
+        bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", _sender));
 
         if (_chainType == 0) {
             bytes memory messageHashBytes = _bytes32ToBytesAssembly(messageHashBytes32);
@@ -170,17 +217,6 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
             }
         } else {
             revert InvalidData("chainType");
-        }
-
-        validators.addValidatorChainData(_chainId, msg.sender, _validatorChainData);
-
-        if (claims.setVoted(msg.sender, chainHash) == validators.validatorsCount()) {
-            chains.push(Chain(_chainId, _chainType, "", ""));
-
-            claims.setChainRegistered(_chainId, _tokenQuantity);
-            emit newChainRegistered(_chainId);
-        } else {
-            emit newChainProposal(_chainId, msg.sender);
         }
     }
 
