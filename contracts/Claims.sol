@@ -148,7 +148,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint8 _destinationChainId = _claim.destinationChainId;
 
         if (chainTokenQuantity[_destinationChainId] < _nativeCurrencyAmountDestination) {
-            emit NotEnoughFunds("BRC - Native Token", i, chainTokenQuantity[_destinationChainId], );
+            emit NotEnoughFunds("BRC - Native Token", i, chainTokenQuantity[_destinationChainId]);
             return;
         }
 
