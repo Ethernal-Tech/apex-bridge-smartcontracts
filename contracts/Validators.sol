@@ -5,8 +5,9 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
+import "./Utils.sol";
 
-contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
 
     // slither-disable too-many-digits
@@ -162,14 +163,6 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         unchecked {
             return (validatorsCount * 2) / 3 + 1;
         }
-    }
-
-    function _isContract(address addr) internal view returns (bool) {
-        uint256 size;
-        assembly {
-            size := extcodesize(addr)
-        }
-        return size > 0;
     }
 
     modifier onlyBridge() {

@@ -6,12 +6,13 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridge.sol";
+import "./Utils.sol";
 import "./Claims.sol";
 import "./SignedBatches.sol";
 import "./Slots.sol";
 import "./Validators.sol";
 
-contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
 
     Claims private claims;
@@ -301,14 +302,6 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         }
 
         return output;
-    }
-
-    function _isContract(address addr) internal view returns (bool) {
-        uint256 size;
-        assembly {
-            size := extcodesize(addr)
-        }
-        return size > 0;
     }
 
     modifier onlyValidator() {

@@ -5,9 +5,10 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
+import "./Utils.sol";
 import "./Validators.sol";
 
-contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
 
     address private bridgeAddress;
@@ -70,14 +71,6 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
 
     function getLastObservedBlock(uint8 _chainId) external view returns (CardanoBlock memory _cb) {
         return lastObservedBlock[_chainId];
-    }
-
-    function _isContract(address addr) internal view returns (bool) {
-        uint256 size;
-        assembly {
-            size := extcodesize(addr)
-        }
-        return size > 0;
     }
 
     modifier onlyBridge() {

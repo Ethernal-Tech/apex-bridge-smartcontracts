@@ -5,11 +5,12 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
+import "./Utils.sol";
 import "./Bridge.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
 
-contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
 
     address private bridgeAddress;
@@ -554,14 +555,6 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function updateTimeoutBlocksNumber(uint8 _timeoutBlocksNumber) external onlyAdminContract {
         timeoutBlocksNumber = _timeoutBlocksNumber;
-    }
-
-    function _isContract(address addr) internal view returns (bool) {
-        uint256 size;
-        assembly {
-            size := extcodesize(addr)
-        }
-        return size > 0;
     }
 
     modifier onlyBridge() {

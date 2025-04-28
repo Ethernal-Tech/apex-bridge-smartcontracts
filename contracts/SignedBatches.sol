@@ -6,10 +6,11 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBridgeStructs.sol";
+import "./Utils.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
 
-contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
 
     address private bridgeAddress;
@@ -126,14 +127,6 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
 
     function getNumberOfSignatures(bytes32 _hash) external view returns (uint256, uint256) {
         return (signatures[_hash].length, feeSignatures[_hash].length);
-    }
-
-    function _isContract(address addr) internal view returns (bool) {
-        uint256 size;
-        assembly {
-            size := extcodesize(addr)
-        }
-        return size > 0;
     }
 
     modifier onlyBridge() {

@@ -4,10 +4,10 @@ pragma solidity ^0.8.23;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "./interfaces/IBridge.sol";
+import "./Utils.sol";
 import "./Claims.sol";
 
-contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
 
     Claims private claims;
@@ -62,14 +62,6 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     function updateTimeoutBlocksNumber(uint8 _timeoutBlocksNumber) external onlyOwner {
         claims.updateTimeoutBlocksNumber(_timeoutBlocksNumber);
         emit UpdatedTimeoutBlocksNumber(_timeoutBlocksNumber);
-    }
-
-    function _isContract(address addr) internal view returns (bool) {
-        uint256 size;
-        assembly {
-            size := extcodesize(addr)
-        }
-        return size > 0;
     }
 
     modifier onlyFundAdmin() {
