@@ -1,3 +1,4 @@
+import { ZeroAddress } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { deployBridgeFixture } from "./fixtures";
@@ -62,6 +63,43 @@ describe("Deployment", function () {
 
   it("Revert if there are too many validators", async function () {
     await expect(getValidatorsSc(128)).to.revertedWith("Too many validators (max 127)");
+  });
+
+  it("setDependency should fail if any argument is zeroAddress", async function () {
+    const { admin, bridge, claims, claimsHelper, signedBatches, slots, validatorsc, owner } = await loadFixture(
+      deployBridgeFixture
+    );
+
+    await expect(admin.connect(owner).setDependencies(ZeroAddress)).to.be.revertedWithCustomError(admin, "ZeroAddress");
+
+    await expect(
+      bridge
+        .connect(owner)
+        .setDependencies(ZeroAddress, signedBatches.getAddress(), slots.getAddress(), validatorsc.getAddress())
+    ).to.be.revertedWithCustomError(bridge, "ZeroAddress");
+
+    await expect(
+      claims
+        .connect(owner)
+        .setDependencies(ZeroAddress, claims.getAddress(), validatorsc.getAddress(), admin.getAddress())
+    ).to.be.revertedWithCustomError(claims, "ZeroAddress");
+
+    await expect(
+      claimsHelper.connect(owner).setDependencies(ZeroAddress, signedBatches.getAddress())
+    ).to.be.revertedWithCustomError(claimsHelper, "ZeroAddress");
+
+    await expect(
+      signedBatches.connect(owner).setDependencies(ZeroAddress, claims.getAddress(), validatorsc.getAddress())
+    ).to.be.revertedWithCustomError(signedBatches, "ZeroAddress");
+
+    await expect(
+      slots.connect(owner).setDependencies(ZeroAddress, validatorsc.getAddress())
+    ).to.be.revertedWithCustomError(slots, "ZeroAddress");
+
+    await expect(validatorsc.connect(owner).setDependencies(ZeroAddress)).to.be.revertedWithCustomError(
+      validatorsc,
+      "ZeroAddress"
+    );
   });
   it("Should revert if there are duplicate validator addresses in Validatorsc initialize function", async function () {
     const [owner, validator1, validator2] = await ethers.getSigners();
