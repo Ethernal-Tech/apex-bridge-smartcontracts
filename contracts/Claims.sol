@@ -73,11 +73,11 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         address _adminContractAddress
     ) external onlyOwner {
         if (
-            _bridgeAddress == address(0) ||
-            _claimsHelperAddress == address(0) ||
-            _validatorsAddress == address(0) ||
-            _adminContractAddress == address(0)
-        ) revert ZeroAddress();
+            !_isContract(_bridgeAddress) ||
+            !_isContract(_claimsHelperAddress) ||
+            !_isContract(_validatorsAddress) ||
+            !_isContract(_adminContractAddress)
+        ) revert NotContractAddress();
         bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         validators = Validators(_validatorsAddress);
@@ -554,6 +554,14 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     function updateTimeoutBlocksNumber(uint8 _timeoutBlocksNumber) external onlyAdminContract {
         timeoutBlocksNumber = _timeoutBlocksNumber;
+    }
+
+    function _isContract(address addr) internal view returns (bool) {
+        uint256 size;
+        assembly {
+            size := extcodesize(addr)
+        }
+        return size > 0;
     }
 
     modifier onlyBridge() {

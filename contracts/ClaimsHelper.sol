@@ -39,7 +39,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
 
     function setDependencies(address _claimsAddress, address _signedBatchesAddress) external onlyOwner {
-        if (_claimsAddress == address(0) || _signedBatchesAddress == address(0)) revert ZeroAddress();
+        if (!_isContract(_claimsAddress) || !_isContract(_signedBatchesAddress)) revert NotContractAddress();
         claimsAddress = _claimsAddress;
         signedBatchesAddress = _signedBatchesAddress;
     }
@@ -93,6 +93,14 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
 
     function deleteConfirmedSignedBatch(uint8 chainId, uint64 batchId) external onlyClaims {
         confirmedSignedBatches[chainId][batchId] = ConfirmedSignedBatchData(0, 0, false);
+    }
+
+    function _isContract(address addr) internal view returns (bool) {
+        uint256 size;
+        assembly {
+            size := extcodesize(addr)
+        }
+        return size > 0;
     }
 
     modifier onlySignedBatchesOrClaims() {

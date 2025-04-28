@@ -30,7 +30,7 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
 
     function setDependencies(address _claimsAddress) external onlyOwner {
-        if (_claimsAddress == address(0)) revert ZeroAddress();
+        if (!_isContract(_claimsAddress)) revert NotContractAddress();
         claims = Claims(_claimsAddress);
     }
 
@@ -62,6 +62,14 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     function updateTimeoutBlocksNumber(uint8 _timeoutBlocksNumber) external onlyOwner {
         claims.updateTimeoutBlocksNumber(_timeoutBlocksNumber);
         emit UpdatedTimeoutBlocksNumber(_timeoutBlocksNumber);
+    }
+
+    function _isContract(address addr) internal view returns (bool) {
+        uint256 size;
+        assembly {
+            size := extcodesize(addr)
+        }
+        return size > 0;
     }
 
     modifier onlyFundAdmin() {

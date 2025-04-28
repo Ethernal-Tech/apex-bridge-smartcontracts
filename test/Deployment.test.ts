@@ -66,39 +66,46 @@ describe("Deployment", function () {
   });
 
   it("setDependency should fail if any argument is zeroAddress", async function () {
-    const { admin, bridge, claims, claimsHelper, signedBatches, slots, validatorsc, owner } = await loadFixture(
-      deployBridgeFixture
-    );
+    const { admin, bridge, claims, claimsHelper, signedBatches, slots, validatorsc, owner, validators } =
+      await loadFixture(deployBridgeFixture);
 
-    await expect(admin.connect(owner).setDependencies(ZeroAddress)).to.be.revertedWithCustomError(admin, "ZeroAddress");
+    await expect(admin.connect(owner).setDependencies(ZeroAddress)).to.be.revertedWithCustomError(
+      admin,
+      "NotContractAddress"
+    );
 
     await expect(
       bridge
         .connect(owner)
-        .setDependencies(ZeroAddress, signedBatches.getAddress(), slots.getAddress(), validatorsc.getAddress())
-    ).to.be.revertedWithCustomError(bridge, "ZeroAddress");
+        .setDependencies(
+          validators[0].address,
+          signedBatches.getAddress(),
+          slots.getAddress(),
+          validatorsc.getAddress()
+        )
+    ).to.be.revertedWithCustomError(bridge, "NotContractAddress");
 
     await expect(
       claims
         .connect(owner)
-        .setDependencies(ZeroAddress, claims.getAddress(), validatorsc.getAddress(), admin.getAddress())
-    ).to.be.revertedWithCustomError(claims, "ZeroAddress");
+        .setDependencies(validators[1].address, claims.getAddress(), validatorsc.getAddress(), admin.getAddress())
+    ).to.be.revertedWithCustomError(claims, "NotContractAddress");
 
     await expect(
-      claimsHelper.connect(owner).setDependencies(ZeroAddress, signedBatches.getAddress())
-    ).to.be.revertedWithCustomError(claimsHelper, "ZeroAddress");
+      claimsHelper.connect(owner).setDependencies(validators[2].address, signedBatches.getAddress())
+    ).to.be.revertedWithCustomError(claimsHelper, "NotContractAddress");
 
     await expect(
-      signedBatches.connect(owner).setDependencies(ZeroAddress, claims.getAddress(), validatorsc.getAddress())
-    ).to.be.revertedWithCustomError(signedBatches, "ZeroAddress");
+      signedBatches.connect(owner).setDependencies(validators[3].address, claims.getAddress(), validatorsc.getAddress())
+    ).to.be.revertedWithCustomError(signedBatches, "NotContractAddress");
 
     await expect(
-      slots.connect(owner).setDependencies(ZeroAddress, validatorsc.getAddress())
-    ).to.be.revertedWithCustomError(slots, "ZeroAddress");
+      slots.connect(owner).setDependencies(validators[4].address, validatorsc.getAddress())
+    ).to.be.revertedWithCustomError(slots, "NotContractAddress");
 
     await expect(validatorsc.connect(owner).setDependencies(ZeroAddress)).to.be.revertedWithCustomError(
       validatorsc,
-      "ZeroAddress"
+      "NotContractAddress"
     );
   });
   it("Should revert if there are duplicate validator addresses in Validatorsc initialize function", async function () {

@@ -44,11 +44,11 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         address _validatorsAddress
     ) external onlyOwner {
         if (
-            _claimsAddress == address(0) ||
-            _signedBatchesAddress == address(0) ||
-            _slotsAddress == address(0) ||
-            _validatorsAddress == address(0)
-        ) revert ZeroAddress();
+            !_isContract(_claimsAddress) ||
+            !_isContract(_signedBatchesAddress) ||
+            !_isContract(_slotsAddress) ||
+            !_isContract(_validatorsAddress)
+        ) revert NotContractAddress();
         claims = Claims(_claimsAddress);
         signedBatches = SignedBatches(_signedBatchesAddress);
         slots = Slots(_slotsAddress);
@@ -301,6 +301,14 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         }
 
         return output;
+    }
+
+    function _isContract(address addr) internal view returns (bool) {
+        uint256 size;
+        assembly {
+            size := extcodesize(addr)
+        }
+        return size > 0;
     }
 
     modifier onlyValidator() {

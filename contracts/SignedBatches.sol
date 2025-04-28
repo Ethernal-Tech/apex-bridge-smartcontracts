@@ -50,8 +50,8 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         address _claimsHelperAddress,
         address _validatorsAddress
     ) external onlyOwner {
-        if (_bridgeAddress == address(0) || _claimsHelperAddress == address(0) || _validatorsAddress == address(0))
-            revert ZeroAddress();
+        if (!_isContract(_bridgeAddress) || !_isContract(_claimsHelperAddress) || !_isContract(_validatorsAddress))
+            revert NotContractAddress();
         bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         validators = Validators(_validatorsAddress);
@@ -126,6 +126,14 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
 
     function getNumberOfSignatures(bytes32 _hash) external view returns (uint256, uint256) {
         return (signatures[_hash].length, feeSignatures[_hash].length);
+    }
+
+    function _isContract(address addr) internal view returns (bool) {
+        uint256 size;
+        assembly {
+            size := extcodesize(addr)
+        }
+        return size > 0;
     }
 
     modifier onlyBridge() {

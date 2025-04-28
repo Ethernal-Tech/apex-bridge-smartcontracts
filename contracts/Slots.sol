@@ -37,7 +37,7 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
 
     function setDependencies(address _bridgeAddress, address _validatorsAddress) external onlyOwner {
-        if (_bridgeAddress == address(0) || _validatorsAddress == address(0)) revert ZeroAddress();
+        if (!_isContract(_bridgeAddress) || !_isContract(_validatorsAddress)) revert NotContractAddress();
         bridgeAddress = _bridgeAddress;
         validators = Validators(_validatorsAddress);
     }
@@ -70,6 +70,14 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
 
     function getLastObservedBlock(uint8 _chainId) external view returns (CardanoBlock memory _cb) {
         return lastObservedBlock[_chainId];
+    }
+
+    function _isContract(address addr) internal view returns (bool) {
+        uint256 size;
+        assembly {
+            size := extcodesize(addr)
+        }
+        return size > 0;
     }
 
     modifier onlyBridge() {
