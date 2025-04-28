@@ -313,6 +313,26 @@ export async function deployBridgeFixture() {
     hotWalletIncrementClaims: [],
   };
 
+  const validatorClaimsRRC_shouldDecrement = {
+    bridgingRequestClaims: [],
+    batchExecutedClaims: [],
+    batchExecutionFailedClaims: [],
+    refundRequestClaims: [
+      {
+        originTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        refundTransactionHash: "0x7465737300000000000000000000000000000000000000000000000000000000",
+        originAmount: 100,
+        originWrappedAmount: 100,
+        outputIndexes: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        originSenderAddress: "receiver1",
+        retryCounter: 0,
+        originChainId: 2,
+        shouldDecrementHotWallet: true,
+      },
+    ],
+    hotWalletIncrementClaims: [],
+  };
+
   const validatorClaimsRRCerror = {
     bridgingRequestClaims: [],
     batchExecutedClaims: [],
@@ -429,6 +449,7 @@ export async function deployBridgeFixture() {
     validatorClaimsBECerror,
     validatorClaimsBEFCerror,
     validatorClaimsRRCerror,
+    validatorClaimsRRC_shouldDecrement,
     validatorClaimsBRC_ConfirmedTransactions,
     signedBatch,
     signedBatchConsolidation,
