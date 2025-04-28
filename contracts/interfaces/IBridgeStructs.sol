@@ -95,7 +95,7 @@ interface IBridgeStructs {
         uint256 originAmount;
         // Amount of wrapped tokens deposited to the multisig address in original transaction
         uint256 originWrappedAmount;
-        // serialized uint16 list of indexes of all multisig outputs that contain unknown native currency
+        // serialized uint16 list of indexes of all multisig outputs that contain unknown native tokens
         bytes outputIndexes;
         // Address of the user who sent the original transaction (tx inputs)
         // If there are multiple input addresses, only one should be picked (by some algorithm)
