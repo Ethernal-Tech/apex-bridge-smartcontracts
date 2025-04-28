@@ -153,7 +153,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         if (chainWrappedTokenQuantity[_destinationChainId] < _wrappedTokenAmountDestination) {
-            emit NotEnoughFunds("BRC - Wrapped Currency", i, chainWrappedTokenQuantity[_destinationChainId]);
+            emit NotEnoughFunds("BRC - Wrapped Token", i, chainWrappedTokenQuantity[_destinationChainId]);
             return;
         }
 
@@ -268,7 +268,7 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
 
             if (chainWrappedTokenQuantity[originChainId] < _claim.originWrappedAmount) {
-                emit NotEnoughFunds("RRC - Wrapped Currency", 0, chainWrappedTokenQuantity[originChainId]);
+                emit NotEnoughFunds("RRC - Wrapped Token", 0, chainWrappedTokenQuantity[originChainId]);
                 return;
             }
         }
