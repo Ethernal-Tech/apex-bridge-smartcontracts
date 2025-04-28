@@ -9,16 +9,18 @@ describe("Deployment", function () {
     const Validators = await ethers.getContractFactory("Validators");
     const ValidatorscProxy = await ethers.getContractFactory("ERC1967Proxy");
     const validatorscLogic = await Validators.deploy();
-    const [owner, validator] = await ethers.getSigners();
+    const [owner] = await ethers.getSigners();
 
-    const validatorsAddresses = [];
-    for (let i = 1; i <= cnt; i++) {
-      validatorsAddresses.push(validator.address);
-    }
+    const { Wallet } = require("ethers");
+
+    const randomAddresses = Array.from({ length: cnt }, () => {
+      const wallet = Wallet.createRandom();
+      return wallet.address;
+    });
 
     const validatorsProxy = await ValidatorscProxy.deploy(
       await validatorscLogic.getAddress(),
-      Validators.interface.encodeFunctionData("initialize", [owner.address, owner.address, validatorsAddresses])
+      Validators.interface.encodeFunctionData("initialize", [owner.address, owner.address, randomAddresses])
     );
 
     return (await ethers.getContractFactory("Validators")).attach(validatorsProxy.target) as Validators;
@@ -52,6 +54,32 @@ describe("Deployment", function () {
 
   it("Revert if there are too many validators", async function () {
     await expect(getValidatorsSc(128)).to.revertedWith("Too many validators (max 127)");
+  });
+  it("Should revert if there are duplicate validator addresses in Validatorsc initialize function", async function () {
+    const [owner, validator1, validator2] = await ethers.getSigners();
+    // Deploy implementation contract
+    const Validators = await ethers.getContractFactory("Validators");
+    const validatorsLogic = await Validators.deploy();
+    // Deploy proxy contract
+    const ValidatorsProxy = await ethers.getContractFactory("ERC1967Proxy");
+    // Create array with duplicate addresses
+    const validatorAddresses = [
+      owner.address,
+      validator1.address,
+      validator2.address,
+      validator1.address, // Duplicate address
+    ];
+    // Prepare initialization data
+    const initData = Validators.interface.encodeFunctionData("initialize", [
+      owner.address,
+      owner.address,
+      validatorAddresses,
+    ]);
+    // Deploy proxy with initialization
+    await expect(ValidatorsProxy.deploy(await validatorsLogic.getAddress(), initData)).to.be.revertedWithCustomError(
+      Validators,
+      "InvalidData"
+    );
   });
   it("Should revert if initializes with zero addresses for owner and upgrade admin", async function () {
     const [, validator1, validator2, validator3, validator4] = await ethers.getSigners();

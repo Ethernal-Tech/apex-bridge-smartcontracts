@@ -36,6 +36,9 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
         _transferOwnership(_owner);
         upgradeAdmin = _upgradeAdmin;
         for (uint8 i; i < _validators.length; i++) {
+            if (addressValidatorIndex[_validators[i]] != 0) {
+                revert InvalidData("Duplicate validator");
+            }
             addressValidatorIndex[_validators[i]] = i + 1;
         }
         validatorsCount = uint8(_validators.length);
