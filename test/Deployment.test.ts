@@ -65,7 +65,7 @@ describe("Deployment", function () {
     await expect(getValidatorsSc(128)).to.revertedWith("Too many validators (max 127)");
   });
 
-  it("setDependency should fail if any argument is zeroAddress", async function () {
+  it("setDependency should fail if any required argument is not smart contract address", async function () {
     const { admin, bridge, claims, claimsHelper, signedBatches, slots, validatorsc, owner, validators } =
       await loadFixture(deployBridgeFixture);
 
