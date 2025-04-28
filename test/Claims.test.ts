@@ -183,7 +183,7 @@ describe("Claims Contract", function () {
 
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC))
         .to.emit(claims, "NotEnoughFunds")
-        .withArgs("BRC - Native Token", 0, 1);
+        .withArgs("BRC - Native Currency", 0, 1);
 
       expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
     });
@@ -233,7 +233,7 @@ describe("Claims Contract", function () {
 
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRCWrapped))
         .to.emit(claims, "NotEnoughFunds")
-        .withArgs("BRC - Wrapped Token", 0, 1);
+        .withArgs("BRC - Wrapped Currency", 0, 1);
 
       expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
     });
