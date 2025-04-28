@@ -31,6 +31,8 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
 
     function initialize(address _owner, address _upgradeAdmin, address[] calldata _validators) public initializer {
         require(_validators.length < 128, "Too many validators (max 127)");
+        if (_owner == address(0)) revert ZeroAddress();
+        if (_upgradeAdmin == address(0)) revert ZeroAddress();
         _transferOwnership(_owner);
         upgradeAdmin = _upgradeAdmin;
         for (uint8 i; i < _validators.length; i++) {

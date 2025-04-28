@@ -28,6 +28,8 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     }
 
     function initialize(address _owner, address _upgradeAdmin) public initializer {
+        if (_owner == address(0)) revert ZeroAddress();
+        if (_upgradeAdmin == address(0)) revert ZeroAddress();
         _transferOwnership(_owner);
         upgradeAdmin = _upgradeAdmin;
     }

@@ -56,6 +56,8 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint16 _maxNumberOfTransactions,
         uint8 _timeoutBlocksNumber
     ) public initializer {
+        if (_owner == address(0)) revert ZeroAddress();
+        if (_upgradeAdmin == address(0)) revert ZeroAddress();
         _transferOwnership(_owner);
         upgradeAdmin = _upgradeAdmin;
         maxNumberOfTransactions = _maxNumberOfTransactions;
