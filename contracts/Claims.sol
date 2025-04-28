@@ -72,6 +72,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         address _validatorsAddress,
         address _adminContractAddress
     ) external onlyOwner {
+        if (
+            _bridgeAddress == address(0) ||
+            _claimsHelperAddress == address(0) ||
+            _validatorsAddress == address(0) ||
+            _adminContractAddress == address(0)
+        ) revert ZeroAddress();
         bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         validators = Validators(_validatorsAddress);

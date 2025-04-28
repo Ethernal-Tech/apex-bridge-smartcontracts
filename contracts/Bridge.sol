@@ -43,6 +43,12 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         address _slotsAddress,
         address _validatorsAddress
     ) external onlyOwner {
+        if (
+            _claimsAddress == address(0) ||
+            _signedBatchesAddress == address(0) ||
+            _slotsAddress == address(0) ||
+            _validatorsAddress == address(0)
+        ) revert ZeroAddress();
         claims = Claims(_claimsAddress);
         signedBatches = SignedBatches(_signedBatchesAddress);
         slots = Slots(_slotsAddress);

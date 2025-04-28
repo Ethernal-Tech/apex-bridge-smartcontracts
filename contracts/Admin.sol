@@ -30,6 +30,7 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
 
     function setDependencies(address _claimsAddress) external onlyOwner {
+        if (_claimsAddress == address(0)) revert ZeroAddress();
         claims = Claims(_claimsAddress);
     }
 

@@ -50,6 +50,8 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
         address _claimsHelperAddress,
         address _validatorsAddress
     ) external onlyOwner {
+        if (_bridgeAddress == address(0) || _claimsHelperAddress == address(0) || _validatorsAddress == address(0))
+            revert ZeroAddress();
         bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         validators = Validators(_validatorsAddress);

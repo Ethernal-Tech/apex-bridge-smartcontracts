@@ -47,6 +47,7 @@ contract Validators is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUp
     function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
 
     function setDependencies(address _bridgeAddress) external onlyOwner {
+        if (_bridgeAddress == address(0)) revert ZeroAddress();
         bridgeAddress = _bridgeAddress;
     }
 

@@ -37,6 +37,7 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
 
     function setDependencies(address _bridgeAddress, address _validatorsAddress) external onlyOwner {
+        if (_bridgeAddress == address(0) || _validatorsAddress == address(0)) revert ZeroAddress();
         bridgeAddress = _bridgeAddress;
         validators = Validators(_validatorsAddress);
     }

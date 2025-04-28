@@ -39,6 +39,7 @@ contract ClaimsHelper is IBridgeStructs, Initializable, OwnableUpgradeable, UUPS
     function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
 
     function setDependencies(address _claimsAddress, address _signedBatchesAddress) external onlyOwner {
+        if (_claimsAddress == address(0) || _signedBatchesAddress == address(0)) revert ZeroAddress();
         claimsAddress = _claimsAddress;
         signedBatchesAddress = _signedBatchesAddress;
     }
