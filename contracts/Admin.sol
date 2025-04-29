@@ -4,10 +4,10 @@ pragma solidity ^0.8.23;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "./interfaces/IBridge.sol";
+import "./Utils.sol";
 import "./Claims.sol";
 
-contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
 
     Claims private claims;
@@ -30,6 +30,7 @@ contract Admin is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
 
     function setDependencies(address _claimsAddress) external onlyOwner {
+        if (!_isContract(_claimsAddress)) revert NotContractAddress();
         claims = Claims(_claimsAddress);
     }
 

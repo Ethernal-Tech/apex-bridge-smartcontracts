@@ -5,9 +5,10 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
+import "./Utils.sol";
 import "./Validators.sol";
 
-contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
 
     address private bridgeAddress;
@@ -37,6 +38,7 @@ contract Slots is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrade
     function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
 
     function setDependencies(address _bridgeAddress, address _validatorsAddress) external onlyOwner {
+        if (!_isContract(_bridgeAddress) || !_isContract(_validatorsAddress)) revert NotContractAddress();
         bridgeAddress = _bridgeAddress;
         validators = Validators(_validatorsAddress);
     }

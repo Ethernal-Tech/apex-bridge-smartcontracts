@@ -5,11 +5,12 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
+import "./Utils.sol";
 import "./Bridge.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
 
-contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
 
     address private bridgeAddress;
@@ -72,6 +73,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         address _validatorsAddress,
         address _adminContractAddress
     ) external onlyOwner {
+        if (
+            !_isContract(_bridgeAddress) ||
+            !_isContract(_claimsHelperAddress) ||
+            !_isContract(_validatorsAddress) ||
+            !_isContract(_adminContractAddress)
+        ) revert NotContractAddress();
         bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         validators = Validators(_validatorsAddress);

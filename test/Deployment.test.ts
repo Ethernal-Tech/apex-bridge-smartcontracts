@@ -1,3 +1,4 @@
+import { ZeroAddress } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { deployBridgeFixture } from "./fixtures";
@@ -62,6 +63,50 @@ describe("Deployment", function () {
 
   it("Revert if there are too many validators", async function () {
     await expect(getValidatorsSc(128)).to.revertedWith("Too many validators (max 127)");
+  });
+
+  it("setDependency should fail if any required argument is not smart contract address", async function () {
+    const { admin, bridge, claims, claimsHelper, signedBatches, slots, validatorsc, owner, validators } =
+      await loadFixture(deployBridgeFixture);
+
+    await expect(admin.connect(owner).setDependencies(ZeroAddress)).to.be.revertedWithCustomError(
+      admin,
+      "NotContractAddress"
+    );
+
+    await expect(
+      bridge
+        .connect(owner)
+        .setDependencies(
+          validators[0].address,
+          signedBatches.getAddress(),
+          slots.getAddress(),
+          validatorsc.getAddress()
+        )
+    ).to.be.revertedWithCustomError(bridge, "NotContractAddress");
+
+    await expect(
+      claims
+        .connect(owner)
+        .setDependencies(validators[1].address, claims.getAddress(), validatorsc.getAddress(), admin.getAddress())
+    ).to.be.revertedWithCustomError(claims, "NotContractAddress");
+
+    await expect(
+      claimsHelper.connect(owner).setDependencies(validators[2].address, signedBatches.getAddress())
+    ).to.be.revertedWithCustomError(claimsHelper, "NotContractAddress");
+
+    await expect(
+      signedBatches.connect(owner).setDependencies(validators[3].address, claims.getAddress(), validatorsc.getAddress())
+    ).to.be.revertedWithCustomError(signedBatches, "NotContractAddress");
+
+    await expect(
+      slots.connect(owner).setDependencies(validators[4].address, validatorsc.getAddress())
+    ).to.be.revertedWithCustomError(slots, "NotContractAddress");
+
+    await expect(validatorsc.connect(owner).setDependencies(ZeroAddress)).to.be.revertedWithCustomError(
+      validatorsc,
+      "NotContractAddress"
+    );
   });
   it("Should revert if there are duplicate validator addresses in Validatorsc initialize function", async function () {
     const [owner, validator1, validator2] = await ethers.getSigners();

@@ -6,12 +6,13 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridge.sol";
+import "./Utils.sol";
 import "./Claims.sol";
 import "./SignedBatches.sol";
 import "./Slots.sol";
 import "./Validators.sol";
 
-contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
 
     Claims private claims;
@@ -43,6 +44,12 @@ contract Bridge is IBridge, Initializable, OwnableUpgradeable, UUPSUpgradeable {
         address _slotsAddress,
         address _validatorsAddress
     ) external onlyOwner {
+        if (
+            !_isContract(_claimsAddress) ||
+            !_isContract(_signedBatchesAddress) ||
+            !_isContract(_slotsAddress) ||
+            !_isContract(_validatorsAddress)
+        ) revert NotContractAddress();
         claims = Claims(_claimsAddress);
         signedBatches = SignedBatches(_signedBatchesAddress);
         slots = Slots(_slotsAddress);
