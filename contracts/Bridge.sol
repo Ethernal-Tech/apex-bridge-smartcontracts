@@ -121,7 +121,8 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         if (!claims.isChainRegistered(_chainId)) {
             revert ChainIsNotRegistered(_chainId);
         }
-        for (uint i = 0; i < chains.length; i++) {
+        uint256 _chainsLength = chains.length;
+        for (uint i = 0; i < _chainsLength; i++) {
             if (chains[i].id == _chainId) {
                 chains[i].addressMultisig = addressMultisig;
                 chains[i].addressFeePayer = addressFeePayer;
@@ -294,8 +295,8 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         return claims.getBatchTransactions(_chainId, _batchId);
     }
 
-    function _bytes32ToBytesAssembly(bytes32 input) internal pure returns (bytes memory) {
-        bytes memory output = new bytes(32);
+    function _bytes32ToBytesAssembly(bytes32 input) internal pure returns (bytes memory output) {
+        output = new bytes(32);
 
         assembly {
             mstore(add(output, 32), input)

@@ -169,10 +169,11 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         uint256 _receiversSum = _claim.totalAmount;
         uint8 _destinationChainId = _claim.destinationChainId;
+        uint256 _chainTokenQuantityDestination = chainTokenQuantity[_destinationChainId];
 
         // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-        if (chainTokenQuantity[_destinationChainId] < _receiversSum) {
-            emit NotEnoughFunds("BRC", i, chainTokenQuantity[_destinationChainId]);
+        if (_chainTokenQuantityDestination < _receiversSum) {
+            emit NotEnoughFunds("BRC", i, _chainTokenQuantityDestination);
             return;
         }
 
@@ -281,11 +282,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             uint64 _firstTxNonce = _confirmedSignedBatch.firstTxNonceId;
             uint64 _lastTxNouce = _confirmedSignedBatch.lastTxNonceId;
 
+            uint256 _currentAmount = chainTokenQuantity[chainId];
+
             for (uint64 i = _firstTxNonce; i <= _lastTxNouce; i++) {
                 ConfirmedTransaction storage _ctx = confirmedTransactions[chainId][i];
                 uint8 _txType = _ctx.transactionType;
                 if (_txType == 0) {
-                    chainTokenQuantity[chainId] += _ctx.totalAmount;
+                    _currentAmount += _ctx.totalAmount;
                 } else if (_txType == 1) {
                     if (_ctx.retryCounter < MAX_NUMBER_OF_DEFUND_RETRIES) {
                         uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
@@ -293,11 +296,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                         confirmedTransactions[chainId][nextNonce].nonce = nextNonce;
                         confirmedTransactions[chainId][nextNonce].retryCounter++;
                     } else {
-                        chainTokenQuantity[chainId] += _ctx.totalAmount;
+                        _currentAmount += _ctx.totalAmount;
                         emit DefundFailedAfterMultipleRetries();
                     }
                 }
             }
+
+            chainTokenQuantity[chainId] = _currentAmount;
 
             lastBatchedTxNonce[chainId] = _lastTxNouce;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
@@ -318,8 +323,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
         if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
-            if (chainTokenQuantity[originChainId] < _claim.originAmount) {
-                emit NotEnoughFunds("RRC", 0, chainTokenQuantity[originChainId]);
+            uint256 _chainTokenQuantityOrigin = chainTokenQuantity[originChainId];
+            if (_chainTokenQuantityOrigin < _claim.originAmount) {
+                emit NotEnoughFunds("RRC", 0, _chainTokenQuantityOrigin);
                 return;
             }
         }
@@ -435,8 +441,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             if (confirmedTransactions[_chainId][txIndx].blockHeight >= timeoutBlock) {
                 break;
             }
-            counterConfirmedTransactions++;
-            txIndx++;
+            ++counterConfirmedTransactions;
+            ++txIndx;
         }
     }
 
