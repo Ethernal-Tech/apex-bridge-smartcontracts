@@ -13,15 +13,15 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
 
     // slither-disable too-many-digits
     address constant PRECOMPILE = 0x0000000000000000000000000000000000002050;
+    uint32 constant PRECOMPILE_GAS = 50000;
     address constant VALIDATOR_BLS_PRECOMPILE = 0x0000000000000000000000000000000000002060;
+    uint32 constant VALIDATOR_BLS_PRECOMPILE_GAS = 50000;
 
     // BlockchainId -> ValidatorChainData[]
     mapping(uint8 => ValidatorChainData[]) private chainData;
     // validator address index(+1) in chainData mapping
     mapping(address => uint8) private addressValidatorIndex;
 
-    uint32 constant PRECOMPILE_GAS = 50000;
-    uint32 constant VALIDATOR_BLS_PRECOMPILE_GAS = 50000;
     // max possible number of validators is 127
     uint8 public validatorsCount;
 
