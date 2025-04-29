@@ -183,7 +183,7 @@ describe("Claims Contract", function () {
 
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC))
         .to.emit(claims, "NotEnoughFunds")
-        .withArgs("BRC", 0, 1);
+        .withArgs("BRC - Currency", 0, 1);
 
       expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
     });
@@ -233,7 +233,7 @@ describe("Claims Contract", function () {
 
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRCWrapped))
         .to.emit(claims, "NotEnoughFunds")
-        .withArgs("BRC", 0, 1);
+        .withArgs("BRC - Native Token", 0, 1);
 
       expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
     });
@@ -509,6 +509,98 @@ describe("Claims Contract", function () {
       expect(event.fragment.name).to.equal("NotEnoughFunds");
 
       validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = false;
+    });
+    it("Should skip Refund Request Claim if there is not enough bridging tokens and emit NotEnoughFunds event", async function () {
+      const {
+        bridge,
+        claims,
+        claimsHelper,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsRRC_shouldDecrement,
+        validatorsCardanoData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1, 1, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1, 1, validatorsCardanoData);
+
+      const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
+      const encoded = abiCoder.encode(
+        ["bytes32", "bytes32", "uint256", "uint256", "bytes", "string", "uint64", "uint8", "bool"],
+        [
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].originTransactionHash,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].refundTransactionHash,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].originAmount,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].originWrappedAmount,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].outputIndexes,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].originSenderAddress,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].retryCounter,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].originChainId,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].shouldDecrementHotWallet,
+        ]
+      );
+
+      const encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
+
+      const hash = ethers.keccak256(encoded40);
+
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsRRC_shouldDecrement))
+        .to.emit(claims, "NotEnoughFunds")
+        .withArgs("RRC - Currency", 0, 1);
+
+      expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
+    });
+    it("Should skip Refund Request Claim if there is not enough bridging wrapped tokens and emit NotEnoughFunds event", async function () {
+      const {
+        bridge,
+        claims,
+        claimsHelper,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsRRC_shouldDecrement,
+        validatorsCardanoData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, 1, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1, validatorsCardanoData);
+
+      const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
+      const encoded = abiCoder.encode(
+        ["bytes32", "bytes32", "uint256", "uint256", "bytes", "string", "uint64", "uint8", "bool"],
+        [
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].originTransactionHash,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].refundTransactionHash,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].originAmount,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].originWrappedAmount,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].outputIndexes,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].originSenderAddress,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].retryCounter,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].originChainId,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].shouldDecrementHotWallet,
+        ]
+      );
+
+      const encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
+
+      const hash = ethers.keccak256(encoded40);
+
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsRRC_shouldDecrement))
+        .to.emit(claims, "NotEnoughFunds")
+        .withArgs("RRC - Native Token", 0, 1);
+
+      expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
     });
   });
 

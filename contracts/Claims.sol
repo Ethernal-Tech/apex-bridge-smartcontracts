@@ -148,12 +148,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint8 _destinationChainId = _claim.destinationChainId;
 
         if (chainTokenQuantity[_destinationChainId] < _nativeCurrencyAmountDestination) {
-            emit NotEnoughFunds("BRC", i, chainTokenQuantity[_destinationChainId]);
+            emit NotEnoughFunds("BRC - Currency", i, chainTokenQuantity[_destinationChainId]);
             return;
         }
 
         if (chainWrappedTokenQuantity[_destinationChainId] < _wrappedTokenAmountDestination) {
-            emit NotEnoughFunds("BRC", i, chainWrappedTokenQuantity[_destinationChainId]);
+            emit NotEnoughFunds("BRC - Native Token", i, chainWrappedTokenQuantity[_destinationChainId]);
             return;
         }
 
@@ -263,12 +263,12 @@ contract Claims is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
             if (chainTokenQuantity[originChainId] < _claim.originAmount) {
-                emit NotEnoughFunds("RRC", 0, chainTokenQuantity[originChainId]);
+                emit NotEnoughFunds("RRC - Currency", 0, chainTokenQuantity[originChainId]);
                 return;
             }
 
             if (chainWrappedTokenQuantity[originChainId] < _claim.originWrappedAmount) {
-                emit NotEnoughFunds("RRC", 0, chainWrappedTokenQuantity[originChainId]);
+                emit NotEnoughFunds("RRC - Native Token", 0, chainWrappedTokenQuantity[originChainId]);
                 return;
             }
         }
