@@ -300,7 +300,8 @@ describe("Admin Functions", function () {
 
       await admin.connect(validators[0]).defund(chain2.id, "address", 1);
 
-      const retryCounter = await claims.MAX_NUMBER_OF_DEFUND_RETRIES();
+      //to avoid the need for public variable this value should be manually set to the value of MAX_NUMBER_OF_DEFUND_RETRIES
+      const retryCounter = 3;
 
       for (let i = 0; i <= retryCounter; i++) {
         expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(i + 1);
