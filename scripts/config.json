@@ -21,12 +21,5 @@
   "AdditionalData": {
     "addressMultisig": "0x1234567890abcdef1234567890abcdef12345678",
     "addressFeePayer": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"
-  },
-  "RPC": {
-    "url": "https://coston2-api.flare.network/ext/C/rpc",
-    "key": "5570b7ca262fde41eeb6c1406eb90818ec0e0e6cab51423a3ffdcbaea9926aae"
-  },
-  "Owner": {
-    "address": "0xd2711A49Ff4A2EDF1e6b9D7b10e56A4592c1Efc6"
   }
 }
