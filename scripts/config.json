@@ -1,0 +1,21 @@
+{
+  "Validators": {
+    "validator1address": "0x06B83F298ddf9d9270812039Cc2E942cf477D17e",
+    "validator2address": "0x7bB1Cc4438ACFd479E28110377105e2AA27c71E8",
+    "validator3address": "0x2d6c4aB8367584A4F6B88d280E81b1Ca9d05bb09",
+    "validator4address": "0xB40C91482eF0e87eA8BA867034cA455ff5D9a73D",
+    "validator5address": "0x3d940e44b46b186972F784Bc09A0E0a5C3915674",
+    "validator1key": [0, 0, 0, 0],
+    "validator2key": [0, 0, 0, 0],
+    "validator3key": [0, 0, 0, 0],
+    "validator4key": [0, 0, 0, 0],
+    "validator5key": [0, 0, 0, 0]
+  },
+  "Chain": {
+    "id": 1,
+    "chainType": 2,
+    "addressMultisig": "A0x1234567890abcdef1234567890abcdef12345678",
+    "addressFeePayer": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+    "totalSupply": 1000
+  }
+}
