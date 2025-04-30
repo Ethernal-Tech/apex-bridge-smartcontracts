@@ -1,6 +1,7 @@
 const { ethers } = require("ethers");
 const { JsonRpcProvider } = require("ethers");
 const config = require("./config.json");
+const adminJson = require("../artifacts/contracts/Admin.sol/Admin.json");
 const bridgeJson = require("../artifacts/contracts/Bridge.sol/Bridge.json");
 const claimsJson = require("../artifacts/contracts/Claims.sol/Claims.json");
 const claimsHelperJson = require("../artifacts/contracts/ClaimsHelper.sol/ClaimsHelper.json");
@@ -14,6 +15,11 @@ async function main() {
   const wallet = new ethers.Wallet(config.RPC.key, provider);
 
   console.log("--- Deploying the Logic Contracts");
+  const adminFactory = new ethers.ContractFactory(adminJson.abi, adminJson.bytecode, wallet);
+  const adminLogic = await adminFactory.deploy();
+  await adminLogic.waitForDeployment();
+  console.log("Admin logic", adminLogic.target);
+
   const bridgeFactory = new ethers.ContractFactory(bridgeJson.abi, bridgeJson.bytecode, wallet);
   const bridgeLogic = await bridgeFactory.deploy();
   await bridgeLogic.waitForDeployment();
@@ -46,39 +52,38 @@ async function main() {
 
   console.log("--- Deploying the Proxy Contracts");
   const owner = config.Owner.address;
-  let initDataOwner = bridgeLogic.interface.encodeFunctionData("initialize", [owner]);
+  let initDataOwnerUpgradeAdmin = bridgeLogic.interface.encodeFunctionData("initialize", [owner, owner]);
 
   const ProxyFactory = new ethers.ContractFactory(ERC1967ProxyJson.abi, ERC1967ProxyJson.bytecode, wallet);
 
-  const bridgeProxyContract = await ProxyFactory.deploy(bridgeLogic.target, initDataOwner);
+  const adminProxyContract = await ProxyFactory.deploy(adminLogic.target, initDataOwnerUpgradeAdmin);
+  await adminProxyContract.waitForDeployment();
+
+  console.log(`Admin Proxy contract deployed at: ${adminProxyContract.target}`);
+
+  const bridgeProxyContract = await ProxyFactory.deploy(bridgeLogic.target, initDataOwnerUpgradeAdmin);
   await bridgeProxyContract.waitForDeployment();
 
   console.log(`Bridge Proxy contract deployed at: ${bridgeProxyContract.target}`);
 
-  const initDataClaims = claimsLogic.interface.encodeFunctionData("initialize", [owner, 2, 5]);
+  const initDataClaims = claimsLogic.interface.encodeFunctionData("initialize", [owner, owner, 2, 5]);
 
   const claimsProxyContract = await ProxyFactory.deploy(claimsLogic.target, initDataClaims);
   await claimsProxyContract.waitForDeployment();
 
   console.log(`Claims Proxy contract deployed at: ${claimsProxyContract.target}`);
 
-  initDataOwner = claimsHelperLogic.interface.encodeFunctionData("initialize", [owner]);
-
-  const claimsHelperProxyContract = await ProxyFactory.deploy(claimsHelperLogic.target, initDataOwner);
+  const claimsHelperProxyContract = await ProxyFactory.deploy(claimsHelperLogic.target, initDataOwnerUpgradeAdmin);
   await claimsHelperProxyContract.waitForDeployment();
 
   console.log(`ClaimsHelper Proxy contract deployed at: ${claimsHelperProxyContract.target}`);
 
-  initDataOwner = signedBatchesLogic.interface.encodeFunctionData("initialize", [owner]);
-
-  const signedBatchesProxyContract = await ProxyFactory.deploy(signedBatchesLogic.target, initDataOwner);
+  const signedBatchesProxyContract = await ProxyFactory.deploy(signedBatchesLogic.target, initDataOwnerUpgradeAdmin);
   await signedBatchesProxyContract.waitForDeployment();
 
   console.log(`SignedBatches Proxy contract deployed at: ${signedBatchesProxyContract.target}`);
 
-  initDataOwner = slotsLogic.interface.encodeFunctionData("initialize", [owner]);
-
-  const slotsProxyContract = await ProxyFactory.deploy(slotsLogic.target, initDataOwner);
+  const slotsProxyContract = await ProxyFactory.deploy(slotsLogic.target, initDataOwnerUpgradeAdmin);
   await slotsProxyContract.waitForDeployment();
 
   console.log(`Slots Proxy contract deployed at: ${slotsProxyContract.target}`);
@@ -91,7 +96,11 @@ async function main() {
     config.Validators.validator5address,
   ];
 
-  const initDataValidators = validatorsLogic.interface.encodeFunctionData("initialize", [owner, validatorsAddresses]);
+  const initDataValidators = validatorsLogic.interface.encodeFunctionData("initialize", [
+    owner,
+    owner,
+    validatorsAddresses,
+  ]);
 
   const validatorsProxyContract = await ProxyFactory.deploy(validatorsLogic.target, initDataValidators);
   await validatorsProxyContract.waitForDeployment();
@@ -100,12 +109,16 @@ async function main() {
 
   console.log("--- Setting dependencies");
 
-  const gasPrice = (await provider.getFeeData()).gasPrice;
-  const nonce = await provider.getTransactionCount(wallet.address);
+  const adminBridge = new ethers.Contract(adminProxyContract.target, adminJson.abi, wallet);
+
+  let tx = await adminBridge.setDependencies(claimsProxyContract.target);
+
+  await tx.wait();
+  console.log("Admin setDependencies done");
 
   const proxyBridge = new ethers.Contract(bridgeProxyContract.target, bridgeJson.abi, wallet);
 
-  let tx = await proxyBridge.setDependencies(
+  tx = await proxyBridge.setDependencies(
     claimsProxyContract.target,
     signedBatchesProxyContract.target,
     slotsProxyContract.target,
@@ -120,7 +133,8 @@ async function main() {
   tx = await proxyClaims.setDependencies(
     bridgeProxyContract.target,
     claimsHelperProxyContract.target,
-    validatorsProxyContract.target
+    validatorsProxyContract.target,
+    adminProxyContract.target
   );
 
   await tx.wait();
@@ -158,50 +172,58 @@ async function main() {
   await tx.wait();
   console.log("Validators setDependencies done");
 
-  const chain = {
-    id: config.Chain.id,
-    chainType: config.Chain.chainType,
-    addressMultisig: config.Chain.addressMultisig,
-    addressFeePayer: config.Chain.addressFeePayer,
-  };
+  // const chain = {
+  //   id: config.Chain.id,
+  //   chainType: config.Chain.chainType,
+  //   addressMultisig: config.Chain.addressMultisig,
+  //   addressFeePayer: config.Chain.addressFeePayer,
+  // };
 
-  const validatorsChainData = [
-    {
-      addr: config.Validators.validator1address,
-      data: {
-        key: [1n, 1n, 1n, 1n],
-      },
-    },
-    {
-      addr: config.Validators.validator2address,
-      data: {
-        key: [2n, 2n, 2n, 2n],
-      },
-    },
-    {
-      addr: config.Validators.validator3address,
-      data: {
-        key: [3n, 3n, 3n, 3n],
-      },
-    },
-    {
-      addr: config.Validators.validator4address,
-      data: {
-        key: [4n, 4n, 4n, 4n],
-      },
-    },
-    {
-      addr: config.Validators.validator5address,
-      data: {
-        key: [5n, 5n, 5n, 5n],
-      },
-    },
-  ];
+  // const validatorsChainData = [
+  //   {
+  //     addr: config.Validators.validator1address,
+  //     data: {
+  //       key: [1n, 1n, 1n, 1n],
+  //     },
+  //     keySignature: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  //     keyFeeSignature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+  //   },
+  //   {
+  //     addr: config.Validators.validator2address,
+  //     data: {
+  //       key: [2n, 2n, 2n, 2n],
+  //     },
+  //   },
+  //   {
+  //     addr: config.Validators.validator3address,
+  //     data: {
+  //       key: [3n, 3n, 3n, 3n],
+  //     },
+  //     keySignature: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  //     keyFeeSignature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+  //   },
+  //   {
+  //     addr: config.Validators.validator4address,
+  //     data: {
+  //       key: [4n, 4n, 4n, 4n],
+  //     },
+  //     keySignature: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  //     keyFeeSignature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+  //   },
+  //   {
+  //     addr: config.Validators.validator5address,
+  //     data: {
+  //       key: [5n, 5n, 5n, 5n],
+  //     },
+  //     keySignature: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  //     keyFeeSignature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+  //   },
+  // ];
 
-  tx = await proxyBridge.registerChain(chain, config.Chain.totalSupply, validatorsChainData);
+  // tx = await proxyBridge.registerChain(chain, config.Chain.totalSupply, validatorsChainData);
 
-  await tx.wait();
-  console.log("Chain registered");
+  // await tx.wait();
+  // console.log("Chain registered");
 
   // //after this step, gateway contract should be deployed on the other chain
   // //and the address of the gateway contract should be added to the bridge contract
@@ -219,19 +241,19 @@ async function main() {
   // console.log("---");
   // console.log("Validators chain data", await proxyBridge.getValidatorsChainData(chain.id));
 
-  // // Proxy Bridge upgrade test
-  // // const BridgeV2 = await ethers.getContractFactory("BridgeV2");
-  // // const bridgeV2Logic = await BridgeV2.deploy();
+  // Proxy Bridge upgrade test
+  const BridgeV2 = await ethers.getContractFactory("BridgeV2");
+  const bridgeV2Logic = await BridgeV2.deploy();
 
-  // //empty bytes for second parameter signifies that contract is only being upgraded
-  // // await bridge.upgradeToAndCall(await bridgeV2Logic.getAddress(), "0x");
+  //empty bytes for second parameter signifies that contract is only being upgraded
+  await proxyBridge.upgradeToAndCall(await bridgeV2Logic.getAddress(), "0x");
 
-  // // const BridgeDeployedV2 = await ethers.getContractFactory("BridgeV2");
-  // // const bridgeV2 = BridgeDeployedV2.attach(bridgeProxy.target);
+  const BridgeDeployedV2 = await ethers.getContractFactory("BridgeV2");
+  const bridgeV2 = BridgeDeployedV2.attach(bridgeProxyContract.target);
 
-  // //function hello() added in BridgeV2 contract always returns true
-  // // const result = await bridgeV2.hello();
-  // console.log("Hello call BridgeV2", result);
+  //function hello() added in BridgeV2 contract always returns true
+  const result = await bridgeV2.hello();
+  console.log("Hello call BridgeV2", result);
 }
 
 main();
