@@ -9,19 +9,19 @@ import "./Utils.sol";
 
 contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
+    address private bridgeAddress;
 
     // slither-disable too-many-digits
     address constant PRECOMPILE = 0x0000000000000000000000000000000000002050;
     uint32 constant PRECOMPILE_GAS = 50000;
     address constant VALIDATOR_BLS_PRECOMPILE = 0x0000000000000000000000000000000000002060;
-    uint256 constant VALIDATOR_BLS_PRECOMPILE_GAS = 50000;
-
-    address private bridgeAddress;
+    uint32 constant VALIDATOR_BLS_PRECOMPILE_GAS = 50000;
 
     // BlockchainId -> ValidatorChainData[]
     mapping(uint8 => ValidatorChainData[]) private chainData;
     // validator address index(+1) in chainData mapping
     mapping(address => uint8) private addressValidatorIndex;
+
     // max possible number of validators is 127
     uint8 public validatorsCount;
 
@@ -125,7 +125,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         // recreate array with n elements
         delete chainData[_chainId];
 
-        for (uint i; i < validatorsCount; i++) {
+        for (uint i; i < validatorsCnt; i++) {
             chainData[_chainId].push();
 
             ValidatorAddressChainData calldata dt = _chainDatas[i];
@@ -149,9 +149,10 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
                 chainData[_chainId].push();
             }
         }
-
-        uint8 indx = addressValidatorIndex[_addr] - 1;
-        chainData[_chainId][indx] = _data;
+        unchecked {
+            uint8 indx = addressValidatorIndex[_addr] - 1;
+            chainData[_chainId][indx] = _data;
+        }
     }
 
     function getValidatorsChainData(uint8 _chainId) external view returns (ValidatorChainData[] memory) {
