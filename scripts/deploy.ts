@@ -17,9 +17,6 @@ async function main() {
   const Slots = await ethers.getContractFactory("Slots");
   const slotsLogic = await Slots.deploy();
 
-  const UTXOsc = await ethers.getContractFactory("UTXOsc");
-  const utxoscLogic = await UTXOsc.deploy();
-
   const Validators = await ethers.getContractFactory("Validators");
   const validatorscLogic = await Validators.deploy();
 
@@ -29,7 +26,6 @@ async function main() {
   const ClaimsProxy = await ethers.getContractFactory("ERC1967Proxy");
   const SignedBatchesProxy = await ethers.getContractFactory("ERC1967Proxy");
   const SlotsProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const UTXOscProxy = await ethers.getContractFactory("ERC1967Proxy");
   const ValidatorsProxy = await ethers.getContractFactory("ERC1967Proxy");
 
   const bridgeProxy = await BridgeProxy.deploy(
@@ -55,11 +51,6 @@ async function main() {
   const slotsProxy = await SlotsProxy.deploy(
     await slotsLogic.getAddress(),
     Slots.interface.encodeFunctionData("initialize", [])
-  );
-
-  const utxoscProxy = await UTXOscProxy.deploy(
-    await utxoscLogic.getAddress(),
-    UTXOsc.interface.encodeFunctionData("initialize", [])
   );
 
   const [validator1, validator2, validator3, validator4, validator5] = await ethers.getSigners();
@@ -92,9 +83,6 @@ async function main() {
   const SlotsDeployed = await ethers.getContractFactory("Slots");
   const slots = SlotsDeployed.attach(slotsProxy.target);
 
-  const UTXOscDeployed = await ethers.getContractFactory("UTXOsc");
-  const utxosc = UTXOscDeployed.attach(utxoscProxy.target);
-
   const ValidatorscDeployed = await ethers.getContractFactory("Validators");
   const validatorsc = ValidatorscDeployed.attach(validatorsProxy.target);
 
@@ -102,13 +90,26 @@ async function main() {
     claimsProxy.target,
     signedBatchesProxy.target,
     slotsProxy.target,
-    utxoscProxy.target,
     validatorsProxy.target
   );
 
   console.log("BridgeLogic deployed at:", bridgeLogic.target);
-  console.log("BridgeProxy deployed at:", bridgeProxy.target);
   console.log("Bridge deployed at:", bridge.target);
+  console.log("---");
+  console.log("ClaimsLogic deployed at:", claimsLogic.target);
+  console.log("Claims deployed at:", claims.target);
+  console.log("---");
+  console.log("ClaimsHelperLogic deployed at:", claimsHelperLogic.target);
+  console.log("ClaimsHelper deployed at:", claimsHelper.target);
+  console.log("---");
+  console.log("SignedBatchesLogic deployed at:", signedBatchesLogic.target);
+  console.log("SignedBatches deployed at:", signedBatches.target);
+  console.log("---");
+  console.log("SlotsLogic deployed at:", slotsLogic.target);
+  console.log("Slots deployed at:", slots.target);
+  console.log("---");
+  console.log("ValidatorsLogic deployed at:", validatorscLogic.target);
+  console.log("Validators deployed at:", validatorsc.target);
   console.log("---");
   console.log("BridgeLogic owner:", await bridgeLogic.owner());
   console.log("Bridge owner:", await bridge.owner());
@@ -120,8 +121,21 @@ async function main() {
   console.log("---");
   console.log("ValdatorsLogic numberOfValidators:", await validatorscLogic.validatorsCount());
   console.log("Valdators numberOfValidators:", await validatorsc.validatorsCount());
+  console.log("---");
 
-  //await bridgeDeployed.console.log(`Bridge deployed to ${bridge.target}`);
+  // Proxy Bridge upgrade test
+  const BridgeV2 = await ethers.getContractFactory("BridgeV2");
+  const bridgeV2Logic = await BridgeV2.deploy();
+
+  //empty bytes for second parameter signifies that contract is only being upgraded
+  await bridge.upgradeToAndCall(await bridgeV2Logic.getAddress(), "0x");
+
+  const BridgeDeployedV2 = await ethers.getContractFactory("BridgeV2");
+  const bridgeV2 = BridgeDeployedV2.attach(bridgeProxy.target);
+
+  //function hello() added in BridgeV2 contract always returns true
+  const result = await bridgeV2.hello();
+  console.log("Hello call BridgeV2", result);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
