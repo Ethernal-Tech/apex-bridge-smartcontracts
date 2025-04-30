@@ -46,6 +46,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     uint8 constant MAX_NUMBER_OF_CLAIMS = 32;
     uint8 constant MAX_NUMBER_OF_RECEIVERS = 16;
 
+    // When adding new variables use one slot from the gap (decrease the gap array size)
+    // Double check when setting structs or arrays
+    uint256[50] private __gap;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -57,9 +61,11 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint16 _maxNumberOfTransactions,
         uint8 _timeoutBlocksNumber
     ) public initializer {
+        __Ownable_init();
+        __UUPSUpgradeable_init();
+        _transferOwnership(_owner);
         if (_owner == address(0)) revert ZeroAddress();
         if (_upgradeAdmin == address(0)) revert ZeroAddress();
-        _transferOwnership(_owner);
         upgradeAdmin = _upgradeAdmin;
         maxNumberOfTransactions = _maxNumberOfTransactions;
         timeoutBlocksNumber = _timeoutBlocksNumber;
@@ -159,14 +165,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     }
 
     function _submitClaimsBRC(BridgingRequestClaim calldata _claim, uint256 i, address _caller) internal {
-        uint256 _quorumCnt = validators.getQuorumNumberOfValidators();
-        bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
-
-        // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-        if (claimsHelper.isVoteRestricted(_caller, _claimHash, _quorumCnt)) {
-            return;
-        }
-
         uint256 _receiversSum = _claim.totalAmount;
         uint8 _destinationChainId = _claim.destinationChainId;
         uint256 _chainTokenQuantityDestination = chainTokenQuantity[_destinationChainId];
@@ -177,9 +175,16 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             return;
         }
 
-        uint256 _votesCnt = claimsHelper.setVoted(_caller, _claimHash);
+        // uint256 _quorumCnt = validators.getQuorumNumberOfValidators();
+        bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
 
-        if (_votesCnt == _quorumCnt) {
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
+            _caller,
+            _claimHash,
+            validators.getQuorumNumberOfValidators()
+        );
+
+        if (_quorumReached) {
             chainTokenQuantity[_destinationChainId] -= _receiversSum;
 
             if (_claim.retryCounter == 0) {
@@ -280,11 +285,11 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             }
 
             uint64 _firstTxNonce = _confirmedSignedBatch.firstTxNonceId;
-            uint64 _lastTxNouce = _confirmedSignedBatch.lastTxNonceId;
+            uint64 _lastTxNonce = _confirmedSignedBatch.lastTxNonceId;
 
             uint256 _currentAmount = chainTokenQuantity[chainId];
 
-            for (uint64 i = _firstTxNonce; i <= _lastTxNouce; i++) {
+            for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
                 ConfirmedTransaction storage _ctx = confirmedTransactions[chainId][i];
                 uint8 _txType = _ctx.transactionType;
                 if (_txType == 0) {
@@ -304,7 +309,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
             chainTokenQuantity[chainId] = _currentAmount;
 
-            lastBatchedTxNonce[chainId] = _lastTxNouce;
+            lastBatchedTxNonce[chainId] = _lastTxNonce;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
 
             claimsHelper.deleteConfirmedSignedBatch(chainId, batchId);
@@ -518,6 +523,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
 
         uint256 _currentAmount = chainTokenQuantity[_chainId];
+
         if (_isIncrease) {
             chainTokenQuantity[_chainId] = _currentAmount + _tokenAmount;
         } else {
@@ -561,6 +567,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     function updateTimeoutBlocksNumber(uint8 _timeoutBlocksNumber) external onlyAdminContract {
         timeoutBlocksNumber = _timeoutBlocksNumber;
+    }
+
+    function version() public pure returns (string memory) {
+        return "1.0.0";
     }
 
     modifier onlyBridge() {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -14,15 +14,21 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
 
     address public fundAdmin;
 
+    // When adding new variables use one slot from the gap (decrease the gap array size)
+    // Double check when setting structs or arrays
+    uint256[50] private __gap;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
     function initialize(address _owner, address _upgradeAdmin) public initializer {
+        __Ownable_init();
+        __UUPSUpgradeable_init();
+        _transferOwnership(_owner);
         if (_owner == address(0)) revert ZeroAddress();
         if (_upgradeAdmin == address(0)) revert ZeroAddress();
-        _transferOwnership(_owner);
         upgradeAdmin = _upgradeAdmin;
         fundAdmin = _owner;
     }
@@ -62,6 +68,15 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     function updateTimeoutBlocksNumber(uint8 _timeoutBlocksNumber) external onlyOwner {
         claims.updateTimeoutBlocksNumber(_timeoutBlocksNumber);
         emit UpdatedTimeoutBlocksNumber(_timeoutBlocksNumber);
+    }
+
+    function version() public pure returns (string memory) {
+        return "1.0.0";
+    }
+
+    modifier onlyBridge() {
+        if (msg.sender != address(claims)) revert NotBridge();
+        _;
     }
 
     modifier onlyFundAdmin() {

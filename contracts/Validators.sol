@@ -25,16 +25,22 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     // max possible number of validators is 127
     uint8 public validatorsCount;
 
+    // When adding new variables use one slot from the gap (decrease the gap array size)
+    // Double check when setting structs or arrays
+    uint256[50] private __gap;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
     function initialize(address _owner, address _upgradeAdmin, address[] calldata _validators) public initializer {
+        __Ownable_init();
+        __UUPSUpgradeable_init();
+        _transferOwnership(_owner);
         require(_validators.length < 128, "Too many validators (max 127)");
         if (_owner == address(0)) revert ZeroAddress();
         if (_upgradeAdmin == address(0)) revert ZeroAddress();
-        _transferOwnership(_owner);
         upgradeAdmin = _upgradeAdmin;
         for (uint8 i; i < _validators.length; i++) {
             if (addressValidatorIndex[_validators[i]] != 0) {
@@ -164,6 +170,10 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         unchecked {
             return (validatorsCount * 2) / 3 + 1;
         }
+    }
+
+    function version() public pure returns (string memory) {
+        return "1.0.0";
     }
 
     modifier onlyBridge() {
