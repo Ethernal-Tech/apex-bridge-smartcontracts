@@ -6,10 +6,10 @@
     "validator4address": "0xB40C91482eF0e87eA8BA867034cA455ff5D9a73D",
     "validator5address": "0x3d940e44b46b186972F784Bc09A0E0a5C3915674",
     "validator1key": [0, 0, 0, 0],
-    "validator2key": [0, 0, 0, 0],
-    "validator3key": [0, 0, 0, 0],
-    "validator4key": [0, 0, 0, 0],
-    "validator5key": [0, 0, 0, 0]
+    "validator2key": [1, 1, 1, 1],
+    "validator3key": [2, 2, 2, 2],
+    "validator4key": [3, 3, 3, 3],
+    "validator5key": [4, 4, 4, 4]
   },
   "Chain": {
     "id": 1,
