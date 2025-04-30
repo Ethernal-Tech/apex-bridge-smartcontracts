@@ -93,6 +93,58 @@ async function main() {
     validatorsProxy.target
   );
 
+  await claims.setDependencies(bridgeProxy.target, claimsHelper.target, validatorsProxy.target);
+
+  await claimsHelper.setDependencies(claims.target, signedBatches.target);
+
+  await signedBatches.setDependencies(bridge.target, claimsHelper.target, validatorsProxy.target);
+
+  await slots.setDependencies(bridge.target, validatorsProxy.target);
+
+  await validatorsc.setDependencies(bridge.target);
+
+  const chain = {
+    id: 1,
+    chainType: 2,
+    addressMultisig: "0x1234567890abcdef1234567890abcdef12345678",
+    addressFeePayer: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+  };
+
+  const validatorsChainData = [
+    {
+      addr: validator1.address,
+      data: {
+        key: [0n, 0n, 0n, 0n],
+      },
+    },
+    {
+      addr: validator2.address,
+      data: {
+        key: [1n, 1n, 1n, 1n],
+      },
+    },
+    {
+      addr: validator3.address,
+      data: {
+        key: [2n, 2n, 2n, 2n],
+      },
+    },
+    {
+      addr: validator4.address,
+      data: {
+        key: [3n, 3n, 3n, 3n],
+      },
+    },
+    {
+      addr: validator5.address,
+      data: {
+        key: [4n, 4n, 4n, 4n],
+      },
+    },
+  ];
+
+  await bridge.registerChain(chain, 1000, validatorsChainData);
+
   console.log("BridgeLogic deployed at:", bridgeLogic.target);
   console.log("Bridge deployed at:", bridge.target);
   console.log("---");
@@ -122,24 +174,23 @@ async function main() {
   console.log("ValdatorsLogic numberOfValidators:", await validatorscLogic.validatorsCount());
   console.log("Valdators numberOfValidators:", await validatorsc.validatorsCount());
   console.log("---");
+  console.log("Validators chain data", await bridge.getValidatorsChainData(chain.id));
 
   // Proxy Bridge upgrade test
-  const BridgeV2 = await ethers.getContractFactory("BridgeV2");
-  const bridgeV2Logic = await BridgeV2.deploy();
+  // const BridgeV2 = await ethers.getContractFactory("BridgeV2");
+  // const bridgeV2Logic = await BridgeV2.deploy();
 
   //empty bytes for second parameter signifies that contract is only being upgraded
-  await bridge.upgradeToAndCall(await bridgeV2Logic.getAddress(), "0x");
+  // await bridge.upgradeToAndCall(await bridgeV2Logic.getAddress(), "0x");
 
-  const BridgeDeployedV2 = await ethers.getContractFactory("BridgeV2");
-  const bridgeV2 = BridgeDeployedV2.attach(bridgeProxy.target);
+  // const BridgeDeployedV2 = await ethers.getContractFactory("BridgeV2");
+  // const bridgeV2 = BridgeDeployedV2.attach(bridgeProxy.target);
 
   //function hello() added in BridgeV2 contract always returns true
-  const result = await bridgeV2.hello();
-  console.log("Hello call BridgeV2", result);
+  // const result = await bridgeV2.hello();
+  // console.log("Hello call BridgeV2", result);
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
 main().catch((error: any) => {
   console.error(error);
   process.exitCode = 1;
