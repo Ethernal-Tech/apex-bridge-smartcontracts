@@ -42,9 +42,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     // chainId -> nonce (nonce of the last transaction from the executed batch)
     mapping(uint8 => uint64) public lastBatchedTxNonce;
 
-    uint8 public constant MAX_NUMBER_OF_DEFUND_RETRIES = 3; //TO DO SET EXACT NUMBER TO BE USED
-    uint8 constant MAX_NUMBER_OF_CLAIMS = 32;
-    uint8 constant MAX_NUMBER_OF_RECEIVERS = 16;
+    uint8 private constant MAX_NUMBER_OF_DEFUND_RETRIES = 3; //TO DO SET EXACT NUMBER TO BE USED
+    uint8 private constant MAX_NUMBER_OF_CLAIMS = 32;
+    uint8 private constant MAX_NUMBER_OF_RECEIVERS = 16;
 
     // When adding new variables use one slot from the gap (decrease the gap array size)
     // Double check when setting structs or arrays

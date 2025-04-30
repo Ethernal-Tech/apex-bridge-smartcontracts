@@ -74,11 +74,6 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         return "1.0.0";
     }
 
-    modifier onlyBridge() {
-        if (msg.sender != address(claims)) revert NotBridge();
-        _;
-    }
-
     modifier onlyFundAdmin() {
         if (msg.sender != fundAdmin) revert NotFundAdmin();
         _;
