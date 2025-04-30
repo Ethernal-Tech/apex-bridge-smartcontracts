@@ -5,21 +5,28 @@
     "validator3address": "0x2d6c4aB8367584A4F6B88d280E81b1Ca9d05bb09",
     "validator4address": "0xB40C91482eF0e87eA8BA867034cA455ff5D9a73D",
     "validator5address": "0x3d940e44b46b186972F784Bc09A0E0a5C3915674",
-    "validator1key": [0, 0, 0, 0],
-    "validator2key": [1, 1, 1, 1],
-    "validator3key": [2, 2, 2, 2],
-    "validator4key": [3, 3, 3, 3],
-    "validator5key": [4, 4, 4, 4]
+    "validator1key": ["1n", "1n", "1n", "1n"],
+    "validator2key": ["2n", "2n", "2n", "2n"],
+    "validator3key": ["3n", "3n", "3n", "3n"],
+    "validator4key": ["4n", "4n", "4n", "4n"],
+    "validator5key": ["5n", "5n", "5n", "5n"]
   },
   "Chain": {
     "id": 2,
     "chainType": 2,
-    "addressMultisig": "",
-    "addressFeePayer": "",
+    "addressMultisig": "0x1234567890abcdef1234567890abcdef12345678",
+    "addressFeePayer": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
     "totalSupply": 1000
   },
   "AdditionalData": {
-    "addressMultisig": "A0x1234567890abcdef1234567890abcdef12345678",
+    "addressMultisig": "0x1234567890abcdef1234567890abcdef12345678",
     "addressFeePayer": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"
+  },
+  "RPC": {
+    "url": "RPC_URL",
+    "key": "RPC_KEY"
+  },
+  "Owner": {
+    "address": "OWNER_ADDRESS"
   }
 }
