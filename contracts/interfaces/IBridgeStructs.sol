@@ -66,7 +66,7 @@ interface IBridgeStructs {
     }
 
     struct BatchExecutedClaim {
-        // hash of tx on the source chain
+        // hash of tx where batch was executed
         bytes32 observedTransactionHash;
         uint64 batchNonceId;
         // where the batch was executed
@@ -139,7 +139,6 @@ interface IBridgeStructs {
         uint8 transactionType;
     }
 
-    error AlreadyConfirmed(bytes32 _claimTransactionHash);
     error AlreadyProposed(uint8 _claimTransactionHash);
     error ChainAlreadyRegistered(uint8 _chainId);
     error NotOwner();
@@ -150,13 +149,10 @@ interface IBridgeStructs {
     error NotFundAdmin();
     error NotUpgradeAdmin();
     error NotAdminContract();
-    error NotSignedBatchesOrBridge();
     error NotSignedBatchesOrClaims();
-    error NotEnoughBridgingTokensAvailable(bytes32 _claimTransactionHash);
     error CanNotCreateBatchYet(uint8 _chainId);
     error InvalidData(string data);
     error ChainIsNotRegistered(uint8 _chainId);
-    error WrongBatchNonce(uint8 _chainId, uint64 _nonce);
     error InvalidSignature();
     error DefundRequestTooHigh(uint8 _chainId, uint256 _availableAmount, uint256 _requestedAmount);
     error ZeroAddress();

@@ -4,7 +4,6 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBridgeStructs.sol";
 import "./Utils.sol";
 import "./ClaimsHelper.sol";
@@ -32,15 +31,21 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     // BlockchainId -> ConfirmedBatch
     mapping(uint8 => ConfirmedBatch) private lastConfirmedBatch;
 
+    // When adding new variables use one slot from the gap (decrease the gap array size)
+    // Double check when setting structs or arrays
+    uint256[50] private __gap;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
     function initialize(address _owner, address _upgradeAdmin) public initializer {
+        __Ownable_init();
+        __UUPSUpgradeable_init();
+        _transferOwnership(_owner);
         if (_owner == address(0)) revert ZeroAddress();
         if (_upgradeAdmin == address(0)) revert ZeroAddress();
-        _transferOwnership(_owner);
         upgradeAdmin = _upgradeAdmin;
     }
 
@@ -127,6 +132,10 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
     function getNumberOfSignatures(bytes32 _hash) external view returns (uint256, uint256) {
         return (signatures[_hash].length, feeSignatures[_hash].length);
+    }
+
+    function version() public pure returns (string memory) {
+        return "1.0.0";
     }
 
     modifier onlyBridge() {

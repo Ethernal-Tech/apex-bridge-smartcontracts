@@ -23,15 +23,21 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     // hash(slot, hash) -> bool - validator voted already or not
     mapping(bytes32 => mapping(address => bool)) private validatorVote;
 
+    // When adding new variables use one slot from the gap (decrease the gap array size)
+    // Double check when setting structs or arrays
+    uint256[50] private __gap;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
     function initialize(address _owner, address _upgradeAdmin) public initializer {
+        __Ownable_init();
+        __UUPSUpgradeable_init();
+        _transferOwnership(_owner);
         if (_owner == address(0)) revert ZeroAddress();
         if (_upgradeAdmin == address(0)) revert ZeroAddress();
-        _transferOwnership(_owner);
         upgradeAdmin = _upgradeAdmin;
     }
 
@@ -71,6 +77,10 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
 
     function getLastObservedBlock(uint8 _chainId) external view returns (CardanoBlock memory _cb) {
         return lastObservedBlock[_chainId];
+    }
+
+    function version() public pure returns (string memory) {
+        return "1.0.0";
     }
 
     modifier onlyBridge() {

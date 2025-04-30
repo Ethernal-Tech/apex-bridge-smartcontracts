@@ -13,6 +13,10 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     address private claimsAddress;
     address private signedBatchesAddress;
 
+    // When adding new variables use one slot from the gap (decrease the gap array size)
+    // Double check when setting structs or arrays
+    uint256[50] private __gap;
+
     // BlockchainId -> batchId -> SignedBatch
     mapping(uint8 => mapping(uint64 => ConfirmedSignedBatchData)) public confirmedSignedBatches;
 
@@ -31,9 +35,11 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     }
 
     function initialize(address _owner, address _upgradeAdmin) public initializer {
+        __Ownable_init();
+        __UUPSUpgradeable_init();
+        _transferOwnership(_owner);
         if (_owner == address(0)) revert ZeroAddress();
         if (_upgradeAdmin == address(0)) revert ZeroAddress();
-        _transferOwnership(_owner);
         upgradeAdmin = _upgradeAdmin;
     }
 
@@ -74,16 +80,13 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         bytes32 _hash,
         uint256 _quorumCnt
     ) external onlySignedBatchesOrClaims returns (bool) {
-        if (isVoteRestricted(_voter, _hash, _quorumCnt)) {
+        // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
+        if (hasVoted[_hash][_voter] || numberOfVotes[_hash] >= _quorumCnt) {
             return false;
         }
 
         hasVoted[_hash][_voter] = true;
         return ++numberOfVotes[_hash] >= _quorumCnt;
-    }
-
-    function isVoteRestricted(address _voter, bytes32 _hash, uint256 _quorumCnt) public view returns (bool) {
-        return hasVoted[_hash][_voter] || numberOfVotes[_hash] >= _quorumCnt;
     }
 
     function setVoted(address _voter, bytes32 _hash) external onlySignedBatchesOrClaims returns (uint256) {
@@ -94,6 +97,10 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
 
     function deleteConfirmedSignedBatch(uint8 chainId, uint64 batchId) external onlyClaims {
         confirmedSignedBatches[chainId][batchId] = ConfirmedSignedBatchData(0, 0, false);
+    }
+
+    function version() public pure returns (string memory) {
+        return "1.0.0";
     }
 
     modifier onlySignedBatchesOrClaims() {
