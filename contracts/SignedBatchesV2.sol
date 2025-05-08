@@ -31,9 +31,11 @@ contract SignedBatchesV2 is IBridgeStructs, Utils, Initializable, OwnableUpgrade
     // BlockchainId -> ConfirmedBatch
     mapping(uint8 => ConfirmedBatch) private lastConfirmedBatch;
 
+    uint256 public testValue;
+
     // When adding new variables use one slot from the gap (decrease the gap array size)
     // Double check when setting structs or arrays
-    uint256[50] private __gap;
+    uint256[49] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -136,6 +138,10 @@ contract SignedBatchesV2 is IBridgeStructs, Utils, Initializable, OwnableUpgrade
 
     function version() public pure returns (string memory) {
         return "1.0.1";
+    }
+
+    function increaseTestValue() external onlyOwner {
+        testValue++;
     }
 
     modifier onlyBridge() {

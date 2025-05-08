@@ -13,9 +13,11 @@ contract ClaimsHelperV2 is IBridgeStructs, Utils, Initializable, OwnableUpgradea
     address private claimsAddress;
     address private signedBatchesAddress;
 
+    uint256 public testValue;
+
     // When adding new variables use one slot from the gap (decrease the gap array size)
     // Double check when setting structs or arrays
-    uint256[50] private __gap;
+    uint256[49] private __gap;
 
     // BlockchainId -> batchId -> SignedBatch
     mapping(uint8 => mapping(uint64 => ConfirmedSignedBatchData)) public confirmedSignedBatches;
@@ -101,6 +103,10 @@ contract ClaimsHelperV2 is IBridgeStructs, Utils, Initializable, OwnableUpgradea
 
     function version() public pure returns (string memory) {
         return "1.0.1";
+    }
+
+    function increaseTestValue() external onlyOwner {
+        testValue++;
     }
 
     modifier onlySignedBatchesOrClaims() {

@@ -159,6 +159,9 @@ async function main() {
   implementationAddress = ethers.getAddress("0x" + storage.slice(-40));
   console.log("Admin implementation address after", implementationAddress);
   expect(versionAfter).to.equal("1.0.1");
+  let increaseTestValue = await proxyAdminV2.increaseTestValue();
+  await increaseTestValue.wait();
+  expect(await proxyAdminV2.testValue()).to.equal(1n);
 
   // Bridge
   versionBefore = await proxyBridge.version();
@@ -187,6 +190,9 @@ async function main() {
   implementationAddress = ethers.getAddress("0x" + storage.slice(-40));
   console.log("Bridge implementation address after", implementationAddress);
   expect(versionAfter).to.equal("1.0.1");
+  increaseTestValue = await proxyBridgeV2.increaseTestValue();
+  await increaseTestValue.wait();
+  expect(await proxyBridgeV2.testValue()).to.equal(1n);
 
   // Claims
   versionBefore = await proxyClaims.version();
@@ -215,6 +221,9 @@ async function main() {
   implementationAddress = ethers.getAddress("0x" + storage.slice(-40));
   console.log("Claims implementation address after", implementationAddress);
   expect(versionAfter).to.equal("1.0.1");
+  increaseTestValue = await proxyClaimsV2.increaseTestValue();
+  await increaseTestValue.wait();
+  expect(await proxyClaimsV2.testValue()).to.equal(1n);
 
   // ClaimsHelper
   versionBefore = await proxyClaimsHelper.version();
@@ -243,6 +252,9 @@ async function main() {
   implementationAddress = ethers.getAddress("0x" + storage.slice(-40));
   console.log("ClaimsHelper implementation address after", implementationAddress);
   expect(versionAfter).to.equal("1.0.1");
+  increaseTestValue = await proxyClaimsHelperV2.increaseTestValue();
+  await increaseTestValue.wait();
+  expect(await proxyClaimsHelperV2.testValue()).to.equal(1n);
 
   // SignedBatches
   versionBefore = await proxySignedBatches.version();
@@ -275,6 +287,9 @@ async function main() {
   implementationAddress = ethers.getAddress("0x" + storage.slice(-40));
   console.log("SignedBatches implementation address after", implementationAddress);
   expect(versionAfter).to.equal("1.0.1");
+  increaseTestValue = await proxySignedBatchesV2.increaseTestValue();
+  await increaseTestValue.wait();
+  expect(await proxySignedBatchesV2.testValue()).to.equal(1n);
 
   // Slots
   versionBefore = await proxySlots.version();
@@ -303,6 +318,9 @@ async function main() {
   implementationAddress = ethers.getAddress("0x" + storage.slice(-40));
   console.log("Slots implementation address after", implementationAddress);
   expect(versionAfter).to.equal("1.0.1");
+  increaseTestValue = await proxySlotsV2.increaseTestValue();
+  await increaseTestValue.wait();
+  expect(await proxySlotsV2.testValue()).to.equal(1n);
 
   // Validators
   versionBefore = await proxyValidators.version();
@@ -331,6 +349,9 @@ async function main() {
   implementationAddress = ethers.getAddress("0x" + storage.slice(-40));
   console.log("Validators implementation address after", implementationAddress);
   expect(versionAfter).to.equal("1.0.1");
+  increaseTestValue = await proxyValidatorsV2.increaseTestValue();
+  await increaseTestValue.wait();
+  expect(await proxyValidatorsV2.testValue()).to.equal(1n);
 }
 
 main();
