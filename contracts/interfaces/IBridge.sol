@@ -3,66 +3,106 @@ pragma solidity ^0.8.24;
 
 import "./IBridgeStructs.sol";
 
+/// @title IBridge
+/// @notice Interface for cross-chain bridge functions supporting claims, batch submission, chain registration, and queries.
 abstract contract IBridge is IBridgeStructs {
-    // Claims
+    /// @notice Submit claims from validators for reaching consensus.
+    /// @param _claims The claims submitted by a validator.
     function submitClaims(ValidatorClaims calldata _claims) external virtual;
 
-    // Batches Cardano
+    /// @notice Submit a signed transaction batch for the Cardano chain.
+    /// @param _signedBatch The batch of signed transactions.
     function submitSignedBatch(SignedBatch calldata _signedBatch) external virtual;
 
-    // Batches EVM
+    /// @notice Submit a signed transaction batch for an EVM-compatible chain.
+    /// @param _signedBatch The batch of signed transactions.
     function submitSignedBatchEVM(SignedBatch calldata _signedBatch) external virtual;
 
-    // Slots
+    /// @notice Submit the last observed Cardano blocks from validators for synchronization purposes.
+    /// @param chainId The source chain ID.
+    /// @param blocks Array of Cardano blocks to be recorded.
     function submitLastObservedBlocks(uint8 chainId, CardanoBlock[] calldata blocks) external virtual;
 
-    // set additional chain data (sc address for nexus)
+    /// @notice Set additional metadata for a chain, such as multisig and fee payer addresses.
+    /// @param _chainId The target chain ID.
+    /// @param addressMultisig Multisig address associated with the chain.
+    /// @param addressFeePayer Fee payer address used for covering transaction costs.
     function setChainAdditionalData(
         uint8 _chainId,
         string calldata addressMultisig,
         string calldata addressFeePayer
     ) external virtual;
 
-    // Chain registration through some kind of governance
+    /// @notice Register a new chain and its validator data.
+    /// @param _chain Metadata and configuration of the new chain.
+    /// @param _tokenQuantity Initial token allocation.
+    /// @param _validatorData Validator data specific to this chain.
     function registerChain(
         Chain calldata _chain,
         uint256 _tokenQuantity,
         ValidatorAddressChainData[] calldata _validatorData
     ) external virtual;
 
+    /// @notice Register a new chain using governance.
+    /// @param _chainId The ID of the new chain.
+    /// @param _chainType The type of the chain (e.g., EVM, Cardano).
+    /// @param _tokenQuantity Initial token allocation.
+    /// @param _validatorChainData Validator data specific to the chain.
+    /// @param _keySignature Signature from validator authorizing key usage.
+    /// @param _keyFeeSignature Signature from validator authorizing fee keys.
     function registerChainGovernance(
         uint8 _chainId,
         uint8 _chainType,
         uint256 _tokenQuantity,
         ValidatorChainData calldata _validatorChainData,
-        bytes calldata _keySignatures,
-        bytes calldata _keyFeeSignatures
+        bytes calldata _keySignature,
+        bytes calldata _keyFeeSignature
     ) external virtual;
 
-    // Queries
-
-    // Will determine if enough transactions are confirmed, or the timeout between two batches is exceeded.
-    // It will also check if the given validator already submitted a signed batch and return the response accordingly.
+    /// @notice Check if a batch should be created for the destination chain.
+    /// @param _destinationChain ID of the destination chain.
+    /// @return _shouldCreateBatch Returns true if a batch should be created.
     function shouldCreateBatch(uint8 _destinationChain) external view virtual returns (bool _shouldCreateBatch);
 
-    // Calls shouldCreateBatch and returns next batch id if batch should be created of 0 if not
+    /// @notice Get the next batch ID if a batch should be created, or 0 if not.
+    /// @param _destinationChain ID of the destination chain.
+    /// @return _result ID of the next batch or 0 if no batch should be created.
     function getNextBatchId(uint8 _destinationChain) external view virtual returns (uint64 _result);
 
-    // Will return confirmed transactions until NEXT_BATCH_TIMEOUT_BLOCK or maximum number of transactions that
-    // can be included in the batch, if the maximum number of transactions in a batch has been exceeded
+    /// @notice Get confirmed transactions ready for batching for a specific destination chain.
+    /// @param _destinationChain ID of the destination chain.
+    /// @return _confirmedTransactions Array of confirmed transactions.
     function getConfirmedTransactions(
         uint8 _destinationChain
     ) external view virtual returns (ConfirmedTransaction[] memory _confirmedTransactions);
 
+    /// @notice Get the confirmed batch for the given destination chain.
+    /// @param _destinationChain ID of the destination chain.
+    /// @return _batch The confirmed batch details.
     function getConfirmedBatch(uint8 _destinationChain) external view virtual returns (ConfirmedBatch memory _batch);
 
+    /// @notice Retrieve validator chain-specific data for a given chain ID.
+    /// @param _chainId ID of the chain.
+    /// @return Array of validator data.
     function getValidatorsChainData(uint8 _chainId) external view virtual returns (ValidatorChainData[] memory);
 
+    /// @notice Get the last observed block for a given source chain.
+    /// @param _sourceChain ID of the source chain.
+    /// @return _cblock The last observed Cardano block.
     function getLastObservedBlock(uint8 _sourceChain) external view virtual returns (CardanoBlock memory _cblock);
 
+    /// @notice Return a list of all chains currently registered with the bridge.
+    /// @return _chains Array of registered chain data.
     function getAllRegisteredChains() external view virtual returns (Chain[] memory _chains);
 
+    /// @notice Get raw transaction data from the most recent batch for a given destination chain.
+    /// @param _destinationChain ID of the destination chain.
+    /// @return Raw bytes of the transaction data.
     function getRawTransactionFromLastBatch(uint8 _destinationChain) external view virtual returns (bytes memory);
 
+    /// @notice Get transactions included in a specific batch for a given chain.
+    /// @param _chainId ID of the chain.
+    /// @param _batchId ID of the batch.
+    /// @return Array of transaction data included in the batch.
     function getBatchTransactions(uint8 _chainId, uint64 _batchId) external virtual returns (TxDataInfo[] memory);
 }
