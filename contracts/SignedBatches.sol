@@ -4,55 +4,91 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBridgeStructs.sol";
+import "./Utils.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
 
-contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+// @title SignedBatches
+/// @notice Handles submission and confirmation of signed transaction batches for a cross-chain bridge.
+/// @dev Utilizes OpenZeppelin upgradeable contracts and interacts with ClaimsHelper and Validators for consensus logic.
+contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
-
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
     Validators private validators;
 
-    // hash -> multisig / bls signatures
+    /// @notice Maps batch hash to validator signatures.
+    /// @dev hash -> multisig / bls signatures
     mapping(bytes32 => bytes[]) private signatures;
 
-    // hash -> fee signatures
+    /// @notice Maps batch hash to fee signatures.
+    /// @dev hash -> fee signatures
     mapping(bytes32 => bytes[]) private feeSignatures;
 
-    // hash -> bls bitmap
+    /// @notice Maps batch hash to BLS validator bitmap.
+    /// @dev hash -> bls bitmap
     mapping(bytes32 => uint256) private bitmap;
 
-    // hash -> user address -> true/false
-    mapping(bytes32 => mapping(address => bool)) public hasVoted; // for resubmit
+    /// @notice Tracks if an address has voted for a specific batch hash
+    /// @dev hash -> user address -> true/false
+    mapping(bytes32 => mapping(address => bool)) public hasVoted;
 
-    // BlockchainId -> ConfirmedBatch
+    /// @notice Stores the last confirmed batch per destination chain
+    /// @dev BlockchainId -> ConfirmedBatch
     mapping(uint8 => ConfirmedBatch) private lastConfirmedBatch;
+
+    /// @dev Reserved storage slots for future upgrades. When adding new variables
+    ///      use one slot from the gap (decrease the gap array size).
+    ///      Double check when setting structs or arrays.
+    uint256[50] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
+    /// @notice Initializes the contract.
+    /// @param _owner Address to be set as the owner.
+    /// @param _upgradeAdmin Address allowed to upgrade the contract.
     function initialize(address _owner, address _upgradeAdmin) public initializer {
+        __Ownable_init();
+        __UUPSUpgradeable_init();
         _transferOwnership(_owner);
+        if (_owner == address(0)) revert ZeroAddress();
+        if (_upgradeAdmin == address(0)) revert ZeroAddress();
         upgradeAdmin = _upgradeAdmin;
     }
 
+    /// @notice Authorizes upgrades. Only the upgrade admin can upgrade the contract.
+    /// @param newImplementation Address of the new implementation.
     function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
 
+    /// @notice Sets external contract dependencies.
+    /// @param _bridgeAddress Address of the bridge contract.
+    /// @param _claimsHelperAddress Address of the ClaimsHelper contract.
+    /// @param _validatorsAddress Address of the Validators contract.
     function setDependencies(
         address _bridgeAddress,
         address _claimsHelperAddress,
         address _validatorsAddress
     ) external onlyOwner {
+        if (!_isContract(_bridgeAddress) || !_isContract(_claimsHelperAddress) || !_isContract(_validatorsAddress))
+            revert NotContractAddress();
         bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         validators = Validators(_validatorsAddress);
     }
 
+    /// @notice Submits a signed batch for validation and potential confirmation.
+    /// @dev This function checks batch sequencing, validates votes, and finalizes the batch if quorum is met.
+    /// @param _signedBatch The signed batch containing transaction details and validator signatures.
+    /// @param _caller The address of the validator submitting the batch.
+    /// Requirements:
+    /// - Caller must be the bridge contract.
+    /// - The batch must have the expected sequential ID.
+    /// - The caller must not have already voted on this batch hash.
+    /// - If quorum is reached after this vote, the batch is confirmed and stored, and temporary data is cleared.
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
         uint8 _destinationChainId = _signedBatch.destinationChainId;
         uint64 _sbId = lastConfirmedBatch[_destinationChainId].id + 1;
@@ -72,7 +108,7 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
             )
         );
 
-        // check if caller already voted for same hash
+        // check if caller already voted for same hash and skip if he did
         if (hasVoted[_sbHash][_caller]) {
             return;
         }
@@ -122,6 +158,12 @@ contract SignedBatches is IBridgeStructs, Initializable, OwnableUpgradeable, UUP
 
     function getNumberOfSignatures(bytes32 _hash) external view returns (uint256, uint256) {
         return (signatures[_hash].length, feeSignatures[_hash].length);
+    }
+
+    /// @notice Returns the current version of the contract
+    /// @return A semantic version string
+    function version() public pure returns (string memory) {
+        return "1.0.0";
     }
 
     modifier onlyBridge() {

@@ -33,32 +33,32 @@ describe("Admin Functions", function () {
       );
     });
     it("Should increase chainTokenQuantity after calling updateChainTokenQuantity", async function () {
-      const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, 100, validatorsCardanoData);
+      const { admin, bridge, claims, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
+      await bridge.registerChain(chain1, 100, 100, validatorAddressChainData);
 
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
       await admin.updateChainTokenQuantity(chain1.id, true, 100);
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(200);
     });
     it("Should increase chainTokenQuantity after calling updateChainTokenQuantity with a value higher than the current one", async function () {
-      const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, 100, validatorsCardanoData);
+      const { admin, bridge, claims, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
+      await bridge.registerChain(chain1, 100, 100, validatorAddressChainData);
 
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
       await admin.updateChainTokenQuantity(chain1.id, true, 200);
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(300);
     });
-    it("Should emit event after increasing chain token quantity with updateChainTokenQuantity", async function () {
-      const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, 100, validatorsCardanoData);
+    it("Should emit event after increaseint chain token quantity with updateChainTokenQuantity", async function () {
+      const { admin, bridge, claims, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
+      await bridge.registerChain(chain1, 100, 100, validatorAddressChainData);
 
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
       await expect(admin.updateChainTokenQuantity(chain1.id, true, 100)).to.emit(admin, "UpdatedChainTokenQuantity");
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(200);
     });
-    it("Should revert if decrese amount is higher than available chainTokenQuantity", async function () {
-      const { admin, bridge, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, 100, validatorsCardanoData);
+    it("Should revert if decreae amount is higher than available chainTokenQuantity", async function () {
+      const { admin, bridge, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
+      await bridge.registerChain(chain1, 100, 100, validatorAddressChainData);
 
       await expect(admin.updateChainTokenQuantity(1, false, 200)).to.be.revertedWithCustomError(
         admin,
@@ -66,17 +66,17 @@ describe("Admin Functions", function () {
       );
     });
     it("Should decrease chainTokenQuantity by required amount", async function () {
-      const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, 100, validatorsCardanoData);
+      const { admin, bridge, claims, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
+      await bridge.registerChain(chain1, 100, 100, validatorAddressChainData);
 
       await admin.updateChainTokenQuantity(chain1.id, false, 50);
 
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(50);
     });
     it("Should emit event after decreasing chain token quantity with updateChainTokenQuantity", async function () {
-      const { bridge, admin, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+      const { bridge, admin, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
 
-      await bridge.registerChain(chain1, 100, 100, validatorsCardanoData);
+      await bridge.registerChain(chain1, 100, 100, validatorAddressChainData);
 
       await expect(admin.updateChainTokenQuantity(chain1.id, false, 50)).to.emit(admin, "UpdatedChainTokenQuantity");
     });
@@ -102,16 +102,16 @@ describe("Admin Functions", function () {
       );
     });
     it("Should increase chainWrappesTokenQuantity after calling updateChainWrappedTokenQuantity", async function () {
-      const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, 100, validatorsCardanoData);
+      const { admin, bridge, claims, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
+      await bridge.registerChain(chain1, 100, 100, validatorAddressChainData);
 
       expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.equal(100);
       await admin.updateChainWrappedTokenQuantity(chain1.id, true, 100);
       expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.equal(200);
     });
     it("Should emit event after increasing chain wrapped token quantity with updateChainWrappedTokenQuantity", async function () {
-      const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, 100, validatorsCardanoData);
+      const { admin, bridge, claims, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
+      await bridge.registerChain(chain1, 100, 100, validatorAddressChainData);
 
       expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.equal(100);
       await expect(admin.updateChainWrappedTokenQuantity(chain1.id, true, 100)).to.emit(
@@ -121,8 +121,8 @@ describe("Admin Functions", function () {
       expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.equal(200);
     });
     it("Should revert if decrese amount is higher than available chainWrappedTokenQuantity", async function () {
-      const { admin, bridge, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, 100, validatorsCardanoData);
+      const { admin, bridge, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
+      await bridge.registerChain(chain1, 100, 100, validatorAddressChainData);
 
       await expect(admin.updateChainWrappedTokenQuantity(1, false, 200)).to.be.revertedWithCustomError(
         admin,
@@ -130,17 +130,17 @@ describe("Admin Functions", function () {
       );
     });
     it("Should decrease chainWrappedTokenQuantity by required amount", async function () {
-      const { admin, bridge, claims, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, 100, validatorsCardanoData);
+      const { admin, bridge, claims, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
+      await bridge.registerChain(chain1, 100, 100, validatorAddressChainData);
 
       await admin.updateChainWrappedTokenQuantity(chain1.id, false, 50);
 
       expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.equal(50);
     });
     it("Should emit event after decreasing chain token quantity with updateChainWrappedTokenQuantity", async function () {
-      const { bridge, admin, chain1, validatorsCardanoData } = await loadFixture(deployBridgeFixture);
+      const { bridge, admin, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
 
-      await bridge.registerChain(chain1, 100, 100, validatorsCardanoData);
+      await bridge.registerChain(chain1, 100, 100, validatorAddressChainData);
 
       await expect(admin.updateChainWrappedTokenQuantity(chain1.id, false, 50)).to.emit(
         admin,
@@ -208,52 +208,52 @@ describe("Admin Functions", function () {
       );
     });
     it("Should revert when defund amount is higher then availableTokens amount", async function () {
-      const { admin, bridge, claims, owner, validators, chain1, validatorsCardanoData } = await loadFixture(
+      const { admin, bridge, claims, owner, validators, chain1, validatorAddressChainData } = await loadFixture(
         deployBridgeFixture
       );
 
       await admin.setFundAdmin(validators[0].address);
 
-      await bridge.connect(owner).registerChain(chain1, 1, 1, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 1, 1, validatorAddressChainData);
       await expect(admin.connect(validators[0]).defund(1, 100, 1, "address")).to.be.revertedWithCustomError(
         claims,
         "DefundRequestTooHigh"
       );
     });
     it("Should revert when defund wrapped amount is higher then availableTokens amount", async function () {
-      const { admin, bridge, claims, owner, validators, chain1, validatorsCardanoData } = await loadFixture(
+      const { admin, bridge, claims, owner, validators, chain1, validatorAddressChainData } = await loadFixture(
         deployBridgeFixture
       );
 
       await admin.setFundAdmin(validators[0].address);
 
-      await bridge.connect(owner).registerChain(chain1, 1, 1, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 1, 1, validatorAddressChainData);
       await expect(admin.connect(validators[0]).defund(chain1.id, 1, 100, "address")).to.be.revertedWithCustomError(
         claims,
         "DefundRequestTooHigh"
       );
     });
     it("Should remove defund amount from availableTokens amount", async function () {
-      const { admin, bridge, claims, owner, validators, chain1, validatorsCardanoData } = await loadFixture(
+      const { admin, bridge, claims, owner, validators, chain1, validatorAddressChainData } = await loadFixture(
         deployBridgeFixture
       );
 
       await admin.setFundAdmin(validators[0].address);
 
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
       await admin.connect(validators[0]).defund(chain1.id, 1, 1, "address");
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(99);
       expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.equal(99);
     });
     it("Should emit ChainDefunded when defund is exdcuted", async function () {
-      const { admin, bridge, owner, validators, chain1, validatorsCardanoData } = await loadFixture(
+      const { admin, bridge, owner, validators, chain1, validatorAddressChainData } = await loadFixture(
         deployBridgeFixture
       );
 
       await admin.setFundAdmin(validators[0].address);
 
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
 
       await admin.connect(validators[0]).defund(chain1.id, 1, 1, "address");
 
@@ -261,14 +261,14 @@ describe("Admin Functions", function () {
         .to.emit(admin, "ChainDefunded")
         .withArgs(1, 1);
     });
-    it("Should add confirmedTransactioin when defund is executed", async function () {
-      const { admin, bridge, claims, owner, validators, chain1, validatorsCardanoData } = await loadFixture(
+    it("Should add confirmedTransactioin when defund is exdcuted", async function () {
+      const { admin, bridge, claims, owner, validators, chain1, validatorAddressChainData } = await loadFixture(
         deployBridgeFixture
       );
 
       await admin.setFundAdmin(validators[0].address);
 
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
 
       await admin.connect(validators[0]).defund(chain1.id, 1, 1, "address");
 
@@ -279,13 +279,13 @@ describe("Admin Functions", function () {
       expect(await claims.lastConfirmedTxNonce(chain1.id)).to.equal(2);
     });
     it("Should set correct confirmedTransaction when defund is excuted", async function () {
-      const { admin, bridge, claims, owner, validators, chain1, validatorsCardanoData } = await loadFixture(
+      const { admin, bridge, claims, owner, validators, chain1, validatorAddressChainData } = await loadFixture(
         deployBridgeFixture
       );
 
       await admin.setFundAdmin(validators[0].address);
 
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
 
       await admin.connect(validators[0]).defund(chain1.id, 1, 1, "address");
 
@@ -295,7 +295,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).sourceChainId).to.equal(chain1.id);
       expect((await claims.confirmedTransactions(chain1.id, 1)).nonce).to.equal(1);
       expect((await claims.confirmedTransactions(chain1.id, 1)).retryCounter).to.equal(0);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal('0x');
+      expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalWrappedAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(24);
@@ -311,13 +311,13 @@ describe("Admin Functions", function () {
         chain2,
         validators,
         signedBatchDefund,
-        validatorsCardanoData,
+        validatorAddressChainData,
         validatorClaimsBRC,
         validatorClaimsBEFC,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 200, 200, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 200, 200, validatorAddressChainData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -361,7 +361,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain2.id, 3)).sourceChainId).to.equal(chain2.id);
       expect((await claims.confirmedTransactions(chain2.id, 3)).nonce).to.equal(3);
       expect((await claims.confirmedTransactions(chain2.id, 3)).retryCounter).to.equal(1);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal('0x');
+      expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalWrappedAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(29);
@@ -376,18 +376,19 @@ describe("Admin Functions", function () {
         chain2,
         validators,
         signedBatch,
-        validatorsCardanoData,
+        validatorAddressChainData,
         validatorClaimsBEFC,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
-      await bridge.connect(owner).registerChain(chain2, 200, 200, validatorsCardanoData);
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 200, 200, validatorAddressChainData);
 
       await admin.setFundAdmin(validators[0].address);
 
       await admin.connect(validators[0]).defund(chain2.id, 1, 1, "address");
 
-      const retryCounter = await claims.MAX_NUMBER_OF_DEFUND_RETRIES();
+      //to avoid the need for public variable this value should be manually set to the value of MAX_NUMBER_OF_DEFUND_RETRIES
+      const retryCounter = 3;
 
       for (let i = 0; i <= retryCounter; i++) {
         expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(i + 1);

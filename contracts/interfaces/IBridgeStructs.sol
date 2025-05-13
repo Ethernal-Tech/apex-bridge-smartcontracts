@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+/// @title IBridgeStructs
+/// @notice Data structure definitions, custom errors, and events used by the IBridge interface
 interface IBridgeStructs {
+    /// @notice Represents a signed batch to be executed on a destination chain.
     struct SignedBatch {
         uint64 id;
         uint64 firstTxNonceId; // does not matter if isConsolidation is true
@@ -13,12 +16,14 @@ interface IBridgeStructs {
         bool isConsolidation;
     }
 
+    /// @notice Metadata for a batch that has been confirmed.
     struct ConfirmedSignedBatchData {
         uint64 firstTxNonceId;
         uint64 lastTxNonceId;
         bool isConsolidation;
     }
 
+    /// @notice Data for a confirmed batch that was executed on-chain.
     struct ConfirmedBatch {
         bytes[] signatures;
         bytes[] feeSignatures;
@@ -28,6 +33,7 @@ interface IBridgeStructs {
         bool isConsolidation;
     }
 
+    /// @notice A transaction that has been confirmed and is ready for batching.
     struct ConfirmedTransaction {
         uint256 blockHeight;
         uint256 totalAmount;
@@ -42,11 +48,13 @@ interface IBridgeStructs {
         bytes outputIndexes;
     }
 
+    /// @notice Represents a block from the Cardano chain.
     struct CardanoBlock {
         uint256 blockSlot;
         bytes32 blockHash;
     }
 
+    /// @notice Collection of claims submitted by validators.
     struct ValidatorClaims {
         BridgingRequestClaim[] bridgingRequestClaims;
         BatchExecutedClaim[] batchExecutedClaims;
@@ -55,6 +63,7 @@ interface IBridgeStructs {
         HotWalletIncrementClaim[] hotWalletIncrementClaims;
     }
 
+    /// @notice A claim that a bridging request was observed on the source chain.
     struct BridgingRequestClaim {
         // hash of tx on the source chain
         bytes32 observedTransactionHash;
@@ -69,14 +78,16 @@ interface IBridgeStructs {
         uint8 destinationChainId;
     }
 
+    /// @notice A claim that a batch was executed on a specific chain.
     struct BatchExecutedClaim {
-        // hash of tx on the source chain
+        // hash of tx where batch was executed
         bytes32 observedTransactionHash;
         uint64 batchNonceId;
         // where the batch was executed
         uint8 chainId;
     }
 
+    /// @notice A claim that a batch execution failed on a specific chain.
     struct BatchExecutionFailedClaim {
         // hash of tx on the source chain
         bytes32 observedTransactionHash;
@@ -86,6 +97,7 @@ interface IBridgeStructs {
         uint8 chainId;
     }
 
+    /// @notice A request to refund a failed bridging transaction.
     struct RefundRequestClaim {
         // Hash of the original transaction on the source chain
         bytes32 originTransactionHash;
@@ -109,18 +121,21 @@ interface IBridgeStructs {
         bool shouldDecrementHotWallet;
     }
 
+    /// @notice A claim to increase the balance of a chain's hot wallet.
     struct HotWalletIncrementClaim {
         uint8 chainId;
         uint256 amount;
         uint256 amountWrapped;
     }
 
+    /// @notice Destination address and amount for a transaction output.
     struct Receiver {
         uint256 amount;
         uint256 amountWrapped;
         string destinationAddress;
     }
 
+    /// @notice Metadata about a chain registered with the bridge.
     struct Chain {
         uint8 id;
         uint8 chainType;
@@ -128,24 +143,29 @@ interface IBridgeStructs {
         string addressFeePayer;
     }
 
+    /// @notice Data for a validator address and its signing keys.
     struct ValidatorAddressChainData {
         address addr;
         ValidatorChainData data;
+        bytes keySignature;
+        bytes keyFeeSignature;
     }
 
+    /// @notice Validator public key data for either Cardano or EVM (e.g., BLS).
     struct ValidatorChainData {
-        // verifying key, verifying Fee key for Cardano
-        // BLS for EVM
         uint256[4] key;
     }
 
+    /// @notice Summary info for a transaction in a batch.
     struct TxDataInfo {
         bytes32 observedTransactionHash;
         uint8 sourceChainId;
         uint8 transactionType;
     }
 
-    error AlreadyConfirmed(bytes32 _claimTransactionHash);
+    // ------------------------------------------------------------------------
+    // Errors
+    // ------------------------------------------------------------------------
     error AlreadyProposed(uint8 _claimTransactionHash);
     error ChainAlreadyRegistered(uint8 _chainId);
     error NotOwner();
@@ -156,18 +176,22 @@ interface IBridgeStructs {
     error NotFundAdmin();
     error NotUpgradeAdmin();
     error NotAdminContract();
-    error NotSignedBatchesOrBridge();
     error NotSignedBatchesOrClaims();
-    error NotEnoughBridgingTokensAvailable(bytes32 _claimTransactionHash);
     error CanNotCreateBatchYet(uint8 _chainId);
     error InvalidData(string data);
     error ChainIsNotRegistered(uint8 _chainId);
-    error WrongBatchNonce(uint8 _chainId, uint64 _nonce);
     error InvalidSignature();
     error DefundRequestTooHigh(uint8 _chainId, uint256 _availableAmount, uint256 _requestedAmount);
     error ZeroAddress();
     error NegativeChainTokenAmount(uint256 _availableAmount, uint256 _decreaseAmount);
+    error TooManyReceivers(uint256 _receiversCount, uint256 _maxReceiversCount);
+    error TooManyBlocks(uint256 _blocksCount, uint256 _maxBlocksCount);
+    error TooManyClaims(uint256 _claimsCount, uint256 _maxClaimsCount);
+    error NotContractAddress();
 
+    // ------------------------------------------------------------------------
+    // Events
+    // ------------------------------------------------------------------------
     event newChainProposal(uint8 indexed _chainId, address indexed sender);
     event newChainRegistered(uint8 indexed _chainId);
     event NotEnoughFunds(string claimeType, uint256 index, uint256 availableAmount);

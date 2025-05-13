@@ -12,6 +12,17 @@ describe("Slots Contract", function () {
       ).to.be.revertedWithCustomError(bridge, "ChainIsNotRegistered");
     });
 
+    it("Should revert if there are too many blocks", async function () {
+      const { bridge, owner, chain1, validators, validatorAddressChainData, cardanoBlocksTooManyBlocks } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
+
+      await expect(
+        bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocksTooManyBlocks)
+      ).to.be.revertedWithCustomError(bridge, "TooManyBlocks");
+    });
+
     it("Should revert if not called by validator", async function () {
       const { bridge, owner, cardanoBlocks } = await loadFixture(deployBridgeFixture);
 
@@ -22,12 +33,11 @@ describe("Slots Contract", function () {
     });
 
     it("Should skip if validator submitted the same CardanoBlocks twice", async function () {
-      const { bridge, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
+      const { bridge, owner, validators, chain1, validatorAddressChainData, cardanoBlocks } = await loadFixture(
         deployBridgeFixture
       );
 
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
-
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
       await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
       await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
       await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
@@ -42,12 +52,11 @@ describe("Slots Contract", function () {
     });
 
     it("Should update CardanoBlock when there is quorum", async function () {
-      const { bridge, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
+      const { bridge, owner, validators, chain1, validatorAddressChainData, cardanoBlocks } = await loadFixture(
         deployBridgeFixture
       );
 
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
-
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
       await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
       await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
       await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
@@ -62,12 +71,11 @@ describe("Slots Contract", function () {
     });
 
     it("Should not update CardanoBlock when slot is not newer", async function () {
-      const { bridge, owner, validators, chain1, validatorsCardanoData, cardanoBlocks } = await loadFixture(
+      const { bridge, owner, validators, chain1, validatorAddressChainData, cardanoBlocks } = await loadFixture(
         deployBridgeFixture
       );
 
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorsCardanoData);
-
+      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
       await bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks);
       await bridge.connect(validators[1]).submitLastObservedBlocks(1, cardanoBlocks);
       await bridge.connect(validators[2]).submitLastObservedBlocks(1, cardanoBlocks);
