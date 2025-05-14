@@ -173,6 +173,55 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
     });
+    it("Should skip Bridging Request Claim if there is not enough wrapped tokens and emit NotEnoughFunds event", async function () {
+      const {
+        bridge,
+        claims,
+        claimsHelper,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsBRC,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, 1, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1, validatorAddressChainData);
+      const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
+      const encoded = abiCoder.encode(
+        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint256", "uint256", "uint256", "uint8", "uint8"],
+        [
+          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
+          [
+            [
+              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount,
+              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
+            ],
+          ],
+          validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource,
+          validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountSource,
+          validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination,
+          validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountDestination,
+          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
+          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
+        ]
+      );
+
+      const encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
+
+      const hash = ethers.keccak256(encoded40);
+
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC))
+        .to.emit(claims, "NotEnoughFunds")
+        .withArgs("BRC - Native Token", 0, 1);
+
+      expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
+    });
     it("Should revert Bridging Request Claims if there are more than 32 in the array", async function () {
       const {
         bridge,

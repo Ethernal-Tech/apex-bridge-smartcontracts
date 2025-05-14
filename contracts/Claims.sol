@@ -42,7 +42,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev BlockchainId -> TokenQuantity
     mapping(uint8 => uint256) public chainTokenQuantity;
 
-    // BlockchainId -> WrappedTokenQuantity
+    /// @notice Mapping from chain ID to wrapped token quantity.
+    /// @dev BlockchainId -> TokenQuantity
     mapping(uint8 => uint256) public chainWrappedTokenQuantity;
 
     /// @notice Mapping from chain ID and nonce to confirmed transaction.
@@ -309,6 +310,12 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
     }
 
+    /// @notice Processes a Batch Execution Failed Claim (BEFC) submitted by a validator.
+    /// @dev This function ensures that a failed batch is handled correctly, retries transactions if possible,
+    /// and updates state to reflect the failure. It also prevents double processing by checking whether the batch
+    /// has already been finalized.
+    /// @param _claim The BatchExecutionFailedClaim submitted by a validator. Contains chain and batch identifiers.
+    /// @param _caller The address of the validator who submitted the claim.
     function _submitClaimsBEFC(BatchExecutionFailedClaim calldata _claim, address _caller) internal {
         uint8 chainId = _claim.chainId;
         uint64 batchId = _claim.batchNonceId;
@@ -525,7 +532,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @param _voter The address of the voter casting the vote.
     /// @param _hash The hash of the claim or event the voter is voting on.
     /// @return The updated vote count for the specific claim or event.
-
     function setVoted(address _voter, bytes32 _hash) external onlyBridge returns (uint256) {
         return claimsHelper.setVoted(_voter, _hash);
     }

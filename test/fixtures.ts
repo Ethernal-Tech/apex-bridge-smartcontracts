@@ -141,14 +141,14 @@ export async function deployBridgeFixture() {
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
         nativeCurrencyAmountSource: 100,
-        wrappedTokenAmountSource: 0,
+        wrappedTokenAmountSource: 100,
         nativeCurrencyAmountDestination: 100,
-        wrappedTokenAmountDestination: 0,
+        wrappedTokenAmountDestination: 100,
         retryCounter: 0,
         receivers: [
           {
             amount: 100,
-            amountWrapped: 0,
+            amountWrapped: 100,
             destinationAddress: "0x123...",
           },
         ],

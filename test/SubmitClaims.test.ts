@@ -179,7 +179,7 @@ describe("Submit Claims", function () {
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(1100);
       expect(
         await claims.chainWrappedTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)
-      ).to.equal(1000);
+      ).to.equal(1100);
     });
 
     it("Should add requred amount of wrapped tokens on source chain when Bridging Request Claim is confirmed and it is NOT a retry", async function () {
@@ -1140,7 +1140,7 @@ describe("Submit Claims", function () {
       expect(
         await claims.chainWrappedTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)
       ).to.equal(
-        hotWalletWrappedStateOriginalDestination +
+        hotWalletWrappedStateOriginalDestination -
           BigInt(validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountDestination)
       );
 
@@ -1252,7 +1252,7 @@ describe("Submit Claims", function () {
       expect(
         await claims.chainWrappedTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)
       ).to.equal(
-        hotWalletWrappedStateOriginalDestination +
+        hotWalletWrappedStateOriginalDestination -
           BigInt(validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountDestination)
       );
 
@@ -1287,10 +1287,7 @@ describe("Submit Claims", function () {
 
       expect(
         await claims.chainWrappedTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)
-      ).to.equal(
-        hotWalletWrappedStateOriginalDestination +
-          BigInt(validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountDestination)
-      );
+      ).to.equal(hotWalletWrappedStateOriginalDestination);
 
       // --- END BEFC 1 ---
 
