@@ -214,15 +214,15 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint256 _wrappedTokenAmountDestination = _claim.wrappedTokenAmountDestination;
         uint8 _destinationChainId = _claim.destinationChainId;
         uint256 _chainTokenQuantityDestination = chainTokenQuantity[_destinationChainId];
-        uint256 _chainWrappedTokenQuantity = chainWrappedTokenQuantity[_destinationChainId];
+        uint256 _chainWrappedTokenQuantityDestination = chainWrappedTokenQuantity[_destinationChainId];
 
         if (_chainTokenQuantityDestination < _nativeCurrencyAmountDestination) {
-            emit NotEnoughFunds("BRC - Currency", i, chainTokenQuantity[_destinationChainId]);
+            emit NotEnoughFunds("BRC - Currency", i, _chainTokenQuantityDestination);
             return;
         }
 
-        if (_chainWrappedTokenQuantity < _wrappedTokenAmountDestination) {
-            emit NotEnoughFunds("BRC - Native Token", i, chainWrappedTokenQuantity[_destinationChainId]);
+        if (_chainWrappedTokenQuantityDestination < _wrappedTokenAmountDestination) {
+            emit NotEnoughFunds("BRC - Native Token", i, _chainWrappedTokenQuantityDestination);
             return;
         }
 
