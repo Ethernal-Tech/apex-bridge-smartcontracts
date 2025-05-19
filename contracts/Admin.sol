@@ -35,6 +35,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         if (_owner == address(0)) revert ZeroAddress();
         if (_upgradeAdmin == address(0)) revert ZeroAddress();
         if (!_isContract(_upgradeAdmin)) revert NotContractAddress();
+        if (!_isContract(fundAdmin)) revert NotContractAddress();
         upgradeAdmin = _upgradeAdmin;
         fundAdmin = _owner;
     }
@@ -72,24 +73,16 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         emit ChainDefunded(_chainId, _amount);
     }
 
-    /// @notice Sets a new fund admin
-    /// @param _fundAdmin Address of the new fund admin
-    function setFundAdmin(address _fundAdmin) external onlyOwner {
-        if (_fundAdmin == address(0)) revert ZeroAddress();
-        fundAdmin = _fundAdmin;
-        emit FundAdminChanged(_fundAdmin);
-    }
-
     /// @notice Updates the maximum number of transactions allowed in a batch
     /// @param _maxNumberOfTransactions New maximum value
-    function updateMaxNumberOfTransactions(uint16 _maxNumberOfTransactions) external onlyOwner {
+    function updateMaxNumberOfTransactions(uint16 _maxNumberOfTransactions) external onlyFundAdmin {
         claims.updateMaxNumberOfTransactions(_maxNumberOfTransactions);
         emit UpdatedMaxNumberOfTransactions(_maxNumberOfTransactions);
     }
 
     /// @notice Updates the number of timeout blocks for claim finalization
     /// @param _timeoutBlocksNumber New timeout in blocks
-    function updateTimeoutBlocksNumber(uint8 _timeoutBlocksNumber) external onlyOwner {
+    function updateTimeoutBlocksNumber(uint8 _timeoutBlocksNumber) external onlyFundAdmin {
         claims.updateTimeoutBlocksNumber(_timeoutBlocksNumber);
         emit UpdatedTimeoutBlocksNumber(_timeoutBlocksNumber);
     }
