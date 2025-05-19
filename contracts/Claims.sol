@@ -84,8 +84,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     ) public initializer {
         __Ownable_init();
         __UUPSUpgradeable_init();
-        _transferOwnership(_owner);
         if (_owner == address(0)) revert ZeroAddress();
+        _transferOwnership(_owner);
         if (_upgradeAdmin == address(0)) revert ZeroAddress();
         upgradeAdmin = _upgradeAdmin;
         maxNumberOfTransactions = _maxNumberOfTransactions;

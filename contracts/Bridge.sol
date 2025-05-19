@@ -44,8 +44,8 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     function initialize(address _owner, address _upgradeAdmin) public initializer {
         __Ownable_init();
         __UUPSUpgradeable_init();
-        _transferOwnership(_owner);
         if (_owner == address(0)) revert ZeroAddress();
+        _transferOwnership(_owner);
         if (_upgradeAdmin == address(0)) revert ZeroAddress();
         upgradeAdmin = _upgradeAdmin;
     }
