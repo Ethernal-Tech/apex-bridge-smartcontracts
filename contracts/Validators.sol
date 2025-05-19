@@ -57,6 +57,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         require(_validators.length < 128, "Too many validators (max 127)");
         if (_owner == address(0)) revert ZeroAddress();
         if (_upgradeAdmin == address(0)) revert ZeroAddress();
+        if (!_isContract(_upgradeAdmin)) revert NotContractAddress();
         upgradeAdmin = _upgradeAdmin;
         for (uint8 i; i < _validators.length; i++) {
             if (addressValidatorIndex[_validators[i]] != 0) {

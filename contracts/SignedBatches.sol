@@ -57,6 +57,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         _transferOwnership(_owner);
         if (_owner == address(0)) revert ZeroAddress();
         if (_upgradeAdmin == address(0)) revert ZeroAddress();
+        if (!_isContract(_upgradeAdmin)) revert NotContractAddress();
         upgradeAdmin = _upgradeAdmin;
     }
 
