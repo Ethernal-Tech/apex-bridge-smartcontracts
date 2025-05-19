@@ -373,17 +373,24 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
     }
 
-    /// @notice Submits a Batch Execution Failed Claim (BEFC) for processing.
-    /// @dev This function checks if a batch has been processed, validates the claim, and handles the failed batch execution
-    ///      by updating the state, retrying failed transactions if applicable, and resetting the current batch block.
-    /// @param _claim The batch execution failed claim containing the details of the failed batch execution.
-    /// @param _caller The address of the caller who is submitting the claim.
-    /// @dev If the batch has already been processed (first and last transaction nonces are zero), the function exits early
-    ///      to prevent double-processing of the same batch.
-    /// @dev A quorum of validators is required to approve the claim before proceeding.
-    /// @dev The batch's failed transactions are handled by retrying the transactions up to a maximum retry count,
-    ///      or marking them as failed if retries exceed the limit.
-    /// @dev The batch's token quantity is updated, and the corresponding batch data is deleted once the claim is processed.
+    /// @notice Handles the submission and quorum verification of a RefundRequestClaim (RRC).
+    /// @dev This function is called internally to process RRC claims. It ensures proper validation, quorum voting,
+    ///      and, if applicable, performs hot wallet refund operations and transaction confirmation updates.
+    ///      Quorum is tracked via a hashed claim and set through the `claimsHelper`.
+    /// @param _claim The RefundRequestClaim struct containing all data relevant to the refund request.
+    /// @param _caller The address of the validator submitting the claim.
+    ///
+    /// Requirements:
+    /// - `refundTransactionHash` must be zero (temporary until automatic refunds are implemented).
+    /// - If `shouldDecrementHotWallet` is true and `retryCounter` is 0, there must be sufficient funds
+    ///   in both `chainTokenQuantity` and `chainWrappedTokenQuantity`.
+    ///
+    /// Emits:
+    /// - `NotEnoughFunds` if the claim requires hot wallet decrement and there's not enough balance.
+    ///
+    /// Effects:
+    /// - Sets the validator's vote via `claimsHelper`.
+    /// - If quorum is reached, updates token balances, confirms the refund transaction, and adjusts timeout blocks.
     function _submitClaimsRRC(RefundRequestClaim calldata _claim, address _caller) internal {
         // temporary check until automatic refund is implemented
         // once automatic refund is implemented, this check should be that
