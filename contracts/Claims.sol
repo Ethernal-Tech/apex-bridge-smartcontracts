@@ -14,7 +14,7 @@ import "./Validators.sol";
 /// @notice Handles validator-submitted claims in a cross-chain bridge system.
 /// @dev Inherits from OpenZeppelin upgradeable contracts for upgradability and ownership control.
 contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
-    address private upgradeAdmin;
+    address private ownerGovernor;
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
     Validators private validators;
@@ -73,29 +73,28 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     /// @notice Initializes the contract with required parameters.
     /// @param _owner Address to be set as contract owner.
-    /// @param _upgradeAdmin Address allowed to upgrade the contract.
+    /// @param _ownerGovernor Address authorized to perform owner operations
     /// @param _maxNumberOfTransactions Max transactions per batch.
     /// @param _timeoutBlocksNumber Number of blocks until timeout.
     function initialize(
         address _owner,
-        address _upgradeAdmin,
+        address _ownerGovernor,
         uint16 _maxNumberOfTransactions,
         uint8 _timeoutBlocksNumber
     ) public initializer {
+        if (_owner == address(0) || _ownerGovernor == address(0)) revert ZeroAddress();
+        if (!_isContract(_ownerGovernor)) revert NotContractAddress();
         __Ownable_init();
         __UUPSUpgradeable_init();
         _transferOwnership(_owner);
-        if (_owner == address(0)) revert ZeroAddress();
-        if (_upgradeAdmin == address(0)) revert ZeroAddress();
-        if (!_isContract(_upgradeAdmin)) revert NotContractAddress();
-        upgradeAdmin = _upgradeAdmin;
+        ownerGovernor = _ownerGovernor;
         maxNumberOfTransactions = _maxNumberOfTransactions;
         timeoutBlocksNumber = _timeoutBlocksNumber;
     }
 
     /// @notice Authorizes upgrades. Only the upgrade admin can upgrade the contract.
     /// @param newImplementation Address of the new implementation.
-    function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwnerGovernor {}
 
     /// @notice Sets external contract dependencies.
     /// @param _bridgeAddress Address of the Bridge contract.
@@ -107,7 +106,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         address _claimsHelperAddress,
         address _validatorsAddress,
         address _adminContractAddress
-    ) external onlyOwner {
+    ) external onlyOwnerGovernor {
         if (
             !_isContract(_bridgeAddress) ||
             !_isContract(_claimsHelperAddress) ||
@@ -751,8 +750,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         _;
     }
 
-    modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
+    modifier onlyOwnerGovernor() {
+        if (msg.sender != ownerGovernor) revert NotOwnerGovernor();
         _;
     }
 }

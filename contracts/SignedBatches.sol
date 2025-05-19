@@ -13,7 +13,7 @@ import "./Validators.sol";
 /// @notice Handles submission and confirmation of signed transaction batches for a cross-chain bridge.
 /// @dev Utilizes OpenZeppelin upgradeable contracts and interacts with ClaimsHelper and Validators for consensus logic.
 contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
-    address private upgradeAdmin;
+    address private ownerGovernor;
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
     Validators private validators;
@@ -50,20 +50,19 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
     /// @notice Initializes the contract.
     /// @param _owner Address to be set as the owner.
-    /// @param _upgradeAdmin Address allowed to upgrade the contract.
-    function initialize(address _owner, address _upgradeAdmin) public initializer {
+    /// @param _ownerGovernor Address authorized to perform owner operations
+    function initialize(address _owner, address _ownerGovernor) public initializer {
+        if (_owner == address(0) || _ownerGovernor == address(0)) revert ZeroAddress();
+        if (!_isContract(_ownerGovernor)) revert NotContractAddress();
         __Ownable_init();
         __UUPSUpgradeable_init();
         _transferOwnership(_owner);
-        if (_owner == address(0)) revert ZeroAddress();
-        if (_upgradeAdmin == address(0)) revert ZeroAddress();
-        if (!_isContract(_upgradeAdmin)) revert NotContractAddress();
-        upgradeAdmin = _upgradeAdmin;
+        ownerGovernor = _ownerGovernor;
     }
 
     /// @notice Authorizes upgrades. Only the upgrade admin can upgrade the contract.
     /// @param newImplementation Address of the new implementation.
-    function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwnerGovernor {}
 
     /// @notice Sets external contract dependencies.
     /// @param _bridgeAddress Address of the bridge contract.
@@ -73,7 +72,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         address _bridgeAddress,
         address _claimsHelperAddress,
         address _validatorsAddress
-    ) external onlyOwner {
+    ) external onlyOwnerGovernor {
         if (!_isContract(_bridgeAddress) || !_isContract(_claimsHelperAddress) || !_isContract(_validatorsAddress))
             revert NotContractAddress();
         bridgeAddress = _bridgeAddress;
@@ -172,8 +171,8 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         _;
     }
 
-    modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
+    modifier onlyOwnerGovernor() {
+        if (msg.sender != ownerGovernor) revert NotOwnerGovernor();
         _;
     }
 }

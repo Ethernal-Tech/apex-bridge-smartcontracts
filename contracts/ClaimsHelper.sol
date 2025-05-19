@@ -11,7 +11,7 @@ import "./Utils.sol";
 /// @notice Handles claim voting, signed batch confirmations, and upgradeable logic for a cross-chain bridge.
 /// @dev This contract is upgradeable using OpenZeppelin's UUPS pattern.
 contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
-    address private upgradeAdmin;
+    address private ownerGovernor;
     address private claimsAddress;
     address private signedBatchesAddress;
 
@@ -43,25 +43,24 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
 
     /// @notice Initializes the contract.
     /// @param _owner The address to be set as the contract owner.
-    /// @param _upgradeAdmin The address authorized to perform upgrades.
-    function initialize(address _owner, address _upgradeAdmin) public initializer {
+    /// @param _ownerGovernor Address authorized to perform owner operations
+    function initialize(address _owner, address _ownerGovernor) public initializer {
+        if (_owner == address(0) || _ownerGovernor == address(0)) revert ZeroAddress();
+        if (!_isContract(_ownerGovernor)) revert NotContractAddress();
         __Ownable_init();
         __UUPSUpgradeable_init();
         _transferOwnership(_owner);
-        if (_owner == address(0)) revert ZeroAddress();
-        if (_upgradeAdmin == address(0)) revert ZeroAddress();
-        if (!_isContract(_upgradeAdmin)) revert NotContractAddress();
-        upgradeAdmin = _upgradeAdmin;
+        ownerGovernor = _ownerGovernor;
     }
 
     /// @notice Authorizes upgrades. Only the upgrade admin can upgrade the contract.
     /// @param newImplementation Address of the new implementation.
-    function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwnerGovernor {}
 
     /// @notice Sets external contract dependencies.
     /// @param _claimsAddress Address of the Claims contract.
     /// @param _signedBatchesAddress Address of the SignedBatches contract.
-    function setDependencies(address _claimsAddress, address _signedBatchesAddress) external onlyOwner {
+    function setDependencies(address _claimsAddress, address _signedBatchesAddress) external onlyOwnerGovernor {
         if (!_isContract(_claimsAddress) || !_isContract(_signedBatchesAddress)) revert NotContractAddress();
         claimsAddress = _claimsAddress;
         signedBatchesAddress = _signedBatchesAddress;
@@ -159,8 +158,8 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         _;
     }
 
-    modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
+    modifier onlyOwnerGovernor() {
+        if (msg.sender != ownerGovernor) revert NotOwnerGovernor();
         _;
     }
 }

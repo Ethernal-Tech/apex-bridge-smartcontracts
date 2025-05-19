@@ -16,7 +16,7 @@ import "./Validators.sol";
 /// @notice Cross-chain bridge for validator claim submission, batch transaction signing, and governance-based chain registration.
 /// @dev UUPS upgradeable and modular via dependency contracts (Claims, Validators, Slots, SignedBatches).
 contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
-    address private upgradeAdmin;
+    address private ownerGovernor;
     Claims private claims;
     SignedBatches private signedBatches;
     Slots private slots;
@@ -39,21 +39,20 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     /// @notice Initializes the contract.
-    /// @param _owner Owner of the contract.
-    /// @param _upgradeAdmin Admin address authorized to upgrade the contract.
-    function initialize(address _owner, address _upgradeAdmin) public initializer {
+    /// @param _owner Address to be assigned as the contract owner
+    /// @param _ownerGovernor Address authorized to perform owner operations
+    function initialize(address _owner, address _ownerGovernor) public initializer {
+        if (_owner == address(0) || _ownerGovernor == address(0)) revert ZeroAddress();
+        if (!_isContract(_ownerGovernor)) revert NotContractAddress();
         __Ownable_init();
         __UUPSUpgradeable_init();
-        if (_owner == address(0)) revert ZeroAddress();
         _transferOwnership(_owner);
-        if (!_isContract(_upgradeAdmin)) revert NotContractAddress();
-        if (_upgradeAdmin == address(0)) revert ZeroAddress();
-        upgradeAdmin = _upgradeAdmin;
+        ownerGovernor = _ownerGovernor;
     }
 
     /// @notice Authorizes a new implementation for upgrade
     /// @param newImplementation Address of the new implementation contract
-    function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwnerGovernor {}
 
     /// @notice Sets external contract dependencies.
     /// @param _claimsAddress Address of Claims contract.
@@ -65,7 +64,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         address _signedBatchesAddress,
         address _slotsAddress,
         address _validatorsAddress
-    ) external onlyOwner {
+    ) external onlyOwnerGovernor {
         if (
             !_isContract(_claimsAddress) ||
             !_isContract(_signedBatchesAddress) ||
@@ -147,7 +146,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint8 _chainId,
         string calldata addressMultisig,
         string calldata addressFeePayer
-    ) external override onlyOwner {
+    ) external override onlyOwnerGovernor {
         if (!claims.isChainRegistered(_chainId)) {
             revert ChainIsNotRegistered(_chainId);
         }
@@ -169,7 +168,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         Chain calldata _chain,
         uint256 _tokenQuantity,
         ValidatorAddressChainData[] calldata _validatorData
-    ) public override onlyOwner {
+    ) public override onlyOwnerGovernor {
         uint256 _validatorAddressChainDataLength = _validatorData.length;
 
         if (_validatorAddressChainDataLength < 4) {
@@ -386,8 +385,8 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         _;
     }
 
-    modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
+    modifier onlyOwnerGovernor() {
+        if (msg.sender != ownerGovernor) revert NotOwnerGovernor();
         _;
     }
 }
