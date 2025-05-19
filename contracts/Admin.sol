@@ -11,7 +11,7 @@ import "./Claims.sol";
 /// @notice Manages configuration and privileged updates for the bridge system
 /// @dev UUPS upgradable contract using OpenZeppelin upgradeable framework
 contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
-    address private upgradeAdmin;
+    address private ownerGovernor;
     address public fundAdmin;
     Claims private claims;
 
@@ -26,23 +26,21 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     }
 
     /// @notice Initializes the Admin contract
-    /// @param _owner Address to be assigned as the contract owner
-    /// @param _upgradeAdmin Address authorized to perform upgrades
-    function initialize(address _owner, address _upgradeAdmin) public initializer {
+    /// @param _ownerGovernor Address to be assigned as the contract owner
+    function initialize(address _ownerGovernor, address _fundGovernor) public initializer {
         __Ownable_init();
         __UUPSUpgradeable_init();
-        _transferOwnership(_owner);
-        if (_owner == address(0)) revert ZeroAddress();
-        if (_upgradeAdmin == address(0)) revert ZeroAddress();
-        if (!_isContract(_upgradeAdmin)) revert NotContractAddress();
+        if (_ownerGovernor == address(0)) revert ZeroAddress();
+        if (!_isContract(_ownerGovernor)) revert NotContractAddress();
         if (!_isContract(fundAdmin)) revert NotContractAddress();
-        upgradeAdmin = _upgradeAdmin;
-        fundAdmin = _owner;
+        _transferOwnership(_ownerGovernor);
+        ownerGovernor = _ownerGovernor;
+        fundAdmin = _fundGovernor;
     }
 
     /// @notice Authorizes a new implementation for upgrade
     /// @param newImplementation Address of the new implementation contract
-    function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwnerGovernor {}
 
     /// @notice Sets external contract dependencies.
     /// @param _claimsAddress Address of the deployed Claims contract
@@ -98,8 +96,8 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         _;
     }
 
-    modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotUpgradeAdmin();
+    modifier onlyOwnerGovernor() {
+        if (msg.sender != ownerGovernor) revert NotOwnerGovernor();
         _;
     }
 }

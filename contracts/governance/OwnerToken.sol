@@ -30,8 +30,8 @@ contract UpgradeToken is
     }
 
     function initialize(address _recipient, address _owner, address _upgradeAdmin) public initializer {
-        __ERC20_init("UpgradeToken", "UTK");
-        __ERC20Permit_init("UpgradeToken");
+        __ERC20_init("OwnerToken", "OTK");
+        __ERC20Permit_init("OwnerToken");
         __ERC20Votes_init();
         __Ownable_init();
         __UUPSUpgradeable_init();

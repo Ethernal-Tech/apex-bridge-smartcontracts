@@ -13,7 +13,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-contract UpgradeGovernor is
+contract OwnerGovernor is
     IBridgeStructs,
     Initializable,
     GovernorUpgradeable,
@@ -36,7 +36,7 @@ contract UpgradeGovernor is
     }
 
     function initialize(IVotesUpgradeable _token, address _owner, address _upgradeAdmin) public initializer {
-        __Governor_init("UpgradeGovernor");
+        __Governor_init("OwnerGovernor");
         __GovernorSettings_init(1 /* 1 block */, 10 /* 10 block */, 0);
         __GovernorCountingSimple_init();
         __GovernorVotes_init(_token);

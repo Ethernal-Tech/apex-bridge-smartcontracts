@@ -166,7 +166,7 @@ interface IBridgeStructs {
     error NotClaims();
     error NotSignedBatches();
     error NotFundAdmin();
-    error NotUpgradeAdmin();
+    error NotOwnerGovernor();
     error NotAdminContract();
     error NotSignedBatchesOrClaims();
     error CanNotCreateBatchYet(uint8 _chainId);
