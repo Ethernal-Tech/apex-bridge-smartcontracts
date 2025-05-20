@@ -44,7 +44,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
 
     /// @notice Sets external contract dependencies.
     /// @param _claimsAddress Address of the deployed Claims contract
-    function setDependencies(address _claimsAddress) external onlyOwnerGovernor {
+    function setDependencies(address _claimsAddress) external initializer onlyOwner {
         if (!_isContract(_claimsAddress)) revert NotContractAddress();
         claims = Claims(_claimsAddress);
     }

@@ -72,7 +72,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         address _bridgeAddress,
         address _claimsHelperAddress,
         address _validatorsAddress
-    ) external onlyOwnerGovernor {
+    ) external initializer onlyOwner {
         if (!_isContract(_bridgeAddress) || !_isContract(_claimsHelperAddress) || !_isContract(_validatorsAddress))
             revert NotContractAddress();
         bridgeAddress = _bridgeAddress;

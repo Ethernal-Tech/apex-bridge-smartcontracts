@@ -73,7 +73,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
 
     /// @notice Sets external contract dependencies.
     /// @param _bridgeAddress The address of the bridge contract
-    function setDependencies(address _bridgeAddress) external onlyOwnerGovernor {
+    function setDependencies(address _bridgeAddress) external initializer onlyOwner {
         if (!_isContract(_bridgeAddress)) revert NotContractAddress();
         bridgeAddress = _bridgeAddress;
     }

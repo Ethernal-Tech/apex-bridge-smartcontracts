@@ -57,7 +57,7 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     /// @notice Sets external contract dependencies.
     /// @param _bridgeAddress Address of the bridge contract.
     /// @param _validatorsAddress Address of the validators contract.
-    function setDependencies(address _bridgeAddress, address _validatorsAddress) external onlyOwnerGovernor {
+    function setDependencies(address _bridgeAddress, address _validatorsAddress) external initializer onlyOwner {
         if (!_isContract(_bridgeAddress) || !_isContract(_validatorsAddress)) revert NotContractAddress();
         bridgeAddress = _bridgeAddress;
         validators = Validators(_validatorsAddress);

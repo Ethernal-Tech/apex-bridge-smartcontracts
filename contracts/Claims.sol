@@ -106,7 +106,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         address _claimsHelperAddress,
         address _validatorsAddress,
         address _adminContractAddress
-    ) external onlyOwnerGovernor {
+    ) external onlyOwner {
         if (
             !_isContract(_bridgeAddress) ||
             !_isContract(_claimsHelperAddress) ||
@@ -122,7 +122,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Submit claims from validators for reaching consensus.
     /// @param _claims Struct containing all types of validator claims.
     /// @param _caller Address of the validator submitting the claims.
-    function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
+    function submitClaims(ValidatorClaims calldata _claims, address _caller) external initializer onlyBridge {
         uint256 bridgingRequestClaimsLength = _claims.bridgingRequestClaims.length;
         uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
         uint256 batchExecutionFailedClaimsLength = _claims.batchExecutionFailedClaims.length;

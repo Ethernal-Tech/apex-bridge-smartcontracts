@@ -64,7 +64,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         address _signedBatchesAddress,
         address _slotsAddress,
         address _validatorsAddress
-    ) external onlyOwnerGovernor {
+    ) external initializer onlyOwner {
         if (
             !_isContract(_claimsAddress) ||
             !_isContract(_signedBatchesAddress) ||
