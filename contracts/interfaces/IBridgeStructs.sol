@@ -188,7 +188,7 @@ interface IBridgeStructs {
     event newChainRegistered(uint8 indexed _chainId);
     event NotEnoughFunds(string claimeType, uint256 index, uint256 availableAmount);
     event ChainDefunded(uint8 _chainId, uint256 _amount);
-    event FundGovernorChanged(address _newFundAdmin);
+    event FundGovernorChanged(address _newFundGovernor);
     event UpdatedChainTokenQuantity(uint indexed chainId, bool isIncrement, uint256 tokenQuantity);
     event DefundFailedAfterMultipleRetries();
     event UpdatedMaxNumberOfTransactions(uint256 _maxNumberOfTransactions);

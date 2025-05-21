@@ -7,11 +7,11 @@ import { Validators } from "../typechain-types";
 
 describe("Deployment", function () {
   const getValidatorsSc = async function (cnt: number) {
+    const { ownerGovernorContract } = await loadFixture(deployBridgeFixture);
     const Validators = await ethers.getContractFactory("Validators");
     const ValidatorscProxy = await ethers.getContractFactory("ERC1967Proxy");
     const validatorscLogic = await Validators.deploy();
     const [owner] = await ethers.getSigners();
-
     const { Wallet } = require("ethers");
 
     const randomAddresses = Array.from({ length: cnt }, () => {
@@ -21,7 +21,11 @@ describe("Deployment", function () {
 
     const validatorsProxy = await ValidatorscProxy.deploy(
       await validatorscLogic.getAddress(),
-      Validators.interface.encodeFunctionData("initialize", [owner.address, owner.address, randomAddresses])
+      Validators.interface.encodeFunctionData("initialize", [
+        owner.address,
+        await ownerGovernorContract.getAddress(),
+        randomAddresses,
+      ])
     );
 
     return (await ethers.getContractFactory("Validators")).attach(validatorsProxy.target) as Validators;
@@ -66,8 +70,116 @@ describe("Deployment", function () {
   });
 
   it("setDependency should fail if any required argument is not smart contract address", async function () {
-    const { admin, bridge, claims, claimsHelper, signedBatches, slots, validatorsc, owner, validators } =
-      await loadFixture(deployBridgeFixture);
+    const { owner, ownerGovernorContract, fundGovernorContract, validators } = await loadFixture(deployBridgeFixture);
+
+    const Admin = await ethers.getContractFactory("Admin");
+    const adminLogic = await Admin.deploy();
+
+    const Bridge = await ethers.getContractFactory("Bridge");
+    const bridgeLogic = await Bridge.deploy();
+
+    const ClaimsHelper = await ethers.getContractFactory("ClaimsHelper");
+    const claimsHelperLogic = await ClaimsHelper.deploy();
+
+    const Claims = await ethers.getContractFactory("Claims");
+    const claimsLogic = await Claims.deploy();
+
+    const SignedBatches = await ethers.getContractFactory("SignedBatches");
+    const signedBatchesLogic = await SignedBatches.deploy();
+
+    const Slots = await ethers.getContractFactory("Slots");
+    const slotsLogic = await Slots.deploy();
+
+    const Validators = await ethers.getContractFactory("Validators");
+    const validatorscLogic = await Validators.deploy();
+
+    // deployment of contract proxy
+    const FundTokenProxy = await ethers.getContractFactory("ERC1967Proxy");
+    const FundGovernorProxy = await ethers.getContractFactory("ERC1967Proxy");
+    const OwnerTokenProxy = await ethers.getContractFactory("ERC1967Proxy");
+    const OwnerGovernorProxy = await ethers.getContractFactory("ERC1967Proxy");
+    const AdminProxy = await ethers.getContractFactory("ERC1967Proxy");
+    const BridgeProxy = await ethers.getContractFactory("ERC1967Proxy");
+    const ClaimsHelperProxy = await ethers.getContractFactory("ERC1967Proxy");
+    const ClaimsProxy = await ethers.getContractFactory("ERC1967Proxy");
+    const SignedBatchesProxy = await ethers.getContractFactory("ERC1967Proxy");
+    const SlotsProxy = await ethers.getContractFactory("ERC1967Proxy");
+    const ValidatorscProxy = await ethers.getContractFactory("ERC1967Proxy");
+
+    const adminProxy = await AdminProxy.deploy(
+      await adminLogic.getAddress(),
+      Admin.interface.encodeFunctionData("initialize", [
+        owner.address,
+        await ownerGovernorContract.getAddress(),
+        await fundGovernorContract.getAddress(),
+      ])
+    );
+
+    const bridgeProxy = await BridgeProxy.deploy(
+      await bridgeLogic.getAddress(),
+      Bridge.interface.encodeFunctionData("initialize", [owner.address, await ownerGovernorContract.getAddress()])
+    );
+
+    const claimsProxy = await ClaimsProxy.deploy(
+      await claimsLogic.getAddress(),
+      Claims.interface.encodeFunctionData("initialize", [owner.address, await ownerGovernorContract.getAddress(), 2, 5])
+    );
+
+    const claimsHelperProxy = await ClaimsHelperProxy.deploy(
+      await claimsHelperLogic.getAddress(),
+      ClaimsHelper.interface.encodeFunctionData("initialize", [owner.address, await ownerGovernorContract.getAddress()])
+    );
+
+    const signedBatchesProxy = await SignedBatchesProxy.deploy(
+      await signedBatchesLogic.getAddress(),
+      SignedBatches.interface.encodeFunctionData("initialize", [
+        owner.address,
+        await ownerGovernorContract.getAddress(),
+      ])
+    );
+
+    const slotsProxy = await SlotsProxy.deploy(
+      await slotsLogic.getAddress(),
+      Slots.interface.encodeFunctionData("initialize", [owner.address, await ownerGovernorContract.getAddress()])
+    );
+
+    const validatorsAddresses = [
+      validators[0].address,
+      validators[1].address,
+      validators[2].address,
+      validators[3].address,
+      validators[4].address,
+    ];
+
+    const validatorsProxy = await ValidatorscProxy.deploy(
+      await validatorscLogic.getAddress(),
+      Validators.interface.encodeFunctionData("initialize", [
+        owner.address,
+        await ownerGovernorContract.getAddress(),
+        validatorsAddresses,
+      ])
+    );
+
+    const AdminDeployed = await ethers.getContractFactory("Admin");
+    const admin = AdminDeployed.attach(adminProxy.target) as Admin;
+
+    const BridgeDeployed = await ethers.getContractFactory("Bridge");
+    const bridge = BridgeDeployed.attach(bridgeProxy.target) as Bridge;
+
+    const ClaimsHelperDeployed = await ethers.getContractFactory("ClaimsHelper");
+    const claimsHelper = ClaimsHelperDeployed.attach(claimsHelperProxy.target) as ClaimsHelper;
+
+    const ClaimsDeployed = await ethers.getContractFactory("Claims");
+    const claims = ClaimsDeployed.attach(claimsProxy.target) as Claims;
+
+    const SignedBatchesDeployed = await ethers.getContractFactory("SignedBatches");
+    const signedBatches = SignedBatchesDeployed.attach(signedBatchesProxy.target) as SignedBatches;
+
+    const SlotsDeployed = await ethers.getContractFactory("Slots");
+    const slots = SlotsDeployed.attach(slotsProxy.target) as Slots;
+
+    const ValidatorsDeployed = await ethers.getContractFactory("Validators");
+    const validatorsc = ValidatorsDeployed.attach(validatorsProxy.target) as Validators;
 
     await expect(admin.connect(owner).setDependencies(ZeroAddress)).to.be.revertedWithCustomError(
       admin,
@@ -109,12 +221,12 @@ describe("Deployment", function () {
     );
   });
   it("Should revert if there are duplicate validator addresses in Validatorsc initialize function", async function () {
+    const { ownerGovernorContract } = await loadFixture(deployBridgeFixture);
     const [owner, validator1, validator2] = await ethers.getSigners();
-    // Deploy implementation contract
     const Validators = await ethers.getContractFactory("Validators");
-    const validatorsLogic = await Validators.deploy();
-    // Deploy proxy contract
-    const ValidatorsProxy = await ethers.getContractFactory("ERC1967Proxy");
+    const ValidatorscProxy = await ethers.getContractFactory("ERC1967Proxy");
+    const validatorscLogic = await Validators.deploy();
+
     // Create array with duplicate addresses
     const validatorAddresses = [
       owner.address,
@@ -122,19 +234,20 @@ describe("Deployment", function () {
       validator2.address,
       validator1.address, // Duplicate address
     ];
-    // Prepare initialization data
-    const initData = Validators.interface.encodeFunctionData("initialize", [
-      owner.address,
-      owner.address,
-      validatorAddresses,
-    ]);
+
     // Deploy proxy with initialization
-    await expect(ValidatorsProxy.deploy(await validatorsLogic.getAddress(), initData)).to.be.revertedWithCustomError(
-      Validators,
-      "InvalidData"
-    );
+    await expect(
+      ValidatorscProxy.deploy(
+        await validatorscLogic.getAddress(),
+        Validators.interface.encodeFunctionData("initialize", [
+          owner.address,
+          await ownerGovernorContract.getAddress(),
+          validatorAddresses,
+        ])
+      )
+    ).to.be.revertedWithCustomError(Validators, "InvalidData");
   });
-  it("Should revert if initializes with zero addresses for owner and upgrade admin", async function () {
+  it("Should revert if initializes with zero addresses for Owner or OwnerGovernor", async function () {
     const [, validator1, validator2, validator3, validator4] = await ethers.getSigners();
 
     const Admin = await ethers.getContractFactory("Admin");
@@ -144,7 +257,8 @@ describe("Deployment", function () {
     // Prepare initialization data with zero addresses
     let initData = Admin.interface.encodeFunctionData("initialize", [
       ZERO_ADDRESS, // owner address
-      ZERO_ADDRESS, // upgrade admin address
+      ZERO_ADDRESS, // OwnerGovernor address
+      ZERO_ADDRESS, // FundGovernor address
     ]);
     // Deploy proxy with initialization
     await expect(AdminProxy.deploy(await AdminLogic.getAddress(), initData)).to.be.revertedWithCustomError(
@@ -156,9 +270,9 @@ describe("Deployment", function () {
     const BridgeLogic = await Bridge.deploy();
     const BridgeProxy = await ethers.getContractFactory("ERC1967Proxy");
     // Prepare initialization data with zero addresses
-    initData = Admin.interface.encodeFunctionData("initialize", [
+    initData = Bridge.interface.encodeFunctionData("initialize", [
       ZERO_ADDRESS, // owner address
-      ZERO_ADDRESS, // upgrade admin address
+      ZERO_ADDRESS, // OwnerGovernor address
     ]);
     // Deploy proxy with initialization
     await expect(BridgeProxy.deploy(await BridgeLogic.getAddress(), initData)).to.be.revertedWithCustomError(
@@ -172,7 +286,7 @@ describe("Deployment", function () {
     // Prepare initialization data with zero addresses
     initData = Claims.interface.encodeFunctionData("initialize", [
       ZERO_ADDRESS, // owner address
-      ZERO_ADDRESS, // upgrade admin address
+      ZERO_ADDRESS, // ownerGovernor address
       10,
       10,
     ]);
@@ -188,7 +302,7 @@ describe("Deployment", function () {
     // Prepare initialization data with zero addresses
     initData = ClaimsHelper.interface.encodeFunctionData("initialize", [
       ZERO_ADDRESS, // owner address
-      ZERO_ADDRESS, // upgrade admin address
+      ZERO_ADDRESS, // ownerGovernor address
     ]);
     // Deploy proxy with initialization
     await expect(
@@ -201,7 +315,7 @@ describe("Deployment", function () {
     // Prepare initialization data with zero addresses
     initData = SignedBatches.interface.encodeFunctionData("initialize", [
       ZERO_ADDRESS, // owner address
-      ZERO_ADDRESS, // upgrade admin address
+      ZERO_ADDRESS, // ownerGovernor address
     ]);
     // Deploy proxy with initialization
     await expect(
@@ -214,7 +328,7 @@ describe("Deployment", function () {
     // Prepare initialization data with zero addresses
     initData = Slots.interface.encodeFunctionData("initialize", [
       ZERO_ADDRESS, // owner address
-      ZERO_ADDRESS, // upgrade admin address
+      ZERO_ADDRESS, // ownerGovernor address
     ]);
     // Deploy proxy with initialization
     await expect(SlotsProxy.deploy(await SlotsLogic.getAddress(), initData)).to.be.revertedWithCustomError(
@@ -229,7 +343,7 @@ describe("Deployment", function () {
     // Prepare initialization data with zero addresses
     initData = Validators.interface.encodeFunctionData("initialize", [
       ZERO_ADDRESS, // owner address
-      ZERO_ADDRESS, // upgrade admin address
+      ZERO_ADDRESS, // ownerGovernor address
       validatorAddresses,
     ]);
     // Deploy proxy with initialization

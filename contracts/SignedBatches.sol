@@ -60,7 +60,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         ownerGovernor = _ownerGovernor;
     }
 
-    /// @notice Authorizes upgrades. Only the upgrade admin can upgrade the contract.
+    /// @notice Authorizes upgrades. Only the OwnerGovernor can upgrade the contract.
     /// @param newImplementation Address of the new implementation.
     function _authorizeUpgrade(address newImplementation) internal override onlyOwnerGovernor {}
 
@@ -72,7 +72,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         address _bridgeAddress,
         address _claimsHelperAddress,
         address _validatorsAddress
-    ) external initializer onlyOwner {
+    ) external reinitializer(2) onlyOwner {
         if (!_isContract(_bridgeAddress) || !_isContract(_claimsHelperAddress) || !_isContract(_validatorsAddress))
             revert NotContractAddress();
         bridgeAddress = _bridgeAddress;

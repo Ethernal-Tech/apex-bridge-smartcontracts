@@ -53,14 +53,17 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         ownerGovernor = _ownerGovernor;
     }
 
-    /// @notice Authorizes upgrades. Only the upgrade admin can upgrade the contract.
+    /// @notice Authorizes upgrades. Only the Owner Governor can upgrade the contract.
     /// @param newImplementation Address of the new implementation.
     function _authorizeUpgrade(address newImplementation) internal override onlyOwnerGovernor {}
 
     /// @notice Sets external contract dependencies.
     /// @param _claimsAddress Address of the Claims contract.
     /// @param _signedBatchesAddress Address of the SignedBatches contract.
-    function setDependencies(address _claimsAddress, address _signedBatchesAddress) external initializer onlyOwner {
+    function setDependencies(
+        address _claimsAddress,
+        address _signedBatchesAddress
+    ) external reinitializer(2) onlyOwner {
         if (!_isContract(_claimsAddress) || !_isContract(_signedBatchesAddress)) revert NotContractAddress();
         claimsAddress = _claimsAddress;
         signedBatchesAddress = _signedBatchesAddress;

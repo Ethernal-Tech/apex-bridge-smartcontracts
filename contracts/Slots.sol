@@ -38,7 +38,7 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         _disableInitializers();
     }
 
-    /// @notice Initializes the contract with owner and upgrade admin.
+    /// @notice Initializes the contract with owner and OwnerGovernor.
     /// @param _owner The address to set as contract owner.
     /// @param _ownerGovernor Address authorized to perform owner operations
     function initialize(address _owner, address _ownerGovernor) public initializer {
@@ -50,14 +50,14 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         _ownerGovernor = _ownerGovernor;
     }
 
-    /// @notice Authorizes upgrades. Only the upgrade admin can upgrade the contract.
+    /// @notice Authorizes upgrades. Only the OwnerGovernor can upgrade the contract.
     /// @param newImplementation Address of the new implementation.
     function _authorizeUpgrade(address newImplementation) internal override onlyOwnerGovernor {}
 
     /// @notice Sets external contract dependencies.
     /// @param _bridgeAddress Address of the bridge contract.
     /// @param _validatorsAddress Address of the validators contract.
-    function setDependencies(address _bridgeAddress, address _validatorsAddress) external initializer onlyOwner {
+    function setDependencies(address _bridgeAddress, address _validatorsAddress) external reinitializer(2) onlyOwner {
         if (!_isContract(_bridgeAddress) || !_isContract(_validatorsAddress)) revert NotContractAddress();
         bridgeAddress = _bridgeAddress;
         validators = Validators(_validatorsAddress);

@@ -9,21 +9,37 @@ describe("Admin Functions", function () {
     await setCode("0x0000000000000000000000000000000000002060", "0x600160005260206000F3");
   });
 
+  async function impersonateAsContractAndMintFunds(contractAddress: string) {
+    const hre = require("hardhat");
+    const address = await contractAddress.toLowerCase();
+    // impersonate as an contract on specified address
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [address],
+    });
+
+    const signer = await ethers.getSigner(address);
+    // minting 100000000000000000000 tokens to signer
+    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+
+    return signer;
+  }
+
   describe("Chain Token Quantity", function () {
-    it("Should revert any claim if not called by fundAdmin", async function () {
+    it("Should revert any claim if not called by FundGovernor", async function () {
       const { admin, validators } = await loadFixture(deployBridgeFixture);
 
       await expect(admin.connect(validators[0]).updateChainTokenQuantity(1, true, 100)).to.be.revertedWithCustomError(
         admin,
-        "NotFundAdmin"
+        "NotFundGovernor"
       );
     });
     it("Should revert if updateChainTokenQuantity is called on unregistered chain", async function () {
-      const { admin, claims } = await loadFixture(deployBridgeFixture);
-      await expect(admin.updateChainTokenQuantity(1, true, 100)).to.be.revertedWithCustomError(
-        claims,
-        "ChainIsNotRegistered"
-      );
+      const { admin, fundGovernorContract, claims } = await loadFixture(deployBridgeFixture);
+
+      await expect(
+        admin.connect(fundGovernorContract).updateChainTokenQuantity(1, true, 100)
+      ).to.be.revertedWithCustomError(claims, "ChainIsNotRegistered");
     });
     it("Should revert if setChainTokenQuantity in Clais is not called by Admin contract", async function () {
       const { claims } = await loadFixture(deployBridgeFixture);
@@ -33,89 +49,107 @@ describe("Admin Functions", function () {
       );
     });
     it("Should increase chainTokenQuantity after calling updateChainTokenQuantity", async function () {
-      const { admin, bridge, claims, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, validatorAddressChainData);
+      const { admin, bridge, claims, ownerGovernorContract, fundGovernorContract, chain1, validatorAddressChainData } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(ownerGovernorContract).registerChain(chain1, 100, validatorAddressChainData);
 
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
-      await admin.updateChainTokenQuantity(chain1.id, true, 100);
+      await admin.connect(fundGovernorContract).updateChainTokenQuantity(chain1.id, true, 100);
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(200);
     });
     it("Should increase chainTokenQuantity after calling updateChainTokenQuantity with a value higher than the current one", async function () {
-      const { admin, bridge, claims, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, validatorAddressChainData);
+      const { admin, bridge, claims, ownerGovernorContract, fundGovernorContract, chain1, validatorAddressChainData } =
+        await loadFixture(deployBridgeFixture);
+      await bridge.connect(ownerGovernorContract).registerChain(chain1, 100, validatorAddressChainData);
 
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
-      await admin.updateChainTokenQuantity(chain1.id, true, 200);
+      await admin.connect(fundGovernorContract).updateChainTokenQuantity(chain1.id, true, 200);
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(300);
     });
     it("Should emit event after increaseint chain token quantity with updateChainTokenQuantity", async function () {
-      const { admin, bridge, claims, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, validatorAddressChainData);
+      const { admin, bridge, claims, ownerGovernorContract, fundGovernorContract, chain1, validatorAddressChainData } =
+        await loadFixture(deployBridgeFixture);
+      await bridge.connect(ownerGovernorContract).registerChain(chain1, 100, validatorAddressChainData);
 
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
-      await expect(admin.updateChainTokenQuantity(chain1.id, true, 100)).to.emit(admin, "UpdatedChainTokenQuantity");
+      await expect(admin.connect(fundGovernorContract).updateChainTokenQuantity(chain1.id, true, 100)).to.emit(
+        admin,
+        "UpdatedChainTokenQuantity"
+      );
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(200);
     });
     it("Should revert if decreae amount is higher than available chainTokenQuantity", async function () {
-      const { admin, bridge, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, validatorAddressChainData);
+      const { admin, bridge, ownerGovernorContract, fundGovernorContract, chain1, validatorAddressChainData } =
+        await loadFixture(deployBridgeFixture);
+      await bridge.connect(ownerGovernorContract).registerChain(chain1, 100, validatorAddressChainData);
 
-      await expect(admin.updateChainTokenQuantity(1, false, 200)).to.be.revertedWithCustomError(
-        admin,
-        "NegativeChainTokenAmount"
-      );
+      await expect(
+        admin.connect(fundGovernorContract).updateChainTokenQuantity(1, false, 200)
+      ).to.be.revertedWithCustomError(admin, "NegativeChainTokenAmount");
     });
     it("Should decrease chainTokenQuantity by required amount", async function () {
-      const { admin, bridge, claims, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-      await bridge.registerChain(chain1, 100, validatorAddressChainData);
+      const { admin, bridge, claims, ownerGovernorContract, fundGovernorContract, chain1, validatorAddressChainData } =
+        await loadFixture(deployBridgeFixture);
+      await bridge.connect(ownerGovernorContract).registerChain(chain1, 100, validatorAddressChainData);
 
-      await admin.updateChainTokenQuantity(chain1.id, false, 50);
+      await admin.connect(fundGovernorContract).updateChainTokenQuantity(chain1.id, false, 50);
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(50);
     });
     it("Should emit event after decreasing chain token quantity with updateChainTokenQuantity", async function () {
-      const { bridge, admin, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
+      const { bridge, admin, ownerGovernorContract, fundGovernorContract, chain1, validatorAddressChainData } =
+        await loadFixture(deployBridgeFixture);
 
-      await bridge.registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(ownerGovernorContract).registerChain(chain1, 100, validatorAddressChainData);
 
-      await expect(admin.updateChainTokenQuantity(chain1.id, false, 50)).to.emit(admin, "UpdatedChainTokenQuantity");
+      await expect(admin.connect(fundGovernorContract).updateChainTokenQuantity(chain1.id, false, 50)).to.emit(
+        admin,
+        "UpdatedChainTokenQuantity"
+      );
     });
   });
-  describe("Setting FundAdmin", function () {
-    it("Should revert setFundAdmin is not called by owner", async function () {
+  describe("Setting FundGovernor", function () {
+    it("Should revert setFundGovernor is not called by owner", async function () {
       const { admin, validators } = await loadFixture(deployBridgeFixture);
 
-      await expect(admin.connect(validators[0]).setFundAdmin(validators[0])).to.be.revertedWith(
-        "Ownable: caller is not the owner"
+      await expect(admin.connect(validators[0]).setFundGovernor(validators[0])).to.be.revertedWithCustomError(
+        admin,
+        "NotFundGovernor"
       );
     });
 
-    it("Should revert if FundAdmin is ZeroAddress", async function () {
-      const { admin } = await loadFixture(deployBridgeFixture);
+    it("Should revert if FundGovernor is ZeroAddress", async function () {
+      const { admin, fundGovernorContract } = await loadFixture(deployBridgeFixture);
 
-      await expect(admin.setFundAdmin(ethers.ZeroAddress)).to.be.revertedWithCustomError(admin, "ZeroAddress");
+      await expect(
+        admin.connect(fundGovernorContract).setFundGovernor(ethers.ZeroAddress)
+      ).to.be.revertedWithCustomError(admin, "ZeroAddress");
     });
 
-    it("Should set fundAdmin when called by Owner", async function () {
-      const { admin, validators } = await loadFixture(deployBridgeFixture);
+    it("Should set fundGovernor when called by FundGovernor", async function () {
+      const { admin, fundGovernorContract, validators } = await loadFixture(deployBridgeFixture);
 
-      await admin.setFundAdmin(validators[0].address);
+      await admin.connect(fundGovernorContract).setFundGovernor(validators[0].address);
 
-      expect(await admin.fundAdmin()).to.be.equal(validators[0].address);
+      expect(await admin.fundGovernor()).to.be.equal(validators[0].address);
     });
-    it("Should emit ChangedFundAdmin when new fundAdmin is set ", async function () {
-      const { admin, validators } = await loadFixture(deployBridgeFixture);
+    it("Should emit ChangedFundGovernor when new fundGovernor is set ", async function () {
+      const { admin, fundGovernorContract, validators } = await loadFixture(deployBridgeFixture);
 
-      await expect(await admin.setFundAdmin(validators[0].address))
-        .to.emit(admin, "FundAdminChanged")
+      await expect(await admin.connect(fundGovernorContract).setFundGovernor(validators[0].address))
+        .to.emit(admin, "FundGovernorChanged")
         .withArgs(validators[0].address);
     });
   });
   describe("Defund chain", function () {
-    it("Should revert if defund is not called by fundAdmin", async function () {
-      const { admin, validators, owner } = await loadFixture(deployBridgeFixture);
+    it("Should revert if defund is not called by fundGovernor", async function () {
+      const { admin, validators, owner, fundGovernorContract } = await loadFixture(deployBridgeFixture);
 
-      await admin.setFundAdmin(validators[0].address);
-      await expect(admin.connect(owner).defund(1, "address", 100)).to.be.revertedWithCustomError(admin, "NotFundAdmin");
+      await admin.connect(fundGovernorContract).setFundGovernor(validators[0].address);
+      await expect(admin.connect(owner).defund(1, "address", 100)).to.be.revertedWithCustomError(
+        admin,
+        "NotFundGovernor"
+      );
     });
 
     it("Should revert if defund in claims is not called by Admin Contract", async function () {
@@ -128,47 +162,67 @@ describe("Admin Functions", function () {
     });
 
     it("Should revert when defund is called and chain is not registered", async function () {
-      const { admin, validators } = await loadFixture(deployBridgeFixture);
+      const { admin, validators, fundGovernorContract } = await loadFixture(deployBridgeFixture);
 
-      await admin.setFundAdmin(validators[0].address);
+      await admin.connect(fundGovernorContract).setFundGovernor(validators[0].address);
       await expect(admin.connect(validators[0]).defund(1, "address", 100)).to.be.revertedWithCustomError(
         admin,
         "ChainIsNotRegistered"
       );
     });
     it("Should revert when defund amount is higher then availableTokens amount", async function () {
-      const { admin, bridge, claims, owner, validators, chain1, validatorAddressChainData } = await loadFixture(
-        deployBridgeFixture
-      );
+      const {
+        admin,
+        bridge,
+        claims,
+        ownerGovernorContract,
+        fundGovernorContract,
+        validators,
+        chain1,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
 
-      await admin.setFundAdmin(validators[0].address);
+      await admin.connect(fundGovernorContract).setFundGovernor(validators[0].address);
 
-      await bridge.connect(owner).registerChain(chain1, 1, validatorAddressChainData);
+      await bridge.connect(ownerGovernorContract).registerChain(chain1, 1, validatorAddressChainData);
       await expect(admin.connect(validators[0]).defund(1, "address", 100)).to.be.revertedWithCustomError(
         claims,
         "DefundRequestTooHigh"
       );
     });
     it("Should remove defund amount from availableTokens amount", async function () {
-      const { admin, bridge, claims, owner, validators, chain1, validatorAddressChainData } = await loadFixture(
-        deployBridgeFixture
-      );
+      const {
+        admin,
+        bridge,
+        claims,
+        ownerGovernorContract,
+        fundGovernorContract,
+        validators,
+        chain1,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
 
-      await admin.setFundAdmin(validators[0].address);
+      await admin.connect(fundGovernorContract).setFundGovernor(validators[0].address);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(ownerGovernorContract).registerChain(chain1, 100, validatorAddressChainData);
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
       await admin.connect(validators[0]).defund(chain1.id, "address", 1);
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(99);
     });
-    it("Should emit ChainDefunded when defund is exdcuted", async function () {
-      const { admin, bridge, owner, validators, chain1, validatorAddressChainData } = await loadFixture(
-        deployBridgeFixture
-      );
+    it("Should emit ChainDefunded when defund is executed", async function () {
+      const {
+        admin,
+        bridge,
+        ownerGovernorContract,
+        fundGovernorContract,
+        validators,
+        chain1,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
 
-      await admin.setFundAdmin(validators[0].address);
+      await admin.connect(fundGovernorContract).setFundGovernor(validators[0].address);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(ownerGovernorContract).registerChain(chain1, 100, validatorAddressChainData);
 
       await admin.connect(validators[0]).defund(chain1.id, "address", 1);
 
@@ -176,14 +230,21 @@ describe("Admin Functions", function () {
         .to.emit(admin, "ChainDefunded")
         .withArgs(1, 1);
     });
-    it("Should add confirmedTransactioin when defund is exdcuted", async function () {
-      const { admin, bridge, claims, owner, validators, chain1, validatorAddressChainData } = await loadFixture(
-        deployBridgeFixture
-      );
+    it("Should add confirmedTransactioin when defund is executed", async function () {
+      const {
+        admin,
+        bridge,
+        claims,
+        ownerGovernorContract,
+        fundGovernorContract,
+        validators,
+        chain1,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
 
-      await admin.setFundAdmin(validators[0].address);
+      await admin.connect(fundGovernorContract).setFundGovernor(validators[0].address);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(ownerGovernorContract).registerChain(chain1, 100, validatorAddressChainData);
 
       await admin.connect(validators[0]).defund(chain1.id, "address", 1);
 
@@ -194,13 +255,20 @@ describe("Admin Functions", function () {
       expect(await claims.lastConfirmedTxNonce(chain1.id)).to.equal(2);
     });
     it("Should set correct confirmedTransaction when defund is excuted", async function () {
-      const { admin, bridge, claims, owner, validators, chain1, validatorAddressChainData } = await loadFixture(
-        deployBridgeFixture
-      );
+      const {
+        admin,
+        bridge,
+        claims,
+        ownerGovernorContract,
+        fundGovernorContract,
+        validators,
+        chain1,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
 
-      await admin.setFundAdmin(validators[0].address);
+      await admin.connect(fundGovernorContract).setFundGovernor(validators[0].address);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(ownerGovernorContract).registerChain(chain1, 100, validatorAddressChainData);
 
       await admin.connect(validators[0]).defund(chain1.id, "address", 1);
 
@@ -212,7 +280,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).retryCounter).to.equal(0);
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(24);
+      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(52);
     });
     it("Should set correct confirmedTransaction when defund fails", async function () {
       const {
@@ -220,7 +288,8 @@ describe("Admin Functions", function () {
         bridge,
         claims,
         claimsHelper,
-        owner,
+        ownerGovernorContract,
+        fundGovernorContract,
         chain1,
         chain2,
         validators,
@@ -230,8 +299,8 @@ describe("Admin Functions", function () {
         validatorClaimsBEFC,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 200, validatorAddressChainData);
+      await bridge.connect(ownerGovernorContract).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(ownerGovernorContract).registerChain(chain2, 200, validatorAddressChainData);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -240,7 +309,7 @@ describe("Admin Functions", function () {
 
       expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(1);
 
-      await admin.setFundAdmin(validators[0].address);
+      await admin.connect(fundGovernorContract).setFundGovernor(validators[0].address);
 
       await admin.connect(validators[0]).defund(chain2.id, "address", 1);
 
@@ -277,14 +346,15 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain2.id, 3)).retryCounter).to.equal(1);
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(29);
+      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(57);
     });
     it("Should reject defund after maximum number of retries", async function () {
       const {
         admin,
         bridge,
         claims,
-        owner,
+        ownerGovernorContract,
+        fundGovernorContract,
         chain1,
         chain2,
         validators,
@@ -293,10 +363,10 @@ describe("Admin Functions", function () {
         validatorClaimsBEFC,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 200, validatorAddressChainData);
+      await bridge.connect(ownerGovernorContract).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(ownerGovernorContract).registerChain(chain2, 200, validatorAddressChainData);
 
-      await admin.setFundAdmin(validators[0].address);
+      await admin.connect(fundGovernorContract).setFundGovernor(validators[0].address);
 
       await admin.connect(validators[0]).defund(chain2.id, "address", 1);
 
@@ -352,46 +422,51 @@ describe("Admin Functions", function () {
     });
   });
   describe("Update bridge configurationy", function () {
-    it("Calling updateMaxNumberOfTransactions should revert if not called by owner", async function () {
+    it("Calling updateMaxNumberOfTransactions should revert if not called by ownerGovernor", async function () {
       const { admin, validators } = await loadFixture(deployBridgeFixture);
 
-      await expect(admin.connect(validators[0]).updateMaxNumberOfTransactions(1)).to.be.revertedWith(
-        "Ownable: caller is not the owner"
+      await expect(admin.connect(validators[0]).updateMaxNumberOfTransactions(1)).to.be.revertedWithCustomError(
+        admin,
+        "NotOwnerGovernor"
       );
     });
     it("Calling updateMaxNumberOfTransactions should update maxNumberOfTransactions", async function () {
-      const { admin, claims, owner } = await loadFixture(deployBridgeFixture);
+      const { admin, claims, ownerGovernorContract } = await loadFixture(deployBridgeFixture);
 
-      await admin.connect(owner).updateMaxNumberOfTransactions(4);
+      await admin.connect(ownerGovernorContract).updateMaxNumberOfTransactions(4);
 
       expect(await claims.maxNumberOfTransactions()).to.equal(4);
     });
     it("Calling updateMaxNumberOfTransactions should triger UpdatedMaxNumberOfTransactions event", async function () {
-      const { admin, owner } = await loadFixture(deployBridgeFixture);
+      const { admin, ownerGovernorContract } = await loadFixture(deployBridgeFixture);
 
-      await expect(admin.connect(owner).updateMaxNumberOfTransactions(4)).to.emit(
+      await expect(admin.connect(ownerGovernorContract).updateMaxNumberOfTransactions(4)).to.emit(
         admin,
         "UpdatedMaxNumberOfTransactions"
       );
     });
-    it("Calling timeoutBlocksNumber should revert if not called by owner", async function () {
+    it("Calling timeoutBlocksNumber should revert if not called by OwnerGovernor", async function () {
       const { admin, validators } = await loadFixture(deployBridgeFixture);
 
-      await expect(admin.connect(validators[0]).updateTimeoutBlocksNumber(1)).to.be.revertedWith(
-        "Ownable: caller is not the owner"
+      await expect(admin.connect(validators[0]).updateTimeoutBlocksNumber(1)).to.be.revertedWithCustomError(
+        admin,
+        "NotOwnerGovernor"
       );
     });
     it("Calling timeoutBlocksNumber should update timeoutBlocksNumber", async function () {
-      const { admin, claims, owner } = await loadFixture(deployBridgeFixture);
+      const { admin, claims, ownerGovernorContract } = await loadFixture(deployBridgeFixture);
 
-      await admin.connect(owner).updateTimeoutBlocksNumber(4);
+      await admin.connect(ownerGovernorContract).updateTimeoutBlocksNumber(4);
 
       expect(await claims.timeoutBlocksNumber()).to.equal(4);
     });
-    it("Calling timeoutBlocksNumber should triger UpdatgedTimeoutBlocksNumber event", async function () {
-      const { admin, owner } = await loadFixture(deployBridgeFixture);
+    it("Calling timeoutBlocksNumber should triger UpdatedTimeoutBlocksNumber event", async function () {
+      const { admin, ownerGovernorContract } = await loadFixture(deployBridgeFixture);
 
-      await expect(admin.connect(owner).updateTimeoutBlocksNumber(4)).to.emit(admin, "UpdatedTimeoutBlocksNumber");
+      await expect(admin.connect(ownerGovernorContract).updateTimeoutBlocksNumber(4)).to.emit(
+        admin,
+        "UpdatedTimeoutBlocksNumber"
+      );
     });
   });
 });

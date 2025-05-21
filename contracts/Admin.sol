@@ -44,7 +44,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
 
     /// @notice Sets external contract dependencies.
     /// @param _claimsAddress Address of the deployed Claims contract
-    function setDependencies(address _claimsAddress) external initializer onlyOwner {
+    function setDependencies(address _claimsAddress) external reinitializer(2) onlyOwner {
         if (!_isContract(_claimsAddress)) revert NotContractAddress();
         claims = Claims(_claimsAddress);
     }
@@ -71,9 +71,9 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         emit ChainDefunded(_chainId, _amount);
     }
 
-    /// @notice Sets a new fund admin
-    /// @param _fundGovernor Address of the new fund admin
-    function setFundAdmin(address _fundGovernor) external onlyFundGovernor {
+    /// @notice Sets a new FundGovernor
+    /// @param _fundGovernor Address of the new FundGovernor
+    function setFundGovernor(address _fundGovernor) external onlyFundGovernor {
         if (_fundGovernor == address(0)) revert ZeroAddress();
         fundGovernor = _fundGovernor;
         emit FundGovernorChanged(_fundGovernor);
