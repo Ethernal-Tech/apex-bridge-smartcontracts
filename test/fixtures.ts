@@ -556,7 +556,9 @@ export async function deployBridgeFixture() {
     signedBatches,
     validatorsc,
     ownerGovernor,
+    ownerToken,
     fundGovernor,
+    fundToken,
     slots,
     owner,
     ownerGovernorContract,
@@ -584,5 +586,10 @@ export async function deployBridgeFixture() {
     validators,
     cardanoBlocks,
     cardanoBlocksTooManyBlocks,
+    governor1,
+    governor2,
+    governor3,
+    governor4,
+    governor5,
   };
 }
