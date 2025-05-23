@@ -29,6 +29,8 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// @notice Maps batch hash to BLS validator bitmap.
     /// @dev hash -> bls bitmap
     mapping(bytes32 => uint256) private bitmap;
+    
+    mapping(bytes32 => mapping(address => bool)) public _notUsedAnymoreHasVoted;
 
     /// @notice Stores the last confirmed batch per destination chain
     /// @dev BlockchainId -> ConfirmedBatch
