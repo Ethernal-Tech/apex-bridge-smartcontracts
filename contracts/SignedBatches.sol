@@ -36,6 +36,10 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// @dev BlockchainId -> ConfirmedBatch
     mapping(uint8 => ConfirmedBatch) private lastConfirmedBatch;
 
+    /// @notice Stores the used hashes per destination chain
+    /// @dev BlockchainId -> list of hashes
+    mapping(uint8 => bytes32[]) private usedHashesPerChain;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
@@ -118,6 +122,10 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         uint256 _quorumCount = validators.getQuorumNumberOfValidators();
         uint256 _numberOfVotes = signatures[_sbHash].length;
 
+        if (_numberOfVotes == 0) {
+            usedHashesPerChain[_destinationChainId].push(_sbHash);
+        }
+
         signatures[_sbHash].push(_signedBatch.signature);
         feeSignatures[_sbHash].push(_signedBatch.feeSignature);
         unchecked {
@@ -137,9 +145,15 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
 
-            delete signatures[_sbHash];
-            delete feeSignatures[_sbHash];
-            delete bitmap[_sbHash];
+            bytes32[] storage _usedHashes = usedHashesPerChain[_destinationChainId];
+            for (uint256 i = 0; i < _usedHashes.length; i++) {
+                bytes32 _hash = _usedHashes[i];
+                delete signatures[_hash];
+                delete feeSignatures[_hash];
+                delete bitmap[_hash];
+            }
+
+            delete usedHashesPerChain[_destinationChainId];
         }
     }
 
