@@ -29,7 +29,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// @notice Maps batch hash to BLS validator bitmap.
     /// @dev hash -> bls bitmap
     mapping(bytes32 => uint256) private bitmap;
-    
+
     mapping(bytes32 => mapping(address => bool)) public _notUsedAnymoreHasVoted;
 
     /// @notice Stores the last confirmed batch per destination chain
@@ -161,9 +161,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
     function hasVoted(bytes32 _hash, address _addr) external view returns (bool) {
         uint8 _validatorIdx = validators.getValidatorIndex(_addr) - 1;
-        uint256 _validatorMask = 1 << _validatorIdx;
-        uint256 _bitmapValue = bitmap[_hash];
-        return (_bitmapValue & _validatorMask != 0);
+        return bitmap[_hash] & (1 << _validatorIdx) != 0;
     }
 
     /// @notice Returns the current version of the contract
