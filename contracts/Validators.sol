@@ -11,7 +11,7 @@ import "./Utils.sol";
 /// @notice Manages validator registration, validator keys, and signature verification
 /// @dev Upgradeable using OpenZeppelin UUPS proxy pattern
 contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
-    address private upgradeAdmin;
+    address private ownerGovernor;
     address private bridgeAddress;
 
     // slither-disable too-many-digits
@@ -48,16 +48,16 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
 
     /// @notice Initializes the contract with validators and ownership
     /// @param _owner The owner of the contract
-    /// @param _upgradeAdmin The upgrade admin address
+    /// @param _ownerGovernor Address authorized to perform owner operations
     /// @param _validators Initial list of validator addresses
-    function initialize(address _owner, address _upgradeAdmin, address[] calldata _validators) public initializer {
+    function initialize(address _owner, address _ownerGovernor, address[] calldata _validators) public initializer {
+        if (_owner == address(0) || _ownerGovernor == address(0)) revert ZeroAddress();
+        if (!_isContract(_ownerGovernor)) revert NotContractAddress();
+        require(_validators.length < 128, "Too many validators (max 127)");
         __Ownable_init();
         __UUPSUpgradeable_init();
         _transferOwnership(_owner);
-        require(_validators.length < 128, "Too many validators (max 127)");
-        if (_owner == address(0)) revert ZeroAddress();
-        if (_upgradeAdmin == address(0)) revert ZeroAddress();
-        upgradeAdmin = _upgradeAdmin;
+        ownerGovernor = _ownerGovernor;
         for (uint8 i; i < _validators.length; i++) {
             if (addressValidatorIndex[_validators[i]] != 0) {
                 revert InvalidData("Duplicate validator");
@@ -67,13 +67,13 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         validatorsCount = uint8(_validators.length);
     }
 
-    /// @notice Authorizes upgrades. Only the upgrade admin can upgrade the contract.
+    /// @notice Authorizes upgrades. Only the OwnerGovernor can upgrade the contract.
     /// @param newImplementation Address of the new implementation.
-    function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwnerGovernor {}
 
     /// @notice Sets external contract dependencies.
     /// @param _bridgeAddress The address of the bridge contract
-    function setDependencies(address _bridgeAddress) external onlyOwner {
+    function setDependencies(address _bridgeAddress) external reinitializer(2) onlyOwner {
         if (!_isContract(_bridgeAddress)) revert NotContractAddress();
         bridgeAddress = _bridgeAddress;
     }
@@ -251,8 +251,8 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         _;
     }
 
-    modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
+    modifier onlyOwnerGovernor() {
+        if (msg.sender != ownerGovernor) revert NotOwnerGovernor();
         _;
     }
 }

@@ -24,7 +24,7 @@ describe("Confirmed Transacrions", function () {
     it("GetConfirmedTransaction should not return transaction that occured after the timeout", async function () {
       const {
         bridge,
-        owner,
+        ownerGovernorContract,
         chain1,
         chain2,
         validators,
@@ -35,8 +35,8 @@ describe("Confirmed Transacrions", function () {
         claims,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorAddressChainData);
+      await bridge.connect(ownerGovernorContract).registerChain(chain1, 1000, validatorAddressChainData);
+      await bridge.connect(ownerGovernorContract).registerChain(chain2, 1000, validatorAddressChainData);
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -92,11 +92,20 @@ describe("Confirmed Transacrions", function () {
     });
 
     it("GetConfirmedTransactions should not return more transaction than MAX_NUMBER_OF_TRANSACTIONS", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData, claims, hre } =
-        await loadFixture(deployBridgeFixture);
+      const {
+        bridge,
+        ownerGovernorContract,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsBRC,
+        validatorAddressChainData,
+        claims,
+        hre,
+      } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorAddressChainData);
+      await bridge.connect(ownerGovernorContract).registerChain(chain1, 1000, validatorAddressChainData);
+      await bridge.connect(ownerGovernorContract).registerChain(chain2, 1000, validatorAddressChainData);
       const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
 
       // Impersonate as Bridge in order to set Next Timeout Block value
@@ -177,11 +186,20 @@ describe("Confirmed Transacrions", function () {
     });
 
     it("GetConfirmedTransactions should return transactions with appropriate Observed Transaction Hashes", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData, claims, hre } =
-        await loadFixture(deployBridgeFixture);
+      const {
+        bridge,
+        ownerGovernorContract,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsBRC,
+        validatorAddressChainData,
+        claims,
+        hre,
+      } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorAddressChainData);
+      await bridge.connect(ownerGovernorContract).registerChain(chain1, 1000, validatorAddressChainData);
+      await bridge.connect(ownerGovernorContract).registerChain(chain2, 1000, validatorAddressChainData);
       const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
 
       // Impersonate as Claims in order to set Next Timeout Block value

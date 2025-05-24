@@ -165,8 +165,8 @@ interface IBridgeStructs {
     error NotBridge();
     error NotClaims();
     error NotSignedBatches();
-    error NotFundAdmin();
-    error NotUpgradeAdmin();
+    error NotFundGovernor();
+    error NotOwnerGovernor();
     error NotAdminContract();
     error NotSignedBatchesOrClaims();
     error CanNotCreateBatchYet(uint8 _chainId);
@@ -188,7 +188,7 @@ interface IBridgeStructs {
     event newChainRegistered(uint8 indexed _chainId);
     event NotEnoughFunds(string claimeType, uint256 index, uint256 availableAmount);
     event ChainDefunded(uint8 _chainId, uint256 _amount);
-    event FundAdminChanged(address _newFundAdmin);
+    event FundGovernorChanged(address _newFundGovernor);
     event UpdatedChainTokenQuantity(uint indexed chainId, bool isIncrement, uint256 tokenQuantity);
     event DefundFailedAfterMultipleRetries();
     event UpdatedMaxNumberOfTransactions(uint256 _maxNumberOfTransactions);

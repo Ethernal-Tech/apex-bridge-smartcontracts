@@ -1,12 +1,52 @@
 import { ethers } from "hardhat";
-import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin } from "../typechain-types";
+import {
+  Admin,
+  Bridge,
+  Claims,
+  ClaimsHelper,
+  SignedBatches,
+  Slots,
+  Validators,
+  FundGovernor,
+  FundToken,
+  OwnerGovernor,
+  OwnerToken,
+} from "../typechain-types";
 
 export async function deployBridgeFixture() {
   // Contracts are deployed using the first signer/account by default
-  const [owner, validator1, validator2, validator3, validator4, validator5, validator6] = await ethers.getSigners();
+  const [
+    owner,
+    validator1,
+    validator2,
+    validator3,
+    validator4,
+    validator5,
+    validator6,
+    governor1,
+    governor2,
+    governor3,
+    governor4,
+    governor5,
+  ] = await ethers.getSigners();
   const validators = [validator1, validator2, validator3, validator4, validator5];
 
   const hre = require("hardhat");
+
+  const FundToken = await ethers.getContractFactory("FundToken");
+  const fundTokenLogic = await FundToken.deploy();
+
+  const FundGovernor = await ethers.getContractFactory("FundGovernor");
+  const fundGovernorLogic = await FundGovernor.deploy();
+
+  const OwnerToken = await ethers.getContractFactory("OwnerToken");
+  const ownerTokenLogic = await OwnerToken.deploy();
+
+  const OwnerGovernor = await ethers.getContractFactory("OwnerGovernor");
+  const ownerGovernorLogic = await OwnerGovernor.deploy();
+
+  const Admin = await ethers.getContractFactory("Admin");
+  const adminLogic = await Admin.deploy();
 
   const Bridge = await ethers.getContractFactory("Bridge");
   const bridgeLogic = await Bridge.deploy();
@@ -26,41 +66,71 @@ export async function deployBridgeFixture() {
   const Validators = await ethers.getContractFactory("Validators");
   const validatorscLogic = await Validators.deploy();
 
-  const Admin = await ethers.getContractFactory("Admin");
-  const adminLogic = await Admin.deploy();
-
   // deployment of contract proxy
+  const FundTokenProxy = await ethers.getContractFactory("ERC1967Proxy");
+  const FundGovernorProxy = await ethers.getContractFactory("ERC1967Proxy");
+  const OwnerTokenProxy = await ethers.getContractFactory("ERC1967Proxy");
+  const OwnerGovernorProxy = await ethers.getContractFactory("ERC1967Proxy");
+  const AdminProxy = await ethers.getContractFactory("ERC1967Proxy");
   const BridgeProxy = await ethers.getContractFactory("ERC1967Proxy");
   const ClaimsHelperProxy = await ethers.getContractFactory("ERC1967Proxy");
   const ClaimsProxy = await ethers.getContractFactory("ERC1967Proxy");
   const SignedBatchesProxy = await ethers.getContractFactory("ERC1967Proxy");
   const SlotsProxy = await ethers.getContractFactory("ERC1967Proxy");
   const ValidatorscProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const AdminProxy = await ethers.getContractFactory("ERC1967Proxy");
+
+  const fundTokenProxy = await FundTokenProxy.deploy(
+    await fundTokenLogic.getAddress(),
+    FundToken.interface.encodeFunctionData("initialize", [owner.address, owner.address])
+  );
+
+  const fundGovernorProxy = await FundGovernorProxy.deploy(
+    await fundGovernorLogic.getAddress(),
+    FundGovernor.interface.encodeFunctionData("initialize", [await fundTokenProxy.getAddress(), owner.address])
+  );
+
+  const ownerTokenProxy = await OwnerTokenProxy.deploy(
+    await ownerTokenLogic.getAddress(),
+    OwnerToken.interface.encodeFunctionData("initialize", [owner.address, owner.address])
+  );
+
+  const ownerGovernorProxy = await OwnerGovernorProxy.deploy(
+    await ownerGovernorLogic.getAddress(),
+    OwnerGovernor.interface.encodeFunctionData("initialize", [await ownerTokenProxy.getAddress(), owner.address])
+  );
+
+  const adminProxy = await AdminProxy.deploy(
+    await adminLogic.getAddress(),
+    Admin.interface.encodeFunctionData("initialize", [
+      owner.address,
+      await ownerGovernorProxy.getAddress(),
+      await fundGovernorProxy.getAddress(),
+    ])
+  );
 
   const bridgeProxy = await BridgeProxy.deploy(
     await bridgeLogic.getAddress(),
-    Bridge.interface.encodeFunctionData("initialize", [owner.address, owner.address])
-  );
-
-  const claimsHelperProxy = await ClaimsHelperProxy.deploy(
-    await claimsHelperLogic.getAddress(),
-    ClaimsHelper.interface.encodeFunctionData("initialize", [owner.address, owner.address])
+    Bridge.interface.encodeFunctionData("initialize", [owner.address, await ownerGovernorProxy.getAddress()])
   );
 
   const claimsProxy = await ClaimsProxy.deploy(
     await claimsLogic.getAddress(),
-    Claims.interface.encodeFunctionData("initialize", [owner.address, owner.address, 2, 5])
+    Claims.interface.encodeFunctionData("initialize", [owner.address, await ownerGovernorProxy.getAddress(), 2, 5])
+  );
+
+  const claimsHelperProxy = await ClaimsHelperProxy.deploy(
+    await claimsHelperLogic.getAddress(),
+    ClaimsHelper.interface.encodeFunctionData("initialize", [owner.address, await ownerGovernorProxy.getAddress()])
   );
 
   const signedBatchesProxy = await SignedBatchesProxy.deploy(
     await signedBatchesLogic.getAddress(),
-    SignedBatches.interface.encodeFunctionData("initialize", [owner.address, owner.address])
+    SignedBatches.interface.encodeFunctionData("initialize", [owner.address, await ownerGovernorProxy.getAddress()])
   );
 
   const slotsProxy = await SlotsProxy.deploy(
     await slotsLogic.getAddress(),
-    Slots.interface.encodeFunctionData("initialize", [owner.address, owner.address])
+    Slots.interface.encodeFunctionData("initialize", [owner.address, await ownerGovernorProxy.getAddress()])
   );
 
   const validatorsAddresses = [
@@ -73,15 +143,30 @@ export async function deployBridgeFixture() {
 
   const validatorsProxy = await ValidatorscProxy.deploy(
     await validatorscLogic.getAddress(),
-    Validators.interface.encodeFunctionData("initialize", [owner.address, owner.address, validatorsAddresses])
-  );
-
-  const adminProxy = await AdminProxy.deploy(
-    await adminLogic.getAddress(),
-    Admin.interface.encodeFunctionData("initialize", [owner.address, owner.address])
+    Validators.interface.encodeFunctionData("initialize", [
+      owner.address,
+      await ownerGovernorProxy.getAddress(),
+      validatorsAddresses,
+    ])
   );
 
   //casting proxy contracts to contract logic
+
+  const FundTokenDeployed = await ethers.getContractFactory("FundToken");
+  const fundToken = FundTokenDeployed.attach(fundTokenProxy.target) as FundToken;
+
+  const FundGovernorDeployed = await ethers.getContractFactory("FundGovernor");
+  const fundGovernor = FundGovernorDeployed.attach(fundGovernorProxy.target) as FundGovernor;
+
+  const OwnerTokenDeployed = await ethers.getContractFactory("OwnerToken");
+  const ownerToken = OwnerTokenDeployed.attach(ownerTokenProxy.target) as OwnerToken;
+
+  const OwnerGovernorDeployed = await ethers.getContractFactory("OwnerGovernor");
+  const ownerGovernor = OwnerGovernorDeployed.attach(ownerGovernorProxy.target) as OwnerGovernor;
+
+  const AdminDeployed = await ethers.getContractFactory("Admin");
+  const admin = AdminDeployed.attach(adminProxy.target) as Admin;
+
   const BridgeDeployed = await ethers.getContractFactory("Bridge");
   const bridge = BridgeDeployed.attach(bridgeProxy.target) as Bridge;
 
@@ -100,8 +185,10 @@ export async function deployBridgeFixture() {
   const ValidatorsDeployed = await ethers.getContractFactory("Validators");
   const validatorsc = ValidatorsDeployed.attach(validatorsProxy.target) as Validators;
 
-  const AdminDeployed = await ethers.getContractFactory("Admin");
-  const admin = AdminDeployed.attach(adminProxy.target) as Admin;
+  await fundToken.setDependencies(fundGovernor.target);
+  await ownerToken.setDependencies(ownerGovernor.target);
+
+  await admin.setDependencies(claims.target);
 
   await bridge.setDependencies(
     claimsProxy.target,
@@ -120,7 +207,29 @@ export async function deployBridgeFixture() {
 
   await validatorsc.setDependencies(bridge.target);
 
-  await admin.setDependencies(claims.target);
+  await ownerToken.transfer(governor1.address, 1n * 10n ** 18n);
+  await ownerToken.transfer(governor2.address, 1n * 10n ** 18n);
+  await ownerToken.transfer(governor3.address, 1n * 10n ** 18n);
+  await ownerToken.transfer(governor4.address, 1n * 10n ** 18n);
+  await ownerToken.transfer(governor5.address, 1n * 10n ** 18n);
+
+  await ownerToken.connect(governor1).delegate(governor1.address);
+  await ownerToken.connect(governor2).delegate(governor2.address);
+  await ownerToken.connect(governor3).delegate(governor3.address);
+  await ownerToken.connect(governor4).delegate(governor4.address);
+  await ownerToken.connect(governor5).delegate(governor5.address);
+
+  await fundToken.transfer(governor1.address, 1n * 10n ** 18n);
+  await fundToken.transfer(governor2.address, 1n * 10n ** 18n);
+  await fundToken.transfer(governor3.address, 1n * 10n ** 18n);
+  await fundToken.transfer(governor4.address, 1n * 10n ** 18n);
+  await fundToken.transfer(governor5.address, 1n * 10n ** 18n);
+
+  await fundToken.connect(governor1).delegate(governor1.address);
+  await fundToken.connect(governor2).delegate(governor2.address);
+  await fundToken.connect(governor3).delegate(governor3.address);
+  await fundToken.connect(governor4).delegate(governor4.address);
+  await fundToken.connect(governor5).delegate(governor5.address);
 
   const chain1 = {
     id: 1,
@@ -414,18 +523,43 @@ export async function deployBridgeFixture() {
 
   const validatorCardanoData = validatorAddressChainData[0].data;
 
+  async function impersonateAsContractAndMintFunds(contractAddress: string) {
+    const hre = require("hardhat");
+    const address = await contractAddress.toLowerCase();
+    // impersonate as an contract on specified address
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [address],
+    });
+
+    const signer = await ethers.getSigner(address);
+    // minting 100000000000000000000 tokens to signer
+    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+
+    return signer;
+  }
+
+  const ownerGovernorContract = await impersonateAsContractAndMintFunds(await ownerGovernor.getAddress());
+  const fundGovernorContract = await impersonateAsContractAndMintFunds(await fundGovernor.getAddress());
+
   return {
     hre,
+    admin,
     bridge,
     claimsHelper,
     claims,
     signedBatches,
+    validatorsc,
+    ownerGovernor,
+    ownerToken,
+    fundGovernor,
+    fundToken,
     slots,
-    admin,
     owner,
+    ownerGovernorContract,
+    fundGovernorContract,
     chain1,
     chain2,
-    validatorsc,
     validator6,
     validatorClaimsBRC,
     validatorClaimsBRC_bunch32,
@@ -447,5 +581,10 @@ export async function deployBridgeFixture() {
     validators,
     cardanoBlocks,
     cardanoBlocksTooManyBlocks,
+    governor1,
+    governor2,
+    governor3,
+    governor4,
+    governor5,
   };
 }

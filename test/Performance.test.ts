@@ -4,9 +4,9 @@ import { deployBridgeFixture } from "./fixtures";
 
 describe("Performance", function () {
   it("registerChain", async function () {
-    const { bridge, chain1, owner, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
+    const { bridge, chain1, ownerGovernorContract, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
 
-    const tx = await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+    const tx = await bridge.connect(ownerGovernorContract).registerChain(chain1, 100, validatorAddressChainData);
     const receipt = await tx.wait();
     console.log(`Gas spent: ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
   });
@@ -32,11 +32,11 @@ describe("Performance", function () {
   });
 
   it("submitClaims BRC", async function () {
-    const { bridge, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData, owner } =
+    const { bridge, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData, ownerGovernorContract } =
       await loadFixture(deployBridgeFixture);
 
-    await bridge.connect(owner).registerChain(chain1, 10000, validatorAddressChainData);
-    await bridge.connect(owner).registerChain(chain2, 10000, validatorAddressChainData);
+    await bridge.connect(ownerGovernorContract).registerChain(chain1, 10000, validatorAddressChainData);
+    await bridge.connect(ownerGovernorContract).registerChain(chain2, 10000, validatorAddressChainData);
 
     for (let i = 0; i < validators.length; i++) {
       // fourth one is quorum
@@ -47,11 +47,19 @@ describe("Performance", function () {
   });
 
   it("submitSignedBatch", async function () {
-    const { bridge, chain1, chain2, owner, validators, validatorClaimsBRC, signedBatch, validatorAddressChainData } =
-      await loadFixture(deployBridgeFixture);
+    const {
+      bridge,
+      chain1,
+      chain2,
+      ownerGovernorContract,
+      validators,
+      validatorClaimsBRC,
+      signedBatch,
+      validatorAddressChainData,
+    } = await loadFixture(deployBridgeFixture);
 
-    await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-    await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+    await bridge.connect(ownerGovernorContract).registerChain(chain1, 100, validatorAddressChainData);
+    await bridge.connect(ownerGovernorContract).registerChain(chain2, 100, validatorAddressChainData);
 
     await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
     await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -76,7 +84,7 @@ describe("Performance", function () {
       bridge,
       chain1,
       chain2,
-      owner,
+      ownerGovernorContract,
       validators,
       validatorClaimsBRC,
       signedBatch,
@@ -84,8 +92,8 @@ describe("Performance", function () {
       validatorClaimsBEC,
     } = await loadFixture(deployBridgeFixture);
 
-    await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-    await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+    await bridge.connect(ownerGovernorContract).registerChain(chain1, 100, validatorAddressChainData);
+    await bridge.connect(ownerGovernorContract).registerChain(chain2, 100, validatorAddressChainData);
 
     await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
     await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -115,11 +123,10 @@ describe("Performance", function () {
   });
 
   it("submitClaims RRC", async function () {
-    const { bridge, owner, validators, chain2, validatorClaimsRRC, validatorAddressChainData } = await loadFixture(
-      deployBridgeFixture
-    );
+    const { bridge, ownerGovernorContract, validators, chain2, validatorClaimsRRC, validatorAddressChainData } =
+      await loadFixture(deployBridgeFixture);
 
-    await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+    await bridge.connect(ownerGovernorContract).registerChain(chain2, 100, validatorAddressChainData);
 
     for (let i = 0; i < validators.length; i++) {
       // fourth one is quorum

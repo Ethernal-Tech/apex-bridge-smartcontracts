@@ -14,7 +14,7 @@ import "./Validators.sol";
 /// @notice Handles validator-submitted claims in a cross-chain bridge system.
 /// @dev Inherits from OpenZeppelin upgradeable contracts for upgradability and ownership control.
 contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
-    address private upgradeAdmin;
+    address private ownerGovernor;
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
     Validators private validators;
@@ -73,28 +73,28 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     /// @notice Initializes the contract with required parameters.
     /// @param _owner Address to be set as contract owner.
-    /// @param _upgradeAdmin Address allowed to upgrade the contract.
+    /// @param _ownerGovernor Address authorized to perform owner operations
     /// @param _maxNumberOfTransactions Max transactions per batch.
     /// @param _timeoutBlocksNumber Number of blocks until timeout.
     function initialize(
         address _owner,
-        address _upgradeAdmin,
+        address _ownerGovernor,
         uint16 _maxNumberOfTransactions,
         uint8 _timeoutBlocksNumber
     ) public initializer {
+        if (_owner == address(0) || _ownerGovernor == address(0)) revert ZeroAddress();
+        if (!_isContract(_ownerGovernor)) revert NotContractAddress();
         __Ownable_init();
         __UUPSUpgradeable_init();
         _transferOwnership(_owner);
-        if (_owner == address(0)) revert ZeroAddress();
-        if (_upgradeAdmin == address(0)) revert ZeroAddress();
-        upgradeAdmin = _upgradeAdmin;
+        ownerGovernor = _ownerGovernor;
         maxNumberOfTransactions = _maxNumberOfTransactions;
         timeoutBlocksNumber = _timeoutBlocksNumber;
     }
 
-    /// @notice Authorizes upgrades. Only the upgrade admin can upgrade the contract.
+    /// @notice Authorizes upgrades. Only the OwnerGovernor can upgrade the contract.
     /// @param newImplementation Address of the new implementation.
-    function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwnerGovernor {}
 
     /// @notice Sets external contract dependencies.
     /// @param _bridgeAddress Address of the Bridge contract.
@@ -106,7 +106,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         address _claimsHelperAddress,
         address _validatorsAddress,
         address _adminContractAddress
-    ) external onlyOwner {
+    ) external reinitializer(2) onlyOwner {
         if (
             !_isContract(_bridgeAddress) ||
             !_isContract(_claimsHelperAddress) ||
@@ -373,17 +373,24 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
     }
 
-    /// @notice Submits a Batch Execution Failed Claim (BEFC) for processing.
-    /// @dev This function checks if a batch has been processed, validates the claim, and handles the failed batch execution
-    ///      by updating the state, retrying failed transactions if applicable, and resetting the current batch block.
-    /// @param _claim The batch execution failed claim containing the details of the failed batch execution.
-    /// @param _caller The address of the caller who is submitting the claim.
-    /// @dev If the batch has already been processed (first and last transaction nonces are zero), the function exits early
-    ///      to prevent double-processing of the same batch.
-    /// @dev A quorum of validators is required to approve the claim before proceeding.
-    /// @dev The batch's failed transactions are handled by retrying the transactions up to a maximum retry count,
-    ///      or marking them as failed if retries exceed the limit.
-    /// @dev The batch's token quantity is updated, and the corresponding batch data is deleted once the claim is processed.
+    /// @notice Handles the submission and quorum verification of a RefundRequestClaim (RRC).
+    /// @dev This function is called internally to process RRC claims. It ensures proper validation, quorum voting,
+    ///      and, if applicable, performs hot wallet refund operations and transaction confirmation updates.
+    ///      Quorum is tracked via a hashed claim and set through the `claimsHelper`.
+    /// @param _claim The RefundRequestClaim struct containing all data relevant to the refund request.
+    /// @param _caller The address of the validator submitting the claim.
+    ///
+    /// Requirements:
+    /// - `refundTransactionHash` must be zero (temporary until automatic refunds are implemented).
+    /// - If `shouldDecrementHotWallet` is true and `retryCounter` is 0, there must be sufficient funds
+    ///   in both `chainTokenQuantity` and `chainWrappedTokenQuantity`.
+    ///
+    /// Emits:
+    /// - `NotEnoughFunds` if the claim requires hot wallet decrement and there's not enough balance.
+    ///
+    /// Effects:
+    /// - Sets the validator's vote via `claimsHelper`.
+    /// - If quorum is reached, updates token balances, confirms the refund transaction, and adjusts timeout blocks.
     function _submitClaimsRRC(RefundRequestClaim calldata _claim, address _caller) internal {
         // temporary check until automatic refund is implemented
         // once automatic refund is implemented, this check should be that
@@ -743,8 +750,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         _;
     }
 
-    modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
+    modifier onlyOwnerGovernor() {
+        if (msg.sender != ownerGovernor) revert NotOwnerGovernor();
         _;
     }
 }
