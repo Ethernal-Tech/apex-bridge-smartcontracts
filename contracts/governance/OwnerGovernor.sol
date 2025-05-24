@@ -24,7 +24,6 @@ contract OwnerGovernor is
     OwnableUpgradeable,
     UUPSUpgradeable
 {
-    address private upgradeAdmin;
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
@@ -35,7 +34,7 @@ contract OwnerGovernor is
         _disableInitializers();
     }
 
-    function initialize(IVotesUpgradeable _token, address _owner, address _upgradeAdmin) public initializer {
+    function initialize(IVotesUpgradeable _token, address _owner) public initializer {
         __Governor_init("OwnerGovernor");
         __GovernorSettings_init(1 /* 1 block */, 10 /* 10 block */, 0);
         __GovernorCountingSimple_init();
@@ -45,8 +44,6 @@ contract OwnerGovernor is
         __UUPSUpgradeable_init();
         _transferOwnership(_owner);
         if (_owner == address(0)) revert ZeroAddress();
-        if (_upgradeAdmin == address(0)) revert ZeroAddress();
-        upgradeAdmin = _upgradeAdmin;
     }
 
     // The following functions are overrides required by Solidity.
@@ -62,10 +59,5 @@ contract OwnerGovernor is
 
     // @notice Authorizes a new implementation for upgrade
     /// @param newImplementation Address of the new implementation contract
-    function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
-
-    modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
-        _;
-    }
+    function _authorizeUpgrade(address newImplementation) internal override onlyGovernance {}
 }

@@ -81,30 +81,22 @@ export async function deployBridgeFixture() {
 
   const fundTokenProxy = await FundTokenProxy.deploy(
     await fundTokenLogic.getAddress(),
-    FundToken.interface.encodeFunctionData("initialize", [owner.address, owner.address, owner.address])
+    FundToken.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
   const fundGovernorProxy = await FundGovernorProxy.deploy(
     await fundGovernorLogic.getAddress(),
-    FundGovernor.interface.encodeFunctionData("initialize", [
-      await fundTokenProxy.getAddress(),
-      owner.address,
-      owner.address,
-    ])
+    FundGovernor.interface.encodeFunctionData("initialize", [await fundTokenProxy.getAddress(), owner.address])
   );
 
   const ownerTokenProxy = await OwnerTokenProxy.deploy(
     await ownerTokenLogic.getAddress(),
-    OwnerToken.interface.encodeFunctionData("initialize", [owner.address, owner.address, owner.address])
+    OwnerToken.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
   const ownerGovernorProxy = await OwnerGovernorProxy.deploy(
     await ownerGovernorLogic.getAddress(),
-    OwnerGovernor.interface.encodeFunctionData("initialize", [
-      await ownerTokenProxy.getAddress(),
-      owner.address,
-      owner.address,
-    ])
+    OwnerGovernor.interface.encodeFunctionData("initialize", [await ownerTokenProxy.getAddress(), owner.address])
   );
 
   const adminProxy = await AdminProxy.deploy(
@@ -192,6 +184,9 @@ export async function deployBridgeFixture() {
 
   const ValidatorsDeployed = await ethers.getContractFactory("Validators");
   const validatorsc = ValidatorsDeployed.attach(validatorsProxy.target) as Validators;
+
+  await fundToken.setDependencies(fundGovernor.target);
+  await ownerToken.setDependencies(ownerGovernor.target);
 
   await admin.setDependencies(claims.target);
 

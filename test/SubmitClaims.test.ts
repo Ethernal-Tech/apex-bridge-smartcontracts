@@ -181,13 +181,13 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
 
       expect(await claims.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
-        56
+        58
       );
 
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       expect(await claims.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
-        63
+        65
       );
     });
 

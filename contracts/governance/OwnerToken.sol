@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import "../interfaces/IBridgeStructs.sol";
+import "../Utils.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
@@ -16,9 +17,10 @@ contract OwnerToken is
     ERC20PermitUpgradeable,
     ERC20VotesUpgradeable,
     OwnableUpgradeable,
-    UUPSUpgradeable
+    UUPSUpgradeable,
+    Utils
 {
-    address private upgradeAdmin;
+    address public ownerGovernor;
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
@@ -29,7 +31,7 @@ contract OwnerToken is
         _disableInitializers();
     }
 
-    function initialize(address _recipient, address _owner, address _upgradeAdmin) public initializer {
+    function initialize(address _recipient, address _owner) public initializer {
         __ERC20_init("OwnerToken", "OTK");
         __ERC20Permit_init("OwnerToken");
         __ERC20Votes_init();
@@ -37,10 +39,13 @@ contract OwnerToken is
         __UUPSUpgradeable_init();
         _transferOwnership(_owner);
         if (_owner == address(0)) revert ZeroAddress();
-        if (_upgradeAdmin == address(0)) revert ZeroAddress();
-        upgradeAdmin = _upgradeAdmin;
 
         _mint(_recipient, 5 * 10 ** decimals());
+    }
+
+    function setDependencies(address _ownerGovernor) external reinitializer(2) onlyOwner {
+        if (!_isContract(_ownerGovernor)) revert NotContractAddress();
+        ownerGovernor = _ownerGovernor;
     }
 
     // Required overrides due to multiple inheritance
@@ -62,10 +67,10 @@ contract OwnerToken is
 
     // @notice Authorizes a new implementation for upgrade
     /// @param newImplementation Address of the new implementation contract
-    function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwnerGovernor {}
 
-    modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
+    modifier onlyOwnerGovernor() {
+        if (msg.sender != ownerGovernor) revert NotOwnerGovernor();
         _;
     }
 }
