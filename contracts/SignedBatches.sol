@@ -108,11 +108,14 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         );
 
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
-        uint256 _validatorMask = 1 << _validatorIdx;
         uint256 _bitmapValue = bitmap[_sbHash];
+        uint256 _bitmapNewValue;
+        unchecked {
+            _bitmapNewValue = _bitmapValue | (1 << _validatorIdx);
+        }
 
         // check if caller already voted for same hash and skip if he did
-        if (_bitmapValue & _validatorMask != 0) {
+        if (_bitmapValue == _bitmapNewValue) {
             return;
         }
 
@@ -121,9 +124,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
         signatures[_sbHash].push(_signedBatch.signature);
         feeSignatures[_sbHash].push(_signedBatch.feeSignature);
-        unchecked {
-            bitmap[_sbHash] = _bitmapValue | _validatorMask;
-        }
+        bitmap[_sbHash] = _bitmapNewValue;
 
         // check if quorum reached (+1 is last vote)
         if (_numberOfVotes + 1 >= _quorumCount) {
