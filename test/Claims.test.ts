@@ -1267,7 +1267,7 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      const [txs, status] = await claims.getBatchTransactions(signedBatch.destinationChainId, signedBatch.id);
+      const [status, txs] = await claims.getBatchStatusAndTransactions(signedBatch.destinationChainId, signedBatch.id);
       expect(txs).to.deep.equal([
         [
           validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
@@ -1303,7 +1303,7 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatchConsolidation);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatchConsolidation);
 
-      const [txs, status] = await claims.getBatchTransactions(
+      const [status, txs] = await claims.getBatchStatusAndTransactions(
         signedBatchConsolidation.destinationChainId,
         signedBatchConsolidation.id
       );

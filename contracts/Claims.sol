@@ -683,13 +683,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     ///      is returned.
     /// @param _chainId The ID of the chain on which the batch exists.
     /// @param _batchId The ID of the batch to retrieve transactions for.
+    /// @return status A status code indicating the success or failure of the operation.
     /// @return txs An array of `TxDataInfo` structs, each containing the transaction hash, source chain ID,
     ///         and transaction type.
-    /// @return status A status code indicating the success or failure of the operation.
-    function getBatchTransactions(
+    function getBatchStatusAndTransactions(
         uint8 _chainId,
         uint64 _batchId
-    ) external view returns (TxDataInfo[] memory txs, uint8 status) {
+    ) external view returns (uint8 status, TxDataInfo[] memory txs) {
         ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
             _chainId,
             _batchId
@@ -700,7 +700,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint8 _status = _confirmedSignedBatch.status;
         // if the batch is a consolidation or does not exist, return empty array
         if (_status == ConstantsLib.NOT_EXISTS || _confirmedSignedBatch.isConsolidation) {
-            return (new TxDataInfo[](0), _status);
+            return (_status, new TxDataInfo[](0));
         }
 
         TxDataInfo[] memory _txHashes = new TxDataInfo[](_lastTxNonce - _firstTxNonce + 1);
@@ -713,7 +713,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             );
         }
 
-        return (_txHashes, _status);
+        return (_status, _txHashes);
     }
 
     function updateMaxNumberOfTransactions(uint16 _maxNumberOfTransactions) external onlyAdminContract {
