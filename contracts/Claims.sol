@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
+import "./interfaces/ConstantsLib.sol";
 import "./Utils.sol";
 import "./Bridge.sol";
 import "./ClaimsHelper.sol";
@@ -14,6 +15,8 @@ import "./Validators.sol";
 /// @notice Handles validator-submitted claims in a cross-chain bridge system.
 /// @dev Inherits from OpenZeppelin upgradeable contracts for upgradability and ownership control.
 contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+    using ConstantsLib for uint8;
+
     address private upgradeAdmin;
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
@@ -266,8 +269,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         // claims for the same batch will not be processed. This is to prevent double processing of the same batch,
         // and also to prevent processing of batches with invalid IDs.
         // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-        if (_confirmedSignedBatch.status != 1) {
-            // status 1 means "in progress"
+        if (_confirmedSignedBatch.status != ConstantsLib.IN_PROGRESS) {
             return;
         }
 
@@ -282,7 +284,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         if (_quorumReached) {
             // current batch block must be reset in any case because otherwise bridge will be blocked
             claimsHelper.resetCurrentBatchBlock(chainId);
-            claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, 2); // status 2 means "executed"
+            claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.EXECUTED);
 
             // do not process included transactions if it is a consolidation
             if (_confirmedSignedBatch.isConsolidation) {
@@ -308,8 +310,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         // claims for the same batch will not be processed. This is to prevent double processing of the same batch,
         // and also to prevent processing of batches with invalid IDs.
         // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-        if (_confirmedSignedBatch.status != 1) {
-            // status 1 means "in progress"
+        if (_confirmedSignedBatch.status != ConstantsLib.IN_PROGRESS) {
             return;
         }
 
@@ -324,7 +325,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         if (_quorumReached) {
             // current batch block must be reset in any case because otherwise bridge will be blocked
             claimsHelper.resetCurrentBatchBlock(chainId);
-            claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, 3); // status 2 means "failed"
+            claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.FAILED);
 
             // do not process included transactions if it is a consolidation
             if (_confirmedSignedBatch.isConsolidation) {
@@ -698,7 +699,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint64 _lastTxNonce = _confirmedSignedBatch.lastTxNonceId;
         uint8 _status = _confirmedSignedBatch.status;
         // if the batch is a consolidation or does not exist, return empty array
-        if (_status == 0 || _confirmedSignedBatch.isConsolidation) {
+        if (_status == ConstantsLib.NOT_EXISTS || _confirmedSignedBatch.isConsolidation) {
             return (new TxDataInfo[](0), _status);
         }
 
