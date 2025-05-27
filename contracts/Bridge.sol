@@ -349,11 +349,12 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Get transactions included in a specific batch for a given chain.
     /// @param _chainId ID of the chain.
     /// @param _batchId ID of the batch.
-    /// @return Array of transaction data included in the batch.
+    /// @return txs Array of transaction data included in the batch.
+    /// @return status Status of the batch.
     function getBatchTransactions(
         uint8 _chainId,
         uint64 _batchId
-    ) external view override returns (TxDataInfo[] memory) {
+    ) external view override returns (TxDataInfo[] memory txs, uint8 status) {
         return claims.getBatchTransactions(_chainId, _batchId);
     }
 

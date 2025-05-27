@@ -266,11 +266,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         // claims for the same batch will not be processed. This is to prevent double processing of the same batch,
         // and also to prevent processing of batches with invalid IDs.
         // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-        if (
-            _confirmedSignedBatch.firstTxNonceId == 0 &&
-            _confirmedSignedBatch.lastTxNonceId == 0 &&
-            !_confirmedSignedBatch.isConsolidation
-        ) {
+        if (_confirmedSignedBatch.status != 1) {
+            // status 1 means "in progress"
             return;
         }
 
@@ -285,16 +282,15 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         if (_quorumReached) {
             // current batch block must be reset in any case because otherwise bridge will be blocked
             claimsHelper.resetCurrentBatchBlock(chainId);
+            claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, 2); // status 2 means "executed"
 
-            // do not process included transactions or modify batch creation state if it is a consolidation
+            // do not process included transactions if it is a consolidation
             if (_confirmedSignedBatch.isConsolidation) {
                 return;
             }
 
             lastBatchedTxNonce[chainId] = _confirmedSignedBatch.lastTxNonceId;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
-
-            claimsHelper.deleteConfirmedSignedBatch(chainId, batchId);
         }
     }
 
@@ -312,11 +308,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         // claims for the same batch will not be processed. This is to prevent double processing of the same batch,
         // and also to prevent processing of batches with invalid IDs.
         // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-        if (
-            _confirmedSignedBatch.firstTxNonceId == 0 &&
-            _confirmedSignedBatch.lastTxNonceId == 0 &&
-            !_confirmedSignedBatch.isConsolidation
-        ) {
+        if (_confirmedSignedBatch.status != 1) {
+            // status 1 means "in progress"
             return;
         }
 
@@ -331,8 +324,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         if (_quorumReached) {
             // current batch block must be reset in any case because otherwise bridge will be blocked
             claimsHelper.resetCurrentBatchBlock(chainId);
+            claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, 3); // status 2 means "failed"
 
-            // do not process included transactions or modify batch creation state if it is a consolidation
+            // do not process included transactions if it is a consolidation
             if (_confirmedSignedBatch.isConsolidation) {
                 return;
             }
@@ -365,11 +359,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             }
 
             chainTokenQuantity[chainId] = _currentAmount;
-
             lastBatchedTxNonce[chainId] = _lastTxNonce;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
-
-            claimsHelper.deleteConfirmedSignedBatch(chainId, batchId);
         }
     }
 
@@ -687,13 +678,17 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     /// @notice Retrieves a list of transactions for a specific batch on a given chain.
     /// @dev This function returns transaction details for a batch identified by its batch ID.
-    ///      If the batch is a consolidation or the transaction nonces are invalid, an empty array
+    ///      If the batch is a consolidation batch does not exist, an empty array
     ///      is returned.
     /// @param _chainId The ID of the chain on which the batch exists.
     /// @param _batchId The ID of the batch to retrieve transactions for.
-    /// @return An array of `TxDataInfo` structs, each containing the transaction hash, source chain ID,
+    /// @return txs An array of `TxDataInfo` structs, each containing the transaction hash, source chain ID,
     ///         and transaction type.
-    function getBatchTransactions(uint8 _chainId, uint64 _batchId) external view returns (TxDataInfo[] memory) {
+    /// @return status A status code indicating the success or failure of the operation.
+    function getBatchTransactions(
+        uint8 _chainId,
+        uint64 _batchId
+    ) external view returns (TxDataInfo[] memory txs, uint8 status) {
         ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
             _chainId,
             _batchId
@@ -701,9 +696,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         uint64 _firstTxNonce = _confirmedSignedBatch.firstTxNonceId;
         uint64 _lastTxNonce = _confirmedSignedBatch.lastTxNonceId;
-
-        if (_confirmedSignedBatch.isConsolidation || (_firstTxNonce == 0 && _lastTxNonce == 0)) {
-            return new TxDataInfo[](0);
+        uint8 _status = _confirmedSignedBatch.status;
+        // if the batch is a consolidation or does not exist, return empty array
+        if (_status == 0 || _confirmedSignedBatch.isConsolidation) {
+            return (new TxDataInfo[](0), _status);
         }
 
         TxDataInfo[] memory _txHashes = new TxDataInfo[](_lastTxNonce - _firstTxNonce + 1);
@@ -716,7 +712,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             );
         }
 
-        return _txHashes;
+        return (_txHashes, _status);
     }
 
     function updateMaxNumberOfTransactions(uint16 _maxNumberOfTransactions) external onlyAdminContract {

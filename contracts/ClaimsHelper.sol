@@ -93,7 +93,8 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         confirmedSignedBatches[destinationChainId][signedBatchId] = ConfirmedSignedBatchData(
             _signedBatch.firstTxNonceId,
             _signedBatch.lastTxNonceId,
-            _signedBatch.isConsolidation
+            _signedBatch.isConsolidation,
+            1 // status 1 means "in progress"
         );
         currentBatchBlock[destinationChainId] = int256(block.number);
     }
@@ -129,12 +130,13 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         return v;
     }
 
-    /// @notice Deletes a confirmed signed batch by resetting its data.
-    /// @dev Sets the specified batch entry to a default `ConfirmedSignedBatchData` with zero values.
+    /// @notice Sets the status of a confirmed signed batch to a state.
+    /// @dev Sets the specified batch entry to a new status.
     /// @param chainId The ID of the blockchain where the batch resides.
     /// @param batchId The unique identifier of the batch to delete.
-    function deleteConfirmedSignedBatch(uint8 chainId, uint64 batchId) external onlyClaims {
-        confirmedSignedBatches[chainId][batchId] = ConfirmedSignedBatchData(0, 0, false);
+    /// @param status The new status to set for the batch.
+    function setConfirmedSignedBatchStatus(uint8 chainId, uint64 batchId, uint8 status) external onlyClaims {
+        confirmedSignedBatches[chainId][batchId].status = status;
     }
 
     /// @notice Returns the current version of the contract
