@@ -13,6 +13,8 @@ import "./Validators.sol";
 /// @notice Handles submission and confirmation of signed transaction batches for a cross-chain bridge.
 /// @dev Utilizes OpenZeppelin upgradeable contracts and interacts with ClaimsHelper and Validators for consensus logic.
 contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+    uint256 private constant MaxHashesPerChain = 50;
+
     address private upgradeAdmin;
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
@@ -33,6 +35,10 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// @notice Stores the last confirmed batch per destination chain
     /// @dev BlockchainId -> ConfirmedBatch
     mapping(uint8 => ConfirmedBatch) private lastConfirmedBatch;
+
+    /// @notice Stores the used hashes per destination chain
+    /// @dev BlockchainId -> list of hashes
+    mapping(uint8 => bytes32[]) private usedHashesPerChain;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
@@ -135,10 +141,36 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
             );
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
+            // clear temporary data
+            bytes32[] storage _usedHashes = usedHashesPerChain[_destinationChainId];
+            uint256 _usedHashesLength = _usedHashes.length;
+            for (uint256 i = 0; i < _usedHashesLength; ) {
+                bytes32 _hash = _usedHashes[i];
+                delete signatures[_hash];
+                delete feeSignatures[_hash];
+                delete bitmap[_hash];
+                unchecked {
+                    ++i;
+                } // Saves 100 gas per iteration
+            }
 
-            delete signatures[_sbHash];
-            delete feeSignatures[_sbHash];
-            delete bitmap[_sbHash];
+            delete usedHashesPerChain[_destinationChainId];
+        } else if (_numberOfVotes == 0) {
+            bytes32[] storage _usedHashes = usedHashesPerChain[_destinationChainId];
+            // if this is the first vote for this hash, we need to store it
+            // but we need to limit the number of hashes per chain
+            if (_usedHashes.length == MaxHashesPerChain) {
+                // Remove the oldest (first) element — costly operation
+                // for N = 50: 49 * 5,000 + pop() ≈ 245,000–250,000 gas (worst case)
+                for (uint256 i = 1; i < MaxHashesPerChain; ) {
+                    _usedHashes[i - 1] = _usedHashes[i];
+                    unchecked {
+                        ++i;
+                    } // Saves 100 gas per iteration
+                }
+                _usedHashes.pop();
+            }
+            _usedHashes.push(_sbHash);
         }
     }
 
