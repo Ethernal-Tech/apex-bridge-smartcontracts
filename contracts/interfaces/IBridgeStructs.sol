@@ -21,6 +21,7 @@ interface IBridgeStructs {
         uint64 firstTxNonceId;
         uint64 lastTxNonceId;
         bool isConsolidation;
+        uint8 status; // 0 = deleted, 1 = in progress, 2 = executed, 3 = failed
     }
 
     /// @notice Data for a confirmed batch that was executed on-chain.
