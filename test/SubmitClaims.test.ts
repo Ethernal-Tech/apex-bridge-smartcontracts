@@ -376,7 +376,7 @@ describe("Submit Claims", function () {
       expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
     });
 
-    it("Should reset first and last transaction nonce for confirmed signed batch after reaching quorum on Bridging Executed Claim", async function () {
+    it("Should set status executed for confirmed signed batch after reaching quorum on Bridging Executed Claim", async function () {
       const {
         bridge,
         claimsHelper,
@@ -413,62 +413,85 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["BEC"]);
-      const encoded = abiCoder.encode(
-        ["bytes32", "uint64", "uint8"],
-        [
-          validatorClaimsBEC.batchExecutedClaims[0].observedTransactionHash,
-          validatorClaimsBEC.batchExecutedClaims[0].batchNonceId,
-          validatorClaimsBEC.batchExecutedClaims[0].chainId,
-        ]
+      const confSignedBatchDataPrev = await claimsHelper.getConfirmedSignedBatchData(
+            validatorClaimsBEC.batchExecutedClaims[0].chainId,
+            validatorClaimsBEC.batchExecutedClaims[0].batchNonceId
       );
-
-      const encoded40 =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encoded.substring(2) +
-        encodedPrefix.substring(66);
-
-      const hash = ethers.keccak256(encoded40);
-
-      expect(
-        (
-          await claimsHelper.getConfirmedSignedBatchData(
-            validatorClaimsBEC.batchExecutedClaims[0].chainId,
-            validatorClaimsBEC.batchExecutedClaims[0].batchNonceId
-          )
-        ).firstTxNonceId
-      ).to.equal(1);
-      expect(
-        (
-          await claimsHelper.getConfirmedSignedBatchData(
-            validatorClaimsBEC.batchExecutedClaims[0].chainId,
-            validatorClaimsBEC.batchExecutedClaims[0].batchNonceId
-          )
-        ).lastTxNonceId
-      ).to.equal(1);
+      expect(confSignedBatchDataPrev.firstTxNonceId).to.equal(1);        
+      expect(confSignedBatchDataPrev.lastTxNonceId).to.equal(1);
+      expect(confSignedBatchDataPrev.status).to.equal(1);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
-      expect(
-        (
-          await claimsHelper.getConfirmedSignedBatchData(
+      const confSignedBatchData = await claimsHelper.getConfirmedSignedBatchData(
             validatorClaimsBEC.batchExecutedClaims[0].chainId,
             validatorClaimsBEC.batchExecutedClaims[0].batchNonceId
-          )
-        ).firstTxNonceId
-      ).to.equal(0);
-      expect(
-        (
-          await claimsHelper.getConfirmedSignedBatchData(
-            validatorClaimsBEC.batchExecutedClaims[0].chainId,
-            validatorClaimsBEC.batchExecutedClaims[0].batchNonceId
-          )
-        ).lastTxNonceId
-      ).to.equal(0);
+      );
+      expect(confSignedBatchData.firstTxNonceId).to.equal(1);        
+      expect(confSignedBatchData.lastTxNonceId).to.equal(1);
+      expect(confSignedBatchData.status).to.equal(2);
+    });
+
+     it("Should set status failed for confirmed signed batch after reaching quorum on Bridging Executed Claim", async function () {
+      const {
+        bridge,
+        claimsHelper,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsBRC,
+        signedBatch,
+        validatorClaimsBEFC,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 10000, 10000, validatorAddressChainData);
+      const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
+      await ethers.provider.send("evm_mine");
+      await ethers.provider.send("evm_mine");
+
+      const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(_destinationChain);
+      expect(confirmedTxs.length).to.equal(1);
+
+      expect(await bridge.shouldCreateBatch(_destinationChain)).to.be.true;
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      const confSignedBatchDataPrev = await claimsHelper.getConfirmedSignedBatchData(
+            validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId,
+            validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId
+      );
+      expect(confSignedBatchDataPrev.firstTxNonceId).to.equal(1);        
+      expect(confSignedBatchDataPrev.lastTxNonceId).to.equal(1);
+      expect(confSignedBatchDataPrev.status).to.equal(1);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
+
+      const confSignedBatchData = await claimsHelper.getConfirmedSignedBatchData(
+            validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId,
+            validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId
+      );
+      expect(confSignedBatchData.firstTxNonceId).to.equal(1);        
+      expect(confSignedBatchData.lastTxNonceId).to.equal(1);
+      expect(confSignedBatchData.status).to.equal(3);
     });
 
     it("Should update lastBatchedTxNonce when Bridging Executed Claim is confirmed", async function () {

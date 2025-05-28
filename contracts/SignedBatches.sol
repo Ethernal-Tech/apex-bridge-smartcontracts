@@ -30,10 +30,6 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// @dev hash -> bls bitmap
     mapping(bytes32 => uint256) private bitmap;
 
-    /// @notice Tracks if an address has voted for a specific batch hash
-    /// @dev hash -> user address -> true/false
-    mapping(bytes32 => mapping(address => bool)) public hasVoted;
-
     /// @notice Stores the last confirmed batch per destination chain
     /// @dev BlockchainId -> ConfirmedBatch
     mapping(uint8 => ConfirmedBatch) private lastConfirmedBatch;
@@ -108,22 +104,24 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
             )
         );
 
+        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
+        uint256 _bitmapValue = bitmap[_sbHash];
+        uint256 _bitmapNewValue;
+        unchecked {
+            _bitmapNewValue = _bitmapValue | (1 << _validatorIdx);
+        }
+
         // check if caller already voted for same hash and skip if he did
-        if (hasVoted[_sbHash][_caller]) {
+        if (_bitmapValue == _bitmapNewValue) {
             return;
         }
 
         uint256 _quorumCount = validators.getQuorumNumberOfValidators();
         uint256 _numberOfVotes = signatures[_sbHash].length;
-        uint8 validatorIdx = validators.getValidatorIndex(_caller) - 1;
-
-        hasVoted[_sbHash][_caller] = true;
 
         signatures[_sbHash].push(_signedBatch.signature);
         feeSignatures[_sbHash].push(_signedBatch.feeSignature);
-        unchecked {
-            bitmap[_sbHash] = bitmap[_sbHash] | (1 << validatorIdx);
-        }
+        bitmap[_sbHash] = _bitmapNewValue;
 
         // check if quorum reached (+1 is last vote)
         if (_numberOfVotes + 1 >= _quorumCount) {
@@ -158,6 +156,14 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
     function getNumberOfSignatures(bytes32 _hash) external view returns (uint256, uint256) {
         return (signatures[_hash].length, feeSignatures[_hash].length);
+    }
+
+    function hasVoted(bytes32 _hash, address _addr) external view returns (bool) {
+        uint8 _validatorIdx = validators.getValidatorIndex(_addr);
+        if (_validatorIdx == 0) {
+            return false; // address is not a validator
+        }
+        return bitmap[_hash] & (1 << (_validatorIdx - 1)) != 0;
     }
 
     /// @notice Returns the current version of the contract
