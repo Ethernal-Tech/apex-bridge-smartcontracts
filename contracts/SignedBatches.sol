@@ -13,7 +13,7 @@ import "./Validators.sol";
 /// @notice Handles submission and confirmation of signed transaction batches for a cross-chain bridge.
 /// @dev Utilizes OpenZeppelin upgradeable contracts and interacts with ClaimsHelper and Validators for consensus logic.
 contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
-    uint256 private constant MaxHashesPerChain = 50;
+    uint256 private constant MaxHashesPerChain = 64;
 
     address private upgradeAdmin;
     address private bridgeAddress;
@@ -39,6 +39,11 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// @notice Stores the used hashes per destination chain
     /// @dev BlockchainId -> list of hashes
     mapping(uint8 => bytes32[]) private usedHashesPerChain;
+
+    /// @notice Tracks the starting index of the circular buffer for each destination chain.
+    /// @dev Mapping from destination chain ID to the index of the next position to overwrite
+    ///      in the `usedHashesPerChain` buffer.
+    mapping(uint8 => uint16) private usedHashesStartIndexPerChain;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
@@ -155,22 +160,24 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
             }
 
             delete usedHashesPerChain[_destinationChainId];
+            delete usedHashesStartIndexPerChain[_destinationChainId];
         } else if (_numberOfVotes == 0) {
             bytes32[] storage _usedHashes = usedHashesPerChain[_destinationChainId];
             // if this is the first vote for this hash, we need to store it
             // but we need to limit the number of hashes per chain
             if (_usedHashes.length == MaxHashesPerChain) {
-                // Remove the oldest (first) element — costly operation
-                // for N = 50: 49 * 5,000 + pop() ≈ 245,000–250,000 gas (worst case)
-                for (uint256 i = 1; i < MaxHashesPerChain; ) {
-                    _usedHashes[i - 1] = _usedHashes[i];
-                    unchecked {
-                        ++i;
-                    } // Saves 100 gas per iteration
-                }
-                _usedHashes.pop();
+                uint16 oldIndex = usedHashesStartIndexPerChain[_destinationChainId];
+                bytes32 _hash = _usedHashes[oldIndex];
+                // delete old hash
+                delete signatures[_hash];
+                delete feeSignatures[_hash];
+                delete bitmap[_hash];
+                // update new values
+                usedHashesStartIndexPerChain[_destinationChainId] = (oldIndex + 1) % uint16(MaxHashesPerChain);
+                _usedHashes[oldIndex] = _sbHash;
+            } else {
+                _usedHashes.push(_sbHash);
             }
-            _usedHashes.push(_sbHash);
         }
     }
 
