@@ -5,12 +5,15 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
+import "./interfaces/ConstantsLib.sol";
 import "./Utils.sol";
 
 /// @title ClaimsHelper
 /// @notice Handles claim voting, signed batch confirmations, and upgradeable logic for a cross-chain bridge.
 /// @dev This contract is upgradeable using OpenZeppelin's UUPS pattern.
 contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+    using ConstantsLib for uint8;
+
     address private upgradeAdmin;
     address private claimsAddress;
     address private signedBatchesAddress;
@@ -93,7 +96,8 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         confirmedSignedBatches[destinationChainId][signedBatchId] = ConfirmedSignedBatchData(
             _signedBatch.firstTxNonceId,
             _signedBatch.lastTxNonceId,
-            _signedBatch.isConsolidation
+            _signedBatch.isConsolidation,
+            ConstantsLib.IN_PROGRESS // status 1 means "in progress"
         );
         currentBatchBlock[destinationChainId] = int256(block.number);
     }
@@ -129,12 +133,13 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         return v;
     }
 
-    /// @notice Deletes a confirmed signed batch by resetting its data.
-    /// @dev Sets the specified batch entry to a default `ConfirmedSignedBatchData` with zero values.
-    /// @param chainId The ID of the blockchain where the batch resides.
-    /// @param batchId The unique identifier of the batch to delete.
-    function deleteConfirmedSignedBatch(uint8 chainId, uint64 batchId) external onlyClaims {
-        confirmedSignedBatches[chainId][batchId] = ConfirmedSignedBatchData(0, 0, false);
+    /// @notice Sets the specified batch entry to a final status.
+    /// @dev Sets the specified batch entry to a final status.
+    /// @param _chainId The ID of the blockchain where the batch resides.
+    /// @param _batchId The unique identifier of the batch to delete.
+    /// @param _status The new status to set for the batch.
+    function setConfirmedSignedBatchStatus(uint8 _chainId, uint64 _batchId, uint8 _status) external onlyClaims {
+        confirmedSignedBatches[_chainId][_batchId].status = _status;
     }
 
     /// @notice Returns the current version of the contract

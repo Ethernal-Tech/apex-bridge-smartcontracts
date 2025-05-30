@@ -105,6 +105,10 @@ abstract contract IBridge is IBridgeStructs {
     /// @notice Get transactions included in a specific batch for a given chain.
     /// @param _chainId ID of the chain.
     /// @param _batchId ID of the batch.
-    /// @return Array of transaction data included in the batch.
-    function getBatchTransactions(uint8 _chainId, uint64 _batchId) external virtual returns (TxDataInfo[] memory);
+    /// @return status Status of the batch.
+    /// @return txs Array of transaction data included in the batch.
+    function getBatchStatusAndTransactions(
+        uint8 _chainId,
+        uint64 _batchId
+    ) external virtual returns (uint8 status, TxDataInfo[] memory txs);
 }
