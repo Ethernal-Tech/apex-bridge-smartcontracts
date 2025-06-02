@@ -36,12 +36,12 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// @dev BlockchainId -> ConfirmedBatch
     mapping(uint8 => ConfirmedBatch) private lastConfirmedBatch;
 
-    /// @notice Stores the used hashes per destination chain per validator
+    /// @notice Stores validator used hashes per destination chain
     /// @dev BlockchainId -> validator address -> bytes32[]
     mapping(uint8 => mapping(address => bytes32[])) private usedHashes;
 
-    /// @notice Stores start index for circular buffer @see usedHashes
-    /// @dev BlockchainId -> validator address -> position of the first element in the usedHashes list
+    /// @notice Starting index for the circular buffer in `usedHashes`
+    /// @dev BlockchainId -> validator address -> start index for used hashes
     mapping(uint8 => mapping(address => uint16)) private usedHashesStartIndx;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
