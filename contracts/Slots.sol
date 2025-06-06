@@ -77,6 +77,7 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         uint256 _bitmapValue;
         uint256 _bitmapNewValue;
         bytes32 _chash;
+        uint256 _votesNum;
 
         for (uint i; i < _blocksLength; ++i) {
             CardanoBlock calldata _cblock = _blocks[i];
@@ -99,7 +100,6 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
 
             // Brian Kernighan's algorithm
             // @see https://github.com/estarriolvetch/solidity-bits/blob/main/contracts/Popcount.sol
-            uint256 _votesNum = 0;
             unchecked {
                 for (_votesNum = 0; _bitmapNewValue != 0; _votesNum++) {
                     _bitmapNewValue &= _bitmapNewValue - 1;
