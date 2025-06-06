@@ -97,8 +97,8 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
 
             bitmap[_chash] = _bitmapNewValue;
 
+            // Brian Kernighan's algorithm
             // @see https://github.com/estarriolvetch/solidity-bits/blob/main/contracts/Popcount.sol
-            // logic for if ((_bitmapNewValue & (1 << _valIdx)) != 0)
             uint256 _votesNum = 0;
             unchecked {
                 for (_votesNum = 0; _bitmapNewValue != 0; _votesNum++) {
