@@ -68,7 +68,6 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     function updateBlocks(uint8 _chainId, CardanoBlock[] calldata _blocks, address _caller) external onlyBridge {
         // Check if the caller has already voted for this claim
         uint256 _quorumCnt = validators.getQuorumNumberOfValidators();
-        uint8 _validatorsCount = validators.validatorsCount();
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
         uint256 _blocksLength = _blocks.length;
         CardanoBlock memory _lastObservedBlock = lastObservedBlock[_chainId];
@@ -93,22 +92,22 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
                 continue;
             }
 
+            bitmap[_chash] = _bitmapNewValue;
+
+            // @see https://github.com/estarriolvetch/solidity-bits/blob/main/contracts/Popcount.sol
+            // logic for if ((_bitmapNewValue & (1 << _valIdx)) != 0)
             uint256 _votesNum = 0;
-            for (uint8 _valIdx = 0; _valIdx < _validatorsCount; ++_valIdx) {
-                if ((_bitmapNewValue & (1 << _valIdx)) != 0) {
-                    unchecked {
-                        ++_votesNum; // Gas optimization: unchecked is fine here
-                    }
+            unchecked{
+                for (_votesNum=0; _bitmapNewValue != 0; _votesNum++) {
+                    _bitmapNewValue &= _bitmapNewValue - 1;
                 }
             }
-
+            
             if (_votesNum >= _quorumCnt) {
                 _lastObservedBlock = _cblock;
                 // can delete because of check
                 //  if (_cblock.blockSlot <= _lastObservedBlock.blockSlot)
                 delete bitmap[_chash];
-            } else {
-                bitmap[_chash] = _bitmapNewValue;
             }
         }
 
