@@ -20,6 +20,9 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     /// @dev BlockChainId -> CardanoBlock
     mapping(uint8 => CardanoBlock) private lastObservedBlock;
 
+    mapping(bytes32 => uint8) private _unusedVotes;
+    mapping(bytes32 => mapping(address => bool)) private _unusedValidatorVote;
+
     /// @notice Mapping from (chain ID, block hash, slot) hash to bitmap contains all validator votes.
     /// @dev hash(slot, hash) -> bitmap
     mapping(bytes32 => uint256) private bitmap;
@@ -27,7 +30,7 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[50] private __gap;
+    uint256[49] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -97,12 +100,12 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
             // @see https://github.com/estarriolvetch/solidity-bits/blob/main/contracts/Popcount.sol
             // logic for if ((_bitmapNewValue & (1 << _valIdx)) != 0)
             uint256 _votesNum = 0;
-            unchecked{
-                for (_votesNum=0; _bitmapNewValue != 0; _votesNum++) {
+            unchecked {
+                for (_votesNum = 0; _bitmapNewValue != 0; _votesNum++) {
                     _bitmapNewValue &= _bitmapNewValue - 1;
                 }
             }
-            
+
             if (_votesNum >= _quorumCnt) {
                 _lastObservedBlock = _cblock;
                 // can delete because of check
