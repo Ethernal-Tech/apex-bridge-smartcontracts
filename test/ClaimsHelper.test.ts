@@ -22,13 +22,17 @@ describe("ClaimsHelper Contract", function () {
       );
     });
 
-    it("Should revert if ClaimsHelper SC setVotedOnlyIfNeeded is not called by SignedBatches SC or Claims SC", async function () {
+    it("Should revert if ClaimsHelper SC setVotedOnlyIfNeededReturnQuorumReached is not called by SignedBatches SC or Claims SC", async function () {
       const { bridge, claimsHelper, owner } = await loadFixture(deployBridgeFixture);
 
       await expect(
         claimsHelper
           .connect(owner)
-          .setVotedOnlyIfNeeded(owner.address, "0x7465737600000000000000000000000000000000000000000000000000000000", 1)
+          .setVotedOnlyIfNeededReturnQuorumReached(
+            1,
+            "0x7465737600000000000000000000000000000000000000000000000000000000",
+            1
+          )
       ).to.be.revertedWithCustomError(bridge, "NotSignedBatchesOrClaims");
     });
 
@@ -38,7 +42,7 @@ describe("ClaimsHelper Contract", function () {
       await expect(
         claimsHelper
           .connect(owner)
-          .setVoted(owner.address, "0x7465737600000000000000000000000000000000000000000000000000000000")
+          .setVotedReturnsNumberOfVotes(1, "0x7465737600000000000000000000000000000000000000000000000000000000")
       ).to.be.revertedWithCustomError(bridge, "NotSignedBatchesOrClaims");
     });
   });

@@ -40,7 +40,7 @@ describe("Claims Contract", function () {
     });
 
     it("Should skip if Bridging Request Claim is already confirmed", async function () {
-      const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData } =
+      const { bridge, claims, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
       await bridge.connect(owner).registerChain(chain1, 10000, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 10000, validatorAddressChainData);
@@ -70,9 +70,9 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
       await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
     });
     it("Should skip if same validator submits the same Bridging Request Claim twice", async function () {
       const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData } =
@@ -108,17 +108,8 @@ describe("Claims Contract", function () {
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
     it("Should skip Bridging Request Claim if there is not enough bridging tokens and emit NotEnoughFunds event", async function () {
-      const {
-        bridge,
-        claims,
-        claimsHelper,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        validatorClaimsBRC,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
+      const { bridge, claims, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData } =
+        await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 1, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 1, validatorAddressChainData);
@@ -151,11 +142,12 @@ describe("Claims Contract", function () {
         .to.emit(claims, "NotEnoughFunds")
         .withArgs("BRC", 0, 1);
 
-      expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
     });
     it("Should revert Bridging Request Claims if there are more than 16 in the array", async function () {
       const {
         bridge,
+        claims,
         claimsHelper,
         owner,
         chain1,
@@ -192,7 +184,7 @@ describe("Claims Contract", function () {
       ];
 
       for (let i = 0; i < 16; i++) {
-        expect(await claimsHelper.hasVoted(hashes[i], validators[0].address)).to.be.true;
+        expect(await claims.hasVoted(hashes[i], validators[0].address)).to.be.true;
         expect(await claimsHelper.numberOfVotes(hashes[i])).to.equal(1);
       }
 
@@ -215,7 +207,7 @@ describe("Claims Contract", function () {
     it("Should skip if Batch Executed Claims is already confirmed", async function () {
       const {
         bridge,
-        claimsHelper,
+        claims,
         owner,
         validators,
         chain1,
@@ -272,11 +264,11 @@ describe("Claims Contract", function () {
 
       const hash = ethers.keccak256(encoded40);
 
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
 
       await bridge.connect(validators[4]).submitClaims(validatorClaimsBEC);
 
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
     });
 
     it("Should skip if same validator submits the same Batch Executed Claim twice", async function () {
@@ -573,7 +565,7 @@ describe("Claims Contract", function () {
     it("Should skip if Batch Execution Failed Claims is already confirmed", async function () {
       const {
         bridge,
-        claimsHelper,
+        claims,
         owner,
         validators,
         chain1,
@@ -630,11 +622,11 @@ describe("Claims Contract", function () {
 
       const hash = ethers.keccak256(encoded40);
 
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
 
       await bridge.connect(validators[4]).submitClaims(validatorClaimsBEFC);
 
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
     });
 
     it("Should skip if same validator submits the same Batch Execution Failed Claim twice", async function () {
@@ -925,7 +917,7 @@ describe("Claims Contract", function () {
     });
 
     it("Should skip if Refund Request Claims is already confirmed", async function () {
-      const { bridge, claimsHelper, owner, validators, chain2, validatorClaimsRRC, validatorAddressChainData } =
+      const { bridge, claims, claimsHelper, owner, validators, chain2, validatorClaimsRRC, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
@@ -957,11 +949,11 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
 
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
 
       await bridge.connect(validators[4]).submitClaims(validatorClaimsRRC);
 
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
     });
 
     it("Should skip if same validator submits the same Refund Request Claims twice", async function () {
@@ -1113,7 +1105,7 @@ describe("Claims Contract", function () {
     });
 
     it("Should skip if Hot Wallet Increment Claim Claim is already confirmed", async function () {
-      const { bridge, claimsHelper, owner, validators, chain1, validatorClaimsHWIC, validatorAddressChainData } =
+      const { bridge, claims, owner, validators, chain1, validatorClaimsHWIC, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
@@ -1140,7 +1132,7 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsHWIC);
 
       expect(
-        await claimsHelper.hasVoted(
+        await claims.hasVoted(
           "0x4ec43138854a8260f51de42ae197fcd87f5d22a6ea8499e1c0b261e1e4ffa575",
           validators[4].address
         )
@@ -1148,7 +1140,7 @@ describe("Claims Contract", function () {
 
       await bridge.connect(validators[4]).submitClaims(validatorClaimsHWIC);
 
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
     });
 
     it("Should skip if same validator submits the same Hot Wallet Increment Claim twice", async function () {
@@ -1232,7 +1224,7 @@ describe("Claims Contract", function () {
       await expect(
         claims
           .connect(owner)
-          .setVoted(owner.address, "0x7465737400000000000000000000000000000000000000000000000000000000")
+          .setVotedReturnsNumberOfVotes(1, "0x7465737400000000000000000000000000000000000000000000000000000000")
       ).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
     it("Should revert claim submition in Claims SC if not called by bridge SC", async function () {

@@ -66,7 +66,7 @@ describe("Submit Claims", function () {
     });
 
     it("Should set voted on Bridging Request Claim", async function () {
-      const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData } =
+      const { bridge, claims, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 10000, validatorAddressChainData);
@@ -97,22 +97,22 @@ describe("Submit Claims", function () {
 
       const hash = ethers.keccak256(encoded40);
 
-      expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
-      expect(await claimsHelper.hasVoted(hash, validators[1].address)).to.be.false;
-      expect(await claimsHelper.hasVoted(hash, validators[2].address)).to.be.false;
-      expect(await claimsHelper.hasVoted(hash, validators[3].address)).to.be.false;
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[2].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[3].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-      expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.true;
-      expect(await claimsHelper.hasVoted(hash, validators[1].address)).to.be.true;
-      expect(await claimsHelper.hasVoted(hash, validators[2].address)).to.be.true;
-      expect(await claimsHelper.hasVoted(hash, validators[3].address)).to.be.true;
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[0].address)).to.be.true;
+      expect(await claims.hasVoted(hash, validators[1].address)).to.be.true;
+      expect(await claims.hasVoted(hash, validators[2].address)).to.be.true;
+      expect(await claims.hasVoted(hash, validators[3].address)).to.be.true;
+      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
     });
 
     it("Should update next timeout block when Bridging Request Claim is confirmed and requirements are met", async function () {
@@ -248,7 +248,7 @@ describe("Submit Claims", function () {
     it("Should set voted on Bridging Executed Claim", async function () {
       const {
         bridge,
-        claimsHelper,
+        claims,
         owner,
         chain1,
         chain2,
@@ -300,22 +300,22 @@ describe("Submit Claims", function () {
 
       const hash = ethers.keccak256(encoded40);
 
-      expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
-      expect(await claimsHelper.hasVoted(hash, validators[1].address)).to.be.false;
-      expect(await claimsHelper.hasVoted(hash, validators[2].address)).to.be.false;
-      expect(await claimsHelper.hasVoted(hash, validators[3].address)).to.be.false;
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[2].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[3].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
-      expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.true;
-      expect(await claimsHelper.hasVoted(hash, validators[1].address)).to.be.true;
-      expect(await claimsHelper.hasVoted(hash, validators[2].address)).to.be.true;
-      expect(await claimsHelper.hasVoted(hash, validators[3].address)).to.be.true;
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[0].address)).to.be.true;
+      expect(await claims.hasVoted(hash, validators[1].address)).to.be.true;
+      expect(await claims.hasVoted(hash, validators[2].address)).to.be.true;
+      expect(await claims.hasVoted(hash, validators[3].address)).to.be.true;
+      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
     });
 
     it("Should set status executed for confirmed signed batch after reaching quorum on Bridging Executed Claim", async function () {
@@ -356,10 +356,10 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
       const confSignedBatchDataPrev = await claimsHelper.getConfirmedSignedBatchData(
-            validatorClaimsBEC.batchExecutedClaims[0].chainId,
-            validatorClaimsBEC.batchExecutedClaims[0].batchNonceId
+        validatorClaimsBEC.batchExecutedClaims[0].chainId,
+        validatorClaimsBEC.batchExecutedClaims[0].batchNonceId
       );
-      expect(confSignedBatchDataPrev.firstTxNonceId).to.equal(1);        
+      expect(confSignedBatchDataPrev.firstTxNonceId).to.equal(1);
       expect(confSignedBatchDataPrev.lastTxNonceId).to.equal(1);
       expect(confSignedBatchDataPrev.status).to.equal(1);
 
@@ -369,15 +369,15 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
       const confSignedBatchData = await claimsHelper.getConfirmedSignedBatchData(
-            validatorClaimsBEC.batchExecutedClaims[0].chainId,
-            validatorClaimsBEC.batchExecutedClaims[0].batchNonceId
+        validatorClaimsBEC.batchExecutedClaims[0].chainId,
+        validatorClaimsBEC.batchExecutedClaims[0].batchNonceId
       );
-      expect(confSignedBatchData.firstTxNonceId).to.equal(1);        
+      expect(confSignedBatchData.firstTxNonceId).to.equal(1);
       expect(confSignedBatchData.lastTxNonceId).to.equal(1);
       expect(confSignedBatchData.status).to.equal(2);
     });
 
-     it("Should set status failed for confirmed signed batch after reaching quorum on Bridging Executed Claim", async function () {
+    it("Should set status failed for confirmed signed batch after reaching quorum on Bridging Executed Claim", async function () {
       const {
         bridge,
         claimsHelper,
@@ -415,10 +415,10 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
       const confSignedBatchDataPrev = await claimsHelper.getConfirmedSignedBatchData(
-            validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId,
-            validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId
+        validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId,
+        validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId
       );
-      expect(confSignedBatchDataPrev.firstTxNonceId).to.equal(1);        
+      expect(confSignedBatchDataPrev.firstTxNonceId).to.equal(1);
       expect(confSignedBatchDataPrev.lastTxNonceId).to.equal(1);
       expect(confSignedBatchDataPrev.status).to.equal(1);
 
@@ -428,10 +428,10 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
 
       const confSignedBatchData = await claimsHelper.getConfirmedSignedBatchData(
-            validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId,
-            validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId
+        validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId,
+        validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId
       );
-      expect(confSignedBatchData.firstTxNonceId).to.equal(1);        
+      expect(confSignedBatchData.firstTxNonceId).to.equal(1);
       expect(confSignedBatchData.lastTxNonceId).to.equal(1);
       expect(confSignedBatchData.status).to.equal(3);
     });
@@ -608,7 +608,7 @@ describe("Submit Claims", function () {
     it("Should set voted on Bridging Execution Failed Claim", async function () {
       const {
         bridge,
-        claimsHelper,
+        claims,
         owner,
         chain1,
         chain2,
@@ -660,22 +660,22 @@ describe("Submit Claims", function () {
 
       const hash = ethers.keccak256(encoded40);
 
-      expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
-      expect(await claimsHelper.hasVoted(hash, validators[1].address)).to.be.false;
-      expect(await claimsHelper.hasVoted(hash, validators[2].address)).to.be.false;
-      expect(await claimsHelper.hasVoted(hash, validators[3].address)).to.be.false;
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[2].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[3].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
 
-      expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.true;
-      expect(await claimsHelper.hasVoted(hash, validators[1].address)).to.be.true;
-      expect(await claimsHelper.hasVoted(hash, validators[2].address)).to.be.true;
-      expect(await claimsHelper.hasVoted(hash, validators[3].address)).to.be.true;
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[0].address)).to.be.true;
+      expect(await claims.hasVoted(hash, validators[1].address)).to.be.true;
+      expect(await claims.hasVoted(hash, validators[2].address)).to.be.true;
+      expect(await claims.hasVoted(hash, validators[3].address)).to.be.true;
+      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
     });
 
     it("Should reset currentBatchBlock when Bridging Executed Failed Claim is confirmed", async function () {
@@ -886,7 +886,7 @@ describe("Submit Claims", function () {
 
   describe("Submit new Refund Request Claims", function () {
     it("Should set voted on Refund Request Claim", async function () {
-      const { bridge, claimsHelper, owner, chain2, validators, validatorClaimsRRC, validatorAddressChainData } =
+      const { bridge, claims, owner, chain2, validators, validatorClaimsRRC, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
@@ -913,11 +913,11 @@ describe("Submit Claims", function () {
 
       const hash = ethers.keccak256(encoded40);
 
-      expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.false;
-      expect(await claimsHelper.hasVoted(hash, validators[1].address)).to.be.false;
-      expect(await claimsHelper.hasVoted(hash, validators[2].address)).to.be.false;
-      expect(await claimsHelper.hasVoted(hash, validators[3].address)).to.be.false;
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[2].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[3].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
@@ -925,11 +925,11 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[4]).submitClaims(validatorClaimsRRC);
 
-      expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.be.true;
-      expect(await claimsHelper.hasVoted(hash, validators[1].address)).to.be.true;
-      expect(await claimsHelper.hasVoted(hash, validators[2].address)).to.be.true;
-      expect(await claimsHelper.hasVoted(hash, validators[3].address)).to.be.true;
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claims.hasVoted(hash, validators[0].address)).to.be.true;
+      expect(await claims.hasVoted(hash, validators[1].address)).to.be.true;
+      expect(await claims.hasVoted(hash, validators[2].address)).to.be.true;
+      expect(await claims.hasVoted(hash, validators[3].address)).to.be.true;
+      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
     });
 
     it("Should store new confirmedTransactions when Refund Request Claim is confirmed", async function () {
