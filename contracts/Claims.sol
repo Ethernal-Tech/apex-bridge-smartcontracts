@@ -220,9 +220,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
 
         bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
+        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
 
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
-            _caller,
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
+            _validatorIdx,
             _claimHash,
             validators.getQuorumNumberOfValidators()
         );
@@ -275,8 +276,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         bytes32 claimHash = keccak256(abi.encode("BEC", _claim));
 
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
-            _caller,
+        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
+
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
+            _validatorIdx,
             claimHash,
             validators.getQuorumNumberOfValidators()
         );
@@ -315,9 +318,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
 
         bytes32 claimHash = keccak256(abi.encode("BEFC", _claim));
+        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
 
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
-            _caller,
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
+            _validatorIdx,
             claimHash,
             validators.getQuorumNumberOfValidators()
         );
@@ -397,8 +401,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         bytes32 claimHash = keccak256(abi.encode("RRC", _claim));
 
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
-            _caller,
+        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
+
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
+            _validatorIdx,
             claimHash,
             validators.getQuorumNumberOfValidators()
         );
@@ -427,8 +433,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     function _submitClaimHWIC(HotWalletIncrementClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode("HWIC", _claim));
 
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
-            _caller,
+        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
+
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
+            _validatorIdx,
             claimHash,
             validators.getQuorumNumberOfValidators()
         );
@@ -495,12 +503,11 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     }
 
     /// @notice Registers a vote for a specific voter and claim hash.
-    /// @param _voter The address of the voter casting the vote.
+    /// @param _validatorIdx The index of validator in the validator set.
     /// @param _hash The hash of the claim or event the voter is voting on.
     /// @return The updated vote count for the specific claim or event.
-
-    function setVoted(address _voter, bytes32 _hash) external onlyBridge returns (uint256) {
-        return claimsHelper.setVoted(_voter, _hash);
+    function setVotedReturnsNumberOfVotes(uint8 _validatorIdx, bytes32 _hash) external onlyBridge returns (uint256) {
+        return claimsHelper.setVotedReturnsNumberOfVotes(_validatorIdx, _hash);
     }
 
     /// @notice Determines whether a new batch should be created for a specific destination chain.
@@ -592,7 +599,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @param _voter The address of the voter to check.
     /// @return True if the voter has voted for the given claim hash, false otherwise.
     function hasVoted(bytes32 _hash, address _voter) external view returns (bool) {
-        return claimsHelper.hasVoted(_hash, _voter);
+        uint8 _validatorIdx = validators.getValidatorIndex(_voter) - 1;
+        return claimsHelper.hasVoted(_hash, _validatorIdx);
     }
 
     /// @notice Initiates a defunding operation by creating a BridgingRequestClaim for a specific chain.
