@@ -18,11 +18,6 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     address private claimsAddress;
     address private signedBatchesAddress;
 
-    /// @dev Reserved storage slots for future upgrades. When adding new variables
-    ///      use one slot from the gap (decrease the gap array size).
-    ///      Double check when setting structs or arrays.
-    uint256[50] private __gap;
-
     /// @notice Mapping of confirmed signed batches
     /// @dev BlockchainId -> batchId -> SignedBatch
     mapping(uint8 => mapping(uint64 => ConfirmedSignedBatchData)) public confirmedSignedBatches;
@@ -31,13 +26,14 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @dev BlochchainId -> blockNumber
     mapping(uint8 => int256) public currentBatchBlock;
 
-    /// @notice Tracks whether a voter has voted on a specific transaction hash
-    /// @dev TansactionHash -> Voter -> Voted
-    mapping(bytes32 => mapping(address => bool)) public hasVoted;
+    /// @notice Mapping from (chain ID, block hash, slot) hash to bitmap contains all validator votes.
+    /// @dev hash(slot, hash) -> bitmap
+    mapping(bytes32 => uint256) public bitmap;
 
-    /// @notice Number of votes for a given claim hash.
-    /// @dev ClaimHash -> numberOfVotes
-    mapping(bytes32 => uint8) public numberOfVotes;
+    /// @dev Reserved storage slots for future upgrades. When adding new variables
+    ///      use one slot from the gap (decrease the gap array size).
+    ///      Double check when setting structs or arrays.
+    uint256[50] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -104,33 +100,63 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
 
     /// @notice Registers a vote for a specific claim hash only if the voter hasn't already voted and quorum hasn't been reached.
     /// @dev Increments the vote count if conditions are met and returns whether the quorum is now reached.
-    /// @param _voter The address of the voter attempting to vote.
+    /// @param _validatorIdx The index of validator in the validator set.
     /// @param _hash The unique hash representing the claim being voted on.
     /// @param _quorumCnt The number of votes required to reach quorum.
     /// @return True if quorum has been reached after this vote; false otherwise.
-    function setVotedOnlyIfNeeded(
-        address _voter,
+    function setVotedOnlyIfNeededReturnQuorumReached(
+        uint8 _validatorIdx,
         bytes32 _hash,
         uint256 _quorumCnt
     ) external onlySignedBatchesOrClaims returns (bool) {
+        uint256 _bitmapValue = bitmap[_hash];
+        uint256 _bitmapNewValue = _bitmapValue | (1 << _validatorIdx);
+        uint256 _votesNum;
+
+        // Brian Kernighan's algorithm
+        // @see https://github.com/estarriolvetch/solidity-bits/blob/main/contracts/Popcount.sol
+        unchecked {
+            uint256 _bits = _bitmapNewValue;
+            for (_votesNum = 0; _bits != 0; _votesNum++) {
+                _bits &= _bits - 1;
+            }
+        }
+
         // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-        if (hasVoted[_hash][_voter] || numberOfVotes[_hash] >= _quorumCnt) {
+        if (_bitmapValue == _bitmapNewValue || _votesNum > _quorumCnt) {
             return false;
         }
 
-        hasVoted[_hash][_voter] = true;
-        return ++numberOfVotes[_hash] >= _quorumCnt;
+        bitmap[_hash] = _bitmapNewValue;
+
+        return _votesNum == _quorumCnt; // true if quorum is reached
     }
 
     /// @notice Registers a vote for a specific claim hash from a given voter.
     /// @dev Increments the vote count for the provided claim hash without checking for duplicates.
-    /// @param _voter The address of the voter casting the vote.
+    /// @param _validatorIdx The index of validator in the validator set.
     /// @param _hash The unique hash representing the claim being voted on.
     /// @return The updated number of votes for the given claim hash.
-    function setVoted(address _voter, bytes32 _hash) external onlySignedBatchesOrClaims returns (uint256) {
-        hasVoted[_hash][_voter] = true;
-        uint256 v = ++numberOfVotes[_hash]; // v is numberOfVotes[_hash] + 1
-        return v;
+    function setVotedReturnsNumberOfVotes(
+        uint8 _validatorIdx,
+        bytes32 _hash
+    ) external onlySignedBatchesOrClaims returns (uint256) {
+        uint256 _bitmapNewValue = bitmap[_hash] | (1 << _validatorIdx);
+        uint256 _votesNum;
+
+        // Brian Kernighan's algorithm
+        // @see https://github.com/estarriolvetch/solidity-bits/blob/main/contracts/Popcount.sol
+        unchecked {
+            uint256 _bits = _bitmapNewValue;
+            for (_votesNum = 0; _bits != 0; _votesNum++) {
+                _bits &= _bits - 1;
+            }
+        }
+
+        // it does not matter if we overwrite same value - optimize new vote case
+        bitmap[_hash] = _bitmapNewValue;
+
+        return _votesNum;
     }
 
     /// @notice Sets the specified batch entry to a final status.
@@ -140,6 +166,26 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @param _status The new status to set for the batch.
     function setConfirmedSignedBatchStatus(uint8 _chainId, uint64 _batchId, uint8 _status) external onlyClaims {
         confirmedSignedBatches[_chainId][_batchId].status = _status;
+    }
+
+    function hasVoted(bytes32 _hash, uint8 _validatorIndex) external view returns (bool) {
+        uint256 _bitmapValue = bitmap[_hash];
+        return (_bitmapValue & (1 << _validatorIndex)) != 0;
+    }
+
+    function numberOfVotes(bytes32 _hash) external view returns (uint8) {
+        uint8 _votesNum;
+        uint256 _bitmapValue = bitmap[_hash];
+
+        // Brian Kernighan's algorithm
+        // @see https://github.com/estarriolvetch/solidity-bits/blob/main/contracts/Popcount.sol
+        unchecked {
+            for (_votesNum = 0; _bitmapValue != 0; _votesNum++) {
+                _bitmapValue &= _bitmapValue - 1;
+            }
+        }
+
+        return _votesNum;
     }
 
     /// @notice Returns the current version of the contract
