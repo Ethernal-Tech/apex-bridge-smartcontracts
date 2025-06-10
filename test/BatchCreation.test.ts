@@ -139,7 +139,7 @@ describe("Batch Creation", function () {
     });
 
     it("SignedBatch submition should do nothing if shouldCreateBatch is false", async function () {
-      const { bridge, claimsHelper, validators, signedBatch } = await loadFixture(deployBridgeFixture);
+      const { bridge, claims, validators, signedBatch } = await loadFixture(deployBridgeFixture);
 
       const hash = ethers.solidityPackedKeccak256(
         ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
@@ -155,7 +155,7 @@ describe("Batch Creation", function () {
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
 
-      expect(await claimsHelper.hasVoted(hash, validators[0].address)).to.equal(false);
+      expect(await claims.hasVoted(hash, validators[0].address)).to.equal(false);
     });
 
     it("getNextBatchId should return 0 if there are no confirmed claims", async function () {

@@ -138,8 +138,8 @@ describe("Chain Registration", function () {
       );
     });
 
-    it("Should emit new chain registered when registered by owner", async function () {
-      const { bridge, owner, chain1, chain2, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
+    it("Should emit new chain registered when registered by owner after chain registration through governance", async function () {
+      const { bridge, owner, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
 
       await expect(bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData))
         .to.emit(bridge, "newChainRegistered")
@@ -790,82 +790,5 @@ describe("Chain Registration", function () {
         params: [bridgeAddress],
       });
     });
-  });
-
-  it("setChainAdditionalData should be allowed for owner", async function () {
-    const { bridge, chain1, owner, validators, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-    const [multisigAddr, feeAddr] = ["0xff0033", "0x0007788aa"];
-
-    await expect(
-      bridge.connect(owner).setChainAdditionalData(chain1.id, multisigAddr, feeAddr)
-    ).to.be.revertedWithCustomError(bridge, "ChainIsNotRegistered");
-
-    await expect(
-      bridge.connect(validators[0]).setChainAdditionalData(chain1.id, multisigAddr, feeAddr)
-    ).to.be.revertedWith("Ownable: caller is not the owner");
-
-    await bridge
-      .connect(validators[0])
-      .registerChainGovernance(
-        chain1.id,
-        chain1.chainType,
-        100,
-        100,
-        validatorAddressChainData[0].data,
-        "0x7465737400000000000000000000000000000000000000000000000000000000",
-        "0x7465737400000000000000000000000000000000000000000000000000000000"
-      );
-    await bridge
-      .connect(validators[1])
-      .registerChainGovernance(
-        chain1.id,
-        chain1.chainType,
-        100,
-        100,
-        validatorAddressChainData[1].data,
-        "0x7465737400000000000000000000000000000000000000000000000000000000",
-        "0x7465737400000000000000000000000000000000000000000000000000000000"
-      );
-    await bridge
-      .connect(validators[2])
-      .registerChainGovernance(
-        chain1.id,
-        chain1.chainType,
-        100,
-        100,
-        validatorAddressChainData[2].data,
-        "0x7465737400000000000000000000000000000000000000000000000000000000",
-        "0x7465737400000000000000000000000000000000000000000000000000000000"
-      );
-    await bridge
-      .connect(validators[3])
-      .registerChainGovernance(
-        chain1.id,
-        chain1.chainType,
-        100,
-        100,
-        validatorAddressChainData[3].data,
-        "0x7465737400000000000000000000000000000000000000000000000000000000",
-        "0x7465737400000000000000000000000000000000000000000000000000000000"
-      );
-    await bridge
-      .connect(validators[4])
-      .registerChainGovernance(
-        chain1.id,
-        chain1.chainType,
-        100,
-        100,
-        validatorAddressChainData[4].data,
-        "0x7465737400000000000000000000000000000000000000000000000000000000",
-        "0x7465737400000000000000000000000000000000000000000000000000000000"
-      );
-
-    await bridge.connect(owner).setChainAdditionalData(chain1.id, multisigAddr, feeAddr);
-
-    const chains = await bridge.getAllRegisteredChains();
-    expect(chains.length).to.equal(1);
-    expect(chains[0].id).to.equal(1);
-    expect(chains[0].addressMultisig).to.equal(multisigAddr);
-    expect(chains[0].addressFeePayer).to.equal(feeAddr);
   });
 });
