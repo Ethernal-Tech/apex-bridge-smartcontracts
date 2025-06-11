@@ -18,13 +18,9 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     ClaimsHelper private claimsHelper;
     Validators private validators;
 
-    /// @notice Maps batch hash to validator signatures.
-    /// @dev hash -> bytes represent signatures (bls | multisig+fee)
-    mapping(bytes32 => bytes[]) private signatures;
-
-    /// @notice Maps batch hash to BLS validator bitmap.
-    /// @dev hash -> bls bitmap
-    mapping(bytes32 => uint256) private bitmap;
+    /// @notice Maps batch hash to validator votes information
+    /// @dev hash -> SignedBatchVotesInfo represent signatures (bls | multisig+fee) and bitmap
+    mapping(bytes32 => SignedBatchVotesInfo) private votes;
 
     /// @notice Stores the last confirmed batch per destination chain
     /// @dev BlockchainId -> ConfirmedBatch
@@ -100,8 +96,9 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
             )
         );
 
+        SignedBatchVotesInfo storage _votesInfo = votes[_sbHash];
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
-        uint256 _bitmapValue = bitmap[_sbHash];
+        uint256 _bitmapValue = _votesInfo.bitmap;
         uint256 _bitmapNewValue;
         unchecked {
             _bitmapNewValue = _bitmapValue | (1 << _validatorIdx);
@@ -113,17 +110,16 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         }
 
         uint256 _quorumCount = validators.getQuorumNumberOfValidators();
-        bytes[] storage _signaturesStorage = signatures[_sbHash];
-        uint256 _numberOfVotes = _signaturesStorage.length;
+        uint256 _numberOfVotes = _votesInfo.signatures.length;
 
-        _signaturesStorage.push(abi.encodePacked(_signedBatch.signature, _signedBatch.feeSignature));
-        bitmap[_sbHash] = _bitmapNewValue;
+        _votesInfo.signatures.push(abi.encodePacked(_signedBatch.signature, _signedBatch.feeSignature));
+        _votesInfo.bitmap = _bitmapNewValue;
 
         // check if quorum reached (+1 is last vote)
         if (_numberOfVotes + 1 >= _quorumCount) {
             lastConfirmedBatch[_destinationChainId] = ConfirmedBatch(
-                _signaturesStorage,
-                bitmap[_sbHash],
+                _votesInfo.signatures,
+                _votesInfo.bitmap,
                 _signedBatch.rawTransaction,
                 _sbId,
                 _signedBatch.isConsolidation
@@ -131,8 +127,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
 
-            delete signatures[_sbHash];
-            delete bitmap[_sbHash];
+            delete votes[_sbHash];
         }
     }
 
@@ -149,7 +144,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     }
 
     function getNumberOfSignatures(bytes32 _hash) external view returns (uint256) {
-        return signatures[_hash].length;
+        return votes[_hash].signatures.length;
     }
 
     function hasVoted(bytes32 _hash, address _addr) external view returns (bool) {
@@ -157,7 +152,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         if (_validatorIdx == 0) {
             return false; // address is not a validator
         }
-        return bitmap[_hash] & (1 << (_validatorIdx - 1)) != 0;
+        return votes[_hash].bitmap & (1 << (_validatorIdx - 1)) != 0;
     }
 
     /// @notice Returns the current version of the contract
