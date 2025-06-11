@@ -27,7 +27,6 @@ interface IBridgeStructs {
     /// @notice Data for a confirmed batch that was executed on-chain.
     struct ConfirmedBatch {
         bytes[] signatures;
-        bytes[] feeSignatures;
         uint256 bitmap;
         bytes rawTransaction;
         uint64 id;

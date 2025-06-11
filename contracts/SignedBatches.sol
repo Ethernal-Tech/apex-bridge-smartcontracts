@@ -19,12 +19,8 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     Validators private validators;
 
     /// @notice Maps batch hash to validator signatures.
-    /// @dev hash -> multisig / bls signatures
+    /// @dev hash -> bytes represent signatures (bls | multisig+fee)
     mapping(bytes32 => bytes[]) private signatures;
-
-    /// @notice Maps batch hash to fee signatures.
-    /// @dev hash -> fee signatures
-    mapping(bytes32 => bytes[]) private feeSignatures;
 
     /// @notice Maps batch hash to BLS validator bitmap.
     /// @dev hash -> bls bitmap
@@ -117,17 +113,16 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         }
 
         uint256 _quorumCount = validators.getQuorumNumberOfValidators();
-        uint256 _numberOfVotes = signatures[_sbHash].length;
+        bytes[] storage _signaturesStorage = signatures[_sbHash];
+        uint256 _numberOfVotes = _signaturesStorage.length;
 
-        signatures[_sbHash].push(_signedBatch.signature);
-        feeSignatures[_sbHash].push(_signedBatch.feeSignature);
+        _signaturesStorage.push(abi.encodePacked(_signedBatch.signature, _signedBatch.feeSignature));
         bitmap[_sbHash] = _bitmapNewValue;
 
         // check if quorum reached (+1 is last vote)
         if (_numberOfVotes + 1 >= _quorumCount) {
             lastConfirmedBatch[_destinationChainId] = ConfirmedBatch(
-                signatures[_sbHash],
-                feeSignatures[_sbHash],
+                _signaturesStorage,
                 bitmap[_sbHash],
                 _signedBatch.rawTransaction,
                 _sbId,
@@ -137,7 +132,6 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
 
             delete signatures[_sbHash];
-            delete feeSignatures[_sbHash];
             delete bitmap[_sbHash];
         }
     }
@@ -154,8 +148,8 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         return lastConfirmedBatch[_destinationChain].rawTransaction;
     }
 
-    function getNumberOfSignatures(bytes32 _hash) external view returns (uint256, uint256) {
-        return (signatures[_hash].length, feeSignatures[_hash].length);
+    function getNumberOfSignatures(bytes32 _hash) external view returns (uint256) {
+        return signatures[_hash].length;
     }
 
     function hasVoted(bytes32 _hash, address _addr) external view returns (bool) {

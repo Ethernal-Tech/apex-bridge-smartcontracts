@@ -342,16 +342,14 @@ describe("Batch Creation", function () {
       expect(
         (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).signatures.length
       ).to.equal(4);
-      expect(
-        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).feeSignatures.length
-      ).to.equal(4);
+
+      const expectedSignatures = signedBatch.signature.concat(signedBatch.feeSignature.substring(2)).toLowerCase();
 
       const confirmedBatch = await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId);
-      expect(confirmedBatch.signatures[0]).to.deep.equal(signedBatch.signature);
-      expect(confirmedBatch.signatures[1]).to.deep.equal(signedBatch.signature);
-      expect(confirmedBatch.signatures[2]).to.deep.equal(signedBatch.signature);
-      expect(confirmedBatch.signatures[3]).to.deep.equal(signedBatch.signature);
-      expect(confirmedBatch.feeSignatures[2]).to.deep.equal(signedBatch.feeSignature);
+      expect(confirmedBatch.signatures[0]).to.deep.equal(expectedSignatures);
+      expect(confirmedBatch.signatures[1]).to.deep.equal(expectedSignatures);
+      expect(confirmedBatch.signatures[2]).to.deep.equal(expectedSignatures);
+      expect(confirmedBatch.signatures[3]).to.deep.equal(expectedSignatures);
 
       expect(
         await bridge.connect(validators[0]).getRawTransactionFromLastBatch(signedBatch.destinationChainId)
@@ -493,15 +491,13 @@ describe("Batch Creation", function () {
 
       var numberOfSignatures = await signedBatches.getNumberOfSignatures(hash);
 
-      expect(numberOfSignatures[0]).to.equal(3);
-      expect(numberOfSignatures[1]).to.equal(3);
+      expect(numberOfSignatures).to.equal(3);
 
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
       numberOfSignatures = await signedBatches.getNumberOfSignatures(hash);
 
-      expect(numberOfSignatures[0]).to.equal(0);
-      expect(numberOfSignatures[1]).to.equal(0);
+      expect(numberOfSignatures).to.equal(0);
     });
 
     it("Should not update nextTimeoutBlock when it is a consolidation batch", async function () {
