@@ -112,9 +112,6 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         uint256 _quorumCount = validators.getQuorumNumberOfValidators();
         uint256 _numberOfVotes = _votesInfo.signatures.length;
 
-        // do encode instead of encode packed because cardano signatures do not have predefined size
-        // use abi.encode instead of struct because current Solidity version error
-        // Copying of type struct IBridgeStructs.SignatureContainer memory[] memory to storage not yet supported.
         _votesInfo.signatures.push(_signedBatch.signature);
         _votesInfo.feeSignatures.push(_signedBatch.feeSignature);
         _votesInfo.bitmap = _bitmapNewValue;
