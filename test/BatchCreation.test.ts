@@ -343,15 +343,12 @@ describe("Batch Creation", function () {
         (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).signatures.length
       ).to.equal(4);
 
-      const abiCoder = new ethers.AbiCoder();
-      const expectedSignatures = abiCoder.encode(
-        ["bytes", "bytes"], [signedBatch.signature, signedBatch.feeSignature]);
-
       const confirmedBatch = await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId);
-      expect(confirmedBatch.signatures[0]).to.deep.equal(expectedSignatures);
-      expect(confirmedBatch.signatures[1]).to.deep.equal(expectedSignatures);
-      expect(confirmedBatch.signatures[2]).to.deep.equal(expectedSignatures);
-      expect(confirmedBatch.signatures[3]).to.deep.equal(expectedSignatures);
+      expect(confirmedBatch.signatures[0]).to.deep.equal(signedBatch.signature);
+      expect(confirmedBatch.signatures[1]).to.deep.equal(signedBatch.signature);
+      expect(confirmedBatch.signatures[2]).to.deep.equal(signedBatch.signature);
+      expect(confirmedBatch.signatures[3]).to.deep.equal(signedBatch.signature);
+      expect(confirmedBatch.feeSignatures[2]).to.deep.equal(signedBatch.feeSignature);
 
       expect(
         await bridge.connect(validators[0]).getRawTransactionFromLastBatch(signedBatch.destinationChainId)
