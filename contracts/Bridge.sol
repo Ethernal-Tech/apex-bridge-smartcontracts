@@ -11,6 +11,8 @@ import "./Claims.sol";
 import "./SignedBatches.sol";
 import "./Slots.sol";
 import "./Validators.sol";
+import "hardhat/console.sol";
+
 
 /// @title Bridge
 /// @notice Cross-chain bridge for validator claim submission, batch transaction signing, and governance-based chain registration.
@@ -235,6 +237,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         uint8 _validatorIdx = validators.getValidatorIndex(msg.sender) - 1;
 
+        console.log("HEEEELI");
         if (claims.setVotedOnlyIfNeededReturnQuorumReached(_validatorIdx, chainHash, validators.validatorsCount())) {
             chains.push(Chain(_chainId, _chainType, "", ""));
 
@@ -243,6 +246,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         } else {
             emit newChainProposal(_chainId, msg.sender);
         }
+        console.log("BELI");
     }
 
     /// @dev Validates key and fee signatures based on chain type.

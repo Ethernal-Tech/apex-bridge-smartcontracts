@@ -10,6 +10,7 @@ import "./Utils.sol";
 import "./Bridge.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
+import "hardhat/console.sol";
 
 /// @title Claims
 /// @notice Handles validator-submitted claims in a cross-chain bridge system.
@@ -513,6 +514,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         bytes32 _hash,
         uint256 _quorumCnt
     ) external onlyBridge returns (bool) {
+        console.log("STOOOOKAKKAKAKKAKAK");
         return claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(_validatorIdx, _hash, _quorumCnt);
     }
 

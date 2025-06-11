@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
 import "./interfaces/ConstantsLib.sol";
 import "./Utils.sol";
+import "hardhat/console.sol";
 
 /// @title ClaimsHelper
 /// @notice Handles claim voting, signed batch confirmations, and upgradeable logic for a cross-chain bridge.
@@ -109,6 +110,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         bytes32 _hash,
         uint256 _quorumCnt
     ) external onlySignedBatchesOrClaims returns (bool) {
+        console.log("PERICA");
         uint256 _bitmapValue = bitmap[_hash];
         uint256 _bitmapNewValue = _bitmapValue | (1 << _validatorIdx);
         uint256 _votesNum;
@@ -122,10 +124,14 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
             }
         }
 
+        console.log("DJUBAR");
+
         // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
         if (_bitmapValue == _bitmapNewValue || _votesNum > _quorumCnt) {
             return false;
         }
+
+        console.log("KRAVA");
 
         bitmap[_hash] = _bitmapNewValue;
 
