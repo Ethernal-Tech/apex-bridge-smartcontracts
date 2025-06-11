@@ -31,14 +31,6 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @dev BlochchainId -> blockNumber
     mapping(uint8 => int256) public currentBatchBlock;
 
-    // /// @notice Tracks whether a voter has voted on a specific transaction hash
-    // /// @dev TansactionHash -> Voter -> Voted
-    mapping(bytes32 => mapping(address => bool)) public _unusedHasVoted;
-
-    // /// @notice Number of votes for a given claim hash.
-    // /// @dev ClaimHash -> numberOfVotes
-    mapping(bytes32 => uint8) public _unusedNumberOfVotes;
-
     /// @notice Mapping from (chain ID, block hash, slot) hash to bitmap contains all validator votes.
     /// @dev hash(slot, hash) -> bitmap
     mapping(bytes32 => uint256) public bitmap;
@@ -138,33 +130,6 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         bitmap[_hash] = _bitmapNewValue;
 
         return _votesNum == _quorumCnt; // true if quorum is reached
-    }
-
-    /// @notice Registers a vote for a specific claim hash from a given voter.
-    /// @dev Increments the vote count for the provided claim hash without checking for duplicates.
-    /// @param _validatorIdx The index of validator in the validator set.
-    /// @param _hash The unique hash representing the claim being voted on.
-    /// @return The updated number of votes for the given claim hash.
-    function setVotedReturnsNumberOfVotes(
-        uint8 _validatorIdx,
-        bytes32 _hash
-    ) external onlySignedBatchesOrClaims returns (uint256) {
-        uint256 _bitmapNewValue = bitmap[_hash] | (1 << _validatorIdx);
-        uint256 _votesNum;
-
-        // Brian Kernighan's algorithm
-        // @see https://github.com/estarriolvetch/solidity-bits/blob/main/contracts/Popcount.sol
-        unchecked {
-            uint256 _bits = _bitmapNewValue;
-            for (_votesNum = 0; _bits != 0; _votesNum++) {
-                _bits &= _bits - 1;
-            }
-        }
-
-        // it does not matter if we overwrite same value - optimize new vote case
-        bitmap[_hash] = _bitmapNewValue;
-
-        return _votesNum;
     }
 
     /// @notice Sets the specified batch entry to a final status.
