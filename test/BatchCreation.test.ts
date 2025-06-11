@@ -343,7 +343,9 @@ describe("Batch Creation", function () {
         (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).signatures.length
       ).to.equal(4);
 
-      const expectedSignatures = signedBatch.signature.concat(signedBatch.feeSignature.substring(2)).toLowerCase();
+      const abiCoder = new ethers.AbiCoder();
+      const expectedSignatures = abiCoder.encode(
+        ["bytes", "bytes"], [signedBatch.signature, signedBatch.feeSignature]);
 
       const confirmedBatch = await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId);
       expect(confirmedBatch.signatures[0]).to.deep.equal(expectedSignatures);
