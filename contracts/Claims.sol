@@ -360,7 +360,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             uint256 _currentWrappedAmount = chainWrappedTokenQuantity[chainId];
 
             // Iterates through all transactions in the batch
-            // and retries them by creating new transactions
+            // correct the funds state and retries defund transaction
+            // by creating new transactions
             // or in face maximal number of retries has been reached
             // emits an event and makes changes to the hot wallet balance
             for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
@@ -509,6 +510,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         for (uint i; i < receiversLength; i++) {
             confirmedTx.receivers.push(_claim.receivers[i]);
         }
+        confirmedTx.destinationChainId = destinationChainId;
     }
 
     /// @notice Sets the confirmed transaction details for a refund request claim.
@@ -539,6 +541,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         confirmedTx.receivers.push(
             Receiver(_claim.originAmount, _claim.originWrappedAmount, _claim.originSenderAddress)
         );
+
+        confirmedTx.destinationChainId = _claim.originDestinationChainId;
     }
 
     /// @notice Registers a vote for a specific claim hash only if the voter hasn't already voted and quorum hasn't been reached.

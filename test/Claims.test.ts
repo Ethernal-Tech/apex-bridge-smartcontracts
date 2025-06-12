@@ -1010,7 +1010,7 @@ describe("Claims Contract", function () {
     });
 
     it("Should skip if Refund Request Claims is already confirmed", async function () {
-      const { bridge, claims, claimsHelper, owner, validators, chain2, validatorClaimsRRC, validatorAddressChainData } =
+      const { bridge, claims, owner, validators, chain2, validatorClaimsRRC, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
@@ -1058,7 +1058,7 @@ describe("Claims Contract", function () {
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
       const encoded = abiCoder.encode(
-        ["bytes32", "bytes32", "uint256", "uint256", "bytes", "string", "uint64", "uint8", "bool"],
+        ["bytes32", "bytes32", "uint256", "uint256", "bytes", "string", "uint64", "uint8", "bool", "uint8"],
         [
           validatorClaimsRRC.refundRequestClaims[0].originTransactionHash,
           validatorClaimsRRC.refundRequestClaims[0].refundTransactionHash,
@@ -1069,6 +1069,7 @@ describe("Claims Contract", function () {
           validatorClaimsRRC.refundRequestClaims[0].retryCounter,
           validatorClaimsRRC.refundRequestClaims[0].originChainId,
           validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet,
+          validatorClaimsRRC.refundRequestClaims[0].originDestinationChainId,
         ]
       );
 
@@ -1228,7 +1229,7 @@ describe("Claims Contract", function () {
       let abiCoder = new ethers.AbiCoder();
       let encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
       let encoded = abiCoder.encode(
-        ["bytes32", "bytes32", "uint256", "uint256", "bytes", "string", "uint64", "uint8", "bool"],
+        ["bytes32", "bytes32", "uint256", "uint256", "bytes", "string", "uint64", "uint8", "bool", "uint8"],
         [
           validatorClaimsRRC.refundRequestClaims[0].originTransactionHash,
           validatorClaimsRRC.refundRequestClaims[0].refundTransactionHash,
@@ -1239,6 +1240,7 @@ describe("Claims Contract", function () {
           validatorClaimsRRC.refundRequestClaims[0].retryCounter,
           validatorClaimsRRC.refundRequestClaims[0].originChainId,
           validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet,
+          validatorClaimsRRC.refundRequestClaims[0].originDestinationChainId,
         ]
       );
 
@@ -1254,7 +1256,7 @@ describe("Claims Contract", function () {
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
 
       encoded = abiCoder.encode(
-        ["bytes32", "bytes32", "uint256", "bytes", "string", "uint64", "uint8", "bool"],
+        ["bytes32", "bytes32", "uint256", "bytes", "string", "uint64", "uint8", "bool", "uint8"],
         [
           validatorClaimsRRC_wrongHash.refundRequestClaims[0].originTransactionHash,
           validatorClaimsRRC_wrongHash.refundRequestClaims[0].refundTransactionHash,
@@ -1264,6 +1266,7 @@ describe("Claims Contract", function () {
           validatorClaimsRRC_wrongHash.refundRequestClaims[0].retryCounter,
           validatorClaimsRRC_wrongHash.refundRequestClaims[0].originChainId,
           validatorClaimsRRC_wrongHash.refundRequestClaims[0].shouldDecrementHotWallet,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].originDestinationChainId,
         ]
       );
 
@@ -1414,7 +1417,11 @@ describe("Claims Contract", function () {
       await expect(
         claims
           .connect(owner)
-          .setVotedOnlyIfNeededReturnQuorumReached(1, "0x7465737400000000000000000000000000000000000000000000000000000000", 1)
+          .setVotedOnlyIfNeededReturnQuorumReached(
+            1,
+            "0x7465737400000000000000000000000000000000000000000000000000000000",
+            1
+          )
       ).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
     it("Should revert claim submition in Claims SC if not called by bridge SC", async function () {
