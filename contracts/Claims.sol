@@ -541,12 +541,18 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         );
     }
 
-    /// @notice Registers a vote for a specific voter and claim hash.
+    /// @notice Registers a vote for a specific claim hash only if the voter hasn't already voted and quorum hasn't been reached.
+    /// @dev Increments the vote count if conditions are met and returns whether the quorum is now reached.
     /// @param _validatorIdx The index of validator in the validator set.
-    /// @param _hash The hash of the claim or event the voter is voting on.
-    /// @return The updated vote count for the specific claim or event.
-    function setVotedReturnsNumberOfVotes(uint8 _validatorIdx, bytes32 _hash) external onlyBridge returns (uint256) {
-        return claimsHelper.setVotedReturnsNumberOfVotes(_validatorIdx, _hash);
+    /// @param _hash The unique hash representing the claim being voted on.
+    /// @param _quorumCnt The number of votes required to reach quorum.
+    /// @return True if quorum has been reached after this vote; false otherwise.
+    function setVotedOnlyIfNeededReturnQuorumReached(
+        uint8 _validatorIdx,
+        bytes32 _hash,
+        uint256 _quorumCnt
+    ) external onlyBridge returns (bool) {
+        return claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(_validatorIdx, _hash, _quorumCnt);
     }
 
     /// @notice Determines whether a new batch should be created for a specific destination chain.
