@@ -1409,12 +1409,12 @@ describe("Claims Contract", function () {
         "NotBridge"
       );
     });
-    it("Claims SC setVoted should revert if not called by Bridge SC", async function () {
+    it("Claims SC setVotedOnlyIfNeededReturnQuorumReached should revert if not called by Bridge SC", async function () {
       const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
       await expect(
         claims
           .connect(owner)
-          .setVotedReturnsNumberOfVotes(1, "0x7465737400000000000000000000000000000000000000000000000000000000")
+          .setVotedOnlyIfNeededReturnQuorumReached(1, "0x7465737400000000000000000000000000000000000000000000000000000000", 1)
       ).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
     it("Should revert claim submition in Claims SC if not called by bridge SC", async function () {

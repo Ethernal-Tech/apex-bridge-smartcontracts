@@ -237,7 +237,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         uint8 _validatorIdx = validators.getValidatorIndex(msg.sender) - 1;
 
-        if (claims.setVotedReturnsNumberOfVotes(_validatorIdx, chainHash) == validators.validatorsCount()) {
+        if (claims.setVotedOnlyIfNeededReturnQuorumReached(_validatorIdx, chainHash, validators.validatorsCount())) {
             chains.push(Chain(_chainId, _chainType, "", ""));
 
             claims.setChainRegistered(_chainId, _tokenQuantity, _wrappedTokenQuantity);

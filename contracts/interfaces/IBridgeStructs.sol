@@ -164,6 +164,13 @@ interface IBridgeStructs {
         uint8 transactionType;
     }
 
+    /// @notice Containts bitmap representing validator participation and signatures (one per voting validator)
+    struct SignedBatchVotesInfo {
+        uint256 bitmap;
+        bytes[] signatures;
+        bytes[] feeSignatures;
+    }
+
     // ------------------------------------------------------------------------
     // Errors
     // ------------------------------------------------------------------------
