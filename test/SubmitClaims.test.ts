@@ -979,7 +979,7 @@ describe("Submit Claims", function () {
           validatorClaimsRRC.refundRequestClaims[0].retryCounter,
           validatorClaimsRRC.refundRequestClaims[0].originChainId,
           validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet,
-          validatorClaimsRRC.refundRequestClaims[0].originDestinationChainId,
+          validatorClaimsRRC.refundRequestClaims[0].destinationChainId,
         ]
       );
 

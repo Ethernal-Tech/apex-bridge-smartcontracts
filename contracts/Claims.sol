@@ -532,7 +532,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         confirmedTx.blockHeight = block.number;
         confirmedTx.observedTransactionHash = _claim.originTransactionHash;
         confirmedTx.sourceChainId = chainId;
-        confirmedTx.destinationChainId = _claim.originDestinationChainId;
+        confirmedTx.destinationChainId = _claim.destinationChainId;
         confirmedTx.nonce = nextNonce;
         confirmedTx.retryCounter = _claim.retryCounter;
         confirmedTx.transactionType = 2;

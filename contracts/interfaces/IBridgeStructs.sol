@@ -122,7 +122,7 @@ interface IBridgeStructs {
         // bridging request claim was never submitted (NotEnoughFunds)
         bool shouldDecrementHotWallet;
         // ID of the original destination chain where the transaction should have been executed)
-        uint8 originDestinationChainId;
+        uint8 destinationChainId;
     }
 
     /// @notice A claim to increase the balance of a chain's hot wallet.

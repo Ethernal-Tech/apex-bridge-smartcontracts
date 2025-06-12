@@ -1069,7 +1069,7 @@ describe("Claims Contract", function () {
           validatorClaimsRRC.refundRequestClaims[0].retryCounter,
           validatorClaimsRRC.refundRequestClaims[0].originChainId,
           validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet,
-          validatorClaimsRRC.refundRequestClaims[0].originDestinationChainId,
+          validatorClaimsRRC.refundRequestClaims[0].destinationChainId,
         ]
       );
 
@@ -1240,7 +1240,7 @@ describe("Claims Contract", function () {
           validatorClaimsRRC.refundRequestClaims[0].retryCounter,
           validatorClaimsRRC.refundRequestClaims[0].originChainId,
           validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet,
-          validatorClaimsRRC.refundRequestClaims[0].originDestinationChainId,
+          validatorClaimsRRC.refundRequestClaims[0].destinationChainId,
         ]
       );
 
@@ -1266,7 +1266,7 @@ describe("Claims Contract", function () {
           validatorClaimsRRC_wrongHash.refundRequestClaims[0].retryCounter,
           validatorClaimsRRC_wrongHash.refundRequestClaims[0].originChainId,
           validatorClaimsRRC_wrongHash.refundRequestClaims[0].shouldDecrementHotWallet,
-          validatorClaimsRRC_wrongHash.refundRequestClaims[0].originDestinationChainId,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].destinationChainId,
         ]
       );
 
