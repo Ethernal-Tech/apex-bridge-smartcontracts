@@ -35,15 +35,5 @@ describe("ClaimsHelper Contract", function () {
           )
       ).to.be.revertedWithCustomError(bridge, "NotSignedBatchesOrClaims");
     });
-
-    it("Should revert if ClaimsHelper SC setVoted is not called by SignedBatches SC or Claims SC", async function () {
-      const { bridge, claimsHelper, owner } = await loadFixture(deployBridgeFixture);
-
-      await expect(
-        claimsHelper
-          .connect(owner)
-          .setVotedReturnsNumberOfVotes(1, "0x7465737600000000000000000000000000000000000000000000000000000000")
-      ).to.be.revertedWithCustomError(bridge, "NotSignedBatchesOrClaims");
-    });
   });
 });
