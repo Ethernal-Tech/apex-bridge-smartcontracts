@@ -968,7 +968,7 @@ describe("Submit Claims", function () {
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
       const encoded = abiCoder.encode(
-        ["bytes32", "bytes32", "uint256", "uint256", "bytes", "string", "uint64", "uint8", "bool"],
+        ["bytes32", "bytes32", "uint256", "uint256", "bytes", "string", "uint64", "uint8", "bool", "uint8"],
         [
           validatorClaimsRRC.refundRequestClaims[0].originTransactionHash,
           validatorClaimsRRC.refundRequestClaims[0].refundTransactionHash,
@@ -979,6 +979,7 @@ describe("Submit Claims", function () {
           validatorClaimsRRC.refundRequestClaims[0].retryCounter,
           validatorClaimsRRC.refundRequestClaims[0].originChainId,
           validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet,
+          validatorClaimsRRC.refundRequestClaims[0].destinationChainId,
         ]
       );
 

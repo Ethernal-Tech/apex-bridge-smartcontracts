@@ -360,7 +360,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             uint256 _currentWrappedAmount = chainWrappedTokenQuantity[chainId];
 
             // Iterates through all transactions in the batch
-            // and retries them by creating new transactions
+            // correct the funds state and retries defund transaction
+            // by creating new transactions
             // or in face maximal number of retries has been reached
             // emits an event and makes changes to the hot wallet balance
             for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
@@ -501,6 +502,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         confirmedTx.blockHeight = block.number;
         confirmedTx.observedTransactionHash = _claim.observedTransactionHash;
         confirmedTx.sourceChainId = _claim.sourceChainId;
+        confirmedTx.destinationChainId = destinationChainId;
         confirmedTx.nonce = nextNonce;
         confirmedTx.retryCounter = _claim.retryCounter;
         confirmedTx.transactionType = _transactionType;
@@ -530,6 +532,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         confirmedTx.blockHeight = block.number;
         confirmedTx.observedTransactionHash = _claim.originTransactionHash;
         confirmedTx.sourceChainId = chainId;
+        confirmedTx.destinationChainId = _claim.destinationChainId;
         confirmedTx.nonce = nextNonce;
         confirmedTx.retryCounter = _claim.retryCounter;
         confirmedTx.transactionType = 2;

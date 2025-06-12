@@ -47,6 +47,7 @@ interface IBridgeStructs {
         bool alreadyTriedBatch;
         Receiver[] receivers;
         bytes outputIndexes;
+        uint8 destinationChainId;
     }
 
     /// @notice Represents a block from the Cardano chain.
@@ -120,6 +121,8 @@ interface IBridgeStructs {
         // will be false if refund is requested because of invalid metadata or
         // bridging request claim was never submitted (NotEnoughFunds)
         bool shouldDecrementHotWallet;
+        // ID of the original destination chain where the transaction should have been executed)
+        uint8 destinationChainId;
     }
 
     /// @notice A claim to increase the balance of a chain's hot wallet.
