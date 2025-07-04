@@ -95,13 +95,14 @@ describe("Batch Creation", function () {
       const { bridge, signedBatches, validators, signedBatch } = await loadFixture(deployBridgeFixture);
 
       const encoded = ethers.solidityPacked(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
+        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool", "bool"],
         [
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
+          false,
           false,
         ]
       );
@@ -487,13 +488,14 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
 
       const encoded = ethers.solidityPacked(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
+        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool", "bool"],
         [
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
+          false,
           false,
         ]
       );

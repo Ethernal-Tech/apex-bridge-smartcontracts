@@ -51,7 +51,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     /// @notice Mapping from chain ID and nonce to confirmed transaction.
     /// @dev BlockchainId -> nonce -> ConfirmedTransaction
-    mapping(uint8 => mapping(uint64 => ConfirmedTransaction)) public confirmedTransactions; 
+    mapping(uint8 => mapping(uint64 => ConfirmedTransaction)) public confirmedTransactions;
 
     /// @notice Mapping from chain ID to nonce of the last confirmed transaction.
     /// @dev chainId -> nonce
