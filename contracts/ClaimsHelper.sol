@@ -34,6 +34,12 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
     uint256[50] private __gap;
+    
+    mapping(uint8 => mapping(uint64 => StakeDelegationTransaction)) public stakeDelegationTransactions;
+
+    mapping(uint8 => uint64) public lastStakeDelegationTxNonce;
+
+    mapping(uint8 => uint64) public lastBatchedStakeDelTxNonce;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -93,7 +99,8 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
             _signedBatch.firstTxNonceId,
             _signedBatch.lastTxNonceId,
             _signedBatch.isConsolidation,
-            ConstantsLib.IN_PROGRESS // status 1 means "in progress"
+            ConstantsLib.IN_PROGRESS, // status 1 means "in progress"
+            _signedBatch.isStakeDelegation
         );
         currentBatchBlock[destinationChainId] = int256(block.number);
     }
@@ -139,6 +146,44 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @param _status The new status to set for the batch.
     function setConfirmedSignedBatchStatus(uint8 _chainId, uint64 _batchId, uint8 _status) external onlyClaims {
         confirmedSignedBatches[_chainId][_batchId].status = _status;
+    }
+
+    function addStakeDelegationTransactions(uint8 chainId, string calldata stakePoolId) external onlyClaims {
+        uint64 nextNonce = ++lastStakeDelegationTxNonce[chainId];
+
+        StakeDelegationTransaction storage stakeDelegationTx = stakeDelegationTransactions[chainId][nextNonce];
+        stakeDelegationTx.chainId = chainId;
+        stakeDelegationTx.stakePoolId = stakePoolId;
+        stakeDelegationTx.nonce = nextNonce;
+    }
+
+    function setLastBatchedStakeDelTxNonce(uint8 _chainId, uint64 lastTxNonceId) external onlyClaims {
+        lastBatchedStakeDelTxNonce[_chainId] = lastTxNonceId;
+    }
+
+    function retryStakeDelTxs(uint8 _chainId, uint64 _firstTxNonce, uint64 _lastTxNonce) external onlyClaims {
+        for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
+            StakeDelegationTransaction storage _sdtx = stakeDelegationTransactions[_chainId][i];
+            uint64 nextNonce = ++lastStakeDelegationTxNonce[_chainId];
+            stakeDelegationTransactions[_chainId][nextNonce] = _sdtx;
+            stakeDelegationTransactions[_chainId][nextNonce].nonce = nextNonce;
+        }
+    }
+
+    function getStakeDelTransaction(
+        uint8 _chainId,
+        uint64 _nonce
+    ) public view returns (StakeDelegationTransaction memory _stakeDelTransaction) {
+        return stakeDelegationTransactions[_chainId][_nonce];
+    }
+
+    function getStakeDelTxsCount(uint8 _chainId, uint16 _maxNumberOfTransactions) public view returns (uint64 counterConfirmedTransactions) {
+        uint64 lastStakeDelTxNonceForChain = lastStakeDelegationTxNonce[_chainId];
+        uint64 lastBatchedStakeDelTxNonceForChain = lastBatchedStakeDelTxNonce[_chainId];
+
+        counterConfirmedTransactions = lastStakeDelTxNonceForChain - lastBatchedStakeDelTxNonceForChain >= _maxNumberOfTransactions
+            ? _maxNumberOfTransactions
+            : lastStakeDelTxNonceForChain - lastBatchedStakeDelTxNonceForChain;
     }
 
     function hasVoted(bytes32 _hash, uint8 _validatorIndex) external view returns (bool) {

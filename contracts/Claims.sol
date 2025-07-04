@@ -51,7 +51,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     /// @notice Mapping from chain ID and nonce to confirmed transaction.
     /// @dev BlockchainId -> nonce -> ConfirmedTransaction
-    mapping(uint8 => mapping(uint64 => ConfirmedTransaction)) public confirmedTransactions;
+    mapping(uint8 => mapping(uint64 => ConfirmedTransaction)) public confirmedTransactions; 
 
     /// @notice Mapping from chain ID to nonce of the last confirmed transaction.
     /// @dev chainId -> nonce
@@ -124,6 +124,14 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         validators = Validators(_validatorsAddress);
         adminContractAddress = _adminContractAddress;
+    }
+
+    function delegateAddrToStakePool(uint8 chainId, string calldata stakePoolId) external onlyBridge {
+        if (!isChainRegistered[chainId]) {
+            revert ChainIsNotRegistered(chainId);
+        }
+
+        claimsHelper.addStakeDelegationTransactions(chainId, stakePoolId);
     }
 
     /// @notice Submit claims from validators for reaching consensus.
@@ -306,6 +314,11 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 return;
             }
 
+            if (_confirmedSignedBatch.isStakeDelegation) {
+                claimsHelper.setLastBatchedStakeDelTxNonce(chainId, _confirmedSignedBatch.lastTxNonceId);
+                return;
+            }
+
             lastBatchedTxNonce[chainId] = _confirmedSignedBatch.lastTxNonceId;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
         }
@@ -355,6 +368,12 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
             uint64 _firstTxNonce = _confirmedSignedBatch.firstTxNonceId;
             uint64 _lastTxNonce = _confirmedSignedBatch.lastTxNonceId;
+
+             if (_confirmedSignedBatch.isStakeDelegation) {
+                claimsHelper.retryStakeDelTxs(chainId, _firstTxNonce, _lastTxNonce);
+                claimsHelper.setLastBatchedStakeDelTxNonce(chainId, _lastTxNonce);
+                return;
+            }
 
             uint256 _currentAmount = chainTokenQuantity[chainId];
             uint256 _currentWrappedAmount = chainWrappedTokenQuantity[chainId];
@@ -578,6 +597,15 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
     }
 
+    function shouldCreateStakeDelBatch(uint8 chainId) public view returns (bool) {
+        // if not registered chain or batch is already created, return false
+        if (!isChainRegistered[chainId] || claimsHelper.currentBatchBlock(chainId) != int(-1)) {
+            return false;
+        }
+
+        return getStakeDelTxsCount(chainId) > 0;
+    }
+
     /// @notice Retrieves a confirmed transaction by chain ID and nonce.
     /// @param _destinationChain The ID of the destination chain where the transaction was confirmed.
     /// @param _nonce The nonce of the confirmed transaction to retrieve.
@@ -587,6 +615,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint64 _nonce
     ) public view returns (ConfirmedTransaction memory _confirmedTransaction) {
         return confirmedTransactions[_destinationChain][_nonce];
+    }
+
+    function getStakeDelTransaction(
+        uint8 _chainId,
+        uint64 _nonce
+    ) public view returns (StakeDelegationTransaction memory _stakeDelTransaction) {
+        return claimsHelper.getStakeDelTransaction(_chainId, _nonce);
     }
 
     /// @notice Calculates the number of confirmed transactions ready for batching for a specific chain.
@@ -613,6 +648,14 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             ++counterConfirmedTransactions;
             ++txIndx;
         }
+    }
+
+    function getStakeDelTxsCount(uint8 _chainId) public view returns (uint64 counterConfirmedTransactions) {
+        return claimsHelper.getStakeDelTxsCount(_chainId, maxNumberOfTransactions);
+    }
+
+    function getLastBatchedStakeDelTxNonce(uint8 _chainId) public view returns (uint64) {
+        return claimsHelper.lastBatchedStakeDelTxNonce(_chainId);
     }
 
     /// @notice Resets the current batch block for a given chain.

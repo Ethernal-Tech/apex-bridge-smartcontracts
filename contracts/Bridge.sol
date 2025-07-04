@@ -83,10 +83,14 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         claims.submitClaims(_claims, msg.sender);
     }
 
+    function delegateAddrToStakePool(uint8 chainId, string calldata stakePoolId) external override onlyOwner {
+        claims.delegateAddrToStakePool(chainId, stakePoolId);
+    }
+
     /// @notice Submit a signed transaction batch for the Cardano chain.
     /// @param _signedBatch The batch of signed transactions.
     function submitSignedBatch(SignedBatch calldata _signedBatch) external override onlyValidator {
-        if (!claims.shouldCreateBatch(_signedBatch.destinationChainId)) {
+        if (!claims.shouldCreateBatch(_signedBatch.destinationChainId) && !claims.shouldCreateStakeDelBatch(_signedBatch.destinationChainId)) {
             return;
         }
 
@@ -294,6 +298,16 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         return batchId + 1;
     }
 
+    function getNextBatchIdForStakeDel(uint8 chainId) external view override returns (uint64 _result) {
+        if (!claims.shouldCreateStakeDelBatch(chainId)) {
+            return 0;
+        }
+
+        uint64 batchId = signedBatches.getConfirmedBatchId(chainId);
+
+        return batchId + 1;
+    }
+
     /// @notice Get confirmed transactions ready for batching for a specific destination chain.
     /// @param _destinationChain ID of the destination chain.
     /// @return _confirmedTransactions Array of confirmed transactions.
@@ -314,6 +328,25 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         return _confirmedTransactions;
+    }
+
+    function getStakeDelegationTransactions(
+        uint8 _chainId
+    ) external view override returns (StakeDelegationTransaction[] memory _stakeDelTransactions) {
+        if (!claims.shouldCreateStakeDelBatch(_chainId)) {
+            revert CanNotCreateBatchYet(_chainId);
+        }
+
+        uint64 firstTxNonce = claims.getLastBatchedStakeDelTxNonce(_chainId) + 1;
+
+        uint64 counterStakeDelTransactions = claims.getStakeDelTxsCount(_chainId);
+        _stakeDelTransactions = new StakeDelegationTransaction[](counterStakeDelTransactions);
+
+        for (uint64 i; i < counterStakeDelTransactions; i++) {
+            _stakeDelTransactions[i] = claims.getStakeDelTransaction(_chainId, firstTxNonce + i);
+        }
+
+        return _stakeDelTransactions;
     }
 
     /// @notice Get the confirmed batch for the given destination chain.
