@@ -289,21 +289,11 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @param _destinationChain ID of the destination chain.
     /// @return _result ID of the next batch or 0 if no batch should be created.
     function getNextBatchId(uint8 _destinationChain) external view override returns (uint64 _result) {
-        if (!shouldCreateBatch(_destinationChain)) {
+        if (!shouldCreateBatch(_destinationChain) && !claims.shouldCreateStakeDelBatch(_destinationChain)) {
             return 0;
         }
 
         uint64 batchId = signedBatches.getConfirmedBatchId(_destinationChain);
-
-        return batchId + 1;
-    }
-
-    function getNextBatchIdForStakeDel(uint8 chainId) external view override returns (uint64 _result) {
-        if (!claims.shouldCreateStakeDelBatch(chainId)) {
-            return 0;
-        }
-
-        uint64 batchId = signedBatches.getConfirmedBatchId(chainId);
 
         return batchId + 1;
     }

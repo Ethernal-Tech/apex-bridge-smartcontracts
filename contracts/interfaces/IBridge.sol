@@ -73,8 +73,6 @@ abstract contract IBridge is IBridgeStructs {
     /// @return _result ID of the next batch or 0 if no batch should be created.
     function getNextBatchId(uint8 _destinationChain) external view virtual returns (uint64 _result);
 
-    function getNextBatchIdForStakeDel(uint8 chainId) external view virtual returns (uint64 _result);
-
     /// @notice Get confirmed transactions ready for batching for a specific destination chain.
     /// @param _destinationChain ID of the destination chain.
     /// @return _confirmedTransactions Array of confirmed transactions.
