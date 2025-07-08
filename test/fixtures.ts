@@ -1,7 +1,13 @@
 import { ethers } from "hardhat";
 import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin } from "../typechain-types";
+import { setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 
 export async function deployBridgeFixture() {
+  const PRECOMPILE_MOCK = "0x600160005260206000F3"; // returns true for isSignatureValid
+
+  await setCode("0x0000000000000000000000000000000000002050", PRECOMPILE_MOCK);
+  await setCode("0x0000000000000000000000000000000000002060", PRECOMPILE_MOCK);
+
   // Contracts are deployed using the first signer/account by default
   const [owner, validator1, validator2, validator3, validator4, validator5, validator6] = await ethers.getSigners();
   const validators = [validator1, validator2, validator3, validator4, validator5];
@@ -457,6 +463,18 @@ export async function deployBridgeFixture() {
     isStakeDelegation: false,
   };
 
+  const signedBatchStakeDel = {
+    id: 1,
+    firstTxNonceId: 1,
+    lastTxNonceId: 2,
+    destinationChainId: 1,
+    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
+    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
+    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
+    isConsolidation: false,
+    isStakeDelegation: true,
+  };
+
   const cardanoBlocks = [
     {
       blockSlot: 1,
@@ -519,6 +537,7 @@ export async function deployBridgeFixture() {
     signedBatch,
     signedBatchConsolidation,
     signedBatchDefund,
+    signedBatchStakeDel,
     validatorAddressChainData,
     validatorCardanoData,
     validators,
