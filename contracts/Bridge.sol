@@ -83,14 +83,10 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         claims.submitClaims(_claims, msg.sender);
     }
 
-    function delegateAddrToStakePool(uint8 chainId, string calldata stakePoolId) external override onlyOwner {
-        claims.delegateAddrToStakePool(chainId, stakePoolId);
-    }
-
     /// @notice Submit a signed transaction batch for the Cardano chain.
     /// @param _signedBatch The batch of signed transactions.
     function submitSignedBatch(SignedBatch calldata _signedBatch) external override onlyValidator {
-        if (!claims.shouldCreateBatch(_signedBatch.destinationChainId) && !claims.shouldCreateStakeDelBatch(_signedBatch.destinationChainId)) {
+        if (!shouldCreateBatch(_signedBatch.destinationChainId)) {
             return;
         }
 
@@ -111,7 +107,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Submit a signed transaction batch for an EVM-compatible chain.
     /// @param _signedBatch The batch of signed transactions.
     function submitSignedBatchEVM(SignedBatch calldata _signedBatch) external override onlyValidator {
-        if (!claims.shouldCreateBatch(_signedBatch.destinationChainId)) {
+        if (!claims.shouldCreateRegularBatch(_signedBatch.destinationChainId)) {
             return;
         }
 
@@ -278,18 +274,18 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    /// @notice Check if a batch should be created for the destination chain.
+    /// @notice Check if a regular or stake delegation batch should be created for the destination chain.
     /// @param _destinationChain ID of the destination chain.
     /// @return _shouldCreateBatch Returns true if a batch should be created.
     function shouldCreateBatch(uint8 _destinationChain) public view override returns (bool _shouldCreateBatch) {
-        return claims.shouldCreateBatch(_destinationChain);
+        return claims.shouldCreateRegularBatch(_destinationChain) || claims.shouldCreateStakeDelBatch(_destinationChain);
     }
 
     /// @notice Get the next batch ID if a batch should be created, or 0 if not.
     /// @param _destinationChain ID of the destination chain.
     /// @return _result ID of the next batch or 0 if no batch should be created.
     function getNextBatchId(uint8 _destinationChain) external view override returns (uint64 _result) {
-        if (!shouldCreateBatch(_destinationChain) && !claims.shouldCreateStakeDelBatch(_destinationChain)) {
+        if (!shouldCreateBatch(_destinationChain)) {
             return 0;
         }
 
@@ -304,7 +300,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     function getConfirmedTransactions(
         uint8 _destinationChain
     ) external view override returns (ConfirmedTransaction[] memory _confirmedTransactions) {
-        if (!claims.shouldCreateBatch(_destinationChain)) {
+        if (!claims.shouldCreateRegularBatch(_destinationChain)) {
             revert CanNotCreateBatchYet(_destinationChain);
         }
 
@@ -320,6 +316,16 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         return _confirmedTransactions;
     }
 
+    /// @notice Adds a transaction to delegate the validator address to a specific stake pool for a given chain.
+    /// @param chainId The ID of the destination chain.
+    /// @param stakePoolId The identifier of the stake pool to delegate to.
+    function delegateAddrToStakePool(uint8 chainId, string calldata stakePoolId) external override onlyOwner {
+        claims.delegateAddrToStakePool(chainId, stakePoolId);
+    }
+
+    /// @notice Returns the list of stake delegation transactions that are pending batching for a given chain.
+    /// @param _chainId The ID of the chain for which to retrieve stake delegation transactions.
+    /// @return _stakeDelTransactions Array of unbatched stake delegation transactions for the given chain.
     function getStakeDelegationTransactions(
         uint8 _chainId
     ) external view override returns (StakeDelegationTransaction[] memory _stakeDelTransactions) {
@@ -328,8 +334,8 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         uint64 firstTxNonce = claims.getLastBatchedStakeDelTxNonce(_chainId) + 1;
-
         uint64 counterStakeDelTransactions = claims.getStakeDelTxsCount(_chainId);
+
         _stakeDelTransactions = new StakeDelegationTransaction[](counterStakeDelTransactions);
 
         for (uint64 i; i < counterStakeDelTransactions; i++) {

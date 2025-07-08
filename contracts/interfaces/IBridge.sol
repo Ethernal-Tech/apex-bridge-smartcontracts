@@ -10,8 +10,6 @@ abstract contract IBridge is IBridgeStructs {
     /// @param _claims The claims submitted by a validator.
     function submitClaims(ValidatorClaims calldata _claims) external virtual;
 
-    function delegateAddrToStakePool(uint8 chainId, string calldata stakePoolId) external virtual;
-
     /// @notice Submit a signed transaction batch for the Cardano chain.
     /// @param _signedBatch The batch of signed transactions.
     function submitSignedBatch(SignedBatch calldata _signedBatch) external virtual;
@@ -80,6 +78,14 @@ abstract contract IBridge is IBridgeStructs {
         uint8 _destinationChain
     ) external view virtual returns (ConfirmedTransaction[] memory _confirmedTransactions);
 
+    /// @notice Adds a transaction to delegate the validator address to a specific stake pool for a given chain.
+    /// @param chainId The ID of the destination chain.
+    /// @param stakePoolId The identifier of the stake pool to delegate to.
+    function delegateAddrToStakePool(uint8 chainId, string calldata stakePoolId) external virtual;
+
+    /// @notice Returns the list of stake delegation transactions that are pending batching for a given chain.
+    /// @param _chainId The ID of the chain for which to retrieve stake delegation transactions.
+    /// @return _stakeDelTransactions Array of unbatched stake delegation transactions for the given chain.
     function getStakeDelegationTransactions(
         uint8 _chainId
     ) external view virtual returns (StakeDelegationTransaction[] memory _stakeDelTransactions);

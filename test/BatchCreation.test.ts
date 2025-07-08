@@ -258,7 +258,7 @@ describe("Batch Creation", function () {
       // consensus
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      expect(await claims.shouldCreateBatch(signedBatch.destinationChainId)).to.equal(false);
+      expect(await claims.shouldCreateRegularBatch(signedBatch.destinationChainId)).to.equal(false);
 
       const confBatch = await bridge.connect(validators[1]).getConfirmedBatch(signedBatch.destinationChainId);
       expect(confBatch.bitmap).to.equal(30);

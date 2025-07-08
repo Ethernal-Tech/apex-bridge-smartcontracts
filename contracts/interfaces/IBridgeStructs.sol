@@ -53,6 +53,7 @@ interface IBridgeStructs {
         uint8 destinationChainId;
     }
 
+    /// @notice A stake delegation transaction ready for batching.
     struct StakeDelegationTransaction {
         uint8 chainId;
         string stakePoolId;

@@ -126,6 +126,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         adminContractAddress = _adminContractAddress;
     }
 
+    /// @notice Adds a transaction to delegate the validator address to a specific stake pool for a given chain.
+    /// @param chainId The ID of the destination chain.
+    /// @param stakePoolId The identifier of the stake pool to delegate to.
     function delegateAddrToStakePool(uint8 chainId, string calldata stakePoolId) external onlyBridge {
         if (!isChainRegistered[chainId]) {
             revert ChainIsNotRegistered(chainId);
@@ -314,6 +317,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 return;
             }
 
+            // set nonce if the batch contains stake delegation transactions
             if (_confirmedSignedBatch.isStakeDelegation) {
                 claimsHelper.setLastBatchedStakeDelTxNonce(chainId, _confirmedSignedBatch.lastTxNonceId);
                 return;
@@ -369,7 +373,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             uint64 _firstTxNonce = _confirmedSignedBatch.firstTxNonceId;
             uint64 _lastTxNonce = _confirmedSignedBatch.lastTxNonceId;
 
-             if (_confirmedSignedBatch.isStakeDelegation) {
+            // retry stake delegation transactions
+            if (_confirmedSignedBatch.isStakeDelegation) {
                 claimsHelper.retryStakeDelTxs(chainId, _firstTxNonce, _lastTxNonce);
                 claimsHelper.setLastBatchedStakeDelTxNonce(chainId, _lastTxNonce);
                 return;
@@ -579,14 +584,14 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     /// @notice Determines whether a new batch should be created for a specific destination chain.
     /// @dev This function checks if the destination chain is registered and whether a batch has already been created for it.
-    ///      It then evaluates if the number of transactions in the batch has reached the maximum limit or if the timeout block
+    ///      It then evaluates if the number of confirmed transactions in the batch has reached the maximum limit or if the timeout block
     ///      has passed, signaling that a new batch can be created.
     /// @param _destinationChain The ID of the destination chain for which the batch creation is being checked.
     /// @return A boolean value indicating whether a new batch should be created (`true`) or not (`false`).
     /// @dev If the destination chain is not registered or if a batch has already been created, the function returns `false`.
     ///      Otherwise, it checks if the transaction count for the destination chain has reached the maximum allowed or if
     ///      the timeout block has been surpassed, in which case it returns `true`.
-    function shouldCreateBatch(uint8 _destinationChain) public view returns (bool) {
+    function shouldCreateRegularBatch(uint8 _destinationChain) public view returns (bool) {
         // if not registered chain or batch is already created, return false
         if (!isChainRegistered[_destinationChain] || claimsHelper.currentBatchBlock(_destinationChain) != int(-1)) {
             return false;
@@ -597,6 +602,11 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
     }
 
+    /// @notice Determines whether a new stake delegation batch should be created for a specific chain.
+    /// @dev Returns `false` if the chain is not registered or if a batch is already in progress.
+    ///      Otherwise, it returns `true` if there is at least one unbatched stake delegation transaction for the chain.
+    /// @param chainId The ID of the chain for which to check batch creation eligibility.
+    /// @return A boolean indicating whether a stake delegation batch should be created (`true`) or not (`false`).
     function shouldCreateStakeDelBatch(uint8 chainId) public view returns (bool) {
         // if not registered chain or batch is already created, return false
         if (!isChainRegistered[chainId] || claimsHelper.currentBatchBlock(chainId) != int(-1)) {
@@ -617,6 +627,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         return confirmedTransactions[_destinationChain][_nonce];
     }
 
+    /// @notice Retrieves a stake delegation transaction by chain ID and nonce.
+    /// @param _chainId The ID of the chain to which the stake delegation transaction belongs.
+    /// @param _nonce The nonce of the stake delegation transaction to retrieve.
+    /// @return _stakeDelTransaction The stake delegation transaction corresponding to the given chain ID and nonce.
     function getStakeDelTransaction(
         uint8 _chainId,
         uint64 _nonce
@@ -650,6 +664,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
     }
 
+    /// @notice Returns the count of stake delegation transactions pending batching for a given chain.
+    /// @dev Retrieves the number of unbatched stake delegation transactions up to the maximum allowed batch size.
+    /// @param _chainId The ID of the chain for which to count stake delegation transactions.
+    /// @return counterConfirmedTransactions The number of stake delegation transactions ready to be included in the next batch.
     function getStakeDelTxsCount(uint8 _chainId) public view returns (uint64 counterConfirmedTransactions) {
         return claimsHelper.getStakeDelTxsCount(_chainId, maxNumberOfTransactions);
     }

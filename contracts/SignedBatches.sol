@@ -85,8 +85,6 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
             return; // skip if this is not batch we are expecting
         }
 
-       // TODO: what if contract upgrade happens before quorum is reached and some of the validators have already submitted
-       // _sbHash will be different?
         bytes32 _sbHash = keccak256(
             abi.encodePacked(
                 _signedBatch.id,
