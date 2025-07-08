@@ -582,38 +582,49 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         return claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(_validatorIdx, _hash, _quorumCnt);
     }
 
-    /// @notice Determines whether a new batch should be created for a specific destination chain.
-    /// @dev This function checks if the destination chain is registered and whether a batch has already been created for it.
-    ///      It then evaluates if the number of confirmed transactions in the batch has reached the maximum limit or if the timeout block
-    ///      has passed, signaling that a new batch can be created.
-    /// @param _destinationChain The ID of the destination chain for which the batch creation is being checked.
-    /// @return A boolean value indicating whether a new batch should be created (`true`) or not (`false`).
-    /// @dev If the destination chain is not registered or if a batch has already been created, the function returns `false`.
-    ///      Otherwise, it checks if the transaction count for the destination chain has reached the maximum allowed or if
-    ///      the timeout block has been surpassed, in which case it returns `true`.
+    /// @notice Checks if a batch should be created for the destination chain.
+    /// @param _destinationChain ID of the destination chain.
+    /// @return _shouldCreateBatch Returns true if either a regular or stake delegation batch should be created.
+    function shouldCreateBatch(uint8 _destinationChain) public view returns (bool _shouldCreateBatch) {
+        if (!canCreateBatchForChain(_destinationChain)) return false;
+
+        return isRegularBatchReady(_destinationChain) || hasStakeDelTxs(_destinationChain);
+    }
+
+    /// @notice Determines whether a new batch of regular transactions should be created.
+    /// @param _destinationChain The ID of the destination chain.
+    /// @return True if the chain is eligible and batch conditions are met.
     function shouldCreateRegularBatch(uint8 _destinationChain) public view returns (bool) {
-        // if not registered chain or batch is already created, return false
-        if (!isChainRegistered[_destinationChain] || claimsHelper.currentBatchBlock(_destinationChain) != int(-1)) {
-            return false;
-        }
+        return canCreateBatchForChain(_destinationChain) && isRegularBatchReady(_destinationChain);
+    }
 
+    /// @notice Determines whether a stake delegation batch should be created for a given chain.
+    /// @param chainId The ID of the chain to check.
+    /// @return True if the chain is eligible and has unbatched stake delegation transactions.
+    function shouldCreateStakeDelBatch(uint8 chainId) public view returns (bool) {
+        return canCreateBatchForChain(chainId) && hasStakeDelTxs(chainId);
+    }
+
+    /// @notice Checks whether a batch (regular or stake delegation) can be created for a given chain.
+    /// @param _chainId ID of the destination chain.
+    /// @return True if the chain is registered and no batch is currently in progress.
+    function canCreateBatchForChain(uint8 _chainId) internal view returns (bool) {
+        return isChainRegistered[_chainId] && claimsHelper.currentBatchBlock(_chainId) == int(-1);
+    }
+
+    /// @notice Returns whether the conditions for creating a regular batch are met.
+    /// @param _destinationChain The ID of the chain to check.
+    /// @return True if enough confirmed txs exist or timeout has passed.
+    function isRegularBatchReady(uint8 _destinationChain) internal view returns (bool) {
         uint256 cnt = getBatchingTxsCount(_destinationChain);
-
         return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
     }
 
-    /// @notice Determines whether a new stake delegation batch should be created for a specific chain.
-    /// @dev Returns `false` if the chain is not registered or if a batch is already in progress.
-    ///      Otherwise, it returns `true` if there is at least one unbatched stake delegation transaction for the chain.
-    /// @param chainId The ID of the chain for which to check batch creation eligibility.
-    /// @return A boolean indicating whether a stake delegation batch should be created (`true`) or not (`false`).
-    function shouldCreateStakeDelBatch(uint8 chainId) public view returns (bool) {
-        // if not registered chain or batch is already created, return false
-        if (!isChainRegistered[chainId] || claimsHelper.currentBatchBlock(chainId) != int(-1)) {
-            return false;
-        }
-
-        return getStakeDelTxsCount(chainId) > 0;
+    /// @notice Returns whether there are unbatched stake delegation transactions.
+    /// @param _chainId The ID of the chain to check.
+    /// @return True if unbatched stake delegation txs exist.
+    function hasStakeDelTxs(uint8 _chainId) internal view returns (bool) {
+        return getStakeDelTxsCount(_chainId) > 0;
     }
 
     /// @notice Retrieves a confirmed transaction by chain ID and nonce.

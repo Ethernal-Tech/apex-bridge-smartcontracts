@@ -278,7 +278,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @param _destinationChain ID of the destination chain.
     /// @return _shouldCreateBatch Returns true if a batch should be created.
     function shouldCreateBatch(uint8 _destinationChain) public view override returns (bool _shouldCreateBatch) {
-        return claims.shouldCreateRegularBatch(_destinationChain) || claims.shouldCreateStakeDelBatch(_destinationChain);
+        return claims.shouldCreateBatch(_destinationChain);
     }
 
     /// @notice Get the next batch ID if a batch should be created, or 0 if not.
