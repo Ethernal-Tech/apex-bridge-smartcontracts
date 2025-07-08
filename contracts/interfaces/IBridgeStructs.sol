@@ -69,7 +69,8 @@ interface IBridgeStructs {
         bytes32 observedTransactionHash;
         // key is the address on destination UTXO chain; value is the amount of tokens
         Receiver[] receivers;
-        uint256 totalAmount;
+        uint256 totalAmountSrc;
+        uint256 totalAmountDst;
         uint256 retryCounter;
         uint8 sourceChainId;
         uint8 destinationChainId;

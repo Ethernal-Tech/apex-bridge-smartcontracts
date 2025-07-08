@@ -209,12 +209,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev After quorum is reached, the destination chain's token quantity is reduced, and the source chain's token quantity is increased if it's the first retry.
     /// @dev The function also updates the next timeout block if necessary and sets the confirmed transaction details.
     function _submitClaimsBRC(BridgingRequestClaim calldata _claim, uint256 i, address _caller) internal {
-        uint256 _receiversSum = _claim.totalAmount;
+        uint256 _receiversSumSrc = _claim.totalAmountSrc;
+        uint256 _receiversSumDst = _claim.totalAmountDst;
         uint8 _destinationChainId = _claim.destinationChainId;
         uint256 _chainTokenQuantityDestination = chainTokenQuantity[_destinationChainId];
 
         // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-        if (_chainTokenQuantityDestination < _receiversSum) {
+        if (_chainTokenQuantityDestination < _receiversSumDst) {
             emit NotEnoughFunds("BRC", i, _chainTokenQuantityDestination);
             return;
         }
@@ -229,12 +230,12 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         );
 
         if (_quorumReached) {
-            chainTokenQuantity[_destinationChainId] -= _receiversSum;
+            chainTokenQuantity[_destinationChainId] -= _receiversSumDst;
 
             // if it is the first occurance of Bridging Request Claim, add the amount to the source chain
             // otherwise, it is a retry and we do not add the amount to the source chain, since it has already been done
             if (_claim.retryCounter == 0) {
-                chainTokenQuantity[_claim.sourceChainId] += _receiversSum;
+                chainTokenQuantity[_claim.sourceChainId] += _receiversSumSrc;
             }
 
             uint256 _confirmedTxCount = getBatchingTxsCount(_destinationChainId);
@@ -461,7 +462,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint64 nextNonce = ++lastConfirmedTxNonce[destinationChainId];
 
         ConfirmedTransaction storage confirmedTx = confirmedTransactions[destinationChainId][nextNonce];
-        confirmedTx.totalAmount = _claim.totalAmount;
+        confirmedTx.totalAmount = _claim.totalAmountDst;
         confirmedTx.blockHeight = block.number;
         confirmedTx.observedTransactionHash = _claim.observedTransactionHash;
         confirmedTx.sourceChainId = _claim.sourceChainId;
@@ -630,7 +631,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         BridgingRequestClaim memory _brc = BridgingRequestClaim({
             observedTransactionHash: defundHash,
             receivers: new Receiver[](1),
-            totalAmount: _amount,
+            totalAmountSrc: _amount,
+            totalAmountDst: _amount,
             retryCounter: 0,
             sourceChainId: _chainId,
             destinationChainId: _chainId

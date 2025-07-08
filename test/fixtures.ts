@@ -140,11 +140,12 @@ export async function deployBridgeFixture() {
     bridgingRequestClaims: [
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        totalAmount: 100,
+        totalAmountSrc: 100,
+        totalAmountDst: 99,
         retryCounter: 0,
         receivers: [
           {
-            amount: 100,
+            amount: 99,
             destinationAddress: "0x123...",
           },
         ],
@@ -161,11 +162,12 @@ export async function deployBridgeFixture() {
   const validatorClaimsBRC_bunch32 = {
     bridgingRequestClaims: Array.from({ length: 32 }, (_, i) => ({
       observedTransactionHash: "0x" + Buffer.from(`test${i}`).toString("hex").padEnd(64, "0").slice(0, 64),
-      totalAmount: 100 + i,
+      totalAmountSrc: 100 + i,
+      totalAmountDst: 99 + i,
       retryCounter: 0,
       receivers: [
         {
-          amount: 100 + i,
+          amount: 99 + i,
           destinationAddress: `0x123...${i}`,
         },
       ],
@@ -181,11 +183,12 @@ export async function deployBridgeFixture() {
   const validatorClaimsBRC_bunch33 = {
     bridgingRequestClaims: Array.from({ length: 33 }, (_, i) => ({
       observedTransactionHash: "0x" + Buffer.from(`test${i}`).toString("hex").padEnd(64, "0").slice(0, 64),
-      totalAmount: 100 + i,
+      totalAmountSrc: 100 + i,
+      totalAmountDst: 99 + i,
       retryCounter: 0,
       receivers: [
         {
-          amount: 100 + i,
+          amount: 99 + i,
           destinationAddress: `0x123...${i}`,
         },
       ],
@@ -202,12 +205,13 @@ export async function deployBridgeFixture() {
     bridgingRequestClaims: [
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        totalAmount: 100,
+        totalAmountSrc: 100,
+        totalAmountDst: 99,
         retryCounter: 0,
         receivers: [
           {
+            amount: 99,
             destinationAddress: "0x234...",
-            amount: 100,
           },
         ],
         sourceChainId: 1,
@@ -224,13 +228,14 @@ export async function deployBridgeFixture() {
     bridgingRequestClaims: [
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        totalAmount: 100,
+        totalAmountSrc: 100,
+        totalAmountDst: 99,
         retryCounter: 0,
         sourceChainId: 1,
         receivers: [
           ...Array.from({ length: 17 }, (_, i) => ({
+            amount: 99 + i,
             destinationAddress: `0x123...${(i + 1).toString().padStart(8, "0")}`,
-            amount: 100 + i,
           })),
         ],
         destinationChainId: 2,
