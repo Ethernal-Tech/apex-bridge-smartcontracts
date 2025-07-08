@@ -140,7 +140,8 @@ export async function deployBridgeFixture() {
     bridgingRequestClaims: [
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        totalAmount: 100,
+        totalAmountSrc: 100,
+        totalAmountDst: 100,
         retryCounter: 0,
         receivers: [
           {
@@ -161,7 +162,8 @@ export async function deployBridgeFixture() {
   const validatorClaimsBRC_bunch32 = {
     bridgingRequestClaims: Array.from({ length: 32 }, (_, i) => ({
       observedTransactionHash: "0x" + Buffer.from(`test${i}`).toString("hex").padEnd(64, "0").slice(0, 64),
-      totalAmount: 100 + i,
+      totalAmountSrc: 100 + i,
+      totalAmountDst: 100 + i,
       retryCounter: 0,
       receivers: [
         {
@@ -181,7 +183,8 @@ export async function deployBridgeFixture() {
   const validatorClaimsBRC_bunch33 = {
     bridgingRequestClaims: Array.from({ length: 33 }, (_, i) => ({
       observedTransactionHash: "0x" + Buffer.from(`test${i}`).toString("hex").padEnd(64, "0").slice(0, 64),
-      totalAmount: 100 + i,
+      totalAmountSrc: 100 + i,
+      totalAmountDst: 100 + i,
       retryCounter: 0,
       receivers: [
         {
@@ -202,7 +205,8 @@ export async function deployBridgeFixture() {
     bridgingRequestClaims: [
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        totalAmount: 100,
+        totalAmountSrc: 100,
+        totalAmountDst: 100,
         retryCounter: 0,
         receivers: [
           {
@@ -224,7 +228,8 @@ export async function deployBridgeFixture() {
     bridgingRequestClaims: [
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        totalAmount: 100,
+        totalAmountSrc: 100,
+        totalAmountDst: 100,
         retryCounter: 0,
         sourceChainId: 1,
         receivers: [

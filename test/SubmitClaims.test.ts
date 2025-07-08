@@ -83,7 +83,7 @@ describe("Submit Claims", function () {
               validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
             ],
           ],
-          validatorClaimsBRC.bridgingRequestClaims[0].totalAmount,
+          validatorClaimsBRC.bridgingRequestClaims[0].totalAmountSrc,
           validatorClaimsBRC.bridgingRequestClaims[0].retryCounter,
           validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
           validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
@@ -878,7 +878,7 @@ describe("Submit Claims", function () {
       );
 
       expect(chain2TokenQuantityAfter).to.be.equal(
-        chain2TokenQuantityBefore + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmount)
+        chain2TokenQuantityBefore + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmountSrc)
       );
       expect(chain2TokenQuantityAfter).to.be.equal(chain2TokenQuantityStart);
     });
@@ -1058,11 +1058,11 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
-        hotWalletStateOriginalSource + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmount)
+        hotWalletStateOriginalSource + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmountSrc)
       );
 
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
-        hotWalletStateOriginalDestination - BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmount)
+        hotWalletStateOriginalDestination - BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmountSrc)
       );
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
@@ -1076,7 +1076,7 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
 
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
-        hotWalletStateOriginalSource + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmount)
+        hotWalletStateOriginalSource + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmountSrc)
       );
 
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
@@ -1135,11 +1135,11 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
-        hotWalletStateOriginalSource + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmount)
+        hotWalletStateOriginalSource + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmountSrc)
       );
 
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
-        hotWalletStateOriginalDestination - BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmount)
+        hotWalletStateOriginalDestination - BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmountSrc)
       );
 
       // --- END BRC ---
@@ -1157,7 +1157,7 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
 
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
-        hotWalletStateOriginalSource + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmount)
+        hotWalletStateOriginalSource + BigInt(validatorClaimsBRC.bridgingRequestClaims[0].totalAmountSrc)
       );
 
       expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(

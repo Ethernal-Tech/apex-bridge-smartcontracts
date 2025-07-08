@@ -56,7 +56,7 @@ describe("Claims Contract", function () {
               validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
             ],
           ],
-          validatorClaimsBRC.bridgingRequestClaims[0].totalAmount,
+          validatorClaimsBRC.bridgingRequestClaims[0].totalAmountSrc,
           validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
           validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
         ]
@@ -91,7 +91,7 @@ describe("Claims Contract", function () {
               validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
             ],
           ],
-          validatorClaimsBRC.bridgingRequestClaims[0].totalAmount,
+          validatorClaimsBRC.bridgingRequestClaims[0].totalAmountSrc,
           validatorClaimsBRC.bridgingRequestClaims[0].retryCounter,
           validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
           validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
@@ -125,7 +125,7 @@ describe("Claims Contract", function () {
               validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
             ],
           ],
-          validatorClaimsBRC.bridgingRequestClaims[0].totalAmount,
+          validatorClaimsBRC.bridgingRequestClaims[0].totalAmountSrc,
           validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
           validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
         ]
