@@ -47,7 +47,7 @@ describe("Claims Contract", function () {
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
       const encoded = abiCoder.encode(
-        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint8", "uint8"],
+        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint256", "uint256", "uint8", "uint8"],
         [
           validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
           [
@@ -57,6 +57,8 @@ describe("Claims Contract", function () {
             ],
           ],
           validatorClaimsBRC.bridgingRequestClaims[0].totalAmountSrc,
+          validatorClaimsBRC.bridgingRequestClaims[0].totalAmountDst,
+          validatorClaimsBRC.bridgingRequestClaims[0].retryCounter,
           validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
           validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
         ]
@@ -82,7 +84,7 @@ describe("Claims Contract", function () {
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
       const encoded = abiCoder.encode(
-        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint256", "uint8", "uint8"],
+        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint256", "uint256", "uint8", "uint8"],
         [
           validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
           [
@@ -92,6 +94,7 @@ describe("Claims Contract", function () {
             ],
           ],
           validatorClaimsBRC.bridgingRequestClaims[0].totalAmountSrc,
+          validatorClaimsBRC.bridgingRequestClaims[0].totalAmountDst,
           validatorClaimsBRC.bridgingRequestClaims[0].retryCounter,
           validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
           validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
@@ -116,7 +119,7 @@ describe("Claims Contract", function () {
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
       const encoded = abiCoder.encode(
-        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint8", "uint8"],
+        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint256", "uint256", "uint8", "uint8"],
         [
           validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
           [
@@ -126,6 +129,8 @@ describe("Claims Contract", function () {
             ],
           ],
           validatorClaimsBRC.bridgingRequestClaims[0].totalAmountSrc,
+          validatorClaimsBRC.bridgingRequestClaims[0].totalAmountDst,
+          validatorClaimsBRC.bridgingRequestClaims[0].retryCounter,
           validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
           validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
         ]
@@ -144,7 +149,7 @@ describe("Claims Contract", function () {
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
     });
-    it("Should revert Bridging Request Claims if there are more than 16 in the array", async function () {
+    it("Should revert Bridging Request Claims if there are more than 32 in the array", async function () {
       const {
         bridge,
         claims,
@@ -183,7 +188,7 @@ describe("Claims Contract", function () {
         "0x101711d516b9a711d2d6b96a8a9b65f21bc251070e7a11cdb4fc809d5e039728",
       ];
 
-      for (let i = 0; i < 16; i++) {
+      for (let i = 0; i < 32; i++) {
         expect(await claims.hasVoted(hashes[i], validators[0].address)).to.be.true;
         expect(await claimsHelper.numberOfVotes(hashes[i])).to.equal(1);
       }
@@ -1224,7 +1229,11 @@ describe("Claims Contract", function () {
       await expect(
         claims
           .connect(owner)
-          .setVotedOnlyIfNeededReturnQuorumReached(1, "0x7465737400000000000000000000000000000000000000000000000000000000", 1)
+          .setVotedOnlyIfNeededReturnQuorumReached(
+            1,
+            "0x7465737400000000000000000000000000000000000000000000000000000000",
+            1
+          )
       ).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
     it("Should revert claim submition in Claims SC if not called by bridge SC", async function () {
