@@ -124,6 +124,56 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         signedBatches.submitSignedBatch(_signedBatch, msg.sender);
     }
 
+    /// @notice Submit new validator set data
+    /// @param _validatorSet Full validator data for all of the new validators.
+    function submitNewValidatorSet(ValidatorSet[] calldata _validatorSet) external override onlyOwner {
+        //set needs to include validator data for all chains
+        uint256 _validatorSetLength = _validatorSet.length;
+        if (_validatorSetLength != chains.length) {
+            revert InvalidData("InvalidValidatorSet");
+        }
+
+        uint256 _numberOfValidators = _validatorSet[0].validators[0].length;
+
+        //number of validators must be between 4 and 126
+        if (_fullValidatorDataLength < 4 || _fullValidatorDataLength > 126) {
+            revert InvalidData("ValidatorSetLength");
+        }
+
+        //number of validators must be the same for all chains
+        for (uint i; i < _validatorSetLength; i++) {
+            if (_validatorSet[i].validators.length != _numberOfValidators) {
+                revert InvalidData("ValidatorSetLength");
+            }
+        }
+
+        uint256 _chaintype;
+        uint256 chainsLength = chains.length;
+        for (uint i; i < chainsLength; i++) {
+            if (_validatorSet[i].chainId != chains[i].id) {
+                revert InvalidData("ValidatorSetChainId");
+            }
+        }
+
+        for (uint i = 0; i < _validatorSetLength; i++) {
+            address _validatorAddress = _validatorSetLength[i].validators[i].addr;
+
+            if (_validatorAddress == address(0)) {
+                revert ZeroAddress();
+            }
+
+            _validateSignatures(
+                , // Chain type 0 for cardano
+                _validatorAddress,
+                _fullValidatorData[i].cardanoKeySignature,
+                _fullValidatorData[i].cardanoKeyFeeSignature,
+                _fullValidatorData[i].cardanoData
+            );
+        }
+
+        validators.setNewValidatorsChainData(_fullValidatorData);
+    }
+
     /// @notice Submit the last observed Cardano blocks from validators for synchronization purposes.
     /// @param _chainId The source chain ID.
     /// @param _blocks Array of Cardano blocks to be recorded.
