@@ -39,14 +39,11 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @notice Addresses of validators in the current validator set
     address[] public validatorAddresses;
 
-    /// @notice newValidatorSet for update
-    ValidatorSet[] public newValidatorSet;
+    /// @notice Full new validator set Delta compared to the current one
+    NewValidatorSetDelta newValidatorSetDelta;
 
-    /// @notice Flag for new validator set peding
+    /// @notice Flag for new validator set pending
     bool public newValidatorSetPending;
-
-    /// @notice Flag for new validator set peding
-    address[] public validatorsToBeRemoved;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
@@ -216,16 +213,6 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         }
     }
 
-    function storeNewValidatorSet(ValidatorSet[] calldata _validatorSet) external onlyBridge {
-        delete newValidatorSet;
-
-        uint256 _validatorSetLength = _validatorSet.length;
-
-        for (uint256 i; i < _validatorSetLength; i++) {
-            newValidatorSet.push(_validatorSet[i]);
-        }
-    }
-
     /// @notice Adds or updates the chain-specific data for a given validator
     /// @dev This function can only be called by the Bridge contract.
     ///      If the chain data for the given `_chainId` has not yet been initialized, it creates an array
@@ -348,58 +335,105 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         }
     }
 
-    function getNewValidatorSet() external view returns (ValidatorSet[] memory) {
-        return newValidatorSet;
+    function removeOldValidatorsData(Chain[] calldata _chains) external onlyBridge {
+        address[] memory _validatorAddressesToRemove = newValidatorSetDelta.removedValidators;
+
+        uint8[] memory _chainIds = new uint8[](_chains.length);
+
+        for (uint i = 0; i < _chains.length; i++) {
+            _chainIds[i] = _chains[i].id;
+        }
+
+        // Mark validator addresses as removed
+        for (uint i = 0; i < _validatorAddressesToRemove.length; i++) {
+            address addr = _validatorAddressesToRemove[i];
+            if (addressValidatorIndex[addr] != 0) {
+                addressValidatorIndex[addr] = 0;
+            }
+        }
+
+        // Create temp array with remaining addresses and reset mapping indexes
+        address[] memory remainingValidators = new address[](validatorAddresses.length);
+        uint8 newIndex = 0;
+        uint[] memory newIndexes = new uint[](validatorAddresses.length); // map old => new index
+
+        for (uint i = 0; i < validatorAddresses.length; i++) {
+            address addr = validatorAddresses[i];
+            if (addressValidatorIndex[addr] != 0) {
+                remainingValidators[newIndex] = addr;
+                addressValidatorIndex[addr] = newIndex + 1;
+                newIndexes[i] = newIndex;
+                newIndex++;
+            } else {
+                newIndexes[i] = type(uint).max; // marker for removal
+            }
+        }
+
+        // Delete old addresses and then add those that are staying
+        delete validatorAddresses;
+        for (uint i = 0; i < newIndex; i++) {
+            validatorAddresses.push(remainingValidators[i]);
+        }
+
+        // Compact chainData for each chainId
+        for (uint j = 0; j < _chainIds.length; j++) {
+            uint8 chainId = _chainIds[j];
+            ValidatorChainData[] memory oldData = chainData[chainId];
+
+            ValidatorChainData[] memory newData = new ValidatorChainData[](newIndex);
+            for (uint i = 0; i < oldData.length; i++) {
+                if (newIndexes[i] != type(uint).max) {
+                    newData[newIndexes[i]] = oldData[i];
+                }
+            }
+
+            // Replace storage array
+            delete chainData[chainId];
+            for (uint i = 0; i < newIndex; i++) {
+                chainData[chainId].push(newData[i]);
+            }
+        }
     }
 
-    function getNewValidatorSetLength() external view returns (uint256) {
-        return newValidatorSet.length;
+    // TODO description
+    function addNewValidatorsData() external onlyBridge {
+        uint256 _numberOfNewValidators = newValidatorSetDelta.addedValidators[0].validators.length;
+        uint256 _numberOfOldValidators = validatorAddresses.length;
+        validatorsCount = uint8(_numberOfOldValidators + _numberOfNewValidators);
+
+        for (uint8 i; i < _numberOfNewValidators; i++) {
+            address _validatorAddress = newValidatorSetDelta.addedValidators[0].validators[i].addr;
+            if (addressValidatorIndex[_validatorAddress] != 0) {
+                revert InvalidData("Duplicate validator");
+            }
+            validatorAddresses.push(_validatorAddress);
+            addressValidatorIndex[_validatorAddress] = uint8(_numberOfOldValidators + i + 1);
+        }
+
+        uint256 _numberOfChains = newValidatorSetDelta.addedValidators.length;
+        for (uint8 i; i < _numberOfChains; i++) {
+            ValidatorSet memory _validatorSet = newValidatorSetDelta.addedValidators[i];
+
+            for (uint8 k; k < _numberOfNewValidators; k++) {
+                chainData[_validatorSet.chainId].push(_validatorSet.validators[k].data);
+            }
+        }
+    }
+
+    function setNewValidatorSetDelta(NewValidatorSetDelta calldata _newValidatorSetDelta) external onlyBridge {
+        newValidatorSetDelta = _newValidatorSetDelta;
+    }
+
+    function getNewValidatorSetDelta() external view returns (NewValidatorSetDelta memory) {
+        return newValidatorSetDelta;
     }
 
     function setNewValidatorSetPending(bool _pending) external onlyBridge {
         newValidatorSetPending = _pending;
     }
 
-    function removeOldValidators() external onlyBridge {
-        uint256 _validatorsAddressesLength = validatorAddresses.length;
-
-        for (uint256 i; i < _validatorsAddressesLength; i++) {
-            addressValidatorIndex[validatorAddresses[i]] = 0;
-        }
-
-        delete validatorAddresses;
-    }
-
-    function updateValidatorSet() external onlyBridge {
-        uint256 _newValidatorSetLength = newValidatorSet.length;
-        uint256 _validatorsLength = newValidatorSet[0].validators.length;
-        validatorsCount = uint8(_validatorsLength);
-
-        for (uint8 i; i < _newValidatorSetLength; i++) {
-            ValidatorSet memory _validatorSet = newValidatorSet[i];
-            for (uint8 j; j < _validatorsLength; j++) {
-                address _validatorAddres = _validatorSet.validators[j].addr;
-                addressValidatorIndex[_validatorAddres] = j + 1;
-                addValidatorChainData(_validatorSet.chainId, _validatorAddres, _validatorSet.validators[j].data);
-                validatorAddresses.push(_validatorAddres);
-            }
-        }
-    }
-
-    function setRemovedValidators(address[] calldata _removedValidators) external onlyBridge {
-        uint256 _removedValidatorsLength = _removedValidators.length;
-
-        for (uint256 i; i < _removedValidatorsLength; i++) {
-            validatorsToBeRemoved.push(_removedValidators[i]);
-        }
-    }
-
-    function getValidatorsToBeRemoved() external view returns (address[] memory) {
-        return validatorsToBeRemoved;
-    }
-
-    function deleteValidatorsToBeRemoved() external onlyBridge {
-        delete validatorsToBeRemoved;
+    function deleteNewValidatorSetDelta() external onlyBridge {
+        delete newValidatorSetDelta;
     }
 
     /// @dev Converts a bytes32 value to a bytes array.
