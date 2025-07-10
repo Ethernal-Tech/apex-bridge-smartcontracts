@@ -84,7 +84,8 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             !_isContract(_specialSignedBatchesAddress) ||
             !_isContract(_signedBatchesAddress) ||
             !_isContract(_slotsAddress) ||
-            !_isContract(_validatorsAddress)
+            !_isContract(_validatorsAddress) ||
+            !_isContract(_bladeStakeManagerAddress)
         ) revert NotContractAddress();
         claims = Claims(_claimsAddress);
         specialClaims = SpecialClaims(_specialClaimsAddress);
@@ -173,10 +174,10 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     /// @notice Submit new validator set data
-    /// @param _validatorSet Full validator data for all of the new validators.
+    /// @param _addedValidators Full validator data for all of the new validators.
     /// @param _removedValidators List of addresses of validators that are removed from the set.
     function submitNewValidatorSet(
-        ValidatorSet[] calldata _validatorSet,
+        ValidatorSet[] calldata _addedValidators,
         address[] calldata _removedValidators
     ) external override onlySystem {
         if (validators.newValidatorSetPending()) {
