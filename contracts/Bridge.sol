@@ -67,10 +67,10 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     function setDependencies(
         address _claimsAddress,
         address _specialClaimsAddress,
+        address _specialSignedBatchesAddress,
         address _signedBatchesAddress,
         address _slotsAddress,
-        address _validatorsAddress,
-        address _specialSignedBatchesAddress
+        address _validatorsAddress
     ) external onlyOwner {
         if (
             !_isContract(_claimsAddress) ||

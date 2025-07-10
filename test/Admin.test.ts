@@ -212,7 +212,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).retryCounter).to.equal(0);
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(27);
+      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(30);
     });
     it("Should set correct confirmedTransaction when defund fails", async function () {
       const {
@@ -277,7 +277,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain2.id, 3)).retryCounter).to.equal(1);
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(32);
+      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(35);
     });
     it("Should reject defund after maximum number of retries", async function () {
       const {
