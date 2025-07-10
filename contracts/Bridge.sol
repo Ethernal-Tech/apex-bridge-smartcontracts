@@ -162,7 +162,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     /// @notice Submit new validator set data
     /// @param _validatorSet Full validator data for all of the new validators.
-    //TODO: will be moved to the governance
+    //TODO: add modifier
     function submitNewValidatorSet(
         ValidatorSet[] calldata _validatorSet,
         address[] calldata _removedValidators
@@ -170,12 +170,11 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         if (validators.newValidatorSetPending()) {
             revert NewValidatorSetAlreadyPending();
         }
-
         //TODO: store removed validators
         uint256 _removedValidatorsLength = _removedValidators.length;
         _removedValidatorsLength++; // to avoid unused variable warning
 
-        // validators.validateValidatorSet(_validatorSet);
+        validators.validateValidatorSet(_validatorSet, chains);
 
         validators.storeNewValidatorSet(_validatorSet);
 
@@ -244,7 +243,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
                 revert ZeroAddress();
             }
 
-            _validateSignatures(
+            validators.validateSignatures(
                 _chainType,
                 _validatorAddress,
                 _validatorData[i].keySignature,
@@ -289,7 +288,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             revert AlreadyProposed(_chainId);
         }
 
-        _validateSignatures(_chainType, msg.sender, _keySignature, _keyFeeSignature, _validatorChainData);
+        validators.validateSignatures(_chainType, msg.sender, _keySignature, _keyFeeSignature, _validatorChainData);
 
         validators.addValidatorChainData(_chainId, msg.sender, _validatorChainData);
 
@@ -302,33 +301,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             emit newChainRegistered(_chainId);
         } else {
             emit newChainProposal(_chainId, msg.sender);
-        }
-    }
-
-    /// @dev Validates key and fee signatures based on chain type.
-    function _validateSignatures(
-        uint8 _chainType,
-        address _sender,
-        bytes calldata _keySignature,
-        bytes calldata _keyFeeSignature,
-        ValidatorChainData calldata _validatorChainData
-    ) internal view {
-        bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", _sender));
-
-        if (_chainType == 0) {
-            bytes memory messageHashBytes = _bytes32ToBytesAssembly(messageHashBytes32);
-            if (
-                !validators.isSignatureValid(messageHashBytes, _keySignature, _validatorChainData.key[0], false) ||
-                !validators.isSignatureValid(messageHashBytes, _keyFeeSignature, _validatorChainData.key[1], false)
-            ) {
-                revert InvalidSignature();
-            }
-        } else if (_chainType == 1) {
-            if (!validators.isBlsSignatureValid(messageHashBytes32, _keySignature, _validatorChainData.key)) {
-                revert InvalidSignature();
-            }
-        } else {
-            revert InvalidData("chainType");
         }
     }
 
@@ -372,18 +344,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         return _confirmedTransactions;
-    }
-
-    /// @notice Get special confirmed transaction ready for batching for a specific destination chain.
-    /// @param _destinationChain ID of the destination chain.
-    /// @return _specialConfirmedTransaction Special confirmed transactions.
-    function getSpecialConfirmedTransactions(
-        uint8 _destinationChain
-    ) external view override returns (ConfirmedTransaction memory _specialConfirmedTransaction) {
-        if (!validators.newValidatorSetPending()) {
-            revert NoNewValidatorSetPending();
-        }
-        return specialClaims.getSpecialConfirmedTransaction(_destinationChain);
     }
 
     /// @notice Get the confirmed batch for the given destination chain.
@@ -433,19 +393,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function validatorSetUpdated() external override {
-        //TODO
-    }
-
-    /// @dev Converts a bytes32 value to a bytes array.
-    /// @param input Input bytes32 value.
-    function _bytes32ToBytesAssembly(bytes32 input) internal pure returns (bytes memory output) {
-        output = new bytes(32);
-
-        assembly {
-            mstore(add(output, 32), input)
-        }
-
-        return output;
+        //TODO implementation and add modifier
     }
 
     /// @notice Returns the current version of the contract

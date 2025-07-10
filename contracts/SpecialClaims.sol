@@ -26,14 +26,6 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     SignedBatches private signedBatches;
     Validators private validators;
 
-    /// @notice Mapping from chain ID to nonce of the last special confirmed transaction.
-    /// @dev chainId -> nonce
-    mapping(uint8 => uint64) public lastSpecialConfirmedTxNonce;
-
-    /// @notice Mapping from chain ID to special confirmed transaction for validators update.
-    /// @dev BlockchainId -> nonce -> ConfirmedTransaction
-    mapping(uint8 => ConfirmedTransaction) public specialConfirmedTransaction;
-
     /// @notice Mapping of confirmed signed batches
     /// @dev BlockchainId -> batchId -> SignedBatch
     mapping(uint8 => mapping(uint64 => ConfirmedSignedBatchData)) public confirmedSpecialSignedBatches;
@@ -223,15 +215,6 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
     function setVoted(address _voter, bytes32 _hash) external onlyBridge returns (uint256) {
         return claimsHelper.setVoted(_voter, _hash);
-    }
-
-    /// @notice Retrieves a special confirmed transaction by chain ID and nonce.
-    /// @param _destinationChain The ID of the destination chain where the transaction was confirmed.
-    /// @return _confirmedTransaction The `ConfirmedTransaction` struct containing transaction details.
-    function getSpecialConfirmedTransaction(
-        uint8 _destinationChain
-    ) public view returns (ConfirmedTransaction memory _confirmedTransaction) {
-        return specialConfirmedTransaction[_destinationChain];
     }
 
     /// @notice Checks whether a specific voter has already voted for a given claim hash.

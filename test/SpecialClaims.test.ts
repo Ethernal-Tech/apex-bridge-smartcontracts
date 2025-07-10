@@ -21,119 +21,110 @@ describe("Special Claims Contract", function () {
   }
   describe("Submit new validator set", function () {
     it("Should revert if there is already a new validator set pending", async function () {
-      const { bridge, owner, validatorsc, validatorSets } = await loadFixture(deployBridgeFixture);
+      const { bridge, owner, validatorsc, validators, validatorSets } = await loadFixture(deployBridgeFixture);
 
       const bridgeContract = await impersonateAsContractAndMintFunds(await bridge.getAddress());
       await validatorsc.connect(bridgeContract).setNewValidatorSetPending(true);
 
-      await expect(bridge.connect(owner).submitNewValidatorSet(validatorSets)).to.be.revertedWithCustomError(
-        bridge,
-        "NewValidatorSetAlreadyPending"
-      );
+      await expect(
+        bridge.connect(owner).submitNewValidatorSet(validatorSets, validators)
+      ).to.be.revertedWithCustomError(bridge, "NewValidatorSetAlreadyPending");
     });
 
     it("Should revert if there is no new data set for all registered chains", async function () {
-      const { bridge, owner, chain1, chain2, validatorSets_notEnoughChains, validatorAddressChainData } =
+      const { bridge, owner, validators, chain1, chain2, validatorSets_notEnoughChains, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await expect(bridge.connect(owner).submitNewValidatorSet(validatorSets_notEnoughChains))
+      await expect(bridge.connect(owner).submitNewValidatorSet(validatorSets_notEnoughChains, validators))
         .to.be.revertedWithCustomError(bridge, "InvalidData")
         .withArgs("WrongNumberOfChains");
     });
 
     it("Should revert if there is too many data sets compared to registered chains", async function () {
-      const { bridge, owner, chain1, chain2, validatorSets_TooManyChains, validatorAddressChainData } =
+      const { bridge, owner, validators, chain1, chain2, validatorSets_TooManyChains, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await expect(bridge.connect(owner).submitNewValidatorSet(validatorSets_TooManyChains))
+      await expect(bridge.connect(owner).submitNewValidatorSet(validatorSets_TooManyChains, validators))
         .to.be.revertedWithCustomError(bridge, "InvalidData")
         .withArgs("WrongNumberOfChains");
     });
 
     it("Should revert if there is not enough validators in the new validator set for all registered chains", async function () {
-      const { bridge, owner, chain1, chain2, validatorSets_NotEnoughValidators, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
+      const {
+        bridge,
+        owner,
+        validators,
+        chain1,
+        chain2,
+        validatorSets_NotEnoughValidators,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await expect(bridge.connect(owner).submitNewValidatorSet(validatorSets_NotEnoughValidators))
+      await expect(bridge.connect(owner).submitNewValidatorSet(validatorSets_NotEnoughValidators, validators))
         .to.be.revertedWithCustomError(bridge, "InvalidData")
         .withArgs("WrongNumberOfValidators");
     });
 
     it("Should revert if there is too many validators in the new validator set for all registered chains", async function () {
-      const { bridge, owner, chain1, chain2, validatorSets_TooManyValidators, validatorAddressChainData } =
+      const { bridge, owner, validators, chain1, chain2, validatorSets_TooManyValidators, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await expect(bridge.connect(owner).submitNewValidatorSet(validatorSets_TooManyValidators))
+      await expect(bridge.connect(owner).submitNewValidatorSet(validatorSets_TooManyValidators, validators))
         .to.be.revertedWithCustomError(bridge, "InvalidData")
         .withArgs("WrongNumberOfValidators");
     });
 
     it("Should revert if validator address is zero address", async function () {
-      const { bridge, owner, chain1, chain2, validatorSets_ZeroAddress, validatorAddressChainData } = await loadFixture(
-        deployBridgeFixture
-      );
+      const { bridge, owner, validators, chain1, chain2, validatorSets_ZeroAddress, validatorAddressChainData } =
+        await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
       await expect(
-        bridge.connect(owner).submitNewValidatorSet(validatorSets_ZeroAddress)
+        bridge.connect(owner).submitNewValidatorSet(validatorSets_ZeroAddress, validators)
       ).to.be.revertedWithCustomError(bridge, "ZeroAddress");
     });
 
     it("Should revert if validator address is duplicated within a set", async function () {
-      const { bridge, owner, chain1, chain2, validatorSets_DoubleAddress, validatorAddressChainData } =
+      const { bridge, owner, validators, chain1, chain2, validatorSets_DoubleAddress, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await expect(bridge.connect(owner).submitNewValidatorSet(validatorSets_DoubleAddress))
+      await expect(bridge.connect(owner).submitNewValidatorSet(validatorSets_DoubleAddress, validators))
         .to.be.revertedWithCustomError(bridge, "InvalidData")
         .withArgs("DuplicatedValidator");
     });
 
-    it("Should revert if multisig or feePayer address is empty within a set", async function () {
-      const { bridge, owner, chain1, chain2, validatorSets_EmptyAddresses, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-      await expect(bridge.connect(owner).submitNewValidatorSet(validatorSets_EmptyAddresses))
-        .to.be.revertedWithCustomError(bridge, "InvalidData")
-        .withArgs("EmptyMultisigOrFeePayerAddress");
-    });
-
     it("Should store proposed validator set", async function () {
-      const { bridge, validatorsc, owner, chain1, chain2, validatorSets, validatorAddressChainData } =
+      const { bridge, validatorsc, owner, validators, chain1, chain2, validatorSets, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets);
+      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
 
       expect((await validatorsc.getNewValidatorSet()).length).to.be.equal(validatorSets.length);
 
       const newValidatorSet = await validatorsc.getNewValidatorSet();
 
       for (let i = 0; i < newValidatorSet.length; i++) {
-        expect(newValidatorSet[i].chain.id).to.be.equal(validatorSets[i].chain.id);
-        expect(newValidatorSet[i].chain.chainType).to.be.equal(validatorSets[i].chain.chainType);
-        expect(newValidatorSet[i].chain.addressMultisig).to.be.equal(validatorSets[i].chain.addressMultisig);
+        expect(newValidatorSet[i].chainId).to.be.equal(validatorSets[i].chainId);
         for (let j = 0; j < newValidatorSet[i].validators.length; j++) {
           expect(newValidatorSet[i].validators[j].addr.toLocaleLowerCase()).to.be.equal(
             validatorSets[i].validators[j].addr
@@ -152,37 +143,9 @@ describe("Special Claims Contract", function () {
         }
       }
     });
-    it("Should create transactions for transfering funds to new multisig address", async function () {
-      const { bridge, claims, specialClaims, owner, chain1, chain2, validatorSets, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-      //before submitting new validator set, we need to set the last special confirmed tx nonce to 0
-      expect(await specialClaims.lastSpecialConfirmedTxNonce(validatorSets[0].chain.id)).to.be.equal(0);
-      expect(await specialClaims.lastSpecialConfirmedTxNonce(validatorSets[1].chain.id)).to.be.equal(0);
-
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets);
-
-      //after submitting new validator set, we should have a special confirmed transaction
-      expect(await specialClaims.lastSpecialConfirmedTxNonce(validatorSets[0].chain.id)).to.be.equal(1);
-      expect(await specialClaims.lastSpecialConfirmedTxNonce(validatorSets[1].chain.id)).to.be.equal(0);
-
-      const ConfirmedTransaction = await specialClaims.getSpecialConfirmedTransaction(validatorSets[0].chain.id);
-
-      expect(ConfirmedTransaction.totalAmount).to.be.equal(await claims.chainTokenQuantity(validatorSets[0].chain.id));
-      expect(ConfirmedTransaction.blockHeight).to.be.equal(0);
-      expect(ConfirmedTransaction.observedTransactionHash).to.be.equal(ethers.zeroPadValue("0x0123", 32));
-      expect(ConfirmedTransaction.sourceChainId).to.be.equal(validatorSets[0].chain.id);
-      expect(ConfirmedTransaction.nonce).to.be.equal(
-        await specialClaims.lastSpecialConfirmedTxNonce(validatorSets[0].chain.id)
-      );
-      expect(ConfirmedTransaction.retryCounter).to.be.equal(0);
-      expect(ConfirmedTransaction.transactionType).to.be.equal(3);
-    });
     it("Should set newPendingValidatorSet to true when new ValidatorSet is submitted", async function () {
-      const { bridge, validatorsc, owner, chain1, chain2, validatorSets, validatorAddressChainData } =
+      const { bridge, validatorsc, owner, validators, chain1, chain2, validatorSets, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
@@ -190,19 +153,19 @@ describe("Special Claims Contract", function () {
 
       expect(await validatorsc.newValidatorSetPending()).to.be.false;
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets);
+      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
 
       expect(await validatorsc.newValidatorSetPending()).to.be.true;
     });
     it("Should emit newValidatorSetSubmitted when new ValidatorSet is submitted", async function () {
-      const { bridge, owner, chain1, chain2, validatorSets, validatorAddressChainData } = await loadFixture(
+      const { bridge, owner, validators, chain1, chain2, validatorSets, validatorAddressChainData } = await loadFixture(
         deployBridgeFixture
       );
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await expect(bridge.connect(owner).submitNewValidatorSet(validatorSets)).to.emit(
+      await expect(bridge.connect(owner).submitNewValidatorSet(validatorSets, validators)).to.emit(
         bridge,
         "newValidatorSetSubmitted"
       );
@@ -210,15 +173,6 @@ describe("Special Claims Contract", function () {
   });
 
   describe("Submit new Signed Batch", function () {
-    it("Should revert getting special confirmed transaction if there is no new set pending", async function () {
-      const { bridge, chain1 } = await loadFixture(deployBridgeFixture);
-
-      await expect(bridge.getSpecialConfirmedTransactions(chain1.id)).to.be.revertedWithCustomError(
-        bridge,
-        "NoNewValidatorSetPending"
-      );
-    });
-
     // it("Should skip if Batch Executed Claims is already confirmed", async function () {
     //   const {
     //     bridge,

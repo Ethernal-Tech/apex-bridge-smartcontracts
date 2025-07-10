@@ -91,13 +91,6 @@ abstract contract IBridge is IBridgeStructs {
         uint8 _destinationChain
     ) external view virtual returns (ConfirmedTransaction[] memory _confirmedTransactions);
 
-    /// @notice Get special confirmed transaction ready for batching for a specific destination chain for updating validator set
-    /// @param _destinationChain ID of the destination chain.
-    /// @return _specialConfirmedTransaction Special confirmed transactions.
-    function getSpecialConfirmedTransactions(
-        uint8 _destinationChain
-    ) external view virtual returns (ConfirmedTransaction memory _specialConfirmedTransaction);
-
     /// @notice Get the confirmed batch for the given destination chain.
     /// @param _destinationChain ID of the destination chain.
     /// @return _batch The confirmed batch details.
@@ -132,6 +125,6 @@ abstract contract IBridge is IBridgeStructs {
         uint64 _batchId
     ) external virtual returns (uint8 status, TxDataInfo[] memory txs);
 
-    //TODO
+    /// @notice Notifies the bridge that new validator set has been implemented on Blade.
     function validatorSetUpdated() external virtual;
 }

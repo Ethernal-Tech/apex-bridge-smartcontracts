@@ -101,7 +101,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @param _isTx A boolean flag indicating whether the signature pertains to a transaction.
     /// @return isValid A boolean value indicating whether the signature is valid.
     function isSignatureValid(
-        bytes calldata _data,
+        bytes memory _data,
         bytes calldata _signature,
         uint256 _verifyingKey,
         bool _isTx
@@ -244,6 +244,103 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         }
     }
 
+    /// @notice Validates the new validator set data
+    /// @param _validatorSet Full validator data for all of the new validators.
+    function validateValidatorSet(ValidatorSet[] calldata _validatorSet, Chain[] calldata _chains) external view {
+        //validator set needs to include validator data for all chains
+
+        uint256 _numberOfChains = _validatorSet.length;
+
+        if (_numberOfChains != _chains.length) {
+            revert InvalidData("WrongNumberOfChains");
+        }
+
+        uint256 _numberOfValidators = _validatorSet[0].validators.length;
+
+        // the number of validators must be between 4 and 126
+        if (_numberOfValidators < 4 || _numberOfValidators > 126) {
+            revert InvalidData("WrongNumberOfValidators");
+        }
+
+        //checks that number of validators is the be the same for all chains
+        //checkes for duplicate validator addresses
+        //checks for empty multisig and fee payer addresses
+        //validate signatures for all validators for all chains
+        for (uint i; i < _numberOfChains; i++) {
+            if (_validatorSet[i].chainId != _chains[i].id) {
+                revert InvalidData("ChainIdMismatch");
+            }
+
+            //TODO discuss removing multisig and feepayer addresses from chain struct
+            // if (
+            //     bytes(_validatorSet[i].chain.addressMultisig).length == 0 ||
+            //     bytes(_validatorSet[i].chain.addressFeePayer).length == 0
+            // ) {
+            //     revert InvalidData("EmptyMultisigOrFeePayerAddress");
+            // }
+
+            for (uint256 j; j < _numberOfValidators; j++) {
+                address _validatorAddress = _validatorSet[i].validators[j].addr;
+
+                if (_validatorAddress == address(0)) {
+                    revert ZeroAddress();
+                }
+
+                for (uint k = j + 1; k < _numberOfValidators; k++) {
+                    if (_validatorAddress == _validatorSet[i].validators[k].addr) {
+                        revert InvalidData("DuplicatedValidator"); // duplicate found
+                    }
+                }
+
+                uint256 _chainsLength = _chains.length;
+                uint8 _chainType;
+
+                for (uint256 l = 0; l < _chainsLength; l++) {
+                    if (_chains[l].id == _validatorSet[i].chainId) {
+                        _chainType = _chains[l].chainType;
+                    }
+                }
+
+                ValidatorAddressChainData calldata validatorData = _validatorSet[i].validators[j];
+
+                validateSignatures(
+                    _chainType,
+                    _validatorAddress,
+                    validatorData.keySignature,
+                    validatorData.keyFeeSignature,
+                    validatorData.data
+                );
+            }
+        }
+    }
+
+    /// @dev Validates key and fee signatures based on chain type.
+    function validateSignatures(
+        uint8 _chainType,
+        address _sender,
+        bytes calldata _keySignature,
+        bytes calldata _keyFeeSignature,
+        ValidatorChainData calldata _validatorChainData
+    ) public view {
+        bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", _sender));
+
+        if (_chainType == 0) {
+            bytes memory messageHashBytes = _bytes32ToBytesAssembly(messageHashBytes32);
+            if (
+                !isSignatureValid(messageHashBytes, _keySignature, _validatorChainData.key[0], false) ||
+                !isSignatureValid(messageHashBytes, _keyFeeSignature, _validatorChainData.key[1], false)
+            ) {
+                revert InvalidSignature();
+            }
+        } else if (_chainType == 1) {
+            if (!isBlsSignatureValid(messageHashBytes32, _keySignature, _validatorChainData.key)) {
+                revert InvalidSignature();
+            }
+        } else {
+            revert InvalidData("chainType");
+        }
+    }
+
     function getValidatorsChainData(uint8 _chainId) external view returns (ValidatorChainData[] memory) {
         return chainData[_chainId];
     }
@@ -255,68 +352,24 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         }
     }
 
-    //// @notice Validates the new validator set data
-    //// @param _validatorSet Full validator data for all of the new validators.
-    // function validateValidatorSet(ValidatorSet[] calldata _validatorSet) external pure {
-    //     //set needs to include validator data for all chains
-    //     // uint256 _numberOfChains = _validatorSet.length;
-    //     // if (_numberOfChains != chains.length) {
-    //     //     revert InvalidData("WrongNumberOfChains");
-    //     // }
-
-    //     uint256 _numberOfValidators = _validatorSet[0].validators.length;
-
-    //     //number of validators must be between 4 and 126
-    //     // if (_numberOfValidators < 4 || _numberOfValidators > 126) {
-    //     //     revert InvalidData("WrongNumberOfValidators");
-    //     // }
-
-    //     //checks that number of validators is the be the same for all chains
-    //     //checkes for duplicate validator addresses
-    //     //checks for empty multisig and fee payer addresses
-    //     //validate signatures for all validators for all chains
-    //     // for (uint i; i < _numberOfChains; i++) {
-    //     //     if (_validatorSet[i].chain.id != chains[i].id) {
-    //     //         revert InvalidData("ChainIdMismatch");
-    //     //     }
-
-    //     //     if (
-    //     //         bytes(_validatorSet[i].chain.addressMultisig).length == 0 ||
-    //     //         bytes(_validatorSet[i].chain.addressFeePayer).length == 0
-    //     //     ) {
-    //     //         revert InvalidData("EmptyMultisigOrFeePayerAddress");
-    //     //     }
-
-    //     //     for (uint256 j; j < _numberOfValidators; j++) {
-    //     //         address _validatorAddress = _validatorSet[i].validators[j].addr;
-
-    //     //         if (_validatorAddress == address(0)) {
-    //     //             revert ZeroAddress();
-    //     //         }
-
-    //     //         for (uint k = j + 1; k < _numberOfValidators; k++) {
-    //     //             if (_validatorAddress == _validatorSet[i].validators[k].addr) {
-    //     //                 revert InvalidData("DuplicatedValidator"); // duplicate found
-    //     //             }
-    //     //         }
-
-    //     //         _validateSignatures(
-    //     //             _validatorSet[i].chain.chainType, // Chain type 0 for cardano
-    //     //             _validatorAddress,
-    //     //             _validatorSet[i].validators[j].keySignature,
-    //     //             _validatorSet[i].validators[j].keyFeeSignature,
-    //     //             _validatorSet[i].validators[j].data
-    //     //         );
-    //     //     }
-    //     // }
-    // }
-
     function getNewValidatorSet() external view returns (ValidatorSet[] memory) {
         return newValidatorSet;
     }
 
     function setNewValidatorSetPending(bool _pending) external onlyBridge {
         newValidatorSetPending = _pending;
+    }
+
+    /// @dev Converts a bytes32 value to a bytes array.
+    /// @param input Input bytes32 value.
+    function _bytes32ToBytesAssembly(bytes32 input) internal pure returns (bytes memory output) {
+        output = new bytes(32);
+
+        assembly {
+            mstore(add(output, 32), input)
+        }
+
+        return output;
     }
 
     /// @notice Returns the current version of the contract
