@@ -33,7 +33,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[50] private __gap;
+    // uint256[50] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -91,7 +91,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     /// @notice Submit claims from validators for updating the validator set.
     /// @param _claims The claims submitted by a validator.
-    function submitSpecialClaims(SpecialValidatorClaims calldata _claims) external override onlyValidator {
+    function submitSpecialClaims(SpecialValidatorClaims calldata _claims) external view override onlyValidator {
         if (!validators.newValidatorSetPending()) {
             revert NoNewValidatorSetPending();
         }
@@ -171,11 +171,13 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             revert NewValidatorSetAlreadyPending();
         }
 
-        _validateValidatorSet(_validatorSet);
+        //TODO: store removed validators
+        uint256 _removedValidatorsLength = _removedValidators.length;
+        _removedValidatorsLength++; // to avoid unused variable warning
+
+        // validators.validateValidatorSet(_validatorSet);
 
         validators.storeNewValidatorSet(_validatorSet);
-
-        specialClaims.createSpecialTransaction(_validatorSet);
 
         validators.setNewValidatorSetPending(true);
 
@@ -428,62 +430,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint64 _batchId
     ) external view override returns (uint8 status, TxDataInfo[] memory txs) {
         return claims.getBatchStatusAndTransactions(_chainId, _batchId);
-    }
-
-    /// @notice Validates the new validator set data
-    /// @param _validatorSet Full validator data for all of the new validators.
-    function _validateValidatorSet(ValidatorSet[] calldata _validatorSet) internal view {
-        //set needs to include validator data for all chains
-        uint256 _numberOfChains = _validatorSet.length;
-        if (_numberOfChains != chains.length) {
-            revert InvalidData("WrongNumberOfChains");
-        }
-
-        uint256 _numberOfValidators = _validatorSet[0].validators.length;
-
-        //number of validators must be between 4 and 126
-        if (_numberOfValidators < 4 || _numberOfValidators > 126) {
-            revert InvalidData("WrongNumberOfValidators");
-        }
-
-        //checks that number of validators is the be the same for all chains
-        //checkes for duplicate validator addresses
-        //checks for empty multisig and fee payer addresses
-        //validate signatures for all validators for all chains
-        for (uint i; i < _numberOfChains; i++) {
-            if (_validatorSet[i].chain.id != chains[i].id) {
-                revert InvalidData("ChainIdMismatch");
-            }
-
-            if (
-                bytes(_validatorSet[i].chain.addressMultisig).length == 0 ||
-                bytes(_validatorSet[i].chain.addressFeePayer).length == 0
-            ) {
-                revert InvalidData("EmptyMultisigOrFeePayerAddress");
-            }
-
-            for (uint256 j; j < _numberOfValidators; j++) {
-                address _validatorAddress = _validatorSet[i].validators[j].addr;
-
-                if (_validatorAddress == address(0)) {
-                    revert ZeroAddress();
-                }
-
-                for (uint k = j + 1; k < _numberOfValidators; k++) {
-                    if (_validatorAddress == _validatorSet[i].validators[k].addr) {
-                        revert InvalidData("DuplicatedValidator"); // duplicate found
-                    }
-                }
-
-                _validateSignatures(
-                    _validatorSet[i].chain.chainType, // Chain type 0 for cardano
-                    _validatorAddress,
-                    _validatorSet[i].validators[j].keySignature,
-                    _validatorSet[i].validators[j].keyFeeSignature,
-                    _validatorSet[i].validators[j].data
-                );
-            }
-        }
     }
 
     function validatorSetUpdated() external override {
