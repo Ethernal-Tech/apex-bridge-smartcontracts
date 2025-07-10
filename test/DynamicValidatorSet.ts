@@ -1352,6 +1352,12 @@ describe("Dynamic Validator Set", function () {
         );
       }
 
+      // old validatorsCount
+      expect(await validatorsc.validatorsCount()).to.equal(validators.length);
+
+      // old number of validators addresses
+      expect((await validatorsc.getValidatorsAddresses()).length).to.equal(validators.length);
+
       await bridge.validatorSetUpdated();
 
       // old validators should be removed
@@ -1366,13 +1372,89 @@ describe("Dynamic Validator Set", function () {
         );
       }
 
+      // new validatorsCount
+      expect(await validatorsc.validatorsCount()).to.equal(
+        validators.length +
+          newValidatorSetDelta.addedValidators[0].validators.length -
+          newValidatorSetDelta.removedValidators.length
+      );
+
+      // old number of validators addresses
+      expect((await validatorsc.getValidatorsAddresses()).length).to.equal(
+        validators.length +
+          newValidatorSetDelta.addedValidators[0].validators.length -
+          newValidatorSetDelta.removedValidators.length
+      );
+
+      let newValidatorAddresses = [];
+
+      for (let i = 0; i < validators.length; i++) {
+        newValidatorAddresses.push(validators[i].address);
+      }
+
+      const addressesToRemove = newValidatorSetDelta.removedValidators;
+
+      for (let i = 0; i < addressesToRemove.length; i++) {
+        const index = newValidatorAddresses.indexOf(addressesToRemove[i]);
+        if (index > -1) {
+          newValidatorAddresses.splice(index, 1);
+        }
+      }
+
+      for (let i = 0; i < newValidatorSetDelta.addedValidators[0].validators.length; i++) {
+        newValidatorAddresses.push(newValidatorSetDelta.addedValidators[0].validators[i].addr);
+      }
+
+      // comparing validator addresses
+      expect(await validatorsc.getValidatorsAddresses()).to.deep.equal(newValidatorAddresses);
+
+      // comparing chain data
       const chains = await bridge.getAllRegisteredChains();
 
-      //TODO
+      const fourthKey = validatorAddressChainData[3].data.key;
+      const fifthKey = validatorAddressChainData[4].data.key;
+
+      // NOT to include chainData
       for (let i = 0; i < chains.length; i++) {
-        for (let j = 0; j < validatorsc.validatorAddresses.length; j++) {
-          const validatorAddress = validatorsc.validatorAddresses(j);
-          const chainData = await validatorsc.getValidatorsChainData(chains[i].id);
+        const chainData = await validatorsc.getValidatorsChainData(chains[i].id);
+        for (let j = 0; j < newValidatorSetDelta.addedValidators[0].validators.length; j++) {
+          const targetFourth = fourthKey.map(BigInt);
+          const targetFifth = fifthKey.map(BigInt);
+
+          const foundFourth = chainData.some(
+            (entry) =>
+              Array.isArray(entry[0]) &&
+              entry[0].length === targetFourth.length &&
+              entry[0].every((val, i) => val === targetFourth[i])
+          );
+
+          expect(foundFourth).to.be.false;
+
+          const foundFifth = chainData.some(
+            (entry) =>
+              Array.isArray(entry[0]) &&
+              entry[0].length === targetFifth.length &&
+              entry[0].every((val, i) => val === targetFifth[i])
+          );
+
+          expect(foundFifth).to.be.false;
+        }
+      }
+
+      // to include chainData
+      for (let i = 0; i < chains.length; i++) {
+        const chainData = await validatorsc.getValidatorsChainData(chains[i].id);
+        for (let j = 0; j < newValidatorSetDelta.addedValidators[0].validators.length; j++) {
+          const target = newValidatorSetDelta.addedValidators[0].validators[j].data.key.map(BigInt);
+
+          const found = chainData.some(
+            (entry) =>
+              Array.isArray(entry[0]) &&
+              entry[0].length === target.length &&
+              entry[0].every((val, i) => val === target[i])
+          );
+
+          expect(found).to.be.true;
         }
       }
     });
