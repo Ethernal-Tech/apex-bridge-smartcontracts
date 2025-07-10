@@ -1420,14 +1420,33 @@ describe("Dynamic Validator Set", function () {
   });
   describe("New validator set confirmed on Blade", function () {
     it("Validator set should be updated", async function () {
-      // const { bridge, validatorsc, owner, validators, chain1, chain2, validatorSets, validatorAddressChainData } =
-      //   await loadFixture(deployBridgeFixture);
-      // await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      // await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-      // await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
-      // expect((await validatorsc.getValidatorsToBeRemoved()).length).to.equal(5);
-      // await bridge.validatorSetUpdated();
-      // expect((await validatorsc.getValidatorsToBeRemoved()).length).to.equal(0);
+      const { bridge, validatorsc, owner, validators, chain1, chain2, validatorSets, validatorAddressChainData } =
+        await loadFixture(deployBridgeFixture);
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+
+      // current validator set
+      for (let i = 0; i < validators.length; i++) {
+        expect(await validatorsc.isValidator(validators[i].address)).to.equal(true);
+      }
+
+      // future validator set
+      for (let i = 0; i < validatorSets[0].validators.length; i++) {
+        expect(await validatorsc.isValidator(validatorSets[0].validators[i].addr)).to.equal(false);
+      }
+
+      await bridge.validatorSetUpdated();
+
+      // old validator set should be removed
+      for (let i = 0; i < validators.length; i++) {
+        expect(await validatorsc.isValidator(validators[i].address)).to.equal(false);
+      }
+
+      // new validator set
+      for (let i = 0; i < validatorSets[0].validators.length; i++) {
+        expect(await validatorsc.isValidator(validatorSets[0].validators[i].addr)).to.equal(true);
+      }
     });
 
     it("Data about validaters to be removed should be deleted", async function () {
@@ -1445,17 +1464,8 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Bridge should be unlocked", async function () {
-      const {
-        bridge,
-        validatorsc,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        validatorSets,
-        validatorAddressChainData,
-        validatorClaimsBRC,
-      } = await loadFixture(deployBridgeFixture);
+      const { bridge, validatorsc, owner, validators, chain1, chain2, validatorSets, validatorAddressChainData } =
+        await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
@@ -1465,7 +1475,6 @@ describe("Dynamic Validator Set", function () {
       expect(await validatorsc.newValidatorSetPending()).to.equal(true);
       await bridge.validatorSetUpdated();
       expect(await validatorsc.newValidatorSetPending()).to.equal(false);
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
     });
   });
 });
