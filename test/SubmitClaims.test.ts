@@ -839,6 +839,7 @@ describe("Submit Claims", function () {
 
       expect(await claims.lastBatchedTxNonce(_destinationChain)).to.equal(1);
     });
+
     it("Should increase chainTokenQuantity for destination chain when Bridging Excuted Failed Claim is confirmed", async function () {
       const {
         bridge,
@@ -988,6 +989,7 @@ describe("Submit Claims", function () {
         hotWalletState
       );
     });
+
     it("Should decrease Hot Wallet status when Refund Request Claims has shouldDecrementHotWallet set to true and it is 0 retry", async function () {
       const { bridge, claims, owner, validators, chain2, validatorClaimsRRC, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
@@ -1010,6 +1012,7 @@ describe("Submit Claims", function () {
       );
       validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = false;
     });
+
     it("Should not decrease Hot Wallet status when Refund Request Claims has shouldDecrementHotWallet set to true and it is NOT 0 retry", async function () {
       const { bridge, claims, owner, validators, chain2, validatorClaimsRRC, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
@@ -1032,6 +1035,7 @@ describe("Submit Claims", function () {
       validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = false;
       validatorClaimsRRC.refundRequestClaims[0].retryCounter = 0;
     });
+
     it("Use Case 1: BRC -> BEFC -> RRC", async function () {
       const {
         bridge,
@@ -1107,6 +1111,7 @@ describe("Submit Claims", function () {
       validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = false;
       validatorClaimsRRC.refundRequestClaims[0].originChainId = chain2.id;
     });
+
     it("Use Case 2: BRC -> BEFC -> RRC -> BEFC -> RRC -> BEFC", async function () {
       const {
         bridge,

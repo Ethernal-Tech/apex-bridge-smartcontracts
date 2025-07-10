@@ -76,6 +76,7 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
       expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
     });
+
     it("Should skip if same validator submits the same Bridging Request Claim twice", async function () {
       const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
@@ -110,6 +111,7 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
+
     it("Should skip Bridging Request Claim if there is not enough bridging tokens and emit NotEnoughFunds event", async function () {
       const { bridge, claims, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
@@ -149,6 +151,7 @@ describe("Claims Contract", function () {
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
     });
+
     it("Should revert if there are more than 32 claims in the array", async function () {
       const {
         bridge,
@@ -356,6 +359,7 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
+
     it("Should skip if there is already a quorum for BEFC for the same batch", async function () {
       const {
         bridge,
@@ -462,6 +466,7 @@ describe("Claims Contract", function () {
       // Second claim should now be confirmed
       expect(await claimsHelper.numberOfVotes(hashBEC)).to.equal(3);
     });
+
     it("Should skip if there is already a quorum for another BEC for the same batch", async function () {
       const {
         bridge,
@@ -814,6 +819,7 @@ describe("Claims Contract", function () {
       // Second claim should not be confirmed
       expect(await claimsHelper.numberOfVotes(hashBEFC)).to.equal(3);
     });
+
     it("Should skip if there is already a quorum for another BEFC for the same batch", async function () {
       const {
         bridge,
@@ -1037,6 +1043,7 @@ describe("Claims Contract", function () {
 
       validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = false;
     });
+
     it("Should revert if refundTransactionHash is not empty in Refund Request Claims", async function () {
       const {
         bridge,
@@ -1183,6 +1190,7 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
+
     it("Should NOT increment totalQuantity if there is still no consensus on Hot Wallet Increment Claim", async function () {
       const { bridge, claims, owner, validators, chain1, validatorClaimsHWIC, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
@@ -1196,6 +1204,7 @@ describe("Claims Contract", function () {
 
       expect(await claims.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(100);
     });
+
     it("Should increment totalQuantity if there is consensus on Hot Wallet Increment Claim", async function () {
       const { bridge, claims, owner, validators, chain1, validatorClaimsHWIC, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
@@ -1218,10 +1227,12 @@ describe("Claims Contract", function () {
       const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
       await expect(claims.connect(owner).resetCurrentBatchBlock(1)).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
+
     it("Should revert if Claims SC setChainRegistered is not called by Bridge SC", async function () {
       const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
       await expect(claims.connect(owner).setChainRegistered(1, 100)).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
+
     it("Should revert if Claims SC setNextTimeoutBlock is not called by Bridge SC", async function () {
       const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
       await expect(claims.connect(owner).setNextTimeoutBlock(1, 100)).to.be.revertedWithCustomError(
@@ -1241,6 +1252,7 @@ describe("Claims Contract", function () {
           )
       ).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
+
     it("Should revert claim submition in Claims SC if not called by bridge SC", async function () {
       const { bridge, claims, owner, validatorClaimsBRC } = await loadFixture(deployBridgeFixture);
       await expect(claims.connect(owner).submitClaims(validatorClaimsBRC, owner.address)).to.be.revertedWithCustomError(
@@ -1248,6 +1260,7 @@ describe("Claims Contract", function () {
         "NotBridge"
       );
     });
+
     it("getBatchTransactions should return txs from batch", async function () {
       const {
         bridge,
