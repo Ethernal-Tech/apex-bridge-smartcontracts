@@ -209,8 +209,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev After quorum is reached, the destination chain's token quantity is reduced, and the source chain's token quantity is increased if it's the first retry.
     /// @dev The function also updates the next timeout block if necessary and sets the confirmed transaction details.
     function _submitClaimsBRC(BridgingRequestClaim calldata _claim, uint256 i, address _caller) internal {
-        uint256 _receiversSumSrc = _claim.totalAmountSrc;
-        uint256 _receiversSumDst = _claim.totalAmountDst;
+        if (validators.newValidatorSetPending()) {
+            revert NewValidatorSetPending();
+        }
+        uint256 _receiversSum = _claim.totalAmount;
         uint8 _destinationChainId = _claim.destinationChainId;
         uint256 _chainTokenQuantityDestination = chainTokenQuantity[_destinationChainId];
 
@@ -383,6 +385,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     ///      or marking them as failed if retries exceed the limit.
     /// @dev The batch's token quantity is updated, and the corresponding batch data is deleted once the claim is processed.
     function _submitClaimsRRC(RefundRequestClaim calldata _claim, address _caller) internal {
+        if (validators.newValidatorSetPending()) {
+            revert NewValidatorSetPending();
+        }
         // temporary check until automatic refund is implemented
         // once automatic refund is implemented, this check should be that
         // either originTransactionHash or refundTransactionHash should be empty
@@ -433,6 +438,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev The claim is validated by ensuring that a quorum of validators has approved it before proceeding.
     /// @dev If the quorum is reached, the specified amount is added to the hot wallet balance for the given chain.
     function _submitClaimHWIC(HotWalletIncrementClaim calldata _claim, address _caller) internal {
+        if (validators.newValidatorSetPending()) {
+            revert NewValidatorSetPending();
+        }
+
         bytes32 claimHash = keccak256(abi.encode("HWIC", _claim));
 
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;

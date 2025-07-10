@@ -28,21 +28,21 @@ abstract contract IBridge is IBridgeStructs {
 
     /// @notice Submit new validator set data
     /// @notice _newValidatorSetDelta Added and removed validators for a new validator set.
-    function submitNewValidatorSet(NewValidatorSetDelta calldata newValidatorSetDelta) external virtual;
+    function submitNewValidatorSet(NewValidatorSetDelta calldata _newValidatorSetDelta) external virtual;
 
     /// @notice Submit the last observed Cardano blocks from validators for synchronization purposes.
-    /// @param chainId The source chain ID.
-    /// @param blocks Array of Cardano blocks to be recorded.
-    function submitLastObservedBlocks(uint8 chainId, CardanoBlock[] calldata blocks) external virtual;
+    /// @param _chainId The source chain ID.
+    /// @param _blocks Array of Cardano blocks to be recorded.
+    function submitLastObservedBlocks(uint8 _chainId, CardanoBlock[] calldata _blocks) external virtual;
 
     /// @notice Set additional metadata for a chain, such as multisig and fee payer addresses.
     /// @param _chainId The target chain ID.
-    /// @param addressMultisig Multisig address associated with the chain.
-    /// @param addressFeePayer Fee payer address used for covering transaction costs.
+    /// @param _addressMultisig Multisig address associated with the chain.
+    /// @param _addressFeePayer Fee payer address used for covering transaction costs.
     function setChainAdditionalData(
         uint8 _chainId,
-        string calldata addressMultisig,
-        string calldata addressFeePayer
+        string calldata _addressMultisig,
+        string calldata _addressFeePayer
     ) external virtual;
 
     /// @notice Register a new chain and its validator data.
@@ -81,12 +81,12 @@ abstract contract IBridge is IBridgeStructs {
     /// @return _result ID of the next batch or 0 if no batch should be created.
     function getNextBatchId(uint8 _destinationChain) external view virtual returns (uint64 _result);
 
-    /// @notice Get confirmed transactions ready for batching for a specific destination chain.
-    /// @param _destinationChain ID of the destination chain.
-    /// @return _confirmedTransactions Array of confirmed transactions.
-    function getConfirmedTransactions(
-        uint8 _destinationChain
-    ) external view virtual returns (ConfirmedTransaction[] memory _confirmedTransactions);
+    // /// @notice Get confirmed transactions ready for batching for a specific destination chain.
+    // /// @param _destinationChain ID of the destination chain.
+    // /// @return _confirmedTransactions Array of confirmed transactions.
+    // function getConfirmedTransactions(
+    //     uint8 _destinationChain
+    // ) external view virtual returns (ConfirmedTransaction[] memory _confirmedTransactions);
 
     /// @notice Get the confirmed batch for the given destination chain.
     /// @param _destinationChain ID of the destination chain.
@@ -115,13 +115,19 @@ abstract contract IBridge is IBridgeStructs {
     /// @notice Get transactions included in a specific batch for a given chain.
     /// @param _chainId ID of the chain.
     /// @param _batchId ID of the batch.
-    /// @return status Status of the batch.
-    /// @return txs Array of transaction data included in the batch.
+    /// @return _status Status of the batch.
+    /// @return _txs Array of transaction data included in the batch.
     function getBatchStatusAndTransactions(
         uint8 _chainId,
         uint64 _batchId
-    ) external virtual returns (uint8 status, TxDataInfo[] memory txs);
+    ) external virtual returns (uint8 _status, TxDataInfo[] memory _txs);
 
     /// @notice Notifies the bridge that new validator set has been implemented on Blade.
     function validatorSetUpdated() external virtual;
+
+    //TODO explanation
+    function getNewValidatorSetPending() external virtual returns (bool _pending);
+
+    // //TODO explanation
+    // function getNewValidatorSetDelta() external virtual returns (NewValidatorSetDelta calldata _newValidatorSetDelta);
 }
