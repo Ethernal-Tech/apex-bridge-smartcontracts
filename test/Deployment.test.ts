@@ -65,25 +65,26 @@
 //     await expect(getValidatorsSc(128)).to.revertedWith("Too many validators (max 127)");
 //   });
 
-//   it("setDependency should fail if any required argument is not smart contract address", async function () {
-//     const { admin, bridge, claims, claimsHelper, signedBatches, slots, validatorsc, owner, validators } =
-//       await loadFixture(deployBridgeFixture);
+  it("setDependency should fail if any required argument is not smart contract address", async function () {
+    const { admin, bridge, claims, specialClaims, claimsHelper, signedBatches, slots, validatorsc, owner, validators } =
+      await loadFixture(deployBridgeFixture);
 
 //     await expect(admin.connect(owner).setDependencies(ZeroAddress)).to.be.revertedWithCustomError(
 //       admin,
 //       "NotContractAddress"
 //     );
 
-//     await expect(
-//       bridge
-//         .connect(owner)
-//         .setDependencies(
-//           validators[0].address,
-//           signedBatches.getAddress(),
-//           slots.getAddress(),
-//           validatorsc.getAddress()
-//         )
-//     ).to.be.revertedWithCustomError(bridge, "NotContractAddress");
+    await expect(
+      bridge
+        .connect(owner)
+        .setDependencies(
+          validators[0].address,
+          specialClaims.getAddress(),
+          signedBatches.getAddress(),
+          slots.getAddress(),
+          validatorsc.getAddress()
+        )
+    ).to.be.revertedWithCustomError(bridge, "NotContractAddress");
 
 //     await expect(
 //       claims
@@ -95,9 +96,16 @@
 //       claimsHelper.connect(owner).setDependencies(validators[2].address, signedBatches.getAddress())
 //     ).to.be.revertedWithCustomError(claimsHelper, "NotContractAddress");
 
-//     await expect(
-//       signedBatches.connect(owner).setDependencies(validators[3].address, claims.getAddress(), validatorsc.getAddress())
-//     ).to.be.revertedWithCustomError(signedBatches, "NotContractAddress");
+    await expect(
+      signedBatches
+        .connect(owner)
+        .setDependencies(
+          validators[3].address,
+          claims.getAddress(),
+          specialClaims.getAddress(),
+          validatorsc.getAddress()
+        )
+    ).to.be.revertedWithCustomError(signedBatches, "NotContractAddress");
 
 //     await expect(
 //       slots.connect(owner).setDependencies(validators[4].address, validatorsc.getAddress())
