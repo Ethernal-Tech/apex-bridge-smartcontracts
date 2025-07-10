@@ -27,11 +27,8 @@ abstract contract IBridge is IBridgeStructs {
     function submitSignedBatchEVM(SignedBatch calldata _signedBatch) external virtual;
 
     /// @notice Submit new validator set data
-    /// @param _validatorSet Full validator set for all registered chains.
-    function submitNewValidatorSet(
-        ValidatorSet[] calldata _validatorSet,
-        address[] calldata _removedValidators
-    ) external virtual;
+    /// @notice _newValidatorSetDelta Added and removed validators for a new validator set.
+    function submitNewValidatorSet(NewValidatorSetDelta calldata newValidatorSetDelta) external virtual;
 
     /// @notice Submit the last observed Cardano blocks from validators for synchronization purposes.
     /// @param chainId The source chain ID.

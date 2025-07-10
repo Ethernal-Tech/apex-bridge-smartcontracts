@@ -174,22 +174,26 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     /// @notice Submit new validator set data
-    /// @param _addedValidators Full validator data for all of the new validators.
-    /// @param _removedValidators List of addresses of validators that are removed from the set.
+    /// @param _newValidatorSetDelta Full validator data for all of the new validators.
     function submitNewValidatorSet(
-        ValidatorSet[] calldata _addedValidators,
-        address[] calldata _removedValidators
-    ) external override onlySystem {
+        NewValidatorSetDelta calldata _newValidatorSetDelta
+    )
+        external
+        override
+        // ValidatorSet[] calldata _addedValidators,
+        // address[] calldata _removedValidators
+        onlySystem
+    {
         if (validators.newValidatorSetPending()) {
             revert NewValidatorSetAlreadyPending();
         }
 
         //TODO: check if these validators are indeed in the current set???
-        validators.setRemovedValidators(_removedValidators);
+        validators.setRemovedValidators(_newValidatorSetDelta.removedValidators);
 
-        validators.validateValidatorSet(_validatorSet, chains);
+        validators.validateValidatorSet(_newValidatorSetDelta.addedValidators, chains);
 
-        validators.storeNewValidatorSet(_validatorSet);
+        validators.storeNewValidatorSet(_newValidatorSetDelta.addedValidators);
 
         validators.setNewValidatorSetPending(true);
 

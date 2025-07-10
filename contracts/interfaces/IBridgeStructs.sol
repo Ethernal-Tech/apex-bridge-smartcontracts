@@ -137,6 +137,12 @@ interface IBridgeStructs {
         string addressFeePayer;
     }
 
+    /// @notice Added and removed validators for a new validator set.
+    struct NewValidatorSetDelta {
+        ValidatorSet[] addedValidators;
+        address[] removedValidators;
+    }
+
     /// @notice Full data for new Validator Set.
     struct ValidatorSet {
         uint8 chainId;
