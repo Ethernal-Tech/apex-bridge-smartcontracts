@@ -356,7 +356,7 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
-    it("Should revert with BatchNotFound error if there is already a quorum for BEFC for the same batch", async function () {
+    it("Should skip if there is already a quorum for BEFC for the same batch", async function () {
       const {
         bridge,
         claimsHelper,
@@ -462,7 +462,7 @@ describe("Claims Contract", function () {
       // Second claim should now be confirmed
       expect(await claimsHelper.numberOfVotes(hashBEC)).to.equal(3);
     });
-    it("Should revert with BatchNotFound error if there is already a quorum for another BEC for the same batch", async function () {
+    it("Should skip if there is already a quorum for another BEC for the same batch", async function () {
       const {
         bridge,
         claims,
@@ -501,10 +501,6 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
-
-      // Create our claims with same batch ID but different purposes
-      const batchId = validatorClaimsBEC.batchExecutedClaims[0].batchNonceId;
-      validatorClaimsBEC.batchExecutedClaims[0].batchNonceId = batchId;
 
       // Group of validators submit original claim
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
@@ -818,7 +814,7 @@ describe("Claims Contract", function () {
       // Second claim should not be confirmed
       expect(await claimsHelper.numberOfVotes(hashBEFC)).to.equal(3);
     });
-    it("Should revert with BatchNotFound error if there is already a quorum for another BEFC for the same batch", async function () {
+    it("Should skip if there is already a quorum for another BEFC for the same batch", async function () {
       const {
         bridge,
         claimsHelper,
@@ -856,10 +852,6 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
-
-      // Create our claims with same batch ID but different purposes
-      const batchId = validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId;
-      validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId = batchId;
 
       // Group of validators submit original claim
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
