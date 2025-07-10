@@ -32,8 +32,8 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// @dev BlockchainId -> ConfirmedBatch
     mapping(uint8 => ConfirmedBatch) private lastSpecialConfirmedBatch;
 
-    // @notice Bitmap used to flag changes for which special task has been executed
-    uint8 bitmap;
+    // @notice Bitmap used to flag chains for which special task has been executed
+    uint8 public bitmap;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
@@ -164,7 +164,7 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         );
 
         if (_quorumReached) {
-            claimsHelper.setConfirmedSpecialSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_EXECUTED);
+            claimsHelper.setSpecialConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_EXECUTED);
 
             // isCondolidation flag is here used to signal the last special signed batch for a change
             // since there could be multiple special signed batches needed to transfer all the funds
@@ -173,7 +173,7 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
             }
 
             if (_countSetBits(bitmap) == Bridge(bridgeAddress).getAllRegisteredChains().length - 1) {
-                //TODO notify Blades
+                emit ValidatorSetUpdateReady();
             }
         }
     }
@@ -214,9 +214,9 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         );
 
         if (_quorumReached) {
-            claimsHelper.setConfirmedSpecialSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_FAILED);
+            claimsHelper.setSpecialConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_FAILED);
 
-            //TODO probably nothing, maybe event
+            emit SpecialSignedBatchExecutionFailed(chainId, batchId);
         }
     }
 

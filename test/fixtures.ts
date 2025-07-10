@@ -58,7 +58,7 @@ export async function deployBridgeFixture() {
 
   const bridgeProxy = await BridgeProxy.deploy(
     await bridgeLogic.getAddress(),
-    Bridge.interface.encodeFunctionData("initialize", [owner.address, owner.address])
+    Bridge.interface.encodeFunctionData("initialize", [owner.address, owner.address, true])
   );
 
   const claimsProxy = await ClaimsProxy.deploy(
