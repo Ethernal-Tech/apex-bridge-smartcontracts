@@ -14,7 +14,6 @@ interface IBridgeStructs {
         bytes feeSignature;
         bytes rawTransaction;
         bool isConsolidation;
-        bool isStakeDelegation;
     }
 
     /// @notice Metadata for a batch that has been confirmed.
@@ -23,7 +22,6 @@ interface IBridgeStructs {
         uint64 lastTxNonceId;
         bool isConsolidation;
         uint8 status; // 0 = deleted, 1 = in progress, 2 = executed, 3 = failed
-        bool isStakeDelegation;
     }
 
     /// @notice Data for a confirmed batch that was executed on-chain.
@@ -34,7 +32,6 @@ interface IBridgeStructs {
         bytes rawTransaction;
         uint64 id;
         bool isConsolidation;
-        bool isStakeDelegation;
     }
 
     /// @notice A transaction that has been confirmed and is ready for batching.
@@ -46,18 +43,12 @@ interface IBridgeStructs {
         bytes32 observedTransactionHash;
         uint64 nonce;
         uint8 sourceChainId;
-        uint8 transactionType; // 0 = normal, 1 = defund, 2 = refund
+        uint8 transactionType; // 0 = normal, 1 = defund, 2 = refund, 3 = stakeDel
         bool alreadyTriedBatch;
         Receiver[] receivers;
         bytes outputIndexes;
         uint8 destinationChainId;
-    }
-
-    /// @notice A stake delegation transaction ready for batching.
-    struct StakeDelegationTransaction {
-        uint8 chainId;
         string stakePoolId;
-        uint64 nonce;
     }
 
     /// @notice Represents a block from the Cardano chain.

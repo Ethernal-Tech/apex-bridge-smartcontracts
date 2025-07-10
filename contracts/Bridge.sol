@@ -107,7 +107,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Submit a signed transaction batch for an EVM-compatible chain.
     /// @param _signedBatch The batch of signed transactions.
     function submitSignedBatchEVM(SignedBatch calldata _signedBatch) external override onlyValidator {
-        if (!claims.shouldCreateRegularBatch(_signedBatch.destinationChainId)) {
+        if (!claims.shouldCreateBatch(_signedBatch.destinationChainId)) {
             return;
         }
 
@@ -300,7 +300,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     function getConfirmedTransactions(
         uint8 _destinationChain
     ) external view override returns (ConfirmedTransaction[] memory _confirmedTransactions) {
-        if (!claims.shouldCreateRegularBatch(_destinationChain)) {
+        if (!claims.shouldCreateBatch(_destinationChain)) {
             revert CanNotCreateBatchYet(_destinationChain);
         }
 
@@ -321,28 +321,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @param stakePoolId The identifier of the stake pool to delegate to.
     function delegateAddrToStakePool(uint8 chainId, string calldata stakePoolId) external override onlyOwner {
         claims.delegateAddrToStakePool(chainId, stakePoolId);
-    }
-
-    /// @notice Returns the list of stake delegation transactions that are pending batching for a given chain.
-    /// @param _chainId The ID of the chain for which to retrieve stake delegation transactions.
-    /// @return _stakeDelTransactions Array of unbatched stake delegation transactions for the given chain.
-    function getStakeDelegationTransactions(
-        uint8 _chainId
-    ) external view override returns (StakeDelegationTransaction[] memory _stakeDelTransactions) {
-        if (!claims.shouldCreateStakeDelBatch(_chainId)) {
-            revert CanNotCreateBatchYet(_chainId);
-        }
-
-        uint64 firstTxNonce = claims.getLastBatchedStakeDelTxNonce(_chainId) + 1;
-        uint64 counterStakeDelTransactions = claims.getStakeDelTxsCount(_chainId);
-
-        _stakeDelTransactions = new StakeDelegationTransaction[](counterStakeDelTransactions);
-
-        for (uint64 i; i < counterStakeDelTransactions; i++) {
-            _stakeDelTransactions[i] = claims.getStakeDelTransaction(_chainId, firstTxNonce + i);
-        }
-
-        return _stakeDelTransactions;
     }
 
     /// @notice Get the confirmed batch for the given destination chain.

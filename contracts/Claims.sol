@@ -134,7 +134,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             revert ChainIsNotRegistered(chainId);
         }
 
-        claimsHelper.addStakeDelegationTransactions(chainId, stakePoolId);
+        uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
+
+        ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nextNonce];
+        confirmedTx.transactionType = 3;
+        confirmedTx.destinationChainId = chainId;
+        confirmedTx.stakePoolId = stakePoolId;
+        confirmedTx.nonce = nextNonce;
     }
 
     /// @notice Submit claims from validators for reaching consensus.
@@ -317,12 +323,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 return;
             }
 
-            // set nonce if the batch contains stake delegation transactions
-            if (_confirmedSignedBatch.isStakeDelegation) {
-                claimsHelper.setLastBatchedStakeDelTxNonce(chainId, _confirmedSignedBatch.lastTxNonceId);
-                return;
-            }
-
             lastBatchedTxNonce[chainId] = _confirmedSignedBatch.lastTxNonceId;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
         }
@@ -373,13 +373,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             uint64 _firstTxNonce = _confirmedSignedBatch.firstTxNonceId;
             uint64 _lastTxNonce = _confirmedSignedBatch.lastTxNonceId;
 
-            // retry stake delegation transactions
-            if (_confirmedSignedBatch.isStakeDelegation) {
-                claimsHelper.retryStakeDelTxs(chainId, _firstTxNonce, _lastTxNonce);
-                claimsHelper.setLastBatchedStakeDelTxNonce(chainId, _lastTxNonce);
-                return;
-            }
-
             uint256 _currentAmount = chainTokenQuantity[chainId];
             uint256 _currentWrappedAmount = chainWrappedTokenQuantity[chainId];
 
@@ -396,15 +389,14 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                     _currentWrappedAmount += _ctx.totalWrappedAmount;
                 } else if (_txType == 1) {
                     if (_ctx.retryCounter < MAX_NUMBER_OF_DEFUND_RETRIES) {
-                        uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
-                        confirmedTransactions[chainId][nextNonce] = _ctx;
-                        confirmedTransactions[chainId][nextNonce].nonce = nextNonce;
-                        confirmedTransactions[chainId][nextNonce].retryCounter++;
+                        _retryTx(chainId, _ctx);
                     } else {
                         _currentAmount += _ctx.totalAmount;
                         _currentWrappedAmount += _ctx.totalWrappedAmount;
                         emit DefundFailedAfterMultipleRetries();
                     }
+                } else if (_txType == 3) {
+                    _retryTx(chainId, _ctx);
                 }
             }
 
@@ -413,6 +405,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             lastBatchedTxNonce[chainId] = _lastTxNonce;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
         }
+    }
+
+    function _retryTx(uint8 chainId, ConfirmedTransaction storage _ctx) internal {
+        uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
+        confirmedTransactions[chainId][nextNonce] = _ctx;
+        confirmedTransactions[chainId][nextNonce].nonce = nextNonce;
+        confirmedTransactions[chainId][nextNonce].retryCounter++;
     }
 
     /// @notice Handles the submission and quorum verification of a RefundRequestClaim (RRC).
@@ -585,46 +584,15 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Checks if a batch should be created for the destination chain.
     /// @param _destinationChain ID of the destination chain.
     /// @return _shouldCreateBatch Returns true if either a regular or stake delegation batch should be created.
-    function shouldCreateBatch(uint8 _destinationChain) public view returns (bool _shouldCreateBatch) {
-        if (!canCreateBatchForChain(_destinationChain)) return false;
+    function shouldCreateBatch(uint8 _destinationChain) public view returns (bool) {
+        // if not registered chain or batch is already created, return false
+        if (!isChainRegistered[_destinationChain] || claimsHelper.currentBatchBlock(_destinationChain) != int(-1)) {
+            return false;
+        }
 
-        return isRegularBatchReady(_destinationChain) || hasStakeDelTxs(_destinationChain);
-    }
-
-    /// @notice Determines whether a new batch of regular transactions should be created.
-    /// @param _destinationChain The ID of the destination chain.
-    /// @return True if the chain is eligible and batch conditions are met.
-    function shouldCreateRegularBatch(uint8 _destinationChain) public view returns (bool) {
-        return canCreateBatchForChain(_destinationChain) && isRegularBatchReady(_destinationChain);
-    }
-
-    /// @notice Determines whether a stake delegation batch should be created for a given chain.
-    /// @param chainId The ID of the chain to check.
-    /// @return True if the chain is eligible and has unbatched stake delegation transactions.
-    function shouldCreateStakeDelBatch(uint8 chainId) public view returns (bool) {
-        return canCreateBatchForChain(chainId) && hasStakeDelTxs(chainId);
-    }
-
-    /// @notice Checks whether a batch (regular or stake delegation) can be created for a given chain.
-    /// @param _chainId ID of the destination chain.
-    /// @return True if the chain is registered and no batch is currently in progress.
-    function canCreateBatchForChain(uint8 _chainId) internal view returns (bool) {
-        return isChainRegistered[_chainId] && claimsHelper.currentBatchBlock(_chainId) == int(-1);
-    }
-
-    /// @notice Returns whether the conditions for creating a regular batch are met.
-    /// @param _destinationChain The ID of the chain to check.
-    /// @return True if enough confirmed txs exist or timeout has passed.
-    function isRegularBatchReady(uint8 _destinationChain) internal view returns (bool) {
         uint256 cnt = getBatchingTxsCount(_destinationChain);
-        return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
-    }
 
-    /// @notice Returns whether there are unbatched stake delegation transactions.
-    /// @param _chainId The ID of the chain to check.
-    /// @return True if unbatched stake delegation txs exist.
-    function hasStakeDelTxs(uint8 _chainId) internal view returns (bool) {
-        return getStakeDelTxsCount(_chainId) > 0;
+        return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
     }
 
     /// @notice Retrieves a confirmed transaction by chain ID and nonce.
@@ -636,17 +604,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint64 _nonce
     ) public view returns (ConfirmedTransaction memory _confirmedTransaction) {
         return confirmedTransactions[_destinationChain][_nonce];
-    }
-
-    /// @notice Retrieves a stake delegation transaction by chain ID and nonce.
-    /// @param _chainId The ID of the chain to which the stake delegation transaction belongs.
-    /// @param _nonce The nonce of the stake delegation transaction to retrieve.
-    /// @return _stakeDelTransaction The stake delegation transaction corresponding to the given chain ID and nonce.
-    function getStakeDelTransaction(
-        uint8 _chainId,
-        uint64 _nonce
-    ) public view returns (StakeDelegationTransaction memory _stakeDelTransaction) {
-        return claimsHelper.getStakeDelTransaction(_chainId, _nonce);
     }
 
     /// @notice Calculates the number of confirmed transactions ready for batching for a specific chain.
@@ -673,18 +630,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             ++counterConfirmedTransactions;
             ++txIndx;
         }
-    }
-
-    /// @notice Returns the count of stake delegation transactions pending batching for a given chain.
-    /// @dev Retrieves the number of unbatched stake delegation transactions up to the maximum allowed batch size.
-    /// @param _chainId The ID of the chain for which to count stake delegation transactions.
-    /// @return counterConfirmedTransactions The number of stake delegation transactions ready to be included in the next batch.
-    function getStakeDelTxsCount(uint8 _chainId) public view returns (uint64 counterConfirmedTransactions) {
-        return claimsHelper.getStakeDelTxsCount(_chainId, maxNumberOfTransactions);
-    }
-
-    function getLastBatchedStakeDelTxNonce(uint8 _chainId) public view returns (uint64) {
-        return claimsHelper.lastBatchedStakeDelTxNonce(_chainId);
     }
 
     /// @notice Resets the current batch block for a given chain.
