@@ -18,7 +18,7 @@ describe("ClaimsHelper Contract", function () {
 
       await expect(claimsHelper.connect(owner).setConfirmedSignedBatchData(signedBatch)).to.be.revertedWithCustomError(
         bridge,
-        "NotSignedBatchesOrClaims"
+        "NotSignedBatchesOrClaimsorSpecialClaims"
       );
     });
 

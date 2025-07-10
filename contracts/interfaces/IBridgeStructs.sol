@@ -183,7 +183,6 @@ interface IBridgeStructs {
     error NotFundAdmin();
     error NotUpgradeAdmin();
     error NotAdminContract();
-    error NotSignedBatchesOrClaims();
     error CanNotCreateBatchYet(uint8 _chainId);
     error InvalidData(string data);
     error ChainIsNotRegistered(uint8 _chainId);
@@ -201,6 +200,8 @@ interface IBridgeStructs {
     error NotSpecialClaimsOrSpecialSignedBatches();
     error NotSpecialSignedBatches();
     error WrongSpecialClaims();
+    error NotSignedBatchesOrClaimsorSpecialClaims();
+    error NotSpecialClaims();
 
     // ------------------------------------------------------------------------
     // Events
