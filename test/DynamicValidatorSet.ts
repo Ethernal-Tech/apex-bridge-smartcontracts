@@ -1447,6 +1447,20 @@ describe("Dynamic Validator Set", function () {
       for (let i = 0; i < validatorSets[0].validators.length; i++) {
         expect(await validatorsc.isValidator(validatorSets[0].validators[i].addr)).to.equal(true);
       }
+
+      const chains = await bridge.getAllRegisteredChains();
+      console.log("KOLIKO IMA CHAINOVA");
+      console.log(chains.length);
+
+      for (let i = 0; i < chains.length; i++) {
+        for (let j = 0; j < validatorsc.validatorAddresses.length; j++) {
+          console.log("KOLIKO IMA VALIDATORA");
+          const validatorAddress = validatorsc.validatorAddresses(j);
+          const chainData = await validatorsc.getValidatorsChainData(chains[i].id);
+          console.log("EVO GA OVDE");
+          console.log(chainData);
+        }
+      }
     });
 
     it("Data about validaters to be removed should be deleted", async function () {
