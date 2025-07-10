@@ -26,11 +26,17 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     SignedBatches private signedBatches;
     Validators private validators;
 
-    address private adminContractAddress;
+    /// @notice Mapping from chain ID to nonce of the last special confirmed transaction.
+    /// @dev chainId -> nonce
+    mapping(uint8 => uint64) public lastSpecialConfirmedTxNonce;
 
     /// @notice Mapping from chain ID to special confirmed transaction for validators update.
     /// @dev BlockchainId -> nonce -> ConfirmedTransaction
     mapping(uint8 => ConfirmedTransaction) public specialConfirmedTransaction;
+
+    /// @notice Mapping of confirmed signed batches
+    /// @dev BlockchainId -> batchId -> SignedBatch
+    mapping(uint8 => mapping(uint64 => ConfirmedSignedBatchData)) public confirmedSpecialSignedBatches;
 
     /// @notice Stores the last special confirmed batch per destination chain
     /// @dev BlockchainId -> ConfirmedBatch
@@ -68,29 +74,25 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// @param _claimsHelperAddress Address of the ClaimsHelper contract.
     /// @param _signedBatchesAddress Address of the SignedBatches contract.
     /// @param _validatorsAddress Address of the Validators contract.
-    /// @param _adminContractAddress Address of the Admin contract.
     function setDependencies(
         address _bridgeAddress,
         address _claimsAddress,
         address _claimsHelperAddress,
         address _signedBatchesAddress,
-        address _validatorsAddress,
-        address _adminContractAddress
+        address _validatorsAddress
     ) external onlyOwner {
         if (
             !_isContract(_bridgeAddress) ||
             !_isContract(_claimsAddress) ||
             !_isContract(_claimsHelperAddress) ||
             !_isContract(_signedBatchesAddress) ||
-            !_isContract(_validatorsAddress) ||
-            !_isContract(_adminContractAddress)
+            !_isContract(_validatorsAddress)
         ) revert NotContractAddress();
         bridgeAddress = _bridgeAddress;
         claims = Claims(_claimsAddress);
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         signedBatches = SignedBatches(_signedBatchesAddress);
         validators = Validators(_validatorsAddress);
-        adminContractAddress = _adminContractAddress;
     }
 
     function submitSpecialClaims(SpecialValidatorClaims calldata _claims, address _caller) external onlyBridge {
@@ -241,13 +243,8 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// @param _chainId The ID of the chain on which the batch exists.
     /// @param _batchId The ID of the batch to retrieve transactions for.
     /// @return status A status code indicating the success or failure of the operation.
-    function getBatchStatus(uint8 _chainId, uint64 _batchId) external view returns (uint8 status) {
-        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
-            _chainId,
-            _batchId
-        );
-
-        return _confirmedSignedBatch.status;
+    function getSpecialBatchStatus(uint8 _chainId, uint64 _batchId) external view returns (uint8 status) {
+        return confirmedSpecialSignedBatches[_chainId][_batchId].status;
     }
 
     function createSpecialTransaction(ValidatorSet[] calldata _validatorSet) external onlyBridge {
@@ -255,17 +252,20 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
         for (uint i; i < _validatorSetLength; i++) {
             ValidatorSet memory _validator = _validatorSet[i];
-            if (_validator.chain.chainType == 0) {
-                uint256 _pendingAmount = claims.chainTokenQuantity(_validator.chain.id);
+            uint8 _chainId = _validator.chain.id;
 
-                ConfirmedTransaction storage confirmedTx = specialConfirmedTransaction[_validator.chain.id];
+            if (_validator.chain.chainType == 0) {
+                uint64 nextNonce = ++lastSpecialConfirmedTxNonce[_chainId];
+                uint256 _pendingAmount = claims.chainTokenQuantity(_chainId);
+
+                ConfirmedTransaction storage confirmedTx = specialConfirmedTransaction[_chainId];
                 confirmedTx.totalAmount = _pendingAmount;
                 confirmedTx.blockHeight = 0; // always the same random block height
-                confirmedTx.observedTransactionHash = "0x123"; // always the same random hash
-                confirmedTx.sourceChainId = 0; // always the same source chain id
-                confirmedTx.nonce = 0; // this could be some high number that will always be used
+                confirmedTx.observedTransactionHash = bytes32(uint256(0x0123)); // always the same random hash
+                confirmedTx.sourceChainId = _chainId;
+                confirmedTx.nonce = nextNonce;
                 confirmedTx.retryCounter = 0;
-                confirmedTx.transactionType = 3;
+                confirmedTx.transactionType = 3; // special
 
                 Receiver memory receiver = Receiver({
                     amount: _pendingAmount,
@@ -274,7 +274,7 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
                 confirmedTx.receivers.push(receiver);
 
-                specialConfirmedTransaction[_validator.chain.id] = confirmedTx;
+                specialConfirmedTransaction[_chainId] = confirmedTx;
             }
         }
     }
@@ -347,6 +347,10 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         }
     }
 
+    function getSpecialConfirmedBatchId(uint8 _destinationChain) external view returns (uint64) {
+        return lastSpecialConfirmedBatch[_destinationChain].id;
+    }
+
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
@@ -355,11 +359,6 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
     modifier onlyBridge() {
         if (msg.sender != bridgeAddress) revert NotBridge();
-        _;
-    }
-
-    modifier onlyAdminContract() {
-        if (msg.sender != adminContractAddress) revert NotAdminContract();
         _;
     }
 
