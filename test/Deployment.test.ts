@@ -104,9 +104,11 @@
 //         .setDependencies(validators[1].address, claims.getAddress(), validatorsc.getAddress(), admin.getAddress())
 //     ).to.be.revertedWithCustomError(claims, "NotContractAddress");
 
-//     await expect(
-//       claimsHelper.connect(owner).setDependencies(validators[2].address, signedBatches.getAddress())
-//     ).to.be.revertedWithCustomError(claimsHelper, "NotContractAddress");
+    await expect(
+      claimsHelper
+        .connect(owner)
+        .setDependencies(validators[2].address, signedBatches.getAddress(), specialSignedBatches.getAddress())
+    ).to.be.revertedWithCustomError(claimsHelper, "NotContractAddress");
 
     await expect(
       signedBatches
@@ -115,6 +117,7 @@
           validators[3].address,
           claims.getAddress(),
           specialClaims.getAddress(),
+          specialSignedBatches.getAddress(),
           validatorsc.getAddress()
         )
     ).to.be.revertedWithCustomError(signedBatches, "NotContractAddress");

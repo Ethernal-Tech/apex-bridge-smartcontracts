@@ -158,41 +158,40 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         }
     }
 
-    // function _submitSpecialClaimsBEFC(BatchExecutionFailedClaim calldata _claim, address _caller) internal {
-    //     uint8 chainId = _claim.chainId;
-    //     uint64 batchId = _claim.batchNonceId;
+    //TODO explanation
+    function _submitSpecialClaimsBEFC(BatchExecutionFailedClaim calldata _claim, address _caller) internal {
+        uint8 chainId = _claim.chainId;
+        uint64 batchId = _claim.batchNonceId;
 
-    //     ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
-    //         chainId,
-    //         batchId
-    //     );
+        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
+            chainId,
+            batchId
+        );
 
-    //     //TODO first and last check comment
-    //     // Once a quorum has been reached on either BEC or BEFC for a batch, the first and last transaction
-    //     // nonces for that batch are deleted, thus signaling that the batch has been processed. Any further BEC or BEFC
-    //     // claims for the same batch will not be processed. This is to prevent double processing of the same batch,
-    //     // and also to prevent processing of batches with invalid IDs.
-    //     // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-    //     if (_confirmedSignedBatch.status != ConstantsLib.BATCH_IN_PROGRESS) {
-    //         return;
-    //     }
+        //TODO first and last check comment
+        // Once a quorum has been reached on either BEC or BEFC for a batch, the first and last transaction
+        // nonces for that batch are deleted, thus signaling that the batch has been processed. Any further BEC or BEFC
+        // claims for the same batch will not be processed. This is to prevent double processing of the same batch,
+        // and also to prevent processing of batches with invalid IDs.
+        // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
+        if (_confirmedSignedBatch.status != ConstantsLib.BATCH_IN_PROGRESS) {
+            return;
+        }
 
-    //     bytes32 claimHash = keccak256(abi.encode("SBEFC", _claim));
+        bytes32 claimHash = keccak256(abi.encode("SBEFC", _claim));
 
-    //     bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
-    //         _caller,
-    //         claimHash,
-    //         validators.getQuorumNumberOfValidators()
-    //     );
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
+            _caller,
+            claimHash,
+            validators.getQuorumNumberOfValidators()
+        );
 
-    //     if (_quorumReached) {
-    //         claimsHelper.setConfirmedSpecialSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_FAILED);
+        if (_quorumReached) {
+            claimsHelper.setConfirmedSpecialSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_FAILED);
 
-    //         //TODO ?
-    //     }
-    // }
-
-    function _magic() internal view {}
+            //TODO probably nothing, maybe event
+        }
+    }
 
     /// @notice Returns the current version of the contract
     /// @return A semantic version string

@@ -204,7 +204,8 @@ interface IBridgeStructs {
     error BatchInProgress();
     error NewValidatorSetAlreadyPending();
     error NoNewValidatorSetPending();
-    error NotSpecialClaims();
+    error NotSpecialClaimsOrSpecialSignedBatches();
+    error NotSpecialSignedBatches();
 
     // ------------------------------------------------------------------------
     // Events

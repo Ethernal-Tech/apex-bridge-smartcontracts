@@ -140,7 +140,7 @@ contract SpecialSignedBatches is IBridgeStructs, Utils, Initializable, OwnableUp
                 _signedBatch.isConsolidation
             );
 
-            claimsHelper.setConfirmedSignedBatchData(_signedBatch);
+            claimsHelper.setConfirmedSpecialSignedBatchData(_signedBatch);
 
             signedBatches.deleteSignaturesFeeSignaturesBitmap(_sbHash);
         }
