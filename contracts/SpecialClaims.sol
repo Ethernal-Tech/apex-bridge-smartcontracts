@@ -81,10 +81,17 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         validators = Validators(_validatorsAddress);
     }
 
-    function submitSpecialClaims(SpecialValidatorClaims calldata _claims, address _caller) external onlyBridge {
+    function submitSpecialClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
         //TODO temp unused
         if (address(_caller) == address(0)) revert ZeroAddress();
 
+        uint256 notUsedClaims = _claims.bridgingRequestClaims.length +
+            _claims.refundRequestClaims.length +
+            _claims.hotWalletIncrementClaims.length;
+
+        if (notUsedClaims != 0) {
+            revert WrongSpecialClaims();
+        }
         uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
         uint256 batchExecutionFailedClaimsLength = _claims.batchExecutionFailedClaims.length;
 
@@ -131,6 +138,14 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
             chainId,
             batchId
         );
+
+        if (
+            _confirmedSignedBatch.firstTxNonceId != (2 ** 64 - 1) &&
+            _confirmedSignedBatch.lastTxNonceId != (2 ** 64 - 1)
+        ) {
+            // special batch must have first and last transaction nonces set to 2^64 - 1
+            return;
+        }
 
         // Once a quorum has been reached on either BEC or BEFC for a batch, the first and last transaction
         // nonces for that batch are deleted, thus signaling that the batch has been processed. Any further BEC or BEFC

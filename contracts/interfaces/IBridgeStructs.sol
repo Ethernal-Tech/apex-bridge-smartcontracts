@@ -200,6 +200,7 @@ interface IBridgeStructs {
     error NoNewValidatorSetPending();
     error NotSpecialClaimsOrSpecialSignedBatches();
     error NotSpecialSignedBatches();
+    error WrongSpecialClaims();
 
     // ------------------------------------------------------------------------
     // Events

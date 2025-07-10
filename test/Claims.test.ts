@@ -149,7 +149,7 @@ describe("Claims Contract", function () {
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
     });
-    it("Should revert Bridging Request Claims if there are more than 32 in the array", async function () {
+    it("Should revert if there are more than 32 claims in the array", async function () {
       const {
         bridge,
         claims,

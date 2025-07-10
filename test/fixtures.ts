@@ -328,6 +328,18 @@ export async function deployBridgeFixture() {
     hotWalletIncrementClaims: [],
   };
 
+  const validatorClaimsBEC_bunch33 = {
+    bridgingRequestClaims: [],
+    batchExecutedClaims: Array.from({ length: 33 }, (_, i) => ({
+      observedTransactionHash: "0x" + Buffer.from(`test${i}`).toString("hex").padEnd(64, "0").slice(0, 64),
+      batchNonceId: i + 1,
+      chainId: 2,
+    })),
+    batchExecutionFailedClaims: [],
+    refundRequestClaims: [],
+    hotWalletIncrementClaims: [],
+  };
+
   const validatorClaimsBEFC = {
     bridgingRequestClaims: [],
     batchExecutedClaims: [],
@@ -420,8 +432,8 @@ export async function deployBridgeFixture() {
 
   const specialSignedBatch = {
     id: 1,
-    firstTxNonceId: 12345,
-    lastTxNonceId: 12345,
+    firstTxNonceId: 2n ** 64n - 1n,
+    lastTxNonceId: 2n ** 64n - 1n,
     destinationChainId: 2,
     signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
@@ -634,6 +646,7 @@ export async function deployBridgeFixture() {
     validatorClaimsBRC_bunch32,
     validatorClaimsBRC_bunch33,
     validatorClaimsBEC,
+    validatorClaimsBEC_bunch33,
     validatorClaimsBEC_another,
     validatorClaimsBEFC,
     validatorClaimsBEFC_another,
