@@ -126,12 +126,28 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     /// @notice Submit new validator set data
     /// @param _validatorSet Full validator data for all of the new validators.
+    //TODO: will be moved to the governance
     function submitNewValidatorSet(ValidatorSet[] calldata _validatorSet) external override onlyOwner {
+        uint64 _lastConfirmedBatchId = signedBatches.getConfirmedBatchId(_validatorSet[0].chain.id);
+
+        uint256 _validatorSetLength = _validatorSet.length;
+
+        for (uint256 i = 0; i < _validatorSetLength; i++) {
+            if (
+                claims.getBatchStatus(_validatorSet[i].chain.id, _lastConfirmedBatchId) ==
+                ConstantsLib.BATCH_IN_PROGRESS
+            ) {
+                revert BatchInProgress();
+            }
+        }
+
         validateValidatorSet(_validatorSet);
 
-        validators.setNewValidatorSet(_validatorSet);
+        validators.storeNewValidatorSet(_validatorSet);
 
         claims.createSpecialTransaction(_validatorSet);
+
+        validators.setNewValidatorSetPending(true);
 
         emit newValidatorSetSubmitted();
     }
@@ -324,6 +340,18 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         return _confirmedTransactions;
+    }
+
+    /// @notice Get special confirmed transaction ready for batching for a specific destination chain.
+    /// @param _destinationChain ID of the destination chain.
+    /// @return _specialConfirmedTransaction Special confirmed transactions.
+    function getSpecialConfirmedTransactions(
+        uint8 _destinationChain
+    ) external view override returns (ConfirmedTransaction memory _specialConfirmedTransaction) {
+        if (!validators.newValidatorSetPending()) {
+            revert NoNewValidatorSetPending();
+        }
+        return claims.getSpecialConfirmedTransaction(_destinationChain);
     }
 
     /// @notice Get the confirmed batch for the given destination chain.
