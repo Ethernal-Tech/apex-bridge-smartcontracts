@@ -486,7 +486,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function validatorSetUpdated() external {
+    function validatorSetUpdated() external override {
         //TODO
     }
 
