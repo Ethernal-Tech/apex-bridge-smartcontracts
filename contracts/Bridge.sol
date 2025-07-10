@@ -177,7 +177,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @param _newValidatorSetDelta Full validator data for all of the new validators.
     function submitNewValidatorSet(NewValidatorSetDelta calldata _newValidatorSetDelta) external override onlySystem {
         if (validators.newValidatorSetPending()) {
-            revert NewValidatorSetAlreadyPending();
+            revert NewValidatorSetPending();
         }
 
         //TODO: check if these validators are indeed in the current set???
@@ -194,6 +194,9 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @param _chainId The source chain ID.
     /// @param _blocks Array of Cardano blocks to be recorded.
     function submitLastObservedBlocks(uint8 _chainId, CardanoBlock[] calldata _blocks) external override onlyValidator {
+        if (validators.newValidatorSetPending()) {
+            revert NewValidatorSetPending();
+        }
         if (!claims.isChainRegistered(_chainId)) {
             revert ChainIsNotRegistered(_chainId);
         }
@@ -353,6 +356,17 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         return _confirmedTransactions;
     }
 
+    /// @notice Notifies the bridge that new validator set has been implemented on Blade
+    /// @dev This function is called by the system to update the validator set and make all
+    ///      necessary adjustments in the bridge state.
+    function validatorSetUpdated() external override onlySystem {
+        validators.removeOldValidatorsData(chains);
+        validators.addNewValidatorsData();
+
+        validators.deleteNewValidatorSetDelta();
+        validators.setNewValidatorSetPending(false);
+    }
+
     /// @notice Get the confirmed batch for the given destination chain.
     /// @param _destinationChain ID of the destination chain.
     /// @return _batch The confirmed batch details.
@@ -399,13 +413,24 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         return claims.getBatchStatusAndTransactions(_chainId, _batchId);
     }
 
-    // TODO: explanation
-    function validatorSetUpdated() external override onlySystem {
-        validators.removeOldValidatorsData(chains);
-        validators.addNewValidatorsData();
+    /// @notice Check if a new validator set is pending.
+    /// @return _pending True if a new validator set is pending, false otherwise.
+    function isNewValidatorSetPending() external view override returns (bool _pending) {
+        return validators.newValidatorSetPending();
+    }
 
-        validators.deleteNewValidatorSetDelta();
-        validators.setNewValidatorSetPending(false);
+    /// @notice Get the delta of the new validator set.
+    /// @return _newValidatorSetDelta The new validator set delta.
+    function getNewValidatorSetDelta()
+        external
+        view
+        override
+        returns (NewValidatorSetDelta memory _newValidatorSetDelta)
+    {
+        if (!validators.newValidatorSetPending()) {
+            revert NoNewValidatorSetPending();
+        }
+        return validators.getNewValidatorSetDelta();
     }
 
     /// @notice Returns the current version of the contract

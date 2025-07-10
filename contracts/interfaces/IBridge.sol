@@ -81,12 +81,12 @@ abstract contract IBridge is IBridgeStructs {
     /// @return _result ID of the next batch or 0 if no batch should be created.
     function getNextBatchId(uint8 _destinationChain) external view virtual returns (uint64 _result);
 
-    // /// @notice Get confirmed transactions ready for batching for a specific destination chain.
-    // /// @param _destinationChain ID of the destination chain.
-    // /// @return _confirmedTransactions Array of confirmed transactions.
-    // function getConfirmedTransactions(
-    //     uint8 _destinationChain
-    // ) external view virtual returns (ConfirmedTransaction[] memory _confirmedTransactions);
+    /// @notice Get confirmed transactions ready for batching for a specific destination chain.
+    /// @param _destinationChain ID of the destination chain.
+    /// @return _confirmedTransactions Array of confirmed transactions.
+    function getConfirmedTransactions(
+        uint8 _destinationChain
+    ) external view virtual returns (ConfirmedTransaction[] memory _confirmedTransactions);
 
     /// @notice Get the confirmed batch for the given destination chain.
     /// @param _destinationChain ID of the destination chain.
@@ -125,9 +125,11 @@ abstract contract IBridge is IBridgeStructs {
     /// @notice Notifies the bridge that new validator set has been implemented on Blade.
     function validatorSetUpdated() external virtual;
 
-    //TODO explanation
-    function getNewValidatorSetPending() external virtual returns (bool _pending);
+    /// @notice Check if a new validator set is pending.
+    /// @return _pending True if a new validator set is pending, false otherwise.
+    function isNewValidatorSetPending() external virtual returns (bool _pending);
 
-    // //TODO explanation
-    // function getNewValidatorSetDelta() external virtual returns (NewValidatorSetDelta calldata _newValidatorSetDelta);
+    /// @notice Get the delta of the new validator set.
+    /// @return _newValidatorSetDelta The new validator set delta.
+    function getNewValidatorSetDelta() external virtual returns (NewValidatorSetDelta calldata _newValidatorSetDelta);
 }

@@ -20,6 +20,29 @@ describe("Claims Contract", function () {
       );
     });
 
+    it("Should revert if there is new validator set pending", async function () {
+      const {
+        bridge,
+        owner,
+        validators,
+        chain1,
+        chain2,
+        validatorAddressChainData,
+        validatorClaimsBRC,
+        newValidatorSetDelta,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
+
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
+        bridge,
+        "NewValidatorSetPending"
+      );
+    });
+
     it("Should revert if there are too many receivers in BRC", async function () {
       const {
         bridge,
@@ -470,7 +493,6 @@ describe("Claims Contract", function () {
     it("Should skip if there is already a quorum for another BEC for the same batch", async function () {
       const {
         bridge,
-        claims,
         claimsHelper,
         owner,
         validators,
@@ -932,6 +954,29 @@ describe("Claims Contract", function () {
       );
     });
 
+    it("Should revert if there is new validator set pending", async function () {
+      const {
+        bridge,
+        validators,
+        owner,
+        chain1,
+        chain2,
+        validatorAddressChainData,
+        newValidatorSetDelta,
+        validatorClaimsRRC,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
+
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsRRC)).to.be.revertedWithCustomError(
+        bridge,
+        "NewValidatorSetPending"
+      );
+    });
+
     it("Should skip if Refund Request Claims is already confirmed", async function () {
       const { bridge, claims, claimsHelper, owner, validators, chain2, validatorClaimsRRC, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
@@ -1118,6 +1163,29 @@ describe("Claims Contract", function () {
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC)).to.be.revertedWithCustomError(
         bridge,
         "ChainIsNotRegistered"
+      );
+    });
+
+    it("Should revert if there is new validator set pending", async function () {
+      const {
+        bridge,
+        validators,
+        owner,
+        chain1,
+        chain2,
+        validatorAddressChainData,
+        newValidatorSetDelta,
+        validatorClaimsHWIC,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
+
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC)).to.be.revertedWithCustomError(
+        bridge,
+        "NewValidatorSetPending"
       );
     });
 

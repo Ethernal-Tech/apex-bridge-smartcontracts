@@ -28,7 +28,7 @@ describe("Dynamic Validator Set", function () {
 
       await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta)).to.be.revertedWithCustomError(
         bridge,
-        "NewValidatorSetAlreadyPending"
+        "NewValidatorSetPending"
       );
     });
 
@@ -1471,8 +1471,7 @@ describe("Dynamic Validator Set", function () {
       expect((await validatorsc.getNewValidatorSetDelta()).addedValidators.length).to.equal(2);
       expect((await validatorsc.getNewValidatorSetDelta()).removedValidators.length).to.equal(2);
       await bridge.validatorSetUpdated();
-      expect((await validatorsc.getNewValidatorSetDelta()).addedValidators.length).to.equal(0);
-      expect((await validatorsc.getNewValidatorSetDelta()).removedValidators.length).to.equal(0);
+      await expect(bridge.getNewValidatorSetDelta()).to.be.revertedWithCustomError(bridge, "NoNewValidatorSetPending");
     });
 
     it("Bridge should be unlocked", async function () {

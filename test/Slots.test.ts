@@ -12,6 +12,28 @@ describe("Slots Contract", function () {
       ).to.be.revertedWithCustomError(bridge, "ChainIsNotRegistered");
     });
 
+    it("Should revert if there is new validator set pending", async function () {
+      const {
+        bridge,
+        validators,
+        cardanoBlocks,
+        owner,
+        chain1,
+        chain2,
+        validatorAddressChainData,
+        newValidatorSetDelta,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      await bridge.submitNewValidatorSet(newValidatorSetDelta);
+
+      await expect(
+        bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks)
+      ).to.be.revertedWithCustomError(bridge, "NewValidatorSetPending");
+    });
+
     it("Should revert if there are too many blocks", async function () {
       const { bridge, owner, chain1, validators, validatorAddressChainData, cardanoBlocksTooManyBlocks } =
         await loadFixture(deployBridgeFixture);
