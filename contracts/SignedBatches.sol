@@ -92,8 +92,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
                 _signedBatch.lastTxNonceId,
                 _destinationChainId,
                 _signedBatch.rawTransaction,
-                _signedBatch.isConsolidation,
-                _signedBatch.isStakeDelegation
+                _signedBatch.isConsolidation
             )
         );
 
@@ -125,8 +124,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
                 _votesInfo.bitmap,
                 _signedBatch.rawTransaction,
                 _sbId,
-                _signedBatch.isConsolidation,
-                _signedBatch.isStakeDelegation
+                _signedBatch.isConsolidation
             );
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);

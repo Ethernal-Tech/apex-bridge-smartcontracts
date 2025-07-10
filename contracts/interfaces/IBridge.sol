@@ -83,13 +83,6 @@ abstract contract IBridge is IBridgeStructs {
     /// @param stakePoolId The identifier of the stake pool to delegate to.
     function delegateAddrToStakePool(uint8 chainId, string calldata stakePoolId) external virtual;
 
-    /// @notice Returns the list of stake delegation transactions that are pending batching for a given chain.
-    /// @param _chainId The ID of the chain for which to retrieve stake delegation transactions.
-    /// @return _stakeDelTransactions Array of unbatched stake delegation transactions for the given chain.
-    function getStakeDelegationTransactions(
-        uint8 _chainId
-    ) external view virtual returns (StakeDelegationTransaction[] memory _stakeDelTransactions);
-
     /// @notice Get the confirmed batch for the given destination chain.
     /// @param _destinationChain ID of the destination chain.
     /// @return _batch The confirmed batch details.

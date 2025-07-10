@@ -34,18 +34,6 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
     uint256[50] private __gap;
-    
-    /// @notice Mapping from chain ID and nonce to stake delegation transaction.
-    /// @dev BlockchainId -> nonce -> StakeDelegationTransaction
-    mapping(uint8 => mapping(uint64 => StakeDelegationTransaction)) public stakeDelegationTransactions;
-
-    /// @notice Mapping from chain ID to nonce of the last stake delegation transaction.
-    /// @dev chainId -> nonce
-    mapping(uint8 => uint64) public lastStakeDelegationTxNonce;
-
-    /// @notice Mapping from chain ID to nonce of the last stake delegation transaction from the executed batch.
-    /// @dev chainId -> nonce
-    mapping(uint8 => uint64) public lastBatchedStakeDelTxNonce;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -105,8 +93,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
             _signedBatch.firstTxNonceId,
             _signedBatch.lastTxNonceId,
             _signedBatch.isConsolidation,
-            ConstantsLib.IN_PROGRESS, // status 1 means "in progress"
-            _signedBatch.isStakeDelegation
+            ConstantsLib.IN_PROGRESS // status 1 means "in progress"
         );
         currentBatchBlock[destinationChainId] = int256(block.number);
     }
@@ -152,66 +139,6 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @param _status The new status to set for the batch.
     function setConfirmedSignedBatchStatus(uint8 _chainId, uint64 _batchId, uint8 _status) external onlyClaims {
         confirmedSignedBatches[_chainId][_batchId].status = _status;
-    }
-
-    /// @notice Adds a new stake delegation transaction for a specified chain.
-    /// @dev Increments the nonce for the stake delegation transactions on the chain and stores the new transaction.
-    /// @param chainId The ID of the chain for which the stake delegation is being added.
-    /// @param stakePoolId The identifier of the stake pool to delegate to.
-    function addStakeDelegationTransactions(uint8 chainId, string calldata stakePoolId) external onlyClaims {
-        uint64 nextNonce = ++lastStakeDelegationTxNonce[chainId];
-
-        StakeDelegationTransaction storage stakeDelegationTx = stakeDelegationTransactions[chainId][nextNonce];
-        stakeDelegationTx.chainId = chainId;
-        stakeDelegationTx.stakePoolId = stakePoolId;
-        stakeDelegationTx.nonce = nextNonce;
-    }
-
-    /// @notice Updates the nonce of the last batched stake delegation transaction for a specific chain.
-    /// @dev Used to track the progress of batching stake delegation transactions.
-    /// @param _chainId The ID of the chain.
-    /// @param lastTxNonceId The nonce of the last stake delegation transaction that was batched.
-    function setLastBatchedStakeDelTxNonce(uint8 _chainId, uint64 lastTxNonceId) external onlyClaims {
-        lastBatchedStakeDelTxNonce[_chainId] = lastTxNonceId;
-    }
-
-    /// @notice Retries a range of stake delegation transactions by re-adding them with new nonces.
-    /// @dev Used for resubmitting stake delegation transactions that failed.
-    /// @param _chainId The ID of the chain.
-    /// @param _firstTxNonce The nonce of the first transaction to retry.
-    /// @param _lastTxNonce The nonce of the last transaction to retry.
-    function retryStakeDelTxs(uint8 _chainId, uint64 _firstTxNonce, uint64 _lastTxNonce) external onlyClaims {
-        for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
-            StakeDelegationTransaction storage _sdtx = stakeDelegationTransactions[_chainId][i];
-            uint64 nextNonce = ++lastStakeDelegationTxNonce[_chainId];
-            stakeDelegationTransactions[_chainId][nextNonce] = _sdtx;
-            stakeDelegationTransactions[_chainId][nextNonce].nonce = nextNonce;
-        }
-    }
-
-    /// @notice Retrieves a stake delegation transaction by chain ID and nonce.
-    /// @param _chainId The ID of the chain.
-    /// @param _nonce The nonce of the stake delegation transaction.
-    /// @return _stakeDelTransaction The requested stake delegation transaction.
-    function getStakeDelTransaction(
-        uint8 _chainId,
-        uint64 _nonce
-    ) public view returns (StakeDelegationTransaction memory _stakeDelTransaction) {
-        return stakeDelegationTransactions[_chainId][_nonce];
-    }
-
-    /// @notice Returns the count of stake delegation transactions pending batching for a given chain.
-    /// @dev Calculates how many stake delegation transactions have not yet been batched, limited by the max allowed batch size.
-    /// @param _chainId The ID of the chain.
-    /// @param _maxNumberOfTransactions The maximum number of transactions to consider in the count.
-    /// @return counterConfirmedTransactions The number of stake delegation transactions ready to be batched.
-    function getStakeDelTxsCount(uint8 _chainId, uint16 _maxNumberOfTransactions) public view returns (uint64 counterConfirmedTransactions) {
-        uint64 lastStakeDelTxNonceForChain = lastStakeDelegationTxNonce[_chainId];
-        uint64 lastBatchedStakeDelTxNonceForChain = lastBatchedStakeDelTxNonce[_chainId];
-
-        counterConfirmedTransactions = lastStakeDelTxNonceForChain - lastBatchedStakeDelTxNonceForChain >= _maxNumberOfTransactions
-            ? _maxNumberOfTransactions
-            : lastStakeDelTxNonceForChain - lastBatchedStakeDelTxNonceForChain;
     }
 
     function hasVoted(bytes32 _hash, uint8 _validatorIndex) external view returns (bool) {
