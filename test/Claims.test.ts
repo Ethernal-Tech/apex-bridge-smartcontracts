@@ -359,7 +359,6 @@ describe("Claims Contract", function () {
     it("Should revert with BatchNotFound error if there is already a quorum for BEFC for the same batch", async function () {
       const {
         bridge,
-        claims,
         claimsHelper,
         owner,
         validators,
