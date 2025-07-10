@@ -217,5 +217,5 @@ interface IBridgeStructs {
     event UpdatedTimeoutBlocksNumber(uint256 _timeoutBlocksNumber);
     event newValidatorSetSubmitted();
     event SpecialSignedBatchExecutionFailed(uint8 indexed chainId, uint64 indexed batchId);
-    event ValidatorSetUpdateReady();
+    event ValidatorSetUpdateReady(address[] validatorsToBeRemoved);
 }
