@@ -815,7 +815,7 @@ describe("Dynamic Validator Set", function () {
         ).status
       ).to.equal(2);
     });
-    it("Should emit ValidatorSetUpdateReady if there is quorum on final batch in SBEC", async function () {
+    it("Should emit ValidatorSetUpdateReady if there is quorum on final batch in SBEC for all registered chains", async function () {
       const {
         bridge,
         specialClaims,
@@ -834,6 +834,7 @@ describe("Dynamic Validator Set", function () {
 
       await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
 
+      //first chain
       // sets consolidation to true for this test
       specialSignedBatch.isConsolidation = true;
 
@@ -845,6 +846,38 @@ describe("Dynamic Validator Set", function () {
       // reset
       specialSignedBatch.isConsolidation = false; // reset
 
+      //first chain
+      // sets consolidation to true for this test
+      specialSignedBatch.isConsolidation = true;
+      specialSignedBatch.destinationChainId = 1;
+
+      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
+
+      // reset
+      specialSignedBatch.destinationChainId = 2;
+
+      //second chain
+      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
+
+      // reset
+      specialSignedBatch.isConsolidation = false;
+
+      // first chain
+      validatorClaimsBEC.batchExecutedClaims[0].chainId = 1;
+      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEC);
+      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEC);
+      await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEC);
+      await bridge.connect(validators[3]).submitSpecialClaims(validatorClaimsBEC);
+
+      // reset
+      validatorClaimsBEC.batchExecutedClaims[0].chainId = 2;
+
       await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEC);
       await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEC);
       await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEC);
@@ -853,6 +886,58 @@ describe("Dynamic Validator Set", function () {
         specialClaims,
         "ValidatorSetUpdateReady"
       );
+    });
+    it("Should NOT set bitmap to +1 if there is quorum on non-final batch in SBEC", async function () {
+      const {
+        bridge,
+        specialClaims,
+        owner,
+        validators,
+        chain1,
+        chain2,
+        specialSignedBatch,
+        validatorClaimsBEC,
+        validatorSets,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+
+      // specialSignedBatch has isConsolidation set to false
+
+      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
+
+      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEC);
+      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEC);
+      await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEC);
+
+      let bitmap = await specialClaims.bitmap();
+
+      let count = 0;
+      while (bitmap !== 0n) {
+        bitmap &= bitmap - 1n; // Clear the lowest set bit
+        count++;
+      }
+
+      expect(count).to.equal(0);
+
+      await bridge.connect(validators[3]).submitSpecialClaims(validatorClaimsBEC);
+
+      bitmap = await specialClaims.bitmap();
+
+      count = 0;
+      while (bitmap !== 0n) {
+        bitmap &= bitmap - 1n; // Clear the lowest set bit
+        count++;
+      }
+
+      expect(count).to.equal(0);
     });
     it("Should set bitmap to +1 if there is quorum on final batch in SBEC", async function () {
       const {
