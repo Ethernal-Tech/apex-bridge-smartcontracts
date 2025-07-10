@@ -104,6 +104,12 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         signedBatches.submitSignedBatch(_signedBatch, msg.sender);
     }
 
+    /// @notice Submit a special signed transaction batch for updating validator set.
+    /// @param _signedBatch The batch of signed transactions.
+    function submitSpecialSignedBatch(SignedBatch calldata _signedBatch) external override {
+        
+    };
+
     /// @notice Submit a signed transaction batch for an EVM-compatible chain.
     /// @param _signedBatch The batch of signed transactions.
     function submitSignedBatchEVM(SignedBatch calldata _signedBatch) external override onlyValidator {

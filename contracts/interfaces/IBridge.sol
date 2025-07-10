@@ -10,9 +10,13 @@ abstract contract IBridge is IBridgeStructs {
     /// @param _claims The claims submitted by a validator.
     function submitClaims(ValidatorClaims calldata _claims) external virtual;
 
-    /// @notice Submit a signed transaction batch for the Cardano chain.
+    /// @notice Submit a signed transaction batch.
     /// @param _signedBatch The batch of signed transactions.
     function submitSignedBatch(SignedBatch calldata _signedBatch) external virtual;
+
+    /// @notice Submit a special signed transaction batch for updating validator set.
+    /// @param _signedBatch The batch of signed transactions.
+    function submitSpecialSignedBatch(SignedBatch calldata _signedBatch) external virtual;
 
     /// @notice Submit a signed transaction batch for an EVM-compatible chain.
     /// @param _signedBatch The batch of signed transactions.
@@ -80,7 +84,7 @@ abstract contract IBridge is IBridgeStructs {
         uint8 _destinationChain
     ) external view virtual returns (ConfirmedTransaction[] memory _confirmedTransactions);
 
-    /// @notice Get special confirmed transaction ready for batching for a specific destination chain.
+    /// @notice Get special confirmed transaction ready for batching for a specific destination chain for updating validator set
     /// @param _destinationChain ID of the destination chain.
     /// @return _specialConfirmedTransaction Special confirmed transactions.
     function getSpecialConfirmedTransactions(
