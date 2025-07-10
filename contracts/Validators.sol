@@ -208,13 +208,13 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         }
     }
 
-    function setNewValidatorsChainData(ValidatorSet[] calldata _validatorSet) external onlyBridge {
-        uint8 _fullValidatorDataLength = uint8(_validatorSet.length);
+    function setNewValidatorSet(ValidatorSet[] calldata _validatorSet) external onlyBridge {
+        delete newValidatorSet;
 
-        delete newValidatorsChainData;
+        uint8 _validatorSetlenght = uint8(_validatorSet.length);
 
-        for (uint8 i; i < _fullValidatorDataLength; i++) {
-            newValidatorsChainData.push(_fullValidatorData[i]);
+        for (uint256 i; i < _validatorSetlenght; i++) {
+            newValidatorSet.push(_validatorSet[i]);
         }
 
         newValidatorSetPending = true;
