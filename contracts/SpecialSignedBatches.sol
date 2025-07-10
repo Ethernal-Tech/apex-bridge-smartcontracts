@@ -11,6 +11,7 @@ import "./Bridge.sol";
 import "./ClaimsHelper.sol";
 import "./SignedBatches.sol";
 import "./Validators.sol";
+import "hardhat/console.sol";
 
 /// @title Claims
 /// @notice Handles validator-submitted claims in a cross-chain bridge system.
@@ -23,10 +24,6 @@ contract SpecialSignedBatches is IBridgeStructs, Utils, Initializable, OwnableUp
     ClaimsHelper private claimsHelper;
     SignedBatches private signedBatches;
     Validators private validators;
-
-    /// @notice Mapping of confirmed signed batches
-    /// @dev BlockchainId -> batchId -> SignedBatch
-    mapping(uint8 => mapping(uint64 => ConfirmedSignedBatchData)) public confirmedSpecialSignedBatches;
 
     /// @notice Stores the last special confirmed batch per destination chain
     /// @dev BlockchainId -> ConfirmedBatch
@@ -152,14 +149,6 @@ contract SpecialSignedBatches is IBridgeStructs, Utils, Initializable, OwnableUp
 
     function getSpecialConfirmedBatchId(uint8 _destinationChain) external view returns (uint64) {
         return lastSpecialConfirmedBatch[_destinationChain].id;
-    }
-
-    /// @notice Retrieves a status for a specific batch on a given chain.
-    /// @param _chainId The ID of the chain on which the batch exists.
-    /// @param _batchId The ID of the batch to retrieve transactions for.
-    /// @return status A status code indicating the success or failure of the operation.
-    function getSpecialBatchStatus(uint8 _chainId, uint64 _batchId) external view returns (uint8 status) {
-        return confirmedSpecialSignedBatches[_chainId][_batchId].status;
     }
 
     /// @notice Returns the current version of the contract

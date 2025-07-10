@@ -418,6 +418,17 @@ export async function deployBridgeFixture() {
     isConsolidation: false,
   };
 
+  const specialSignedBatch = {
+    id: 1,
+    firstTxNonceId: 12345,
+    lastTxNonceId: 12345,
+    destinationChainId: 2,
+    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
+    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
+    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
+    isConsolidation: false,
+  };
+
   const signedBatchConsolidation = {
     id: 1,
     destinationChainId: 2,
@@ -632,6 +643,7 @@ export async function deployBridgeFixture() {
     validatorClaimsBRC_confirmedTransactions,
     validatorClaimsBRC_tooManyReceivers,
     signedBatch,
+    specialSignedBatch,
     signedBatchConsolidation,
     signedBatchDefund,
     validatorAddressChainData,
