@@ -145,7 +145,7 @@ interface IBridgeStructs {
 
     /// @notice Full data for new Validator Set.
     struct ValidatorSet {
-        Chain chain;
+        uint8 chainId;
         ValidatorAddressChainData[] validators;
     }
 
