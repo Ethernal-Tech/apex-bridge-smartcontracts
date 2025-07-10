@@ -110,6 +110,27 @@ describe("Special Claims Contract", function () {
         .withArgs("DuplicatedValidator");
     });
 
+    it("Should store addresses of validators to be removed from the new set", async function () {
+      const { bridge, validatorsc, owner, validators, chain1, chain2, validatorSets, validatorAddressChainData } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      expect((await validatorsc.getValidatorsToBeRemoved()).length).to.equal(0);
+
+      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+
+      expect((await validatorsc.getValidatorsToBeRemoved()).length).to.be.equal(validators.length);
+
+      const validatorsToBeRemoved = await validatorsc.getValidatorsToBeRemoved();
+      const validatorsToBeRemovedLenght = validatorsToBeRemoved.length;
+
+      for (let i = 0; i < validatorsToBeRemovedLenght; i++) {
+        expect(validatorsToBeRemoved[i]).to.be.equal(validators[i]);
+      }
+    });
+
     it("Should store proposed validator set", async function () {
       const { bridge, validatorsc, owner, validators, chain1, chain2, validatorSets, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);

@@ -10,7 +10,6 @@ import "./Utils.sol";
 import "./Bridge.sol";
 import "./Claims.sol";
 import "./ClaimsHelper.sol";
-import "./SignedBatches.sol";
 import "./Validators.sol";
 
 /// @title Claims
@@ -23,7 +22,6 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     address private bridgeAddress;
     Claims private claims;
     ClaimsHelper private claimsHelper;
-    SignedBatches private signedBatches;
     Validators private validators;
 
     /// @notice Mapping of confirmed signed batches
@@ -64,30 +62,26 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// @param _bridgeAddress Address of the Bridge contract.
     /// @param _claimsAddress Address of the Claims contract.
     /// @param _claimsHelperAddress Address of the ClaimsHelper contract.
-    /// @param _signedBatchesAddress Address of the SignedBatches contract.
     /// @param _validatorsAddress Address of the Validators contract.
     function setDependencies(
         address _bridgeAddress,
         address _claimsAddress,
         address _claimsHelperAddress,
-        address _signedBatchesAddress,
         address _validatorsAddress
     ) external onlyOwner {
         if (
             !_isContract(_bridgeAddress) ||
             !_isContract(_claimsAddress) ||
             !_isContract(_claimsHelperAddress) ||
-            !_isContract(_signedBatchesAddress) ||
             !_isContract(_validatorsAddress)
         ) revert NotContractAddress();
         bridgeAddress = _bridgeAddress;
         claims = Claims(_claimsAddress);
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
-        signedBatches = SignedBatches(_signedBatchesAddress);
         validators = Validators(_validatorsAddress);
     }
 
-    function submitSpecialClaims(SpecialValidatorClaims calldata _claims, address _caller) external view onlyBridge {
+    function submitSpecialClaims(SpecialValidatorClaims calldata _claims, address _caller) external onlyBridge {
         //TODO temp unused
         if (address(_caller) == address(0)) revert ZeroAddress();
 
@@ -106,7 +100,7 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
                 revert ChainIsNotRegistered(_claim.chainId);
             }
 
-            // _submitSpecialClaimsBEC(_claim, _caller);
+            _submitSpecialClaimsBEC(_claim, _caller);
         }
 
         for (uint i; i < batchExecutionFailedClaimsLength; i++) {
@@ -128,51 +122,41 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     ///      to prevent double-processing of the same batch.
     /// @dev A quorum of validators is required to approve the claim before proceeding.
     /// @dev The claim's corresponding signed batch data is deleted once the claim is processed.
-    // function _submitSpecialClaimsBEC(BatchExecutedClaim calldata _claim, address _caller) internal {
-    //     uint8 chainId = _claim.chainId;
-    //     uint64 batchId = _claim.batchNonceId;
+    function _submitSpecialClaimsBEC(BatchExecutedClaim calldata _claim, address _caller) internal {
+        uint8 chainId = _claim.chainId;
+        uint64 batchId = _claim.batchNonceId;
 
-    //     //TODO first and last check comment
-    //     ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSpecialSignedBatchData(
-    //         chainId,
-    //         batchId
-    //     );
+        //TODO first and last check comment
+        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSpecialSignedBatchData(
+            chainId,
+            batchId
+        );
 
-    //     // Once a quorum has been reached on either BEC or BEFC for a batch, the first and last transaction
-    //     // nonces for that batch are deleted, thus signaling that the batch has been processed. Any further BEC or BEFC
-    //     // claims for the same batch will not be processed. This is to prevent double processing of the same batch,
-    //     // and also to prevent processing of batches with invalid IDs.
-    //     // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-    //     if (_confirmedSignedBatch.status != ConstantsLib.BATCH_IN_PROGRESS) {
-    //         return;
-    //     }
+        // Once a quorum has been reached on either BEC or BEFC for a batch, the first and last transaction
+        // nonces for that batch are deleted, thus signaling that the batch has been processed. Any further BEC or BEFC
+        // claims for the same batch will not be processed. This is to prevent double processing of the same batch,
+        // and also to prevent processing of batches with invalid IDs.
+        // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
+        if (_confirmedSignedBatch.status != ConstantsLib.BATCH_IN_PROGRESS) {
+            return;
+        }
 
-    //     bytes32 claimHash = keccak256(abi.encode("SBEC", _claim));
+        bytes32 claimHash = keccak256(abi.encode("SBEC", _claim));
 
-    //     bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
-    //         _caller,
-    //         claimHash,
-    //         validators.getQuorumNumberOfValidators()
-    //     );
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
+            _caller,
+            claimHash,
+            validators.getQuorumNumberOfValidators()
+        );
 
-    //     if (_quorumReached) {
-    //         claimsHelper.setConfirmedSpecialSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_EXECUTED);
+        if (_quorumReached) {
+            claimsHelper.setConfirmedSpecialSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_EXECUTED);
 
-    //         ValidatorSet[] memory _newValidatorSet = validators.getNewValidatorSet();
+            //TODO register that this chain is done
 
-    //         uint256 _newValidatorSetLength = _newValidatorSet.length;
-
-    //         for (uint256 i; i < _newValidatorSetLength; i++) {
-    //             ValidatorSet memory _validatorSet = _newValidatorSet[i];
-
-    //             // validators.setValidatorsChainData(_validatorSet.chain.id, _validatorSet.validators);
-
-    //             //TODO update chain data
-    //         }
-
-    //         //TODO Nexus update confirmation is needed
-    //     }
-    // }
+            //TODO check if all are done if done, notify Blade
+        }
+    }
 
     // function _submitSpecialClaimsBEFC(BatchExecutionFailedClaim calldata _claim, address _caller) internal {
     //     uint8 chainId = _claim.chainId;
@@ -208,102 +192,7 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     //     }
     // }
 
-    /// @notice Registers a vote for a specific voter and claim hash.
-    /// @param _voter The address of the voter casting the vote.
-    /// @param _hash The hash of the claim or event the voter is voting on.
-    /// @return The updated vote count for the specific claim or event.
-
-    function setVoted(address _voter, bytes32 _hash) external onlyBridge returns (uint256) {
-        return claimsHelper.setVoted(_voter, _hash);
-    }
-
-    /// @notice Checks whether a specific voter has already voted for a given claim hash.
-    /// @param _hash The hash of the claim being voted on.
-    /// @param _voter The address of the voter to check.
-    /// @return True if the voter has voted for the given claim hash, false otherwise.
-    function hasVoted(bytes32 _hash, address _voter) external view returns (bool) {
-        return claimsHelper.hasVoted(_hash, _voter);
-    }
-
-    /// @notice Retrieves a status for a specific batch on a given chain.
-    /// @param _chainId The ID of the chain on which the batch exists.
-    /// @param _batchId The ID of the batch to retrieve transactions for.
-    /// @return status A status code indicating the success or failure of the operation.
-    function getSpecialBatchStatus(uint8 _chainId, uint64 _batchId) external view returns (uint8 status) {
-        return confirmedSpecialSignedBatches[_chainId][_batchId].status;
-    }
-
-    /// @notice Submits a special signed batch for updating validator set.
-    /// @dev This function checks batch sequencing, validates votes, and finalizes the batch if quorum is met.
-    /// @param _signedBatch The signed batch containing transaction details and validator signatures.
-    /// @param _caller The address of the validator submitting the batch.
-    /// Requirements:
-    /// - Caller must be the bridge contract.
-    /// - The batch must have the expected sequential ID.
-    /// - The caller must not have already voted on this batch hash.
-    /// - If quorum is reached after this vote, the batch is confirmed and stored, and temporary data is cleared.
-    function submitSpecialSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
-        uint8 _destinationChainId = _signedBatch.destinationChainId;
-        uint64 _sbId = lastSpecialConfirmedBatch[_destinationChainId].id + 1;
-
-        if (_signedBatch.id != _sbId) {
-            return; // skip if this is not batch we are expecting
-        }
-
-        bytes32 _sbHash = keccak256(
-            abi.encodePacked(
-                _signedBatch.id,
-                _signedBatch.firstTxNonceId,
-                _signedBatch.lastTxNonceId,
-                _destinationChainId,
-                _signedBatch.rawTransaction,
-                _signedBatch.isConsolidation
-            )
-        );
-
-        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
-        uint256 _bitmapValue = signedBatches.bitmap(_sbHash);
-        uint256 _bitmapNewValue;
-        unchecked {
-            _bitmapNewValue = _bitmapValue | (1 << _validatorIdx);
-        }
-
-        // check if caller already voted for same hash and skip if he did
-        if (_bitmapValue == _bitmapNewValue) {
-            return;
-        }
-
-        uint256 _quorumCount = validators.getQuorumNumberOfValidators();
-
-        (uint256 _numberOfVotes, ) = signedBatches.getNumberOfSignatures(_sbHash);
-
-        signedBatches.addSignature(_sbHash, _signedBatch.signature);
-        signedBatches.addFeeSignature(_sbHash, _signedBatch.feeSignature);
-        signedBatches.setBitmap(_sbHash, _bitmapNewValue);
-
-        // check if quorum reached (+1 is last vote)
-        if (_numberOfVotes + 1 >= _quorumCount) {
-            lastSpecialConfirmedBatch[_destinationChainId] = ConfirmedBatch(
-                signedBatches.getSignatures(_sbHash),
-                signedBatches.getFeeSignatures(_sbHash),
-                signedBatches.bitmap(_sbHash),
-                _signedBatch.rawTransaction,
-                _sbId,
-                _signedBatch.isConsolidation
-            );
-
-            claimsHelper.setConfirmedSignedBatchData(_signedBatch);
-
-            //TODO update chains
-            // Chain[] memory _chains = bridge.getChains();
-
-            signedBatches.deleteSignaturesFeeSignaturesBitmap(_sbHash);
-        }
-    }
-
-    function getSpecialConfirmedBatchId(uint8 _destinationChain) external view returns (uint64) {
-        return lastSpecialConfirmedBatch[_destinationChain].id;
-    }
+    function _magic() internal view {}
 
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
