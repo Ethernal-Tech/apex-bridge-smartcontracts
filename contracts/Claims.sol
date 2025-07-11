@@ -606,9 +606,15 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         return claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(_validatorIdx, _hash, _quorumCnt);
     }
 
-    /// @notice Checks if a batch should be created for the destination chain.
-    /// @param _destinationChain ID of the destination chain.
-    /// @return _shouldCreateBatch Returns true if either a regular or stake delegation batch should be created.
+    /// @notice Determines whether a new batch should be created for a specific destination chain.
+    /// @dev This function checks if the destination chain is registered and whether a batch has already been created for it.
+    ///      It then evaluates if the number of transactions in the batch has reached the maximum limit or if the timeout block
+    ///      has passed, signaling that a new batch can be created.
+    /// @param _destinationChain The ID of the destination chain for which the batch creation is being checked.
+    /// @return A boolean value indicating whether a new batch should be created (`true`) or not (`false`).
+    /// @dev If the destination chain is not registered or if a batch has already been created, the function returns `false`.
+    ///      Otherwise, it checks if the transaction count for the destination chain has reached the maximum allowed or if
+    ///      the timeout block has been surpassed, in which case it returns `true`.
     function shouldCreateBatch(uint8 _destinationChain) public view returns (bool) {
         // if not registered chain or batch is already created, return false
         if (!isChainRegistered[_destinationChain] || claimsHelper.currentBatchBlock(_destinationChain) != int(-1)) {

@@ -86,7 +86,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Submit a signed transaction batch for the Cardano chain.
     /// @param _signedBatch The batch of signed transactions.
     function submitSignedBatch(SignedBatch calldata _signedBatch) external override onlyValidator {
-        if (!shouldCreateBatch(_signedBatch.destinationChainId)) {
+        if (!claims.shouldCreateBatch(_signedBatch.destinationChainId)) {
             return;
         }
 
