@@ -1,7 +1,27 @@
 import { ethers } from "hardhat";
 import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin } from "../typechain-types";
+import { setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+
+export enum BatchType {
+  NORMAL = 0,
+  CONSOLIDATION = 1,
+  VALIDATORSET = 2,
+  VALIDATORSET_FINAL = 3,
+}
+
+export enum TransactionType {
+  NORMAL = 0,
+  DEFUND = 1,
+  REFUND = 2,
+  STAKE_DELEGATION = 3,
+}
 
 export async function deployBridgeFixture() {
+  const PRECOMPILE_MOCK = "0x600160005260206000F3"; // returns true for isSignatureValid
+
+  await setCode("0x0000000000000000000000000000000000002050", PRECOMPILE_MOCK);
+  await setCode("0x0000000000000000000000000000000000002060", PRECOMPILE_MOCK);
+
   // Contracts are deployed using the first signer/account by default
   const [owner, validator1, validator2, validator3, validator4, validator5, validator6] = await ethers.getSigners();
   const validators = [validator1, validator2, validator3, validator4, validator5];
@@ -429,7 +449,7 @@ export async function deployBridgeFixture() {
     signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
     rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
-    isConsolidation: false,
+    batchType: BatchType.NORMAL,
   };
 
   const signedBatchConsolidation = {
@@ -440,7 +460,7 @@ export async function deployBridgeFixture() {
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     firstTxNonceId: 0,
     lastTxNonceId: 0,
-    isConsolidation: true,
+    batchType: BatchType.CONSOLIDATION,
   };
 
   const signedBatchDefund = {
@@ -451,7 +471,18 @@ export async function deployBridgeFixture() {
     signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    isConsolidation: false,
+    batchType: BatchType.NORMAL,
+  };
+
+  const signedBatchStakeDel = {
+    id: 1,
+    firstTxNonceId: 1,
+    lastTxNonceId: 1,
+    destinationChainId: 1,
+    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
+    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
+    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
+    batchType: BatchType.NORMAL,
   };
 
   const cardanoBlocks = [
@@ -485,6 +516,7 @@ export async function deployBridgeFixture() {
   }));
 
   const validatorCardanoData = validatorAddressChainData[0].data;
+  const bridgeAddrIndex = 0;
 
   return {
     hre,
@@ -516,10 +548,12 @@ export async function deployBridgeFixture() {
     signedBatch,
     signedBatchConsolidation,
     signedBatchDefund,
+    signedBatchStakeDel,
     validatorAddressChainData,
     validatorCardanoData,
     validators,
     cardanoBlocks,
     cardanoBlocksTooManyBlocks,
+    bridgeAddrIndex,
   };
 }

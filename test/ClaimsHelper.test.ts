@@ -13,7 +13,7 @@ describe("ClaimsHelper Contract", function () {
       );
     });
 
-    it("Should revert if ClaimsHelper SC resetCurrentBatchBlock is not called by SignedBatches SC or Claims SC", async function () {
+    it("Should revert if ClaimsHelper SC setConfirmedSignedBatchData is not called by SignedBatches SC or Claims SC", async function () {
       const { bridge, claimsHelper, owner, signedBatch } = await loadFixture(deployBridgeFixture);
 
       await expect(claimsHelper.connect(owner).setConfirmedSignedBatchData(signedBatch)).to.be.revertedWithCustomError(
