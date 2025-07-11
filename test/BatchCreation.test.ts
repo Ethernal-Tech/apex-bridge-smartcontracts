@@ -1,7 +1,7 @@
 import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { deployBridgeFixture } from "./fixtures";
+import { BatchType, deployBridgeFixture } from "./fixtures";
 
 describe("Batch Creation", function () {
   async function impersonateAsContractAndMintFunds(contractAddress: string) {
@@ -89,15 +89,14 @@ describe("Batch Creation", function () {
       const { bridge, signedBatches, validators, signedBatch } = await loadFixture(deployBridgeFixture);
 
       const encoded = ethers.solidityPacked(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool", "bool"],
+        ["uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
         [
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
-          false,
-          false,
+          BatchType.NORMAL,
         ]
       );
 
@@ -258,7 +257,7 @@ describe("Batch Creation", function () {
       // consensus
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      expect(await claims.shouldCreateRegularBatch(signedBatch.destinationChainId)).to.equal(false);
+      expect(await claims.shouldCreateBatch(signedBatch.destinationChainId)).to.equal(false);
 
       const confBatch = await bridge.connect(validators[1]).getConfirmedBatch(signedBatch.destinationChainId);
       expect(confBatch.bitmap).to.equal(30);
@@ -482,15 +481,14 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
 
       const encoded = ethers.solidityPacked(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool", "bool"],
+        ["uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
         [
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
-          false,
-          false,
+          BatchType.NORMAL,
         ]
       );
 

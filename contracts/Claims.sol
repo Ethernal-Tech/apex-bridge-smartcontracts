@@ -6,6 +6,8 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
 import "./interfaces/ConstantsLib.sol";
+import "./interfaces/BatchTypesLib.sol";
+import "./interfaces/TransactionTypesLib.sol";
 import "./Utils.sol";
 import "./Bridge.sol";
 import "./ClaimsHelper.sol";
@@ -16,6 +18,8 @@ import "./Validators.sol";
 /// @dev Inherits from OpenZeppelin upgradeable contracts for upgradability and ownership control.
 contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     using ConstantsLib for uint8;
+    using BatchTypesLib for uint8;
+    using TransactionTypesLib for uint8;
 
     address private upgradeAdmin;
     address private bridgeAddress;
@@ -61,17 +65,21 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev chainId -> nonce
     mapping(uint8 => uint64) public lastBatchedTxNonce;
 
-    /// @notice Maximum number of retries allowed for defund claims.
-    uint8 private constant MAX_NUMBER_OF_DEFUND_RETRIES = 3;
+    /// @notice Maximum number of retries allowed for claims.
+    uint8 private constant MAX_NUMBER_OF_RETRIES = 3;
     /// @notice Maximum number of claims allowed per submission.
     uint8 private constant MAX_NUMBER_OF_CLAIMS = 32;
     /// @notice Maximum number of receivers in a BridgingRequestClaim.
     uint8 private constant MAX_NUMBER_OF_RECEIVERS = 16;
 
+    /// @notice Tracks whether a specific bridging address has been delegated to a stake pool on a given chain.
+    /// @dev Mapping: chainId => bridgeAddrIndex => true if delegated, false otherwise.
+    mapping(uint8 => mapping(uint8 => bool)) public isAddrDelegatedToStake;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[50] private __gap;
+    uint256[49] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -126,18 +134,25 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         adminContractAddress = _adminContractAddress;
     }
 
-    /// @notice Adds a transaction to delegate the validator address to a specific stake pool for a given chain.
-    /// @param chainId The ID of the destination chain.
+    /// @notice Records a stake delegation transaction for a specific bridging address on a given chain.
+    /// @dev Reverts if the address is already delegated or the chain is not registered.
+    /// @param chainId The ID of the chain where the delegation is made.
+    /// @param bridgeAddrIndex The index of the bridging address being delegated.
     /// @param stakePoolId The identifier of the stake pool to delegate to.
-    function delegateAddrToStakePool(uint8 chainId, string calldata stakePoolId) external onlyBridge {
+    function delegateAddrToStakePool(uint8 chainId, uint8 bridgeAddrIndex, string calldata stakePoolId) external onlyBridge {
+        if (isAddrDelegatedToStake[chainId][bridgeAddrIndex]) {
+            revert AddrAlreadyDelegatedToStake(chainId, bridgeAddrIndex);
+        }
+
         if (!isChainRegistered[chainId]) {
             revert ChainIsNotRegistered(chainId);
         }
 
+        isAddrDelegatedToStake[chainId][bridgeAddrIndex] = true;
         uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
 
         ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nextNonce];
-        confirmedTx.transactionType = 3;
+        confirmedTx.transactionType = TransactionTypesLib.STAKE_DELEGATION;
         confirmedTx.destinationChainId = chainId;
         confirmedTx.stakePoolId = stakePoolId;
         confirmedTx.nonce = nextNonce;
@@ -319,7 +334,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.EXECUTED);
 
             // do not process included transactions if it is a consolidation
-            if (_confirmedSignedBatch.isConsolidation) {
+            if (_confirmedSignedBatch.batchType == BatchTypesLib.CONSOLIDATION) {
                 return;
             }
 
@@ -366,7 +381,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             claimsHelper.setConfirmedSignedBatchStatus(chainId, _claim.batchNonceId, ConstantsLib.FAILED);
 
             // do not process included transactions if it is a consolidation
-            if (_confirmedSignedBatch.isConsolidation) {
+            if (_confirmedSignedBatch.batchType == BatchTypesLib.CONSOLIDATION) {
                 return;
             }
 
@@ -384,19 +399,25 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
                 ConfirmedTransaction storage _ctx = confirmedTransactions[chainId][i];
                 uint8 _txType = _ctx.transactionType;
-                if (_txType == 0) {
+                if (_txType == TransactionTypesLib.NORMAL) {
                     _currentAmount += _ctx.totalAmount;
                     _currentWrappedAmount += _ctx.totalWrappedAmount;
-                } else if (_txType == 1) {
-                    if (_ctx.retryCounter < MAX_NUMBER_OF_DEFUND_RETRIES) {
+                } else if (_txType == TransactionTypesLib.DEFUND) {
+                    if (_ctx.retryCounter < MAX_NUMBER_OF_RETRIES) {
                         _retryTx(chainId, _ctx);
                     } else {
                         _currentAmount += _ctx.totalAmount;
                         _currentWrappedAmount += _ctx.totalWrappedAmount;
                         emit DefundFailedAfterMultipleRetries();
                     }
-                } else if (_txType == 3) {
-                    _retryTx(chainId, _ctx);
+                } else if (_txType == TransactionTypesLib.STAKE_DELEGATION) {
+                    if (_ctx.retryCounter < MAX_NUMBER_OF_RETRIES) {
+                        _retryTx(chainId, _ctx);
+                    } else {
+                        // ConfirmedTransaction should store the index of the bridging address when multiple bridging addresses are introduced
+                        isAddrDelegatedToStake[chainId][0] = false;
+                        emit StakeDelegationFailedAfterMultipleRetries();
+                    }
                 }
             }
 
@@ -407,6 +428,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
     }
 
+    /// @notice Retries a previously confirmed transaction by assigning it a new nonce.
+    /// @dev Increments the chain's last confirmed transaction nonce and stores the retried transaction with an updated retry counter.
+    /// @param chainId The ID of the chain for which the transaction is being retried.
+    /// @param _ctx The confirmed transaction to retry.
     function _retryTx(uint8 chainId, ConfirmedTransaction storage _ctx) internal {
         uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
         confirmedTransactions[chainId][nextNonce] = _ctx;
@@ -558,7 +583,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         confirmedTx.destinationChainId = _claim.destinationChainId;
         confirmedTx.nonce = nextNonce;
         confirmedTx.retryCounter = _claim.retryCounter;
-        confirmedTx.transactionType = 2;
+        confirmedTx.transactionType = TransactionTypesLib.REFUND;
         confirmedTx.outputIndexes = _claim.outputIndexes;
         confirmedTx.alreadyTriedBatch = _claim.shouldDecrementHotWallet;
 
@@ -816,7 +841,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint64 _lastTxNonce = _confirmedSignedBatch.lastTxNonceId;
         uint8 _status = _confirmedSignedBatch.status;
         // if the batch is a consolidation or does not exist, return empty array
-        if (_status == ConstantsLib.NOT_EXISTS || _confirmedSignedBatch.isConsolidation) {
+        if (_status == ConstantsLib.NOT_EXISTS || _confirmedSignedBatch.batchType == BatchTypesLib.CONSOLIDATION) {
             return (_status, new TxDataInfo[](0));
         }
 
@@ -844,7 +869,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.0";
+        return "1.1.0";
     }
 
     modifier onlyBridge() {
