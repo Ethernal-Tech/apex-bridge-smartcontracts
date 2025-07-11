@@ -1,17 +1,17 @@
 import { loadFixture, setCode, reset } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { deployBridgeFixture } from "./fixtures";
+import { deployBridgeFixture, TransactionType } from "./fixtures";
 
 describe("Submit Claims", function () {
-  const stakePoolIds = ["stakePoolId", "stakePoolId1", "stakePoolId2"];
+  const stakePoolId = "stakePoolId";
 
-  async function registerChainAndDelegate(bridge, owner, chain, validatorData, count = 2) {
+  /* async function registerChainAndDelegate(bridge, owner, chain, validatorData, count = 2) {
       await bridge.connect(owner).registerChain(chain, 10000, 10000, validatorData);
       for (let i = 0; i < count; i++) {
       await bridge.connect(owner).delegateAddrToStakePool(chain.id, stakePoolIds[i]);
       }
-  }
+  } */
 
   describe("Submit new Bridging Request Claim", function () {
     it("Should revert any claim if not sent by validator", async function () {
@@ -1438,10 +1438,17 @@ describe("Submit Claims", function () {
 
   describe("Submit new Stake Delegation Batch Executed Claims", function () {
     it("Should not create batch when no unbatched txs exist", async function () {
-        const { bridge, claims, owner, validators, signedBatchStakeDel, chain1, validatorAddressChainData, validatorClaimsBEC } =
+        const { bridge, claims, owner, validators, signedBatchStakeDel, chain1, validatorAddressChainData, validatorClaimsBEC, bridgeAddrIndex } =
             await loadFixture(deployBridgeFixture);
 
-        await registerChainAndDelegate(bridge, owner, chain1, validatorAddressChainData, 2);
+        //await registerChainAndDelegate(bridge, owner, chain1, validatorAddressChainData, 2);
+        await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
+        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId);
+
+        // wait for next timeout
+        for (let i = 0; i < 3; i++) {
+            await ethers.provider.send("evm_mine");
+        }
 
         for (const v of validators.slice(0, 4)) {
             await bridge.connect(v).submitSignedBatch(signedBatchStakeDel);
@@ -1452,74 +1459,157 @@ describe("Submit Claims", function () {
             await bridge.connect(v).submitClaims(validatorClaimsBEC);
         }
 
-        expect(await claims.getLastBatchedStakeDelTxNonce(chain1.id)).to.equal(2);
-        expect(await claims.shouldCreateStakeDelBatch(chain1.id)).to.be.false;
-    });
-
-    it("Should return remaining stake delegation txs after executed batch", async function () {
-        const { bridge, claims, owner, validators, signedBatchStakeDel, chain1, validatorAddressChainData, validatorClaimsBEC } =
-            await loadFixture(deployBridgeFixture);
-
-        await registerChainAndDelegate(bridge, owner, chain1, validatorAddressChainData, 3);
-
-        for (const v of validators.slice(0, 4)) {
-            await bridge.connect(v).submitSignedBatch(signedBatchStakeDel);
-        }
-
-        const lastNonceBefore = await claims.getLastBatchedStakeDelTxNonce(chain1.id);
-        expect(lastNonceBefore).to.equal(0);
-
-        validatorClaimsBEC.batchExecutedClaims[0].chainId = chain1.id;
-        for (const v of validators.slice(0, 4)) {
-            await bridge.connect(v).submitClaims(validatorClaimsBEC);
-        }
-
-        const lastNonce = await claims.getLastBatchedStakeDelTxNonce(chain1.id);
-        expect(lastNonce).to.equal(2);
-
-        const stakeDelTxs = await bridge.getStakeDelegationTransactions(chain1.id);
-        expect(stakeDelTxs.length).to.equal(1);
-
-        expect(stakeDelTxs[0].chainId).to.equal(chain1.id);
-        expect(stakeDelTxs[0].stakePoolId).to.equal(stakePoolIds[2]);
-        expect(stakeDelTxs[0].nonce).to.equal(3);
+        expect(await claims.lastBatchedTxNonce(chain1.id)).to.equal(1);
+        expect(await claims.getBatchingTxsCount(chain1.id)).to.equal(0);
     });
   });
 
   describe("Submit new Stake Delegation Batch Execution Failed Claims", function () {
     it("Should return stake delegation txs if previous batch failed", async function () {
-        const { bridge, claims, claimsHelper, owner, validators, signedBatchStakeDel, chain1, validatorAddressChainData, validatorClaimsBEFC } =
+        const { bridge, claims, claimsHelper, owner, validators, signedBatchStakeDel, chain1, validatorAddressChainData, validatorClaimsBEFC, bridgeAddrIndex } =
             await loadFixture(deployBridgeFixture);
 
-        await registerChainAndDelegate(bridge, owner, chain1, validatorAddressChainData, 2);
+        //await registerChainAndDelegate(bridge, owner, chain1, validatorAddressChainData, 2);
+        await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
+        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId);
+
+        // wait for next timeout
+        for (let i = 0; i < 3; i++) {
+            await ethers.provider.send("evm_mine");
+        }
 
         for (const v of validators.slice(0, 4)) {
             await bridge.connect(v).submitSignedBatch(signedBatchStakeDel);
         }
 
-        const lastNonceBefore = await claims.getLastBatchedStakeDelTxNonce(chain1.id);
-        expect(lastNonceBefore).to.equal(0);
+        expect(await claims.lastBatchedTxNonce(chain1.id)).to.equal(0);        
 
         validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId = chain1.id;
         for (const v of validators.slice(0, 4)) {
             await bridge.connect(v).submitClaims(validatorClaimsBEFC);
         }
 
-        const lastNonce = await claims.getLastBatchedStakeDelTxNonce(chain1.id);
-        expect(lastNonce).to.equal(2);
+        expect(await claims.lastBatchedTxNonce(chain1.id)).to.equal(1);
+        expect(await claims.getBatchingTxsCount(chain1.id)).to.equal(1);
 
-        const stakeDelTxs = await bridge.getStakeDelegationTransactions(chain1.id);
-        expect(stakeDelTxs.length).to.equal(2);
+        // wait for next timeout (current timeout is 5 blocks)
+        for (let i = 0; i < 5; i++) {
+            await ethers.provider.send("evm_mine");
+        }
 
-        expect(stakeDelTxs[0].chainId).to.equal(chain1.id);
-        expect(stakeDelTxs[0].stakePoolId).to.equal(stakePoolIds[0]);
-        expect(stakeDelTxs[0].nonce).to.equal(3);
+        const confirmedTxs = await bridge.getConfirmedTransactions(chain1.id);
+        expect(confirmedTxs.length).to.equal(1);
 
-        expect(stakeDelTxs[1].chainId).to.equal(chain1.id);
-        expect(stakeDelTxs[1].stakePoolId).to.equal(stakePoolIds[1]);
-        expect(stakeDelTxs[1].nonce).to.equal(4);
+        expect(confirmedTxs[0].destinationChainId).to.equal(chain1.id);
+        expect(confirmedTxs[0].stakePoolId).to.equal(stakePoolId);
+        expect(confirmedTxs[0].nonce).to.equal(2);
+        expect(confirmedTxs[0].transactionType).to.equal(TransactionType.STAKE_DELEGATION);
+        expect(confirmedTxs[0].retryCounter).to.equal(1);
 
-        expect(await claimsHelper.lastStakeDelegationTxNonce(chain1.id)).to.equal(4);
+        expect(await claims.lastConfirmedTxNonce(chain1.id)).to.equal(2);
+    });
+
+    it("Should revert after batch execution failed more than 3 times", async function () {
+        const {
+          bridge,
+          claims,
+          signedBatches,
+          owner,
+          validators,
+          signedBatchStakeDel,
+          chain1,
+          validatorAddressChainData,
+          validatorClaimsBEFC,
+          bridgeAddrIndex,
+        } = await loadFixture(deployBridgeFixture);
+
+        await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
+        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId);
+
+        const mineBlocks = async (count: number) => {
+          for (let i = 0; i < count; i++) {
+            await ethers.provider.send("evm_mine");
+          }
+        };
+
+        const submitFailedBatch = async () => {
+          const lastConfirmedTxNonce = await claims.lastConfirmedTxNonce(chain1.id);
+          signedBatchStakeDel.firstTxNonceId = lastConfirmedTxNonce;
+          signedBatchStakeDel.lastTxNonceId = lastConfirmedTxNonce;
+
+          const batchId = (await signedBatches.getConfirmedBatchId(chain1.id)) + 1n;
+          signedBatchStakeDel.id = batchId;
+
+          for (const v of validators.slice(0, 4)) {
+            await bridge.connect(v).submitSignedBatch(signedBatchStakeDel);
+          }
+
+          validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId = chain1.id;
+          validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId = batchId;
+
+          for (const v of validators.slice(0, 4)) {
+            await bridge.connect(v).submitClaims(validatorClaimsBEFC);
+          }
+        };
+
+        // Initial failed batch
+        await mineBlocks(3);
+        for (const v of validators.slice(0, 4)) {
+          await bridge.connect(v).submitSignedBatch(signedBatchStakeDel);
+        }
+
+        validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId = chain1.id;
+        for (const v of validators.slice(0, 4)) {
+          await bridge.connect(v).submitClaims(validatorClaimsBEFC);
+        }
+
+        expect(await claims.lastBatchedTxNonce(chain1.id)).to.equal(1);
+        expect(await claims.getBatchingTxsCount(chain1.id)).to.equal(1);
+
+        // Second failure
+        await mineBlocks(5);
+        await submitFailedBatch();
+        expect(await claims.lastBatchedTxNonce(chain1.id)).to.equal(2);
+        expect(await claims.getBatchingTxsCount(chain1.id)).to.equal(1);
+
+        // Third failure
+        await mineBlocks(5);
+        await submitFailedBatch();
+        expect(await claims.lastBatchedTxNonce(chain1.id)).to.equal(3);
+        expect(await claims.getBatchingTxsCount(chain1.id)).to.equal(1);
+
+        // Fourth failure (should now trigger StakeDelegationFailedAfterMultipleRetries)
+        await mineBlocks(5);
+
+        const lastConfirmedTxNonce = await claims.lastConfirmedTxNonce(chain1.id);
+        signedBatchStakeDel.firstTxNonceId = lastConfirmedTxNonce;
+        signedBatchStakeDel.lastTxNonceId = lastConfirmedTxNonce;
+
+        const lastBatchNonce = (await signedBatches.getConfirmedBatchId(chain1.id)) + 1n;
+        signedBatchStakeDel.id = lastBatchNonce;
+
+        for (const v of validators.slice(0, 4)) {
+          await bridge.connect(v).submitSignedBatch(signedBatchStakeDel);
+        }
+
+        validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId = lastBatchNonce;
+
+        for (const v of validators.slice(0, 3)) {
+          await bridge.connect(v).submitClaims(validatorClaimsBEFC);
+        }
+
+        await expect(bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC)).to.emit(
+          claims,
+          "StakeDelegationFailedAfterMultipleRetries"
+        );
+
+        // Expect batching state reset
+        expect(await claims.getBatchingTxsCount(chain1.id)).to.equal(0);
+        expect(await claims.isAddrDelegatedToStake(chain1.id, bridgeAddrIndex)).to.be.false;
+
+        // Re-delegate to verify delegation is now allowed again
+        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId);
+        expect(await claims.getBatchingTxsCount(chain1.id)).to.equal(1);
     });
   });
 });

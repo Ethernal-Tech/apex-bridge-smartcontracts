@@ -316,11 +316,17 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         return _confirmedTransactions;
     }
 
-    /// @notice Adds a transaction to delegate the validator address to a specific stake pool for a given chain.
+    /// @notice Queues a transaction to delegate a bridging address to a specific stake pool on a given chain.
     /// @param chainId The ID of the destination chain.
+    /// @param bridgeAddrIndex The index of the bridging address to be delegated.
     /// @param stakePoolId The identifier of the stake pool to delegate to.
-    function delegateAddrToStakePool(uint8 chainId, string calldata stakePoolId) external override onlyOwner {
-        claims.delegateAddrToStakePool(chainId, stakePoolId);
+    function delegateAddrToStakePool(uint8 chainId, uint8 bridgeAddrIndex, string calldata stakePoolId) external override onlyOwner {
+        // there is only one bridge address currently, only index 0 is allowed
+        if (bridgeAddrIndex != 0) {
+            revert InvalidBridgeAddrIndex(chainId, bridgeAddrIndex);
+        }
+
+        claims.delegateAddrToStakePool(chainId, bridgeAddrIndex, stakePoolId);
     }
 
     /// @notice Get the confirmed batch for the given destination chain.
@@ -384,7 +390,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.0";
+        return "1.1.0";
     }
 
     modifier onlyValidator() {
