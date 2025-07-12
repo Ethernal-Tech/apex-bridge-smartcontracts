@@ -207,7 +207,7 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("SignedBatch submition in SpecialSignedBatches SC should be reverted if not called by Bridge SC", async function () {
-      const { bridge, specialSignedBatches, owner, specialSignedBatch } = await loadFixture(deployBridgeFixture);
+      const { bridge, owner } = await loadFixture(deployBridgeFixture);
 
       await expect(
         specialSignedBatches.connect(owner).submitSpecialSignedBatch(specialSignedBatch, owner.address)
@@ -215,9 +215,7 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("If SignedBatch submition id is not expected submittion should be skipped", async function () {
-      const { bridge, signedBatches, specialSignedBatches, validators, specialSignedBatch } = await loadFixture(
-        deployBridgeFixture
-      );
+      const { bridge, signedBatches, validators, specialSignedBatch } = await loadFixture(deployBridgeFixture);
 
       const encoded = ethers.solidityPacked(
         ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
@@ -268,7 +266,6 @@ describe("Dynamic Validator Set", function () {
     it("SignedBatch should NOT be added to signedBatches if there are NOT enough votes", async function () {
       const {
         bridge,
-        specialSignedBatches,
         claimsHelper,
         owner,
         chain1,
@@ -320,7 +317,6 @@ describe("Dynamic Validator Set", function () {
     it("SignedBatch should be added to signedBatches if there are enough votes", async function () {
       const {
         bridge,
-        specialSignedBatches,
         claimsHelper,
         owner,
         chain1,
@@ -804,7 +800,6 @@ describe("Dynamic Validator Set", function () {
     it("Should NOT set bitmap to +1 if there is quorum on non-final batch in SBEC", async function () {
       const {
         bridge,
-        specialClaims,
         owner,
         validators,
         chain1,
@@ -857,7 +852,6 @@ describe("Dynamic Validator Set", function () {
     it("Should set bitmap to +1 if there is quorum on final batch in SBEC", async function () {
       const {
         bridge,
-        specialClaims,
         owner,
         validators,
         chain1,
@@ -1292,7 +1286,6 @@ describe("Dynamic Validator Set", function () {
     it("Should emit SpecialSignedBatchExecutionFailed if there is quorum on SBEFC", async function () {
       const {
         bridge,
-        specialClaims,
         owner,
         validators,
         chain1,
