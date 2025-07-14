@@ -6,13 +6,6 @@ import { deployBridgeFixture, TransactionType } from "./fixtures";
 describe("Submit Claims", function () {
   const stakePoolId = "stakePoolId";
 
-  /* async function registerChainAndDelegate(bridge, owner, chain, validatorData, count = 2) {
-      await bridge.connect(owner).registerChain(chain, 10000, 10000, validatorData);
-      for (let i = 0; i < count; i++) {
-      await bridge.connect(owner).delegateAddrToStakePool(chain.id, stakePoolIds[i]);
-      }
-  } */
-
   describe("Submit new Bridging Request Claim", function () {
     it("Should revert any claim if not sent by validator", async function () {
       const { bridge, owner, validatorClaimsBRC } = await loadFixture(deployBridgeFixture);
@@ -1502,6 +1495,7 @@ describe("Submit Claims", function () {
 
         expect(confirmedTxs[0].destinationChainId).to.equal(chain1.id);
         expect(confirmedTxs[0].stakePoolId).to.equal(stakePoolId);
+        expect(confirmedTxs[0].bridgeAddrIndex).to.equal(bridgeAddrIndex);
         expect(confirmedTxs[0].nonce).to.equal(2);
         expect(confirmedTxs[0].transactionType).to.equal(TransactionType.STAKE_DELEGATION);
         expect(confirmedTxs[0].retryCounter).to.equal(1);

@@ -49,6 +49,7 @@ interface IBridgeStructs {
         bytes outputIndexes;
         uint8 destinationChainId;
         string stakePoolId;
+        uint8 bridgeAddrIndex;
     }
 
     /// @notice Represents a block from the Cardano chain.

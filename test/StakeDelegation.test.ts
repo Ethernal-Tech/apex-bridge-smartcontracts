@@ -7,13 +7,6 @@ describe("Stake Delegation", function () {
     
     const stakePoolId = "stakePoolId";
 
-    /* async function registerChainAndDelegate(bridge, owner, chain, validatorData, bridgeAddrIndex, count = 2) {
-        for (let i = 0; i < count; i++) {
-            await bridge.connect(owner).registerChain(chainIds[i], 10000, 10000, validatorData);
-            await bridge.connect(owner).delegateAddrToStakePool(chainIds[i], bridgeAddrIndex, stakePoolId);
-        }
-    } */
-
     it("Should revert if delegation is not sent by owner", async function () {
       const { bridge, chain1, validators, bridgeAddrIndex } = await loadFixture(deployBridgeFixture);
 
@@ -73,6 +66,7 @@ describe("Stake Delegation", function () {
         const tx = await claims.confirmedTransactions(chain1.id, nonce);
         expect(tx.destinationChainId).to.equal(chain1.id);
         expect(tx.stakePoolId).to.equal(stakePoolId);
+        expect(tx.bridgeAddrIndex).to.equal(bridgeAddrIndex);
         expect(tx.nonce).to.equal(nonce);
         expect(tx.transactionType).to.equal(TransactionType.STAKE_DELEGATION);
         expect(tx.retryCounter).to.equal(0);

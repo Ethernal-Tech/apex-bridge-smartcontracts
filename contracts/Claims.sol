@@ -155,6 +155,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         confirmedTx.transactionType = TransactionTypesLib.STAKE_DELEGATION;
         confirmedTx.destinationChainId = chainId;
         confirmedTx.stakePoolId = stakePoolId;
+        confirmedTx.bridgeAddrIndex = bridgeAddrIndex;
         confirmedTx.nonce = nextNonce;
     }
 
