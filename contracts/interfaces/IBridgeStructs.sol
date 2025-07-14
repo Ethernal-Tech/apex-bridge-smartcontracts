@@ -14,6 +14,7 @@ interface IBridgeStructs {
         bytes feeSignature;
         bytes rawTransaction;
         uint8 batchType; // BatchTypesLib
+        bytes stakeSignature;
     }
 
     /// @notice Metadata for a batch that has been confirmed.
@@ -32,6 +33,7 @@ interface IBridgeStructs {
         bytes rawTransaction;
         uint64 id;
         uint8 batchType; // BatchTypesLib
+        bytes[] stakeSignatures;
     }
 
     /// @notice A transaction that has been confirmed and is ready for batching.
@@ -174,6 +176,7 @@ interface IBridgeStructs {
         uint256 bitmap;
         bytes[] signatures;
         bytes[] feeSignatures;
+        bytes[] stakeSignatures;
     }
 
     // ------------------------------------------------------------------------

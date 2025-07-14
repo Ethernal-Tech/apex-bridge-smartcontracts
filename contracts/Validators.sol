@@ -143,13 +143,15 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         bytes calldata _txRaw,
         bytes calldata _signature,
         bytes calldata _signatureFee,
+        bytes calldata _signatureStake,
         address _validatorAddr
     ) public view returns (bool) {
         uint256 indx = addressValidatorIndex[_validatorAddr] - 1;
         uint256[4] memory key = chainData[_chainId][indx].key;
         // multisig and fee verification
         return
-            isSignatureValid(_txRaw, _signature, key[0], true) && isSignatureValid(_txRaw, _signatureFee, key[1], true);
+            isSignatureValid(_txRaw, _signature, key[0], true) && isSignatureValid(_txRaw, _signatureFee, key[1], true) 
+            && isSignatureValid(_txRaw, _signatureStake, key[2], true);
     }
 
     /// @notice Verifies BLS signature by validator address

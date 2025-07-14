@@ -450,6 +450,7 @@ export async function deployBridgeFixture() {
     rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     batchType: BatchType.NORMAL,
+    stakeSignature: "0x746573740000000000000000000000000000000000000000000000000000000B",
   };
 
   const signedBatchConsolidation = {
@@ -461,6 +462,7 @@ export async function deployBridgeFixture() {
     firstTxNonceId: 0,
     lastTxNonceId: 0,
     batchType: BatchType.CONSOLIDATION,
+    stakeSignature: "0x746573740000000000000000000000000000000000000000000000000000000B",
   };
 
   const signedBatchDefund = {
@@ -472,6 +474,7 @@ export async function deployBridgeFixture() {
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
     batchType: BatchType.NORMAL,
+    stakeSignature: "0x746573740000000000000000000000000000000000000000000000000000000B",
   };
 
   const signedBatchStakeDel = {
@@ -483,6 +486,7 @@ export async function deployBridgeFixture() {
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
     batchType: BatchType.NORMAL,
+    stakeSignature: "0x746573740000000000000000000000000000000000000000000000000000000B",
   };
 
   const cardanoBlocks = [

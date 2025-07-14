@@ -117,6 +117,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
         _votesInfo.signatures.push(_signedBatch.signature);
         _votesInfo.feeSignatures.push(_signedBatch.feeSignature);
+        _votesInfo.stakeSignatures.push(_signedBatch.stakeSignature);
         _votesInfo.bitmap = _bitmapNewValue;
 
         // check if quorum reached (+1 is last vote)
@@ -127,7 +128,8 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
                 _votesInfo.bitmap,
                 _signedBatch.rawTransaction,
                 _sbId,
-                _signedBatch.batchType
+                _signedBatch.batchType,
+                _votesInfo.stakeSignatures
             );
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);

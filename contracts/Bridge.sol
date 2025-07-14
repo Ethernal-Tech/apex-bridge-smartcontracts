@@ -96,6 +96,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
                 _signedBatch.rawTransaction,
                 _signedBatch.signature,
                 _signedBatch.feeSignature,
+                _signedBatch.stakeSignature,
                 msg.sender
             )
         ) {
