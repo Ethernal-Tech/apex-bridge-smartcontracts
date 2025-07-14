@@ -98,6 +98,14 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         if (
+            validators.newValidatorSetPending() &&
+            (_signedBatch.batchType != BatchTypesLib.VALIDATORSET ||
+                _signedBatch.batchType != BatchTypesLib.VALIDATORSET_FINAL)
+        ) {
+            revert NewValidatorSetPending();
+        }
+
+        if (
             !validators.areSignaturesValid(
                 _signedBatch.destinationChainId,
                 _signedBatch.rawTransaction,
@@ -116,6 +124,14 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     function submitSignedBatchEVM(SignedBatch calldata _signedBatch) external override onlyValidator {
         if (!claims.shouldCreateBatch(_signedBatch.destinationChainId)) {
             return;
+        }
+
+        if (
+            validators.newValidatorSetPending() &&
+            (_signedBatch.batchType != BatchTypesLib.VALIDATORSET ||
+                _signedBatch.batchType != BatchTypesLib.VALIDATORSET_FINAL)
+        ) {
+            revert NewValidatorSetPending();
         }
 
         if (
@@ -155,6 +171,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         if (validators.newValidatorSetPending()) {
             revert NewValidatorSetPending();
         }
+
         if (!claims.isChainRegistered(_chainId)) {
             revert ChainIsNotRegistered(_chainId);
         }
@@ -162,6 +179,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         if (_blocks.length > MAX_NUMBER_OF_BLOCKS) {
             revert TooManyBlocks(_blocks.length, MAX_NUMBER_OF_BLOCKS);
         }
+
         slots.updateBlocks(_chainId, _blocks, msg.sender);
     }
 
