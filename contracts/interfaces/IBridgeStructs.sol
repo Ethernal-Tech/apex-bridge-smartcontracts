@@ -204,7 +204,6 @@ interface IBridgeStructs {
     error NotContractAddress();
     error NoNewValidatorSetPending();
     error NewValidatorSetPending();
-    error WrongSpecialClaims();
     error NotSignedBatchesOrClaims();
     error NotSystem();
 
@@ -221,5 +220,5 @@ interface IBridgeStructs {
     event UpdatedMaxNumberOfTransactions(uint256 _maxNumberOfTransactions);
     event UpdatedTimeoutBlocksNumber(uint256 _timeoutBlocksNumber);
     event newValidatorSetSubmitted();
-    event SpecialSignedBatchExecutionFailed(uint8 indexed chainId, uint64 indexed batchId);
+    event SignedBatchValidatorSetExecutionFailed(uint8 indexed chainId, uint64 indexed batchId);
 }

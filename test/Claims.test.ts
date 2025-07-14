@@ -1175,11 +1175,21 @@ describe("Claims Contract", function () {
         chain2,
         validatorAddressChainData,
         newValidatorSetDelta,
+        validatorClaimsBRC,
         validatorClaimsHWIC,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
+      await ethers.provider.send("evm_mine");
+      await ethers.provider.send("evm_mine");
 
       bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
@@ -1373,7 +1383,7 @@ describe("Claims Contract", function () {
         chain2,
         validators,
         validatorClaimsBRC,
-        signedBatchConsolidation,
+        signedBatch_Consolidation,
         claims,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
@@ -1385,14 +1395,14 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatchConsolidation);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatchConsolidation);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatchConsolidation);
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatchConsolidation);
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch_Consolidation);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_Consolidation);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch_Consolidation);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch_Consolidation);
 
       const [status, txs] = await claims.getBatchStatusAndTransactions(
-        signedBatchConsolidation.destinationChainId,
-        signedBatchConsolidation.id
+        signedBatch_Consolidation.destinationChainId,
+        signedBatch_Consolidation.id
       );
       expect(txs).to.deep.equal([]);
       expect(status).to.equal(1);

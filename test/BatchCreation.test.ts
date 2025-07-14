@@ -509,7 +509,7 @@ describe("Batch Creation", function () {
         validators,
         validatorClaimsBRC,
         validatorClaimsBEC,
-        signedBatchConsolidation,
+        signedBatch_Consolidation,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
@@ -522,10 +522,10 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatchConsolidation);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatchConsolidation);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatchConsolidation);
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatchConsolidation);
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch_Consolidation);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_Consolidation);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch_Consolidation);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch_Consolidation);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
