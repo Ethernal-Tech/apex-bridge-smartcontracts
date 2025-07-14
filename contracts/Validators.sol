@@ -131,13 +131,14 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         return callSuccess && abi.decode(returnData, (bool));
     }
 
-    /// @notice Validates multisignature and fee signature from a validator
+    /// @notice Validates the fee signature and optionally multisignature and stake signature from a validator
     /// @param _chainId The chain ID
     /// @param _txRaw Raw transaction data
-    /// @param _signature Multisignature of transaction
+    /// @param _signature Optional multisignature of the transaction; validated if present
     /// @param _signatureFee Signature for fee validation
+    /// @param _signatureStake Optional stake signature; validated if present
     /// @param _validatorAddr Validator address
-    /// @return True if both signatures are valid
+    /// @return True if the required fee signature is valid and any provided optional signatures are also valid
     function areSignaturesValid(
         uint8 _chainId,
         bytes calldata _txRaw,
@@ -148,10 +149,10 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     ) public view returns (bool) {
         uint256 indx = addressValidatorIndex[_validatorAddr] - 1;
         uint256[4] memory key = chainData[_chainId][indx].key;
-        // multisig and fee verification
-        return
-            isSignatureValid(_txRaw, _signature, key[0], true) && isSignatureValid(_txRaw, _signatureFee, key[1], true) 
-            && isSignatureValid(_txRaw, _signatureStake, key[2], true);
+
+        return isSignatureValid(_txRaw, _signatureFee, key[1], true) &&
+            (_signature.length == 0 || isSignatureValid(_txRaw, _signature, key[0], true)) &&
+            (_signatureStake.length == 0 || isSignatureValid(_txRaw, _signatureStake, key[2], true));
     }
 
     /// @notice Verifies BLS signature by validator address
