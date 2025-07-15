@@ -17,10 +17,6 @@ import "./Validators.sol";
 /// @notice Handles validator-submitted claims in a cross-chain bridge system.
 /// @dev Inherits from OpenZeppelin upgradeable contracts for upgradability and ownership control.
 contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
-    using ConstantsLib for uint8;
-    using BatchTypesLib for uint8;
-    using TransactionTypesLib for uint8;
-
     address private upgradeAdmin;
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
@@ -415,8 +411,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                     if (_ctx.retryCounter < MAX_NUMBER_OF_RETRIES) {
                         _retryTx(chainId, _ctx);
                     } else {
-                        // ConfirmedTransaction should store the index of the bridging address when multiple bridging addresses are introduced
-                        isAddrDelegatedToStake[chainId][0] = false;
+                        isAddrDelegatedToStake[chainId][_ctx.bridgeAddrIndex] = false;
                         emit StakeDelegationFailedAfterMultipleRetries();
                     }
                 }
