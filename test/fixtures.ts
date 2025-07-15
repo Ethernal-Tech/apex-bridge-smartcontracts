@@ -1,6 +1,20 @@
 import { ethers } from "hardhat";
 import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin } from "../typechain-types";
 
+export enum BatchType {
+  NORMAL = 0,
+  CONSOLIDATION = 1,
+  VALIDATORSET = 2,
+  VALIDATORSET_FINAL = 3,
+}
+
+export enum TransactionType {
+  NORMAL = 0,
+  DEFUND = 1,
+  REFUND = 2,
+  STAKE_DELEGATION = 3,
+}
+
 export async function deployBridgeFixture() {
   // Contracts are deployed using the first signer/account by default
   const [owner, validator1, validator2, validator3, validator4, validator5, validator6] = await ethers.getSigners();
@@ -375,7 +389,7 @@ export async function deployBridgeFixture() {
     signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    batchType: 0, // BatchTypesLib.NORMAL
+    batchType: BatchType.NORMAL,
   };
 
   const signedBatch_Consolidation = {
@@ -386,7 +400,7 @@ export async function deployBridgeFixture() {
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     firstTxNonceId: 0,
     lastTxNonceId: 0,
-    batchType: 1, // BatchTypesLib.CONSOLIDATION
+    batchType: BatchType.CONSOLIDATION,
   };
 
   const signedBatch_ValidatorSet = {
@@ -397,7 +411,7 @@ export async function deployBridgeFixture() {
     signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    batchType: 2, // BatchTypesLib.VALIDATORSET
+    batchType: BatchType.VALIDATORSET,
   };
 
   const signedBatch_ValidatorSetFinal = {
@@ -419,7 +433,7 @@ export async function deployBridgeFixture() {
     signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    batchType: 0, // BatchTypesLib.NORMAL
+    batchType: BatchType.NORMAL,
   };
 
   const cardanoBlocks = [
