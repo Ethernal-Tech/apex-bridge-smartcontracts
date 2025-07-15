@@ -283,9 +283,7 @@ describe("Admin Functions", function () {
 
       await admin.connect(validators[0]).defund(chain1.id, 1, 1, "address");
 
-      expect((await claims.confirmedTransactions(chain1.id, 1)).observedTransactionHash).to.equal(
-        await claims.defundHash()
-      );
+      expect((await claims.confirmedTransactions(chain1.id, 1)).transactionType).to.equal(1); // TransactionTypesLib.DEFUND)
       expect((await claims.confirmedTransactions(chain1.id, 1)).sourceChainId).to.equal(chain1.id);
       expect((await claims.confirmedTransactions(chain1.id, 1)).nonce).to.equal(1);
       expect((await claims.confirmedTransactions(chain1.id, 1)).retryCounter).to.equal(0);

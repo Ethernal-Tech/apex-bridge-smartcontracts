@@ -24,9 +24,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     address private adminContractAddress;
 
-    /// @notice Hash for the "Defund" packed claim type.
-    bytes32 public constant defundHash = 0xc74d0d70be942fd68984df57687b9f453f1321726e8db77762dee952a5c85b24;
-
     /// @notice Mapping to track if a chain is registered.
     /// @dev BlockchainId -> bool
     mapping(uint8 => bool) public isChainRegistered;
@@ -135,7 +132,11 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @param chainId The ID of the chain where the delegation is made.
     /// @param bridgeAddrIndex The index of the bridging address being delegated.
     /// @param stakePoolId The identifier of the stake pool to delegate to.
-    function delegateAddrToStakePool(uint8 chainId, uint8 bridgeAddrIndex, string calldata stakePoolId) external onlyBridge {
+    function delegateAddrToStakePool(
+        uint8 chainId,
+        uint8 bridgeAddrIndex,
+        string calldata stakePoolId
+    ) external onlyBridge {
         if (isAddrDelegatedToStake[chainId][bridgeAddrIndex]) {
             revert AddrAlreadyDelegatedToStake(chainId, bridgeAddrIndex);
         }
@@ -144,15 +145,20 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             revert ChainIsNotRegistered(chainId);
         }
 
+        uint256 _confirmedTxCount = getBatchingTxsCount(chainId);
+
         isAddrDelegatedToStake[chainId][bridgeAddrIndex] = true;
         uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
 
         ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nextNonce];
         confirmedTx.transactionType = TransactionTypesLib.STAKE_DELEGATION;
+        confirmedTx.nonce = nextNonce;
         confirmedTx.destinationChainId = chainId;
         confirmedTx.stakePoolId = stakePoolId;
         confirmedTx.bridgeAddrIndex = bridgeAddrIndex;
-        confirmedTx.nonce = nextNonce;
+        confirmedTx.blockHeight = block.number;
+
+        _updateNextTimeoutBlockIfNeeded(chainId, _confirmedTxCount);
     }
 
     /// @notice Submit claims from validators for reaching consensus.
@@ -280,7 +286,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
             uint256 _confirmedTxCount = getBatchingTxsCount(_destinationChainId);
 
-            _setConfirmedTransactions(_claim, 0);
+            _setConfirmedTransaction(_claim);
 
             _updateNextTimeoutBlockIfNeeded(_destinationChainId, _confirmedTxCount);
         }
@@ -532,11 +538,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     ///      It also increments the nonce and sets the transaction type.
     /// @param _claim The bridging request claim containing details about the transaction, including the total amount,
     ///               source and destination chain IDs, observed transaction hash, retry counter, and receivers.
-    /// @param _transactionType The type of the transaction (e.g., bridging request, refund, etc.) that is being processed.
     /// @dev The function stores the confirmed transaction details in the `confirmedTransactions` mapping and increments
     ///      the nonce for the destination chain. It also sets the relevant properties for the transaction, including
     ///      its retry counter and list of receivers.
-    function _setConfirmedTransactions(BridgingRequestClaim memory _claim, uint8 _transactionType) internal {
+    function _setConfirmedTransaction(BridgingRequestClaim memory _claim) internal {
         uint8 destinationChainId = _claim.destinationChainId;
         uint64 nextNonce = ++lastConfirmedTxNonce[destinationChainId];
 
@@ -549,7 +554,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         confirmedTx.destinationChainId = destinationChainId;
         confirmedTx.nonce = nextNonce;
         confirmedTx.retryCounter = _claim.retryCounter;
-        confirmedTx.transactionType = _transactionType;
+        confirmedTx.transactionType = TransactionTypesLib.NORMAL;
 
         uint256 receiversLength = _claim.receivers.length;
         for (uint i; i < receiversLength; i++) {
@@ -728,28 +733,22 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             revert DefundRequestTooHigh(_chainId, _currentWrappedAmount, _amountWrapped);
         }
 
-        BridgingRequestClaim memory _brc = BridgingRequestClaim({
-            observedTransactionHash: defundHash,
-            receivers: new Receiver[](1),
-            nativeCurrencyAmountSource: 0,
-            wrappedTokenAmountSource: 0,
-            nativeCurrencyAmountDestination: _amount,
-            wrappedTokenAmountDestination: _amountWrapped,
-            retryCounter: 0,
-            sourceChainId: _chainId,
-            destinationChainId: _chainId
-        });
+        uint256 _confirmedTxCount = getBatchingTxsCount(_chainId);
 
-        _brc.receivers[0].amount = _amount;
-        _brc.receivers[0].amountWrapped = _amountWrapped;
-        _brc.receivers[0].destinationAddress = _defundAddress;
+        uint64 nextNonce = ++lastConfirmedTxNonce[_chainId];
+
+        ConfirmedTransaction storage confirmedTx = confirmedTransactions[_chainId][nextNonce];
+        confirmedTx.transactionType = TransactionTypesLib.DEFUND;
+        confirmedTx.nonce = nextNonce;
+        confirmedTx.sourceChainId = _chainId;
+        confirmedTx.destinationChainId = _chainId;
+        confirmedTx.totalAmount = _amount;
+        confirmedTx.totalWrappedAmount = _amountWrapped;
+        confirmedTx.receivers.push(Receiver(_amount, _amountWrapped, _defundAddress));
+        confirmedTx.blockHeight = block.number;
 
         chainTokenQuantity[_chainId] = _currentAmount - _amount;
         chainWrappedTokenQuantity[_chainId] = _currentWrappedAmount - _amountWrapped;
-
-        uint256 _confirmedTxCount = getBatchingTxsCount(_chainId);
-
-        _setConfirmedTransactions(_brc, 1);
 
         _updateNextTimeoutBlockIfNeeded(_chainId, _confirmedTxCount);
     }
