@@ -286,7 +286,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         // claims for the same batch will not be processed. This is to prevent double processing of the same batch,
         // and also to prevent processing of batches with invalid IDs.
         // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-        if (_confirmedSignedBatch.status != ConstantsLib.BATCH_IN_PROGRESS) {
+        if (_confirmedSignedBatch.status != ConstantsLib.IN_PROGRESS) {
             return;
         }
 
@@ -303,7 +303,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         if (_quorumReached) {
             // current batch block must be reset in any case because otherwise bridge will be blocked
             claimsHelper.resetCurrentBatchBlock(chainId);
-            claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_EXECUTED);
+            claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.EXECUTED);
 
             if (_confirmedSignedBatch.batchType == BatchTypesLib.VALIDATORSET_FINAL) {
                 newValidatorSetBitmap |= uint8(1 << chainId);
@@ -343,7 +343,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         // claims for the same batch will not be processed. This is to prevent double processing of the same batch,
         // and also to prevent processing of batches with invalid IDs.
         // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-        if (_confirmedSignedBatch.status != ConstantsLib.BATCH_IN_PROGRESS) {
+        if (_confirmedSignedBatch.status != ConstantsLib.IN_PROGRESS) {
             return;
         }
 
@@ -359,7 +359,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         if (_quorumReached) {
             // current batch block must be reset in any case because otherwise bridge will be blocked
             claimsHelper.resetCurrentBatchBlock(chainId);
-            claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_FAILED);
+            claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.FAILED);
 
             if (
                 _confirmedSignedBatch.batchType == BatchTypesLib.VALIDATORSET ||
@@ -762,10 +762,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint64 _lastTxNonce = _confirmedSignedBatch.lastTxNonceId;
         uint8 _status = _confirmedSignedBatch.status;
         // if the batch is a consolidation or does not exist, return empty array
-        if (
-            _status == ConstantsLib.BATCH_DOES_NOT_EXISTS ||
-            _confirmedSignedBatch.batchType == BatchTypesLib.CONSOLIDATION
-        ) {
+        if (_status == ConstantsLib.NOT_EXIST || _confirmedSignedBatch.batchType == BatchTypesLib.CONSOLIDATION) {
             return (_status, new TxDataInfo[](0));
         }
 
