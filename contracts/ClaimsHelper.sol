@@ -12,8 +12,6 @@ import "./Utils.sol";
 /// @notice Handles claim voting, signed batch confirmations, and upgradeable logic for a cross-chain bridge.
 /// @dev This contract is upgradeable using OpenZeppelin's UUPS pattern.
 contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
-    using ConstantsLib for uint8;
-
     address private upgradeAdmin;
     address private claimsAddress;
     address private signedBatchesAddress;
