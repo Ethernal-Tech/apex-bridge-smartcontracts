@@ -3,12 +3,6 @@ import { expect } from "chai";
 import { deployBridgeFixture } from "./fixtures";
 
 describe("Admin Functions", function () {
-  beforeEach(async () => {
-    // mock isSignatureValid precompile to always return true
-    await setCode("0x0000000000000000000000000000000000002050", "0x600160005260206000F3");
-    await setCode("0x0000000000000000000000000000000000002060", "0x600160005260206000F3");
-  });
-
   describe("Chain Token Quantity", function () {
     it("Should revert if updateChainTokenQuantity is not called by fundAdmin", async function () {
       const { admin, validators } = await loadFixture(deployBridgeFixture);
@@ -289,9 +283,7 @@ describe("Admin Functions", function () {
 
       await admin.connect(validators[0]).defund(chain1.id, 1, 1, "address");
 
-      expect((await claims.confirmedTransactions(chain1.id, 1)).observedTransactionHash).to.equal(
-        await claims.defundHash()
-      );
+      expect((await claims.confirmedTransactions(chain1.id, 1)).transactionType).to.equal(1); // TransactionTypesLib.DEFUND)
       expect((await claims.confirmedTransactions(chain1.id, 1)).sourceChainId).to.equal(chain1.id);
       expect((await claims.confirmedTransactions(chain1.id, 1)).nonce).to.equal(1);
       expect((await claims.confirmedTransactions(chain1.id, 1)).retryCounter).to.equal(0);

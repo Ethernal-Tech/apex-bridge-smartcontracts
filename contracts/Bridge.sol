@@ -96,6 +96,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
                 _signedBatch.rawTransaction,
                 _signedBatch.signature,
                 _signedBatch.feeSignature,
+                _signedBatch.stakeSignature,
                 msg.sender
             )
         ) {
@@ -274,7 +275,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    /// @notice Check if a batch should be created for the destination chain.
+    /// @notice Check if a regular or stake delegation batch should be created for the destination chain.
     /// @param _destinationChain ID of the destination chain.
     /// @return _shouldCreateBatch Returns true if a batch should be created.
     function shouldCreateBatch(uint8 _destinationChain) public view override returns (bool _shouldCreateBatch) {
@@ -314,6 +315,19 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         return _confirmedTransactions;
+    }
+
+    /// @notice Queues a transaction to delegate a bridging address to a specific stake pool on a given chain.
+    /// @param chainId The ID of the destination chain.
+    /// @param bridgeAddrIndex The index of the bridging address to be delegated.
+    /// @param stakePoolId The identifier of the stake pool to delegate to.
+    function delegateAddrToStakePool(uint8 chainId, uint8 bridgeAddrIndex, string calldata stakePoolId) external override onlyOwner {
+        // there is only one bridge address currently, only index 0 is allowed
+        if (bridgeAddrIndex != 0) {
+            revert InvalidBridgeAddrIndex(chainId, bridgeAddrIndex);
+        }
+
+        claims.delegateAddrToStakePool(chainId, bridgeAddrIndex, stakePoolId);
     }
 
     /// @notice Get the confirmed batch for the given destination chain.
@@ -377,7 +391,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.0";
+        return "1.1.0";
     }
 
     modifier onlyValidator() {

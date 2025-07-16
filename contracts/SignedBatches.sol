@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
+import "./interfaces/BatchTypesLib.sol";
 import "./Utils.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
@@ -13,6 +14,8 @@ import "./Validators.sol";
 /// @notice Handles submission and confirmation of signed transaction batches for a cross-chain bridge.
 /// @dev Utilizes OpenZeppelin upgradeable contracts and interacts with ClaimsHelper and Validators for consensus logic.
 contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+    using BatchTypesLib for uint8;
+
     address private upgradeAdmin;
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
@@ -92,7 +95,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
                 _signedBatch.lastTxNonceId,
                 _destinationChainId,
                 _signedBatch.rawTransaction,
-                _signedBatch.isConsolidation
+                _signedBatch.batchType
             )
         );
 
@@ -114,6 +117,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
         _votesInfo.signatures.push(_signedBatch.signature);
         _votesInfo.feeSignatures.push(_signedBatch.feeSignature);
+        _votesInfo.stakeSignatures.push(_signedBatch.stakeSignature);
         _votesInfo.bitmap = _bitmapNewValue;
 
         // check if quorum reached (+1 is last vote)
@@ -124,7 +128,9 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
                 _votesInfo.bitmap,
                 _signedBatch.rawTransaction,
                 _sbId,
-                _signedBatch.isConsolidation
+                false, // deprecated field
+                _votesInfo.stakeSignatures,
+                _signedBatch.batchType
             );
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
@@ -160,7 +166,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.0";
+        return "1.1.0";
     }
 
     modifier onlyBridge() {

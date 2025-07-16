@@ -13,15 +13,19 @@ interface IBridgeStructs {
         bytes signature;
         bytes feeSignature;
         bytes rawTransaction;
-        bool isConsolidation;
+        uint8 batchType; // BatchTypesLib
+        bytes stakeSignature;
     }
 
     /// @notice Metadata for a batch that has been confirmed.
     struct ConfirmedSignedBatchData {
         uint64 firstTxNonceId;
         uint64 lastTxNonceId;
+        /// @dev Deprecated: `isConsolidation` is retained for storage layout compatibility in upgradeable contracts.
+        /// Do not rely on this field in new logic.
         bool isConsolidation;
         uint8 status; // 0 = deleted, 1 = in progress, 2 = executed, 3 = failed
+        uint8 batchType; // BatchTypesLib
     }
 
     /// @notice Data for a confirmed batch that was executed on-chain.
@@ -31,7 +35,11 @@ interface IBridgeStructs {
         uint256 bitmap;
         bytes rawTransaction;
         uint64 id;
+        /// @dev Deprecated: `isConsolidation` is retained for storage layout compatibility in upgradeable contracts.
+        /// Do not rely on this field in new logic.
         bool isConsolidation;
+        bytes[] stakeSignatures;
+        uint8 batchType; // BatchTypesLib
     }
 
     /// @notice A transaction that has been confirmed and is ready for batching.
@@ -43,11 +51,13 @@ interface IBridgeStructs {
         bytes32 observedTransactionHash;
         uint64 nonce;
         uint8 sourceChainId;
-        uint8 transactionType; // 0 = normal, 1 = defund, 2 = refund
+        uint8 transactionType; // TransactionTypesLib
         bool alreadyTriedBatch;
         Receiver[] receivers;
         bytes outputIndexes;
         uint8 destinationChainId;
+        string stakePoolId;
+        uint8 bridgeAddrIndex;
     }
 
     /// @notice Represents a block from the Cardano chain.
@@ -172,6 +182,7 @@ interface IBridgeStructs {
         uint256 bitmap;
         bytes[] signatures;
         bytes[] feeSignatures;
+        bytes[] stakeSignatures;
     }
 
     // ------------------------------------------------------------------------
@@ -199,6 +210,8 @@ interface IBridgeStructs {
     error TooManyBlocks(uint256 _blocksCount, uint256 _maxBlocksCount);
     error TooManyClaims(uint256 _claimsCount, uint256 _maxClaimsCount);
     error NotContractAddress();
+    error AddrAlreadyDelegatedToStake(uint8 _chainId, uint8 _bridgeAddrIndex);
+    error InvalidBridgeAddrIndex(uint8 _chainId, uint8 _bridgeAddrIndex);
 
     // ------------------------------------------------------------------------
     // Events
@@ -213,4 +226,5 @@ interface IBridgeStructs {
     event DefundFailedAfterMultipleRetries();
     event UpdatedMaxNumberOfTransactions(uint256 _maxNumberOfTransactions);
     event UpdatedTimeoutBlocksNumber(uint256 _timeoutBlocksNumber);
+    event StakeDelegationFailedAfterMultipleRetries();
 }
