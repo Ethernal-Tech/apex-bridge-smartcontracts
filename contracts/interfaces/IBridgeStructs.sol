@@ -22,8 +22,9 @@ interface IBridgeStructs {
     struct ConfirmedSignedBatchData {
         uint64 firstTxNonceId;
         uint64 lastTxNonceId;
-        uint8 batchType; // BatchTypesLib
+        bool isConsolidation; // not used
         uint8 status; // 0 = deleted, 1 = in progress, 2 = executed, 3 = failed
+        uint8 batchType; // BatchTypesLib
     }
 
     /// @notice Data for a confirmed batch that was executed on-chain.
@@ -33,6 +34,7 @@ interface IBridgeStructs {
         uint256 bitmap;
         bytes rawTransaction;
         uint64 id;
+        bool isConsolidation; // not used
         uint8 batchType; // BatchTypesLib
     }
 
