@@ -21,8 +21,11 @@ interface IBridgeStructs {
     struct ConfirmedSignedBatchData {
         uint64 firstTxNonceId;
         uint64 lastTxNonceId;
-        uint8 batchType; // BatchTypesLib
+        /// @dev Deprecated: `isConsolidation` is retained for storage layout compatibility in upgradeable contracts.
+        /// Do not rely on this field in new logic.
+        bool isConsolidation;
         uint8 status; // 0 = deleted, 1 = in progress, 2 = executed, 3 = failed
+        uint8 batchType; // BatchTypesLib
     }
 
     /// @notice Data for a confirmed batch that was executed on-chain.
@@ -32,8 +35,11 @@ interface IBridgeStructs {
         uint256 bitmap;
         bytes rawTransaction;
         uint64 id;
-        uint8 batchType; // BatchTypesLib
+        /// @dev Deprecated: `isConsolidation` is retained for storage layout compatibility in upgradeable contracts.
+        /// Do not rely on this field in new logic.
+        bool isConsolidation;
         bytes[] stakeSignatures;
+        uint8 batchType; // BatchTypesLib
     }
 
     /// @notice A transaction that has been confirmed and is ready for batching.

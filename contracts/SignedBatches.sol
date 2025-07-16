@@ -128,8 +128,9 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
                 _votesInfo.bitmap,
                 _signedBatch.rawTransaction,
                 _sbId,
-                _signedBatch.batchType,
-                _votesInfo.stakeSignatures
+                false, // deprecated field
+                _votesInfo.stakeSignatures,
+                _signedBatch.batchType
             );
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);

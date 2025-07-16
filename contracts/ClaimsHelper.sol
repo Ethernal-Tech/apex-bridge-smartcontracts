@@ -92,9 +92,11 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         confirmedSignedBatches[destinationChainId][signedBatchId] = ConfirmedSignedBatchData(
             _signedBatch.firstTxNonceId,
             _signedBatch.lastTxNonceId,
-            _signedBatch.batchType,
-            ConstantsLib.IN_PROGRESS // status 1 means "in progress"
+            false, // deprecated field
+            ConstantsLib.IN_PROGRESS, // status 1 means "in progress"
+            _signedBatch.batchType
         );
+
         currentBatchBlock[destinationChainId] = int256(block.number);
     }
 
