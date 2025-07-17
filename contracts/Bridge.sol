@@ -275,7 +275,9 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             revert ChainAlreadyRegistered(_chainId);
         }
 
-        bytes32 chainHash = keccak256(abi.encode(_chainId, _chainType, _tokenQuantity));
+        bytes32 chainHash = keccak256(
+            abi.encode(validators.currentValidatorSetId, _chainId, _chainType, _tokenQuantity)
+        );
 
         if (claims.hasVoted(chainHash, msg.sender)) {
             revert AlreadyProposed(_chainId);
@@ -414,6 +416,10 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             revert NoNewValidatorSetPending();
         }
         return validators.getNewValidatorSetDelta();
+    }
+
+    function getAddressValidatorIndex(address _validator) external view returns (uint8) {
+        return validators.getValidatorIndex(_validator);
     }
 
     /// @notice Returns the current version of the contract
