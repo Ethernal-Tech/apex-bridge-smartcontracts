@@ -66,37 +66,50 @@ describe("Submit Claims", function () {
     });
 
     it("Should set voted on Bridging Request Claim", async function () {
-      const { bridge, claims, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
+      const {
+        bridge,
+        claims,
+        validatorsc,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorClaimsBRC,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 10000, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 10000, validatorAddressChainData);
+
+      const currentValidatorSetId = await validatorsc.currentValidatorSetId();
       const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
       const encoded = abiCoder.encode(
-        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint256", "uint256", "uint8", "uint8"],
         [
-          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
+          "uint256", // currentValidatorSetId
+          "string", // "BRC"
+          "tuple(bytes32 observedTransactionHash,tuple(uint64 amount,string amount)[],uint256 totalAmountSrc,uint256 totalAmountDst,uint256 retryCounter,uint8 sourceChainId,uint8 destinationChainId)",
+        ],
+        [
+          currentValidatorSetId,
+          "BRC",
           [
+            validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
             [
-              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount,
-              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
+              [
+                validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount,
+                validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
+              ],
             ],
+            validatorClaimsBRC.bridgingRequestClaims[0].totalAmountSrc,
+            validatorClaimsBRC.bridgingRequestClaims[0].totalAmountDst,
+            validatorClaimsBRC.bridgingRequestClaims[0].retryCounter,
+            validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
+            validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
           ],
-          validatorClaimsBRC.bridgingRequestClaims[0].totalAmountSrc,
-          validatorClaimsBRC.bridgingRequestClaims[0].totalAmountDst,
-          validatorClaimsBRC.bridgingRequestClaims[0].retryCounter,
-          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
-          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
         ]
       );
 
-      const encoded40 =
-        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-        encodedPrefix.substring(66) +
-        encoded.substring(2);
-
-      const hash = ethers.keccak256(encoded40);
+      const hash = ethers.keccak256(encoded);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
       expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
@@ -254,6 +267,7 @@ describe("Submit Claims", function () {
       const {
         bridge,
         claims,
+        validatorsc,
         owner,
         chain1,
         chain2,
@@ -287,23 +301,27 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
+      const currentValidatorSetId = await validatorsc.currentValidatorSetId();
+
       const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["BEC"]);
       const encoded = abiCoder.encode(
-        ["bytes32", "uint64", "uint8"],
         [
-          validatorClaimsBEC.batchExecutedClaims[0].observedTransactionHash,
-          validatorClaimsBEC.batchExecutedClaims[0].batchNonceId,
-          validatorClaimsBEC.batchExecutedClaims[0].chainId,
+          "uint256", // currentValidatorSetId
+          "string", // "BEC"
+          "tuple(bytes32 observedTransactionHash, uint64 batchNonceId, uint8 chainId)",
+        ],
+        [
+          currentValidatorSetId,
+          "BEC",
+          [
+            validatorClaimsBEC.batchExecutedClaims[0].observedTransactionHash,
+            validatorClaimsBEC.batchExecutedClaims[0].batchNonceId,
+            validatorClaimsBEC.batchExecutedClaims[0].chainId,
+          ],
         ]
       );
 
-      const encoded40 =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encoded.substring(2) +
-        encodedPrefix.substring(66);
-
-      const hash = ethers.keccak256(encoded40);
+      const hash = ethers.keccak256(encoded);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
       expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
@@ -614,6 +632,7 @@ describe("Submit Claims", function () {
       const {
         bridge,
         claims,
+        validatorsc,
         owner,
         chain1,
         chain2,
@@ -647,23 +666,27 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
+      const currentValidatorSetId = await validatorsc.currentValidatorSetId();
+
       const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["BEFC"]);
       const encoded = abiCoder.encode(
-        ["bytes32", "uint64", "uint8"],
         [
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].observedTransactionHash,
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId,
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId,
+          "uint256", // currentValidatorSetId
+          "string", // "BEFC"
+          "tuple(bytes32 observedTransactionHash, uint64 batchNonceId, uint8 chainId)",
+        ],
+        [
+          currentValidatorSetId,
+          "BEFC",
+          [
+            validatorClaimsBEFC.batchExecutionFailedClaims[0].observedTransactionHash,
+            validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId,
+            validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId,
+          ],
         ]
       );
 
-      const encoded40 =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encoded.substring(2) +
-        encodedPrefix.substring(66);
-
-      const hash = ethers.keccak256(encoded40);
+      const hash = ethers.keccak256(encoded);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
       expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
@@ -892,32 +915,37 @@ describe("Submit Claims", function () {
 
   describe("Submit new Refund Request Claims", function () {
     it("Should set voted on Refund Request Claim", async function () {
-      const { bridge, claims, owner, chain2, validators, validatorClaimsRRC, validatorAddressChainData } =
+      const { bridge, claims, validatorsc, owner, chain2, validators, validatorClaimsRRC, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      const currentValidatorSetId = await validatorsc.currentValidatorSetId();
+
       const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
       const encoded = abiCoder.encode(
-        ["bytes32", "bytes32", "uint256", "bytes", "string", "uint64", "uint8", "bool"],
         [
-          validatorClaimsRRC.refundRequestClaims[0].originTransactionHash,
-          validatorClaimsRRC.refundRequestClaims[0].refundTransactionHash,
-          validatorClaimsRRC.refundRequestClaims[0].originAmount,
-          validatorClaimsRRC.refundRequestClaims[0].outputIndexes,
-          validatorClaimsRRC.refundRequestClaims[0].originSenderAddress,
-          validatorClaimsRRC.refundRequestClaims[0].retryCounter,
-          validatorClaimsRRC.refundRequestClaims[0].originChainId,
-          validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet,
+          "uint256", // currentValidatorSetId
+          "string", // "RRC"
+          "tuple(bytes32 originTransactionHash, bytes32 refundTransactionHash, uint256 originAmount, bytes outputIndexes, string originSenderAddress, uint64 retryCounter, uint8 originChainId, bool shouldDecrementHotWallet)",
+        ],
+        [
+          currentValidatorSetId,
+          "RRC",
+          [
+            validatorClaimsRRC.refundRequestClaims[0].originTransactionHash,
+            validatorClaimsRRC.refundRequestClaims[0].refundTransactionHash,
+            validatorClaimsRRC.refundRequestClaims[0].originAmount,
+            validatorClaimsRRC.refundRequestClaims[0].outputIndexes,
+            validatorClaimsRRC.refundRequestClaims[0].originSenderAddress,
+            validatorClaimsRRC.refundRequestClaims[0].retryCounter,
+            validatorClaimsRRC.refundRequestClaims[0].originChainId,
+            validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet,
+          ],
         ]
       );
 
-      const encoded40 =
-        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-        encodedPrefix.substring(66) +
-        encoded.substring(2);
-
-      const hash = ethers.keccak256(encoded40);
+      const hash = ethers.keccak256(encoded);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
       expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;

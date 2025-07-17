@@ -232,7 +232,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             return;
         }
 
-        bytes32 _claimHash = keccak256(abi.encode(validators.currentValidatorSetId, "BRC", _claim));
+        bytes32 _claimHash = keccak256(abi.encode(validators.currentValidatorSetId(), "BRC", _claim));
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
 
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
@@ -287,7 +287,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             return;
         }
 
-        bytes32 claimHash = keccak256(abi.encode(validators.currentValidatorSetId, "BEC", _claim));
+        bytes32 claimHash = keccak256(abi.encode(validators.currentValidatorSetId(), "BEC", _claim));
 
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
 
@@ -344,7 +344,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             return;
         }
 
-        bytes32 claimHash = keccak256(abi.encode(validators.currentValidatorSetId, "BEFC", _claim));
+        bytes32 claimHash = keccak256(abi.encode(validators.currentValidatorSetId(), "BEFC", _claim));
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
 
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
@@ -445,7 +445,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             }
         }
 
-        bytes32 claimHash = keccak256(abi.encode(validators.currentValidatorSetId, "RRC", _claim));
+        bytes32 claimHash = keccak256(abi.encode(validators.currentValidatorSetId(), "RRC", _claim));
 
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
 
@@ -481,7 +481,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             revert NewValidatorSetPending();
         }
 
-        bytes32 claimHash = keccak256(abi.encode(validators.currentValidatorSetId, "HWIC", _claim));
+        bytes32 claimHash = keccak256(abi.encode(validators.currentValidatorSetId(), "HWIC", _claim));
 
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
 

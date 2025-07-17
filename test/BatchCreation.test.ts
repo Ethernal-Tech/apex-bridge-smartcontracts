@@ -92,17 +92,20 @@ describe("Batch Creation", function () {
     });
 
     it("If SignedBatch submition id is not expected submittion should be skipped", async function () {
-      const { bridge, signedBatches, validators, signedBatch } = await loadFixture(deployBridgeFixture);
+      const { bridge, signedBatches, validatorsc, validators, signedBatch } = await loadFixture(deployBridgeFixture);
+
+      const currentValidatorSetId = await validatorsc.currentValidatorSetId();
 
       const encoded = ethers.solidityPacked(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
+        ["uint256", "uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
         [
+          currentValidatorSetId,
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
-          BatchType.NORMAL,
+          signedBatch.batchType,
         ]
       );
 
@@ -118,14 +121,15 @@ describe("Batch Creation", function () {
       signedBatch.id = 1000; //invalid id
 
       const encodedFalse = ethers.solidityPacked(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
+        ["uint256", "uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
         [
+          currentValidatorSetId,
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
-          BatchType.NORMAL,
+          signedBatch.batchType,
         ]
       );
 
@@ -139,21 +143,26 @@ describe("Batch Creation", function () {
     });
 
     it("SignedBatch submition should do nothing if shouldCreateBatch is false", async function () {
-      const { bridge, claims, validators, signedBatch } = await loadFixture(deployBridgeFixture);
+      const { bridge, claims, validatorsc, validators, signedBatch } = await loadFixture(deployBridgeFixture);
 
-      const hash = ethers.solidityPackedKeccak256(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
+      const currentValidatorSetId = await validatorsc.currentValidatorSetId();
+
+      const encoded = ethers.solidityPacked(
+        ["uint256", "uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
         [
+          currentValidatorSetId,
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
-          BatchType.NORMAL,
+          signedBatch.batchType,
         ]
       );
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+
+      const hash = ethers.keccak256(encoded);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.equal(false);
     });
@@ -449,6 +458,7 @@ describe("Batch Creation", function () {
       const {
         bridge,
         signedBatches,
+        validatorsc,
         owner,
         chain1,
         chain2,
@@ -460,6 +470,7 @@ describe("Batch Creation", function () {
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -474,15 +485,18 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
 
+      const currentValidatorSetId = await validatorsc.currentValidatorSetId();
+
       const encoded = ethers.solidityPacked(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
+        ["uint256", "uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
         [
+          currentValidatorSetId,
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
-          BatchType.NORMAL,
+          signedBatch.batchType,
         ]
       );
 
