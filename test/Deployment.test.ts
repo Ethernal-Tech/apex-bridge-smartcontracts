@@ -129,10 +129,9 @@ describe("Deployment", function () {
       validatorAddresses,
     ]);
     // Deploy proxy with initialization
-    await expect(ValidatorsProxy.deploy(await validatorsLogic.getAddress(), initData)).to.be.revertedWithCustomError(
-      Validators,
-      "InvalidData"
-    );
+    await expect(ValidatorsProxy.deploy(await validatorsLogic.getAddress(), initData))
+      .to.be.revertedWithCustomError(Validators, "InvalidData")
+      .withArgs("DuplicatedValidator");
   });
 
   it("Should revert if initializes with zero addresses for owner and upgrade admin", async function () {

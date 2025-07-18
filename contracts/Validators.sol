@@ -73,7 +73,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         upgradeAdmin = _upgradeAdmin;
         for (uint8 i; i < _validators.length; i++) {
             if (addressValidatorIndex[_validators[i]] != 0) {
-                revert InvalidData("Duplicate validator");
+                revert InvalidData("DuplicatedValidator");
             }
             addressValidatorIndex[_validators[i]] = i + 1;
             validatorAddresses.push(_validators[i]);
@@ -198,7 +198,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     ) external onlyBridge {
         uint8 validatorsCnt = validatorsCount;
         if (validatorsCnt != _chainDatas.length) {
-            revert InvalidData("validators count");
+            revert InvalidData("WrongNumberOfValidators");
         }
 
         // recreate array with n elements
@@ -414,7 +414,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         for (uint8 i; i < _numberOfNewValidators; i++) {
             address _validatorAddress = newValidatorSetDelta.addedValidators[0].validators[i].addr;
             if (addressValidatorIndex[_validatorAddress] != 0) {
-                revert InvalidData("Duplicate validator");
+                revert InvalidData("DuplicatedValidator");
             }
             validatorAddresses.push(_validatorAddress);
             addressValidatorIndex[_validatorAddress] = uint8(_numberOfOldValidators + i + 1);

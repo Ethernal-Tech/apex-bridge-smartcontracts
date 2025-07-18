@@ -1256,9 +1256,9 @@ describe("Claims Contract", function () {
 
       hash = ethers.keccak256(encoded);
 
-      await expect(
-        bridge.connect(validators[0]).submitClaims(validatorClaimsRRC_wrongHash)
-      ).to.be.revertedWithCustomError(bridge, "InvalidData");
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsRRC_wrongHash))
+        .to.be.revertedWithCustomError(bridge, "InvalidData")
+        .withArgs("refundTransactionHash");
     });
   });
 
