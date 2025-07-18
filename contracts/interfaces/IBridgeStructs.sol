@@ -208,6 +208,7 @@ interface IBridgeStructs {
     error NewValidatorSetPending();
     error NotSignedBatchesOrClaims();
     error NotSystem();
+    error StakeManagerUpdateFailed();
 
     // ------------------------------------------------------------------------
     // Events

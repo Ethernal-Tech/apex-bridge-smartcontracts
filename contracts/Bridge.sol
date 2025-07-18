@@ -21,7 +21,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     SignedBatches private signedBatches;
     Slots private slots;
     Validators private validators;
-    address private bladeStakeManagerAddress;
 
     /// @notice Array of registered chains.
     Chain[] private chains;
@@ -67,21 +66,18 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         address _claimsAddress,
         address _signedBatchesAddress,
         address _slotsAddress,
-        address _validatorsAddress,
-        address _bladeStakeManagerAddress
+        address _validatorsAddress
     ) external onlyOwner {
         if (
             !_isContract(_claimsAddress) ||
             !_isContract(_signedBatchesAddress) ||
             !_isContract(_slotsAddress) ||
-            !_isContract(_validatorsAddress) ||
-            !_isContract(_bladeStakeManagerAddress)
+            !_isContract(_validatorsAddress)
         ) revert NotContractAddress();
         claims = Claims(_claimsAddress);
         signedBatches = SignedBatches(_signedBatchesAddress);
         slots = Slots(_slotsAddress);
         validators = Validators(_validatorsAddress);
-        bladeStakeManagerAddress = _bladeStakeManagerAddress;
     }
 
     /// @notice Submit claims from validators for reaching consensus.

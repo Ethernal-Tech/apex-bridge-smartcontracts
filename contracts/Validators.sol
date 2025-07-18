@@ -399,7 +399,13 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         }
     }
 
-    // TODO description
+    /// @notice Adds newly proposed validators to the current validator set across all chains.
+    /// @dev
+    /// - Updates `validatorsCount` to include the new validators.
+    /// - Ensures no duplicate validator addresses are added by checking `addressValidatorIndex`.
+    /// - Appends new validator addresses to `validatorAddresses` and updates their index mapping.
+    /// - Updates chain-specific validator data (`chainData`) for each chain in the new validator set delta.
+    /// - Increments `currentValidatorSetId` to reflect the updated validator set.
     function addNewValidatorsData() external onlyBridge {
         uint256 _numberOfNewValidators = newValidatorSetDelta.addedValidators[0].validators.length;
         uint256 _numberOfOldValidators = validatorAddresses.length;
