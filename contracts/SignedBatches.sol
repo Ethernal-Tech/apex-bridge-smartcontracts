@@ -13,6 +13,8 @@ import "./Validators.sol";
 /// @notice Handles submission and confirmation of signed transaction batches for a cross-chain bridge.
 /// @dev Utilizes OpenZeppelin upgradeable contracts and interacts with ClaimsHelper and Validators for consensus logic.
 contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+    uint256 private constant MaxHashesPerChain = 50;
+
     address private upgradeAdmin;
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
@@ -25,6 +27,10 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// @notice Stores the last confirmed batch per destination chain
     /// @dev BlockchainId -> ConfirmedBatch
     mapping(uint8 => ConfirmedBatch) private lastConfirmedBatch;
+
+    /// @notice Stores validator used hashes per destination chain
+    /// @dev BlockchainId -> validator address -> CircularBuffer
+    mapping(uint8 => mapping(address => CircularBuffer)) private usedHashes;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
@@ -128,8 +134,37 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
             );
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
+            // clear temporary data for each validator
+            uint8 _validatorsCount = validators.validatorsCount();
+            for (uint8 i = 0; i < _validatorsCount; ) {
+                address _addr = validators.validators(i);
+                CircularBuffer storage _usedHashes = usedHashes[_destinationChainId][_addr];
+                uint256 _usedHashesLength = _usedHashes.hashes.length;
+                for (uint256 j = 0; j < _usedHashesLength; ) {
+                    delete votes[_usedHashes.hashes[j]];
+                    unchecked {
+                        ++j;
+                    } // Saves 100 gas per iteration
+                }
 
-            delete votes[_sbHash];
+                delete usedHashes[_destinationChainId][_addr];
+                unchecked {
+                    ++i;
+                } // Saves 100 gas per iteration
+            }
+        } else if (_numberOfVotes == 0) {
+            CircularBuffer storage _usedHashes = usedHashes[_destinationChainId][_caller];
+            // If this is the first vote for this hash, we need to store it.
+            // To prevent unbounded growth of storage, we limit the number of stored hashes per validator.
+            // However, validator can be dishonest and that is why we must not delete data from old hash
+            // in that case old hashes will be kept in db forever
+            if (_usedHashes.hashes.length == MaxHashesPerChain) {
+                uint16 oldIndex = _usedHashes.startIdx;
+                _usedHashes.startIdx = (oldIndex + 1) % uint16(MaxHashesPerChain);
+                _usedHashes.hashes[oldIndex] = _sbHash;
+            } else {
+                _usedHashes.hashes.push(_sbHash);
+            }
         }
     }
 

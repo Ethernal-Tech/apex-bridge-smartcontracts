@@ -164,6 +164,12 @@ interface IBridgeStructs {
         bytes[] feeSignatures;
     }
 
+    /// @notice Circular buffer containing hashes
+    struct CircularBuffer {
+        bytes32[] hashes;
+        uint16 startIdx;
+    }
+
     // ------------------------------------------------------------------------
     // Errors
     // ------------------------------------------------------------------------
