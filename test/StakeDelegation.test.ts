@@ -1,4 +1,4 @@
-import { loadFixture, setCode, reset } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { deployBridgeFixture, TransactionType } from "./fixtures";
@@ -15,10 +15,10 @@ describe("Stake Delegation", function () {
     });
 
     it("Should revert if chain is not registered", async () => {
-        const { bridge, owner, chain1, bridgeAddrIndex } = await loadFixture(deployBridgeFixture);
+        const { bridge, owner, chain1, bridgeAddrIndex, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
 
         await expect(bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId))
-        .to.be.revertedWithCustomError(bridge, "ChainIsNotRegistered");
+        .to.be.revertedWithCustomError(bridge, "InvalidBridgeAddrIndex");
     });
 
     it("Should revert if index of bridging address is invalid", async () => {

@@ -11,6 +11,7 @@ import "./Claims.sol";
 import "./SignedBatches.sol";
 import "./Slots.sol";
 import "./Validators.sol";
+import "./BridgingAddresses.sol";
 
 /// @title Bridge
 /// @notice Cross-chain bridge for validator claim submission, batch transaction signing, and governance-based chain registration.
@@ -28,10 +29,12 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Max number of blocks that can be submitted at once.
     uint8 constant MAX_NUMBER_OF_BLOCKS = 40;
 
+    BridgingAddresses public bridgingAddresses;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[50] private __gap;
+    uint256[49] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -75,6 +78,25 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         signedBatches = SignedBatches(_signedBatchesAddress);
         slots = Slots(_slotsAddress);
         validators = Validators(_validatorsAddress);
+    }
+
+    /// @notice Sets the BridgingAddresses contract dependency.
+    /// @param _bridgingAddresses Address of the BridgingAddresses contract.
+    function setBridgingAddresses(address _bridgingAddresses) external onlyOwner {
+        if (!_isContract(_bridgingAddresses)) revert NotContractAddress();
+        bridgingAddresses = BridgingAddresses(_bridgingAddresses);
+    }
+
+    function initialChainsSyncToBridgingAddrs() external override onlyOwner {
+        bridgingAddresses.initRegisteredChains(chains);
+    }
+
+    function updateBridgingAddrsCount(uint8 _chainId, uint8 bridgingAddrsCount) external override onlyOwner {
+        if (!claims.isChainRegistered(_chainId)) {
+            revert ChainIsNotRegistered(_chainId);
+        }
+
+        bridgingAddresses.updateBridgingAddrsCount(_chainId, bridgingAddrsCount);
     }
 
     /// @notice Submit claims from validators for reaching consensus.
@@ -202,6 +224,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         if (!claims.isChainRegistered(_chainId)) {
             chains.push(_chain);
             claims.setChainRegistered(_chainId, _tokenQuantity, _wrappedTokenQuantity);
+            bridgingAddresses.initRegisteredChain(_chain);
             emit newChainRegistered(_chainId);
         }
     }
@@ -239,9 +262,11 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint8 _validatorIdx = validators.getValidatorIndex(msg.sender) - 1;
 
         if (claims.setVotedOnlyIfNeededReturnQuorumReached(_validatorIdx, chainHash, validators.validatorsCount())) {
-            chains.push(Chain(_chainId, _chainType, "", ""));
+            Chain memory chain = Chain(_chainId, _chainType, "", "");
+            chains.push(chain);
 
             claims.setChainRegistered(_chainId, _tokenQuantity, _wrappedTokenQuantity);
+            bridgingAddresses.initRegisteredChain(chain);
             emit newChainRegistered(_chainId);
         } else {
             emit newChainProposal(_chainId, msg.sender);
@@ -321,9 +346,12 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @param chainId The ID of the destination chain.
     /// @param bridgeAddrIndex The index of the bridging address to be delegated.
     /// @param stakePoolId The identifier of the stake pool to delegate to.
-    function delegateAddrToStakePool(uint8 chainId, uint8 bridgeAddrIndex, string calldata stakePoolId) external override onlyOwner {
-        // there is only one bridge address currently, only index 0 is allowed
-        if (bridgeAddrIndex != 0) {
+    function delegateAddrToStakePool(
+        uint8 chainId,
+        uint8 bridgeAddrIndex,
+        string calldata stakePoolId
+    ) external override onlyOwner {
+        if (!bridgingAddresses.checkBridgingAddrIndex(chainId, bridgeAddrIndex)) {
             revert InvalidBridgeAddrIndex(chainId, bridgeAddrIndex);
         }
 

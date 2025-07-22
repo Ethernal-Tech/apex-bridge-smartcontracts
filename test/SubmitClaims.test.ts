@@ -140,25 +140,35 @@ describe("Submit Claims", function () {
 
       await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 10000, 10000, validatorAddressChainData);
-      const currentBlock = await ethers.provider.getBlockNumber();
+
+      const timeoutBlocksNumber = 5;
+      let currentBlock = await ethers.provider.getBlockNumber();
+      expect(currentBlock).to.equal(27);
 
       // wait for next timeout
       for (let i = 0; i < 3; i++) {
         await ethers.provider.send("evm_mine");
       }
 
+      const currentBlock1 = await ethers.provider.getBlockNumber();
+
+      expect(currentBlock1).to.equal(30);
+
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
 
       expect(await claims.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
-        28
+        currentBlock + timeoutBlocksNumber
       );
 
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
+      currentBlock = await ethers.provider.getBlockNumber();
+      expect(currentBlock).to.equal(34);
+
       expect(await claims.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
-        35
+        currentBlock + timeoutBlocksNumber
       );
     });
 

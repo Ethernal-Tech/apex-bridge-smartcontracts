@@ -61,6 +61,10 @@ abstract contract IBridge is IBridgeStructs {
         bytes calldata _keyFeeSignature
     ) external virtual;
 
+    function updateBridgingAddrsCount(uint8 _chain, uint8 bridgingAddrsCount) external virtual;
+
+    function initialChainsSyncToBridgingAddrs() external virtual;
+
     /// @notice Check if a batch should be created for the destination chain.
     /// @param _destinationChain ID of the destination chain.
     /// @return _shouldCreateBatch Returns true if a batch should be created.
@@ -82,7 +86,11 @@ abstract contract IBridge is IBridgeStructs {
     /// @param chainId The ID of the destination chain.
     /// @param bridgeAddrIndex The index of the bridging address to be delegated.
     /// @param stakePoolId The identifier of the stake pool to delegate to.
-    function delegateAddrToStakePool(uint8 chainId, uint8 bridgeAddrIndex, string calldata stakePoolId) external virtual;
+    function delegateAddrToStakePool(
+        uint8 chainId,
+        uint8 bridgeAddrIndex,
+        string calldata stakePoolId
+    ) external virtual;
 
     /// @notice Get the confirmed batch for the given destination chain.
     /// @param _destinationChain ID of the destination chain.
