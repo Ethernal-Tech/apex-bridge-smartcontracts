@@ -66,7 +66,7 @@ describe("Deployment", function () {
   });
 
   it("setDependency should fail if any required argument is not smart contract address", async function () {
-    const { admin, bridge, claims, claimsHelper, signedBatches, slots, validatorsc, owner, validators } =
+    const { admin, bridge, bridgingAddresses, claims, claimsHelper, signedBatches, slots, validatorsc, owner, validators } =
       await loadFixture(deployBridgeFixture);
 
     await expect(admin.connect(owner).setDependencies(ZeroAddress)).to.be.revertedWithCustomError(
@@ -84,6 +84,11 @@ describe("Deployment", function () {
           validatorsc.getAddress()
         )
     ).to.be.revertedWithCustomError(bridge, "NotContractAddress");
+
+    await expect(bridgingAddresses.connect(owner).setDependencies(ZeroAddress)).to.be.revertedWithCustomError(
+      validatorsc,
+      "NotContractAddress"
+    );
 
     await expect(
       claims
@@ -156,13 +161,27 @@ describe("Deployment", function () {
     const BridgeLogic = await Bridge.deploy();
     const BridgeProxy = await ethers.getContractFactory("ERC1967Proxy");
     // Prepare initialization data with zero addresses
-    initData = Admin.interface.encodeFunctionData("initialize", [
+    initData = Bridge.interface.encodeFunctionData("initialize", [
       ZERO_ADDRESS, // owner address
       ZERO_ADDRESS, // upgrade admin address
     ]);
     // Deploy proxy with initialization
     await expect(BridgeProxy.deploy(await BridgeLogic.getAddress(), initData)).to.be.revertedWithCustomError(
       Bridge,
+      "ZeroAddress"
+    );
+
+    const BridgingAddresses = await ethers.getContractFactory("BridgingAddresses");
+    const BridgingAddressesLogic = await BridgingAddresses.deploy();
+    const BridgingAddressesProxy = await ethers.getContractFactory("ERC1967Proxy");
+    // Prepare initialization data with zero addresses
+    initData = BridgingAddresses.interface.encodeFunctionData("initialize", [
+      ZERO_ADDRESS, // owner address
+      ZERO_ADDRESS, // upgrade admin address
+    ]);
+    // Deploy proxy with initialization
+    await expect(BridgingAddressesProxy.deploy(await BridgingAddressesLogic.getAddress(), initData)).to.be.revertedWithCustomError(
+      BridgingAddresses,
       "ZeroAddress"
     );
 
