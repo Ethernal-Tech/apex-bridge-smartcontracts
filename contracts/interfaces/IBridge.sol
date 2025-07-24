@@ -63,7 +63,7 @@ abstract contract IBridge is IBridgeStructs {
 
     function updateBridgingAddrsCount(uint8 _chain, uint8 bridgingAddrsCount) external virtual;
 
-    function initialChainsSyncToBridgingAddrs() external virtual;
+    function setBridgingAddrsDependencyAndSync(address _bridgingAddresses) external virtual;
 
     /// @notice Check if a batch should be created for the destination chain.
     /// @param _destinationChain ID of the destination chain.

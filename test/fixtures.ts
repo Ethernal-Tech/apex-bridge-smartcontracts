@@ -142,11 +142,11 @@ export async function deployBridgeFixture() {
     validatorsProxy.target
   );
 
-  await bridge.setBridgingAddresses(
+  await bridgingAddresses.setDependencies(bridge.target);
+
+  await bridge.setBridgingAddrsDependencyAndSync(
     bridgingAddressesProxy.target
   );
-
-  await bridgingAddresses.setDependencies(bridge.target);
 
   await claimsHelper.setDependencies(claims.target, signedBatches.target);
 

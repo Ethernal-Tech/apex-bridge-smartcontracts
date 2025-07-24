@@ -3,11 +3,11 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { deployBridgeFixture, TransactionType } from "./fixtures";
 
-describe("BridgingAddresses", function () {
+describe("Bridging Addresses", function () {
     it("Should revert if init and set bridging addresses count are not sent by owner", async function () {
-        const { bridge, chain1, validators } = await loadFixture(deployBridgeFixture);
+        const { bridge, chain1, validators, bridgingAddresses } = await loadFixture(deployBridgeFixture);
 
-        await expect(bridge.connect(validators[0]).initialChainsSyncToBridgingAddrs())
+        await expect(bridge.connect(validators[0]).setBridgingAddrsDependencyAndSync(bridgingAddresses.target))
             .to.be.revertedWith("Ownable: caller is not the owner");
 
         await expect(bridge.connect(validators[0]).updateBridgingAddrsCount(chain1.id, 5))
@@ -97,7 +97,7 @@ describe("BridgingAddresses", function () {
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
         expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(1);
 
-        await expect(bridge.connect(owner).initialChainsSyncToBridgingAddrs())
+        await expect(bridge.connect(owner).setBridgingAddrsDependencyAndSync(bridgingAddresses.target))
             .to.be.revertedWithCustomError(bridge, "BridgingAddrCountAlreadyInit");
     });
 

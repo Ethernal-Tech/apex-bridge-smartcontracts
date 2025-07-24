@@ -82,12 +82,9 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     /// @notice Sets the BridgingAddresses contract dependency.
     /// @param _bridgingAddresses Address of the BridgingAddresses contract.
-    function setBridgingAddresses(address _bridgingAddresses) external onlyOwner {
+    function setBridgingAddrsDependencyAndSync(address _bridgingAddresses) external override onlyOwner {
         if (!_isContract(_bridgingAddresses)) revert NotContractAddress();
         bridgingAddresses = BridgingAddresses(_bridgingAddresses);
-    }
-
-    function initialChainsSyncToBridgingAddrs() external override onlyOwner {
         bridgingAddresses.initRegisteredChains(chains);
     }
 
