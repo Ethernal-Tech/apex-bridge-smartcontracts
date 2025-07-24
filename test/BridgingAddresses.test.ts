@@ -4,11 +4,15 @@ import { ethers } from "hardhat";
 import { deployBridgeFixture, TransactionType } from "./fixtures";
 
 describe("Bridging Addresses", function () {
-    it("Should revert if init and set bridging addresses count are not sent by owner", async function () {
-        const { bridge, chain1, validators, bridgingAddresses } = await loadFixture(deployBridgeFixture);
+    it("Should revert if init bridging addresses is not sent by upgrade admin", async function () {
+        const { bridge, validators, bridgingAddresses } = await loadFixture(deployBridgeFixture);
 
         await expect(bridge.connect(validators[0]).setBridgingAddrsDependencyAndSync(bridgingAddresses.target))
-            .to.be.revertedWith("Ownable: caller is not the owner");
+            .to.be.revertedWithCustomError(bridge, "NotOwner");
+    });
+
+    it("Should revert if set bridging addresses count is not sent by owner", async function () {
+        const { bridge, chain1, validators, bridgingAddresses } = await loadFixture(deployBridgeFixture);
 
         await expect(bridge.connect(validators[0]).updateBridgingAddrsCount(chain1.id, 5))
             .to.be.revertedWith("Ownable: caller is not the owner");

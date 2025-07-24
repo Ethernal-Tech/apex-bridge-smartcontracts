@@ -6,6 +6,11 @@ import "./IBridgeStructs.sol";
 /// @title IBridge
 /// @notice Interface for cross-chain bridge functions supporting claims, batch submission, chain registration, and queries.
 abstract contract IBridge is IBridgeStructs {
+    /// @notice Updates the number of bridge addresses for a specific chain.
+    /// @param _chainId The ID of the chain whose bridging address count is being updated.
+    /// @param bridgingAddrsCount The new number of bridging addresses for the specified chain.
+    function updateBridgingAddrsCount(uint8 _chainId, uint8 bridgingAddrsCount) external virtual;
+
     /// @notice Submit claims from validators for reaching consensus.
     /// @param _claims The claims submitted by a validator.
     function submitClaims(ValidatorClaims calldata _claims) external virtual;
@@ -60,10 +65,6 @@ abstract contract IBridge is IBridgeStructs {
         bytes calldata _keySignature,
         bytes calldata _keyFeeSignature
     ) external virtual;
-
-    function updateBridgingAddrsCount(uint8 _chain, uint8 bridgingAddrsCount) external virtual;
-
-    function setBridgingAddrsDependencyAndSync(address _bridgingAddresses) external virtual;
 
     /// @notice Check if a batch should be created for the destination chain.
     /// @param _destinationChain ID of the destination chain.

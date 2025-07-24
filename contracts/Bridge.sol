@@ -15,7 +15,7 @@ import "./BridgingAddresses.sol";
 
 /// @title Bridge
 /// @notice Cross-chain bridge for validator claim submission, batch transaction signing, and governance-based chain registration.
-/// @dev UUPS upgradeable and modular via dependency contracts (Claims, Validators, Slots, SignedBatches).
+/// @dev UUPS upgradeable and modular via dependency contracts (Claims, Validators, Slots, SignedBatches, BridgingAddresses).
 contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
     Claims private claims;
@@ -80,14 +80,20 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         validators = Validators(_validatorsAddress);
     }
 
-    /// @notice Sets the BridgingAddresses contract dependency.
-    /// @param _bridgingAddresses Address of the BridgingAddresses contract.
-    function setBridgingAddrsDependencyAndSync(address _bridgingAddresses) external override onlyOwner {
+    /// @notice Sets the BridgingAddresses contract dependency and syncs it with the registered chains.
+    /// @dev This function can only be called by the upgrade admin.
+    ///      It verifies that the provided address is a contract before using it.
+    /// @param _bridgingAddresses The address of the BridgingAddresses contract to set and sync.
+    function setBridgingAddrsDependencyAndSync(address _bridgingAddresses) external onlyUpgradeAdmin {
         if (!_isContract(_bridgingAddresses)) revert NotContractAddress();
         bridgingAddresses = BridgingAddresses(_bridgingAddresses);
         bridgingAddresses.initRegisteredChains(chains);
     }
 
+    /// @notice Updates the number of bridge addresses for a specific chain.
+    /// @dev Only callable by the contract owner. Reverts if the chain ID is not registered.
+    /// @param _chainId The ID of the chain whose bridging address count is being updated.
+    /// @param bridgingAddrsCount The new number of bridging addresses for the specified chain.
     function updateBridgingAddrsCount(uint8 _chainId, uint8 bridgingAddrsCount) external override onlyOwner {
         if (!claims.isChainRegistered(_chainId)) {
             revert ChainIsNotRegistered(_chainId);
@@ -416,7 +422,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.1.0";
+        return "1.2.0";
     }
 
     modifier onlyValidator() {

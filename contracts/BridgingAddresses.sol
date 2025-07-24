@@ -7,10 +7,14 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
 import "./Utils.sol";
 
+/// @title BridgingAddresses Contract
+/// @notice Manages bridging addresses for registered chains.
+/// @dev Upgradeable using OpenZeppelin UUPS proxy pattern.
 contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
     address private bridgeAddress;
 
+    /// @notice Mapping of chain IDs to the number of configured bridge addresses for each chain.
     mapping(uint8 => uint8) public bridgingAddressesCount;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
@@ -46,12 +50,18 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
         bridgeAddress = _bridgeAddress;
     }
 
+    /// @notice Initializes the mapping of registered chains and their bridge address counts.
+    /// @dev Can only be called by the authorized bridge contract.
+    /// @param registeredChains An array of chain configuration structs.
     function initRegisteredChains(Chain[] calldata registeredChains) external onlyBridge {
         for (uint8 i; i < registeredChains.length; i++) {
             _initRegisteredChain(registeredChains[i]);
         }
     }
 
+    /// @notice Initializes a single registered chain’s bridging address count.
+    /// @dev Can only be called by the bridge. Fails if already initialized.
+    /// @param registeredChain The chain configuration struct to initialize.
     function initRegisteredChain(Chain calldata registeredChain) external onlyBridge {
         _initRegisteredChain(registeredChain);
     }
@@ -65,11 +75,19 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
         }
     }
 
+    /// @notice Updates the number of bridge addresses for a specific chain.
+    /// @dev Only callable by the bridge contract.
+    /// @param _chainId The target chain ID to update.
+    /// @param _bridgingAddrsCount The new count of bridge addresses for the chain.
     function updateBridgingAddrsCount(uint8 _chainId, uint8 _bridgingAddrsCount) external onlyBridge {
         if (_bridgingAddrsCount == 0) revert InvalidBridgingAddrCount(_chainId, _bridgingAddrsCount);
         bridgingAddressesCount[_chainId] = _bridgingAddrsCount;
     }
 
+    /// @notice Checks whether a given bridge address index is valid for a specific chain.
+    /// @param chainId The ID of the chain being queried.
+    /// @param bridgeAddrIndex The bridge address index to validate.
+    /// @return True if the index is valid; otherwise false.
     function checkBridgingAddrIndex(uint8 chainId, uint8 bridgeAddrIndex) external view returns (bool) {
         return bridgingAddressesCount[chainId] > bridgeAddrIndex;
     }
