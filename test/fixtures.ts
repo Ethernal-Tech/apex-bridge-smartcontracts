@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin } from "../typechain-types";
+import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin, BridgingAddresses } from "../typechain-types";
 import { setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 
 export enum BatchType {
@@ -31,6 +31,9 @@ export async function deployBridgeFixture() {
   const Bridge = await ethers.getContractFactory("Bridge");
   const bridgeLogic = await Bridge.deploy();
 
+  const BridgingAddresses = await ethers.getContractFactory("BridgingAddresses");
+  const bridgingAddressesLogic = await BridgingAddresses.deploy();
+
   const ClaimsHelper = await ethers.getContractFactory("ClaimsHelper");
   const claimsHelperLogic = await ClaimsHelper.deploy();
 
@@ -51,6 +54,7 @@ export async function deployBridgeFixture() {
 
   // deployment of contract proxy
   const BridgeProxy = await ethers.getContractFactory("ERC1967Proxy");
+  const BridgingAddressesProxy = await ethers.getContractFactory("ERC1967Proxy");
   const ClaimsHelperProxy = await ethers.getContractFactory("ERC1967Proxy");
   const ClaimsProxy = await ethers.getContractFactory("ERC1967Proxy");
   const SignedBatchesProxy = await ethers.getContractFactory("ERC1967Proxy");
@@ -61,6 +65,11 @@ export async function deployBridgeFixture() {
   const bridgeProxy = await BridgeProxy.deploy(
     await bridgeLogic.getAddress(),
     Bridge.interface.encodeFunctionData("initialize", [owner.address, owner.address])
+  );
+
+  const bridgingAddressesProxy = await BridgingAddressesProxy.deploy(
+    await bridgingAddressesLogic.getAddress(),
+    BridgingAddresses.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
   const claimsHelperProxy = await ClaimsHelperProxy.deploy(
@@ -105,6 +114,9 @@ export async function deployBridgeFixture() {
   const BridgeDeployed = await ethers.getContractFactory("Bridge");
   const bridge = BridgeDeployed.attach(bridgeProxy.target) as Bridge;
 
+  const BridgingAddressesDeployed = await ethers.getContractFactory("BridgingAddresses");
+  const bridgingAddresses = BridgingAddressesDeployed.attach(bridgingAddressesProxy.target) as BridgingAddresses;
+
   const ClaimsHelperDeployed = await ethers.getContractFactory("ClaimsHelper");
   const claimsHelper = ClaimsHelperDeployed.attach(claimsHelperProxy.target) as ClaimsHelper;
 
@@ -128,6 +140,12 @@ export async function deployBridgeFixture() {
     signedBatchesProxy.target,
     slotsProxy.target,
     validatorsProxy.target
+  );
+
+  await bridgingAddresses.setDependencies(bridge.target);
+
+  await bridge.setBridgingAddrsDependencyAndSync(
+    bridgingAddressesProxy.target
   );
 
   await claimsHelper.setDependencies(claims.target, signedBatches.target);
@@ -525,6 +543,7 @@ export async function deployBridgeFixture() {
   return {
     hre,
     bridge,
+    bridgingAddresses,
     claimsHelper,
     claims,
     signedBatches,
