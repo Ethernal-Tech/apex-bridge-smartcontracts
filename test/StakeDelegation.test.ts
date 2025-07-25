@@ -5,13 +5,20 @@ import { deployBridgeFixture, TransactionType } from "./fixtures";
 
 describe("Stake Delegation", function () {
     
-    const stakePoolId = "stakePoolId";
+    const stakePoolId = "pool1y0uxkqyplyx6ld25e976t0s35va3ysqcscatwvy2sd2cwcareq7";
 
     it("Should revert if delegation is not sent by owner", async function () {
       const { bridge, chain1, validators, bridgeAddrIndex } = await loadFixture(deployBridgeFixture);
 
       await expect(bridge.connect(validators[0]).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId))
         .to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("Should revert if pool id is invalid", async () => {
+        const { bridge, owner, chain1, bridgeAddrIndex } = await loadFixture(deployBridgeFixture);
+
+        await expect(bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, "none"))
+        .to.be.revertedWithCustomError(bridge, "InvalidData");
     });
 
     it("Should revert if chain is not registered", async () => {
