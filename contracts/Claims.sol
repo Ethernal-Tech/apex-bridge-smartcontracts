@@ -141,6 +141,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint8 bridgeAddrIndex,
         string calldata stakePoolId
     ) external onlyBridge {
+        // cardano stake pool id string can be: (Bech32, size=56–64, pool1...) or (Hex[raw ID], size=56)
         if (bytes(stakePoolId).length < 56) {
             revert InvalidData(stakePoolId);
         }
