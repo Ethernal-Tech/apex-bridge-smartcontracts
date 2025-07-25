@@ -873,7 +873,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     }
 
     /// @notice this function is only for admin if stake pool registration goes wrong
-    function clearIsAddrDelegatedToStake() external onlyOwner {
+    function clearIsAddrDelegatedToStake() external onlyUpgradeAdmin {
         // currently there are 4 chains and only one address
         for (uint8 _chainID = 0; _chainID < 4; _chainID++) {
             for (uint8 _indx = 0; _indx < 1; _indx++) {
