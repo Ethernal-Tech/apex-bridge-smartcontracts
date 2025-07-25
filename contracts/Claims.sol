@@ -135,7 +135,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev Reverts if the address is already delegated or the chain is not registered.
     /// @param chainId The ID of the chain where the delegation is made.
     /// @param bridgeAddrIndex The index of the bridging address being delegated.
-    /// @param stakePoolId The identifier of the stake pool to delegate to. at least 56 bytes long
+    /// @param stakePoolId The identifier of the stake pool to delegate to. Should be at least 56 bytes long
     function delegateAddrToStakePool(
         uint8 chainId,
         uint8 bridgeAddrIndex,
