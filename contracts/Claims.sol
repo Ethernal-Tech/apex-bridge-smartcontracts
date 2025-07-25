@@ -65,6 +65,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Maximum number of receivers in a BridgingRequestClaim.
     uint8 private constant MAX_NUMBER_OF_RECEIVERS = 16;
 
+    /// @notice Deprecated. Kept for storage layout compatibility. Do not use.
+    /// @dev This mapping is no longer used.
+    mapping(uint8 => mapping(uint8 => bool)) private __isAddrDelegatedToStake;
+
     /// @notice Tracks whether a specific bridging address has been delegated to a stake pool on a given chain.
     /// @dev Mapping: chainId => bridgeAddrIndex => true if delegated, false otherwise.
     mapping(uint8 => mapping(uint8 => bool)) public isAddrDelegatedToStake;
@@ -72,7 +76,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[49] private __gap;
+    uint256[48] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -131,12 +135,16 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev Reverts if the address is already delegated or the chain is not registered.
     /// @param chainId The ID of the chain where the delegation is made.
     /// @param bridgeAddrIndex The index of the bridging address being delegated.
-    /// @param stakePoolId The identifier of the stake pool to delegate to.
+    /// @param stakePoolId The identifier of the stake pool to delegate to. at least 56 bytes long
     function delegateAddrToStakePool(
         uint8 chainId,
         uint8 bridgeAddrIndex,
         string calldata stakePoolId
     ) external onlyBridge {
+        if (bytes(stakePoolId).length < 56) {
+            revert InvalidData(stakePoolId);
+        }
+
         if (isAddrDelegatedToStake[chainId][bridgeAddrIndex]) {
             revert AddrAlreadyDelegatedToStake(chainId, bridgeAddrIndex);
         }
