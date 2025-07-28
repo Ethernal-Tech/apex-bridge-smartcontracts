@@ -18,6 +18,7 @@ describe("Admin Functions", function () {
         "NotFundAdmin"
       );
     });
+
     it("Should revert if updateChainTokenQuantity is called on unregistered chain", async function () {
       const { admin, claims } = await loadFixture(deployBridgeFixture);
       await expect(admin.updateChainTokenQuantity(1, true, 100)).to.be.revertedWithCustomError(
@@ -25,6 +26,7 @@ describe("Admin Functions", function () {
         "ChainIsNotRegistered"
       );
     });
+
     it("Should revert if setChainTokenQuantity in Clais is not called by Admin contract", async function () {
       const { claims } = await loadFixture(deployBridgeFixture);
       await expect(claims.updateChainTokenQuantity(1, true, 100)).to.be.revertedWithCustomError(
@@ -32,6 +34,7 @@ describe("Admin Functions", function () {
         "NotAdminContract"
       );
     });
+
     it("Should increase chainTokenQuantity after calling updateChainTokenQuantity", async function () {
       const { admin, bridge, claims, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
       await bridge.registerChain(chain1, 100, validatorAddressChainData);
@@ -40,6 +43,7 @@ describe("Admin Functions", function () {
       await admin.updateChainTokenQuantity(chain1.id, true, 100);
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(200);
     });
+
     it("Should increase chainTokenQuantity after calling updateChainTokenQuantity with a value higher than the current one", async function () {
       const { admin, bridge, claims, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
       await bridge.registerChain(chain1, 100, validatorAddressChainData);
@@ -48,6 +52,7 @@ describe("Admin Functions", function () {
       await admin.updateChainTokenQuantity(chain1.id, true, 200);
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(300);
     });
+
     it("Should emit event after increaseint chain token quantity with updateChainTokenQuantity", async function () {
       const { admin, bridge, claims, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
       await bridge.registerChain(chain1, 100, validatorAddressChainData);
@@ -56,6 +61,7 @@ describe("Admin Functions", function () {
       await expect(admin.updateChainTokenQuantity(chain1.id, true, 100)).to.emit(admin, "UpdatedChainTokenQuantity");
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(200);
     });
+
     it("Should revert if decreae amount is higher than available chainTokenQuantity", async function () {
       const { admin, bridge, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
       await bridge.registerChain(chain1, 100, validatorAddressChainData);
@@ -65,6 +71,7 @@ describe("Admin Functions", function () {
         "NegativeChainTokenAmount"
       );
     });
+
     it("Should decrease chainTokenQuantity by required amount", async function () {
       const { admin, bridge, claims, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
       await bridge.registerChain(chain1, 100, validatorAddressChainData);
@@ -72,6 +79,7 @@ describe("Admin Functions", function () {
       await admin.updateChainTokenQuantity(chain1.id, false, 50);
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(50);
     });
+
     it("Should emit event after decreasing chain token quantity with updateChainTokenQuantity", async function () {
       const { bridge, admin, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
 
@@ -102,6 +110,7 @@ describe("Admin Functions", function () {
 
       expect(await admin.fundAdmin()).to.be.equal(validators[0].address);
     });
+
     it("Should emit ChangedFundAdmin when new fundAdmin is set ", async function () {
       const { admin, validators } = await loadFixture(deployBridgeFixture);
 
@@ -136,6 +145,7 @@ describe("Admin Functions", function () {
         "ChainIsNotRegistered"
       );
     });
+
     it("Should revert when defund amount is higher then availableTokens amount", async function () {
       const { admin, bridge, claims, owner, validators, chain1, validatorAddressChainData } = await loadFixture(
         deployBridgeFixture
@@ -149,6 +159,7 @@ describe("Admin Functions", function () {
         "DefundRequestTooHigh"
       );
     });
+
     it("Should remove defund amount from availableTokens amount", async function () {
       const { admin, bridge, claims, owner, validators, chain1, validatorAddressChainData } = await loadFixture(
         deployBridgeFixture
@@ -161,6 +172,7 @@ describe("Admin Functions", function () {
       await admin.connect(validators[0]).defund(chain1.id, "address", 1);
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(99);
     });
+
     it("Should emit ChainDefunded when defund is exdcuted", async function () {
       const { admin, bridge, owner, validators, chain1, validatorAddressChainData } = await loadFixture(
         deployBridgeFixture
@@ -176,6 +188,7 @@ describe("Admin Functions", function () {
         .to.emit(admin, "ChainDefunded")
         .withArgs(1, 1);
     });
+
     it("Should add confirmedTransactioin when defund is exdcuted", async function () {
       const { admin, bridge, claims, owner, validators, chain1, validatorAddressChainData } = await loadFixture(
         deployBridgeFixture
@@ -193,6 +206,7 @@ describe("Admin Functions", function () {
 
       expect(await claims.lastConfirmedTxNonce(chain1.id)).to.equal(2);
     });
+
     it("Should set correct confirmedTransaction when defund is excuted", async function () {
       const { admin, bridge, claims, owner, validators, chain1, validatorAddressChainData } = await loadFixture(
         deployBridgeFixture
@@ -205,7 +219,7 @@ describe("Admin Functions", function () {
       await admin.connect(validators[0]).defund(chain1.id, "address", 1);
 
       expect((await claims.confirmedTransactions(chain1.id, 1)).observedTransactionHash).to.equal(
-        await claims.defundHash()
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
       );
       expect((await claims.confirmedTransactions(chain1.id, 1)).sourceChainId).to.equal(chain1.id);
       expect((await claims.confirmedTransactions(chain1.id, 1)).nonce).to.equal(1);
@@ -214,6 +228,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(24);
     });
+
     it("Should set correct confirmedTransaction when defund fails", async function () {
       const {
         admin,
@@ -224,7 +239,7 @@ describe("Admin Functions", function () {
         chain1,
         chain2,
         validators,
-        signedBatchDefund,
+        signedBatch_Defund,
         validatorAddressChainData,
         validatorClaimsBRC,
         validatorClaimsBEFC,
@@ -251,17 +266,17 @@ describe("Admin Functions", function () {
         await ethers.provider.send("evm_mine");
       }
 
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatchDefund);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatchDefund);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatchDefund);
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatchDefund);
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch_Defund);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_Defund);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch_Defund);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch_Defund);
 
       const confBatch = await claimsHelper
         .connect(validators[0])
-        .getConfirmedSignedBatchData(signedBatchDefund.destinationChainId, signedBatchDefund.id);
+        .getConfirmedSignedBatchData(signedBatch_Defund.destinationChainId, signedBatch_Defund.id);
 
-      expect(confBatch.firstTxNonceId).to.equal(signedBatchDefund.firstTxNonceId);
-      expect(confBatch.lastTxNonceId).to.equal(signedBatchDefund.lastTxNonceId);
+      expect(confBatch.firstTxNonceId).to.equal(signedBatch_Defund.firstTxNonceId);
+      expect(confBatch.lastTxNonceId).to.equal(signedBatch_Defund.lastTxNonceId);
 
       expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(2);
 
@@ -279,6 +294,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(29);
     });
+
     it("Should reject defund after maximum number of retries", async function () {
       const {
         admin,
@@ -359,6 +375,7 @@ describe("Admin Functions", function () {
         "Ownable: caller is not the owner"
       );
     });
+
     it("Calling updateMaxNumberOfTransactions should update maxNumberOfTransactions", async function () {
       const { admin, claims, owner } = await loadFixture(deployBridgeFixture);
 
@@ -366,6 +383,7 @@ describe("Admin Functions", function () {
 
       expect(await claims.maxNumberOfTransactions()).to.equal(4);
     });
+
     it("Calling updateMaxNumberOfTransactions should triger UpdatedMaxNumberOfTransactions event", async function () {
       const { admin, owner } = await loadFixture(deployBridgeFixture);
 
@@ -374,6 +392,7 @@ describe("Admin Functions", function () {
         "UpdatedMaxNumberOfTransactions"
       );
     });
+
     it("Calling timeoutBlocksNumber should revert if not called by owner", async function () {
       const { admin, validators } = await loadFixture(deployBridgeFixture);
 
@@ -381,6 +400,7 @@ describe("Admin Functions", function () {
         "Ownable: caller is not the owner"
       );
     });
+
     it("Calling timeoutBlocksNumber should update timeoutBlocksNumber", async function () {
       const { admin, claims, owner } = await loadFixture(deployBridgeFixture);
 
@@ -388,6 +408,7 @@ describe("Admin Functions", function () {
 
       expect(await claims.timeoutBlocksNumber()).to.equal(4);
     });
+
     it("Calling timeoutBlocksNumber should triger UpdatgedTimeoutBlocksNumber event", async function () {
       const { admin, owner } = await loadFixture(deployBridgeFixture);
 

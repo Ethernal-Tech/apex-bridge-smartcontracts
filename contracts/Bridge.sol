@@ -28,6 +28,9 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Max number of blocks that can be submitted at once.
     uint8 constant MAX_NUMBER_OF_BLOCKS = 40;
 
+    /// @notice Flaging contracts for test mode
+    bool private testMode;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
@@ -41,13 +44,14 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Initializes the contract.
     /// @param _owner Owner of the contract.
     /// @param _upgradeAdmin Admin address authorized to upgrade the contract.
-    function initialize(address _owner, address _upgradeAdmin) public initializer {
+    function initialize(address _owner, address _upgradeAdmin, bool _testMode) public initializer {
         __Ownable_init();
         __UUPSUpgradeable_init();
         _transferOwnership(_owner);
         if (_owner == address(0)) revert ZeroAddress();
         if (_upgradeAdmin == address(0)) revert ZeroAddress();
         upgradeAdmin = _upgradeAdmin;
+        testMode = _testMode;
     }
 
     /// @notice Authorizes a new implementation for upgrade
@@ -56,7 +60,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     /// @notice Sets external contract dependencies.
     /// @param _claimsAddress Address of Claims contract.
-    /// @param _signedBatchesAddress Address of SignedBatches contract.
     /// @param _slotsAddress Address of Slots contract.
     /// @param _validatorsAddress Address of Validators contract.
     function setDependencies(
@@ -90,6 +93,21 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             return;
         }
 
+        // if there is pending validator set, only validator set batches can be submitted
+        // it there is no pending validator set, any batch can be submitted
+        bool isValidatorSetBatch = _signedBatch.batchType == BatchTypesLib.VALIDATORSET ||
+            _signedBatch.batchType == BatchTypesLib.VALIDATORSET_FINAL;
+
+        bool isPending = validators.newValidatorSetPending();
+
+        if (isPending != isValidatorSetBatch) {
+            if (isPending) {
+                revert NewValidatorSetPending();
+            } else {
+                revert NoNewValidatorSetPending();
+            }
+        }
+
         if (
             !validators.areSignaturesValid(
                 _signedBatch.destinationChainId,
@@ -112,6 +130,14 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         if (
+            validators.newValidatorSetPending() &&
+            !(_signedBatch.batchType != BatchTypesLib.VALIDATORSET ||
+                _signedBatch.batchType != BatchTypesLib.VALIDATORSET_FINAL)
+        ) {
+            revert NewValidatorSetPending();
+        }
+
+        if (
             !validators.isBlsSignatureValidByValidatorAddress(
                 _signedBatch.destinationChainId,
                 keccak256(_signedBatch.rawTransaction),
@@ -124,10 +150,31 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         signedBatches.submitSignedBatch(_signedBatch, msg.sender);
     }
 
+    /// @notice Submit new validator set data
+    /// @param _newValidatorSetDelta Full validator data for all of the new validators.
+    function submitNewValidatorSet(NewValidatorSetDelta calldata _newValidatorSetDelta) external override onlySystem {
+        if (validators.newValidatorSetPending()) {
+            revert NewValidatorSetPending();
+        }
+
+        //TODO: check if these validators are indeed in the current set???
+        validators.validateValidatorSet(_newValidatorSetDelta.addedValidators, chains);
+
+        validators.setNewValidatorSetDelta(_newValidatorSetDelta);
+
+        validators.setNewValidatorSetPending(true);
+
+        emit newValidatorSetSubmitted();
+    }
+
     /// @notice Submit the last observed Cardano blocks from validators for synchronization purposes.
     /// @param _chainId The source chain ID.
     /// @param _blocks Array of Cardano blocks to be recorded.
     function submitLastObservedBlocks(uint8 _chainId, CardanoBlock[] calldata _blocks) external override onlyValidator {
+        if (validators.newValidatorSetPending()) {
+            revert NewValidatorSetPending();
+        }
+
         if (!claims.isChainRegistered(_chainId)) {
             revert ChainIsNotRegistered(_chainId);
         }
@@ -135,6 +182,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         if (_blocks.length > MAX_NUMBER_OF_BLOCKS) {
             revert TooManyBlocks(_blocks.length, MAX_NUMBER_OF_BLOCKS);
         }
+
         slots.updateBlocks(_chainId, _blocks, msg.sender);
     }
 
@@ -171,7 +219,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     ) public override onlyOwner {
         uint256 _validatorAddressChainDataLength = _validatorData.length;
 
-        if (_validatorAddressChainDataLength < 4) {
+        if (_validatorAddressChainDataLength < 4 || _validatorAddressChainDataLength > 126) {
             revert InvalidData("ValidatorAddressChainData");
         }
 
@@ -184,7 +232,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
                 revert ZeroAddress();
             }
 
-            _validateSignatures(
+            validators.validateSignatures(
                 _chainType,
                 _validatorAddress,
                 _validatorData[i].keySignature,
@@ -223,13 +271,15 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             revert ChainAlreadyRegistered(_chainId);
         }
 
-        bytes32 chainHash = keccak256(abi.encode(_chainId, _chainType, _tokenQuantity));
+        bytes32 chainHash = keccak256(
+            abi.encode(validators.currentValidatorSetId(), _chainId, _chainType, _tokenQuantity)
+        );
 
         if (claims.hasVoted(chainHash, msg.sender)) {
             revert AlreadyProposed(_chainId);
         }
 
-        _validateSignatures(_chainType, msg.sender, _keySignature, _keyFeeSignature, _validatorChainData);
+        validators.validateSignatures(_chainType, msg.sender, _keySignature, _keyFeeSignature, _validatorChainData);
 
         validators.addValidatorChainData(_chainId, msg.sender, _validatorChainData);
 
@@ -242,33 +292,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             emit newChainRegistered(_chainId);
         } else {
             emit newChainProposal(_chainId, msg.sender);
-        }
-    }
-
-    /// @dev Validates key and fee signatures based on chain type.
-    function _validateSignatures(
-        uint8 _chainType,
-        address _sender,
-        bytes calldata _keySignature,
-        bytes calldata _keyFeeSignature,
-        ValidatorChainData calldata _validatorChainData
-    ) internal view {
-        bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", _sender));
-
-        if (_chainType == 0) {
-            bytes memory messageHashBytes = _bytes32ToBytesAssembly(messageHashBytes32);
-            if (
-                !validators.isSignatureValid(messageHashBytes, _keySignature, _validatorChainData.key[0], false) ||
-                !validators.isSignatureValid(messageHashBytes, _keyFeeSignature, _validatorChainData.key[1], false)
-            ) {
-                revert InvalidSignature();
-            }
-        } else if (_chainType == 1) {
-            if (!validators.isBlsSignatureValid(messageHashBytes32, _keySignature, _validatorChainData.key)) {
-                revert InvalidSignature();
-            }
-        } else {
-            revert InvalidData("chainType");
         }
     }
 
@@ -312,6 +335,17 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         return _confirmedTransactions;
+    }
+
+    /// @notice Notifies the bridge that new validator set has been implemented on Blade
+    /// @dev This function is called by the system to update the validator set and make all
+    ///      necessary adjustments in the bridge state.
+    function validatorSetUpdated() external override onlySystem {
+        validators.removeOldValidatorsData(chains);
+        validators.addNewValidatorsData();
+
+        validators.deleteNewValidatorSetDelta();
+        validators.setNewValidatorSetPending(false);
     }
 
     /// @notice Get the confirmed batch for the given destination chain.
@@ -360,16 +394,28 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         return claims.getBatchStatusAndTransactions(_chainId, _batchId);
     }
 
-    /// @dev Converts a bytes32 value to a bytes array.
-    /// @param input Input bytes32 value.
-    function _bytes32ToBytesAssembly(bytes32 input) internal pure returns (bytes memory output) {
-        output = new bytes(32);
+    /// @notice Check if a new validator set is pending.
+    /// @return _pending True if a new validator set is pending, false otherwise.
+    function isNewValidatorSetPending() external view override returns (bool _pending) {
+        return validators.newValidatorSetPending();
+    }
 
-        assembly {
-            mstore(add(output, 32), input)
+    /// @notice Get the delta of the new validator set.
+    /// @return _newValidatorSetDelta The new validator set delta.
+    function getNewValidatorSetDelta()
+        external
+        view
+        override
+        returns (NewValidatorSetDelta memory _newValidatorSetDelta)
+    {
+        if (!validators.newValidatorSetPending()) {
+            revert NoNewValidatorSetPending();
         }
+        return validators.getNewValidatorSetDelta();
+    }
 
-        return output;
+    function getAddressValidatorIndex(address _validator) external view returns (uint8) {
+        return validators.getValidatorIndex(_validator);
     }
 
     /// @notice Returns the current version of the contract
@@ -390,6 +436,19 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     modifier onlyUpgradeAdmin() {
         if (msg.sender != upgradeAdmin) revert NotOwner();
+        _;
+    }
+
+    modifier onlySystem() {
+        if (!testMode) {
+            uint256 codeSize;
+            address sender = msg.sender;
+            assembly {
+                codeSize := extcodesize(sender)
+            }
+            // No contracts or EOA (Externally Owned Account) allowed
+            if (codeSize != 0 || tx.origin == sender) revert NotSystem();
+        }
         _;
     }
 }

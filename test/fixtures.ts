@@ -1,6 +1,20 @@
 import { ethers } from "hardhat";
 import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin } from "../typechain-types";
 
+export enum BatchType {
+  NORMAL = 0,
+  CONSOLIDATION = 1,
+  VALIDATORSET = 2,
+  VALIDATORSET_FINAL = 3,
+}
+
+export enum TransactionType {
+  NORMAL = 0,
+  DEFUND = 1,
+  REFUND = 2,
+  STAKE_DELEGATION = 3,
+}
+
 export async function deployBridgeFixture() {
   // Contracts are deployed using the first signer/account by default
   const [owner, validator1, validator2, validator3, validator4, validator5, validator6] = await ethers.getSigners();
@@ -40,17 +54,17 @@ export async function deployBridgeFixture() {
 
   const bridgeProxy = await BridgeProxy.deploy(
     await bridgeLogic.getAddress(),
-    Bridge.interface.encodeFunctionData("initialize", [owner.address, owner.address])
-  );
-
-  const claimsHelperProxy = await ClaimsHelperProxy.deploy(
-    await claimsHelperLogic.getAddress(),
-    ClaimsHelper.interface.encodeFunctionData("initialize", [owner.address, owner.address])
+    Bridge.interface.encodeFunctionData("initialize", [owner.address, owner.address, true])
   );
 
   const claimsProxy = await ClaimsProxy.deploy(
     await claimsLogic.getAddress(),
     Claims.interface.encodeFunctionData("initialize", [owner.address, owner.address, 2, 5])
+  );
+
+  const claimsHelperProxy = await ClaimsHelperProxy.deploy(
+    await claimsHelperLogic.getAddress(),
+    ClaimsHelper.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
   const signedBatchesProxy = await SignedBatchesProxy.deploy(
@@ -85,11 +99,11 @@ export async function deployBridgeFixture() {
   const BridgeDeployed = await ethers.getContractFactory("Bridge");
   const bridge = BridgeDeployed.attach(bridgeProxy.target) as Bridge;
 
-  const ClaimsHelperDeployed = await ethers.getContractFactory("ClaimsHelper");
-  const claimsHelper = ClaimsHelperDeployed.attach(claimsHelperProxy.target) as ClaimsHelper;
-
   const ClaimsDeployed = await ethers.getContractFactory("Claims");
   const claims = ClaimsDeployed.attach(claimsProxy.target) as Claims;
+
+  const ClaimsHelperDeployed = await ethers.getContractFactory("ClaimsHelper");
+  const claimsHelper = ClaimsHelperDeployed.attach(claimsHelperProxy.target) as ClaimsHelper;
 
   const SignedBatchesDeployed = await ethers.getContractFactory("SignedBatches");
   const signedBatches = SignedBatchesDeployed.attach(signedBatchesProxy.target) as SignedBatches;
@@ -133,7 +147,7 @@ export async function deployBridgeFixture() {
     id: 2,
     addressMultisig: "addr_test1vr8zy7jk35n9yyw4jg0r4z98eygmrqxvz5sch4dva9c8s2qjv2edc",
     addressFeePayer: "addr_test1vz8g63va7qat4ajyja4sndp06rv3penf3htqcwt6x4znyacfpea75",
-    chainType: 1, // nexus chain
+    chainType: 1, // evm chain
   };
 
   const validatorClaimsBRC = {
@@ -275,6 +289,18 @@ export async function deployBridgeFixture() {
     hotWalletIncrementClaims: [],
   };
 
+  const validatorClaimsBEC_bunch33 = {
+    bridgingRequestClaims: [],
+    batchExecutedClaims: Array.from({ length: 33 }, (_, i) => ({
+      observedTransactionHash: "0x" + Buffer.from(`test${i}`).toString("hex").padEnd(64, "0").slice(0, 64),
+      batchNonceId: i + 1,
+      chainId: 2,
+    })),
+    batchExecutionFailedClaims: [],
+    refundRequestClaims: [],
+    hotWalletIncrementClaims: [],
+  };
+
   const validatorClaimsBEFC = {
     bridgingRequestClaims: [],
     batchExecutedClaims: [],
@@ -362,10 +388,10 @@ export async function deployBridgeFixture() {
     signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    isConsolidation: false,
+    batchType: BatchType.NORMAL,
   };
 
-  const signedBatchConsolidation = {
+  const signedBatch_Consolidation = {
     id: 1,
     destinationChainId: 2,
     rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
@@ -373,10 +399,32 @@ export async function deployBridgeFixture() {
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     firstTxNonceId: 0,
     lastTxNonceId: 0,
-    isConsolidation: true,
+    batchType: BatchType.CONSOLIDATION,
   };
 
-  const signedBatchDefund = {
+  const signedBatch_ValidatorSet = {
+    id: 1,
+    firstTxNonceId: 2n ** 64n - 1n,
+    lastTxNonceId: 2n ** 64n - 1n,
+    destinationChainId: 2,
+    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
+    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
+    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
+    batchType: BatchType.VALIDATORSET,
+  };
+
+  const signedBatch_ValidatorSetFinal = {
+    id: 1,
+    firstTxNonceId: 2n ** 64n - 1n,
+    lastTxNonceId: 2n ** 64n - 1n,
+    destinationChainId: 2,
+    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
+    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
+    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
+    batchType: 3, // BatchTypesLib.VALIDATORSET_FINAL
+  };
+
+  const signedBatch_Defund = {
     id: 1,
     firstTxNonceId: 1,
     lastTxNonceId: 2,
@@ -384,7 +432,7 @@ export async function deployBridgeFixture() {
     signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    isConsolidation: false,
+    batchType: BatchType.NORMAL,
   };
 
   const cardanoBlocks = [
@@ -419,6 +467,173 @@ export async function deployBridgeFixture() {
 
   const validatorCardanoData = validatorAddressChainData[0].data;
 
+  const validatorSets = Array.from({ length: 2 }, (_, i) => {
+    const chainId = i + 1;
+    return {
+      chainId,
+      validators: Array.from({ length: 5 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: `0x${addrNum}`,
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_notEnoughChains = Array.from({ length: 1 }, (_, i) => {
+    const chainId = i + 1;
+    return {
+      chainId,
+      validators: Array.from({ length: 5 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: `0x${addrNum}`,
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_TooManyChains = Array.from({ length: 3 }, (_, i) => {
+    const chainId = i + 1;
+    return {
+      chainId,
+      validators: Array.from({ length: 5 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: `0x${addrNum}`,
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_NotEnoughValidators = Array.from({ length: 2 }, (_, i) => {
+    const chainId = i + 1;
+    return {
+      chainId,
+      validators: Array.from({ length: 3 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: `0x${addrNum}`,
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_TooManyValidators = Array.from({ length: 2 }, (_, i) => {
+    const chainId = i + 1;
+    return {
+      chainId,
+      validators: Array.from({ length: 127 }, (_, j) => {
+        const addrNum = (i * 127 + j + 1).toString(16).padStart(40, "0");
+
+        // Generate 4-byte (8 hex digit) valid hex strings
+        const suffix = (j + 1).toString(16).padStart(2, "0"); // e.g., "01"
+        const keySignature = `0x${"abc0" + suffix}`.padEnd(10, "0"); // 10 chars = 0x + 8 hex digits
+        const keyFeeSignature = `0x${"def0" + suffix}`.padEnd(10, "0");
+
+        return {
+          addr: `0x${addrNum}`,
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature,
+          keyFeeSignature,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_ZeroAddress = Array.from({ length: 2 }, (_, i) => {
+    const chainId = i + 1;
+    return {
+      chainId,
+      validators: Array.from({ length: 5 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: "0x0000000000000000000000000000000000000000",
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_DoubleAddress = Array.from({ length: 2 }, (_, i) => {
+    const chainId = i + 1;
+    return {
+      chainId,
+      validators: Array.from({ length: 5 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: "0x0000000000000000000000000000000000000001",
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
+  const newValidatorSetDelta = {
+    addedValidators: validatorSets,
+    removedValidators: [validator4.address, validator5.address],
+  };
+
+  const newValidatorSetDelta_ZeroAddress = {
+    addedValidators: validatorSets_ZeroAddress,
+    removedValidators: [validator4.address, validator5.address],
+  };
+
+  const newValidatorSetDelta_DoubleAddress = {
+    addedValidators: validatorSets_DoubleAddress,
+    removedValidators: [validator4.address, validator5.address],
+  };
+
+  const newValidatorSetDelta_TooManyValidators = {
+    addedValidators: validatorSets_TooManyValidators,
+    removedValidators: [validator4.address, validator5.address],
+  };
+
+  const newValidatorSetDelta_NotEnoughValidators = {
+    addedValidators: validatorSets_NotEnoughValidators,
+    removedValidators: [validator4.address, validator5.address],
+  };
+
+  const newValidatorSetDelta_TooManyChains = {
+    addedValidators: validatorSets_TooManyChains,
+    removedValidators: [validator4.address, validator5.address],
+  };
+
+  const newValidatorSetDelta_notEnoughChains = {
+    addedValidators: validatorSets_notEnoughChains,
+    removedValidators: [validator4.address, validator5.address],
+  };
+
   return {
     hre,
     bridge,
@@ -436,6 +651,7 @@ export async function deployBridgeFixture() {
     validatorClaimsBRC_bunch32,
     validatorClaimsBRC_bunch33,
     validatorClaimsBEC,
+    validatorClaimsBEC_bunch33,
     validatorClaimsBEC_another,
     validatorClaimsBEFC,
     validatorClaimsBEFC_another,
@@ -445,12 +661,28 @@ export async function deployBridgeFixture() {
     validatorClaimsBRC_confirmedTransactions,
     validatorClaimsBRC_tooManyReceivers,
     signedBatch,
-    signedBatchConsolidation,
-    signedBatchDefund,
+    signedBatch_ValidatorSet,
+    signedBatch_ValidatorSetFinal,
+    signedBatch_Consolidation,
+    signedBatch_Defund,
     validatorAddressChainData,
     validatorCardanoData,
     validators,
     cardanoBlocks,
     cardanoBlocksTooManyBlocks,
+    validatorSets,
+    validatorSets_notEnoughChains,
+    validatorSets_TooManyChains,
+    validatorSets_NotEnoughValidators,
+    validatorSets_TooManyValidators,
+    validatorSets_ZeroAddress,
+    validatorSets_DoubleAddress,
+    newValidatorSetDelta,
+    newValidatorSetDelta_DoubleAddress,
+    newValidatorSetDelta_ZeroAddress,
+    newValidatorSetDelta_TooManyValidators,
+    newValidatorSetDelta_NotEnoughValidators,
+    newValidatorSetDelta_TooManyChains,
+    newValidatorSetDelta_notEnoughChains,
   };
 }

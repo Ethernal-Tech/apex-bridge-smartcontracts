@@ -35,9 +35,9 @@ describe("Chain Registration", function () {
 
       const validatorAddressChainData_empty = new Array();
 
-      await expect(
-        bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData_empty)
-      ).to.be.revertedWithCustomError(bridge, "InvalidData");
+      await expect(bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData_empty))
+        .to.be.revertedWithCustomError(bridge, "InvalidData")
+        .withArgs("ValidatorAddressChainData");
     });
 
     it("Should revert if validator's address is zero", async function () {
@@ -726,9 +726,9 @@ describe("Chain Registration", function () {
         keyFeeSignature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
       });
 
-      await expect(
-        validatorsc.connect(signer).setValidatorsChainData(1, validatorAddressChainData)
-      ).to.revertedWithCustomError(validatorsc, "InvalidData");
+      await expect(validatorsc.connect(signer).setValidatorsChainData(1, validatorAddressChainData))
+        .to.revertedWithCustomError(validatorsc, "InvalidData")
+        .withArgs("WrongNumberOfValidators");
 
       const data3 = await validatorsc.connect(validators[0]).getValidatorsChainData(1);
       expect(validatorAddressChainData.length).to.be.greaterThan(validators.length);

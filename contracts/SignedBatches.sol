@@ -5,7 +5,9 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
+import "./interfaces/BatchTypesLib.sol";
 import "./Utils.sol";
+import "./Bridge.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
 
@@ -14,7 +16,7 @@ import "./Validators.sol";
 /// @dev Utilizes OpenZeppelin upgradeable contracts and interacts with ClaimsHelper and Validators for consensus logic.
 contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
-    address private bridgeAddress;
+    Bridge private bridge;
     ClaimsHelper private claimsHelper;
     Validators private validators;
 
@@ -63,7 +65,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     ) external onlyOwner {
         if (!_isContract(_bridgeAddress) || !_isContract(_claimsHelperAddress) || !_isContract(_validatorsAddress))
             revert NotContractAddress();
-        bridgeAddress = _bridgeAddress;
+        bridge = Bridge(_bridgeAddress);
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         validators = Validators(_validatorsAddress);
     }
@@ -79,6 +81,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// - If quorum is reached after this vote, the batch is confirmed and stored, and temporary data is cleared.
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
         uint8 _destinationChainId = _signedBatch.destinationChainId;
+
         uint64 _sbId = lastConfirmedBatch[_destinationChainId].id + 1;
 
         if (_signedBatch.id != _sbId) {
@@ -87,12 +90,13 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
         bytes32 _sbHash = keccak256(
             abi.encodePacked(
+                validators.currentValidatorSetId(),
                 _signedBatch.id,
                 _signedBatch.firstTxNonceId,
                 _signedBatch.lastTxNonceId,
                 _destinationChainId,
                 _signedBatch.rawTransaction,
-                _signedBatch.isConsolidation
+                _signedBatch.batchType
             )
         );
 
@@ -124,7 +128,8 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
                 _votesInfo.bitmap,
                 _signedBatch.rawTransaction,
                 _sbId,
-                _signedBatch.isConsolidation
+                false, // isConsolidation is not used
+                _signedBatch.batchType
             );
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
@@ -157,6 +162,10 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         return votes[_hash].bitmap & (1 << (_validatorIdx - 1)) != 0;
     }
 
+    function getVotes(bytes32 _hash) external view returns (SignedBatchVotesInfo memory _votes) {
+        return votes[_hash];
+    }
+
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
@@ -164,7 +173,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     }
 
     modifier onlyBridge() {
-        if (msg.sender != bridgeAddress) revert NotBridge();
+        if (msg.sender != address(bridge)) revert NotBridge();
         _;
     }
 
