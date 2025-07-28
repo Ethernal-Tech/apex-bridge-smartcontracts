@@ -131,12 +131,17 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev Reverts if the address is already delegated or the chain is not registered.
     /// @param chainId The ID of the chain where the delegation is made.
     /// @param bridgeAddrIndex The index of the bridging address being delegated.
-    /// @param stakePoolId The identifier of the stake pool to delegate to.
+    /// @param stakePoolId The identifier of the stake pool to delegate to. Should be at least 56 bytes long
     function delegateAddrToStakePool(
         uint8 chainId,
         uint8 bridgeAddrIndex,
         string calldata stakePoolId
     ) external onlyBridge {
+        // cardano stake pool id string can be: (Bech32, size=56–64, pool1...) or (Hex[raw ID], size=56)
+        if (bytes(stakePoolId).length < 56) {
+            revert InvalidData(stakePoolId);
+        }
+
         if (isAddrDelegatedToStake[chainId][bridgeAddrIndex]) {
             revert AddrAlreadyDelegatedToStake(chainId, bridgeAddrIndex);
         }
@@ -867,10 +872,20 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         timeoutBlocksNumber = _timeoutBlocksNumber;
     }
 
+    /// @notice this function is only for admin if stake pool registration goes wrong
+    function clearIsAddrDelegatedToStake() external onlyUpgradeAdmin {
+        // currently there are 4 chains and only one address
+        for (uint8 _chainID = 1; _chainID < 5; _chainID++) {
+            for (uint8 _indx = 0; _indx < 1; _indx++) {
+                isAddrDelegatedToStake[_chainID][_indx] = false;
+            }
+        }
+    }
+
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.1.0";
+        return "1.1.1";
     }
 
     modifier onlyBridge() {

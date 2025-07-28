@@ -4,7 +4,7 @@ import { ethers } from "hardhat";
 import { deployBridgeFixture, TransactionType } from "./fixtures";
 
 describe("Submit Claims", function () {
-  const stakePoolId = "stakePoolId";
+  const stakePoolId = "pool1y0uxkqyplyx6ld25e976t0s35va3ysqcscatwvy2sd2cwcareq7";
 
   describe("Submit new Bridging Request Claim", function () {
     it("Should revert any claim if not sent by validator", async function () {
