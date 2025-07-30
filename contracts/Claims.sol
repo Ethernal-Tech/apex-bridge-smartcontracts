@@ -429,6 +429,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                         isAddrDelegatedToStake[chainId][_ctx.bridgeAddrIndex] = false;
                         emit StakeDelegationFailedAfterMultipleRetries();
                     }
+                } else if (_txType == TransactionTypesLib.STAKE_REGISTRATION_AND_DELEGATION) {
+                    if (_ctx.retryCounter < MAX_NUMBER_OF_RETRIES) {
+                        _retryTx(chainId, _ctx);
+                    } else {
+                        isAddrDelegatedToStake[chainId][_ctx.bridgeAddrIndex] = false;
+                        emit StakeDelegationFailedAfterMultipleRetries();
+                    }
                 }
             }
 
