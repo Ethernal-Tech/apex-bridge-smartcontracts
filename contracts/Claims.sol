@@ -154,7 +154,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         uint256 _confirmedTxCount = getBatchingTxsCount(chainId);
 
-        isAddrDelegatedToStake[chainId][bridgeAddrIndex] = true;
+        isAddrDelegatedToStake[chainId][bridgeAddrIndex] = false;
         uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
 
         ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nextNonce];
