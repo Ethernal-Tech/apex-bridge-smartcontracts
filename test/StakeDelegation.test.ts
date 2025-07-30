@@ -47,6 +47,34 @@ describe("Stake Delegation", function () {
             .to.be.revertedWithCustomError(bridge, "AddrAlreadyDelegatedToStake");
     });
 
+    it("Should pass if the bridging address has already been delegated to a stake pool and doRegistration is false.", async () => {
+        const {bridge, claims, owner, chain1, validatorAddressChainData, bridgeAddrIndex } = await loadFixture(deployBridgeFixture);
+
+        await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
+        expect(await claims.lastConfirmedTxNonce(chain1.id)).to.equal(0);
+        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId, true);
+        expect(await claims.lastConfirmedTxNonce(chain1.id)).to.equal(1);
+
+        const tx1 = await claims.confirmedTransactions(chain1.id, 1);
+        expect(tx1.destinationChainId).to.equal(chain1.id);
+        expect(tx1.stakePoolId).to.equal(stakePoolId);
+        expect(tx1.bridgeAddrIndex).to.equal(bridgeAddrIndex);
+        expect(tx1.nonce).to.equal(1);
+        expect(tx1.transactionType).to.equal(TransactionType.STAKE_REGISTRATION_AND_DELEGATION);
+        expect(tx1.retryCounter).to.equal(0);
+
+        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId, false);
+        expect(await claims.lastConfirmedTxNonce(chain1.id)).to.equal(2);
+
+        const tx2 = await claims.confirmedTransactions(chain1.id, 2);
+        expect(tx2.destinationChainId).to.equal(chain1.id);
+        expect(tx2.stakePoolId).to.equal(stakePoolId);
+        expect(tx2.bridgeAddrIndex).to.equal(bridgeAddrIndex);
+        expect(tx2.nonce).to.equal(2);
+        expect(tx2.transactionType).to.equal(TransactionType.STAKE_DELEGATION);
+        expect(tx2.retryCounter).to.equal(0);
+    });
+
     it("Should increase last confirmed tx nonce when delegation is added", async function () {
         const { bridge, claims, owner, chain1, validatorAddressChainData, bridgeAddrIndex } =
         await loadFixture(deployBridgeFixture);
