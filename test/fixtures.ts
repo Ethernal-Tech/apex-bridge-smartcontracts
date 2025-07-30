@@ -13,7 +13,8 @@ export enum TransactionType {
   NORMAL = 0,
   DEFUND = 1,
   REFUND = 2,
-  STAKE_DELEGATION = 3,
+  STAKE_REGISTRATION_AND_DELEGATION = 3,
+  STAKE_DELEGATION = 4,
 }
 
 export async function deployBridgeFixture() {

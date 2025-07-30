@@ -321,13 +321,18 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @param chainId The ID of the destination chain.
     /// @param bridgeAddrIndex The index of the bridging address to be delegated.
     /// @param stakePoolId The identifier of the stake pool to delegate to.
-    function delegateAddrToStakePool(uint8 chainId, uint8 bridgeAddrIndex, string calldata stakePoolId) external override onlyOwner {
+    /// @param doRegistration Whether to register the stake address.
+    function delegateAddrToStakePool(
+        uint8 chainId,
+        uint8 bridgeAddrIndex,
+        string calldata stakePoolId,
+        bool doRegistration) external override onlyOwner {
         // there is only one bridge address currently, only index 0 is allowed
         if (bridgeAddrIndex != 0) {
             revert InvalidBridgeAddrIndex(chainId, bridgeAddrIndex);
         }
 
-        claims.delegateAddrToStakePool(chainId, bridgeAddrIndex, stakePoolId);
+        claims.delegateAddrToStakePool(chainId, bridgeAddrIndex, stakePoolId, doRegistration);
     }
 
     /// @notice Get the confirmed batch for the given destination chain.

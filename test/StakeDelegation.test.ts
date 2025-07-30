@@ -10,21 +10,21 @@ describe("Stake Delegation", function () {
     it("Should revert if delegation is not sent by owner", async function () {
       const { bridge, chain1, validators, bridgeAddrIndex } = await loadFixture(deployBridgeFixture);
 
-      await expect(bridge.connect(validators[0]).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId))
+      await expect(bridge.connect(validators[0]).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId, false))
         .to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     it("Should revert if pool id is invalid", async () => {
         const { bridge, owner, chain1, bridgeAddrIndex } = await loadFixture(deployBridgeFixture);
 
-        await expect(bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, "none"))
+        await expect(bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, "none", false))
         .to.be.revertedWithCustomError(bridge, "InvalidData");
     });
 
     it("Should revert if chain is not registered", async () => {
         const { bridge, owner, chain1, bridgeAddrIndex } = await loadFixture(deployBridgeFixture);
 
-        await expect(bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId))
+        await expect(bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId, false))
         .to.be.revertedWithCustomError(bridge, "ChainIsNotRegistered");
     });
 
@@ -33,7 +33,7 @@ describe("Stake Delegation", function () {
         const invalidBridgeAddr = 1;
 
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-        await expect(bridge.connect(owner).delegateAddrToStakePool(chain1.id, invalidBridgeAddr, stakePoolId))
+        await expect(bridge.connect(owner).delegateAddrToStakePool(chain1.id, invalidBridgeAddr, stakePoolId, false))
             .to.be.revertedWithCustomError(bridge, "InvalidBridgeAddrIndex");
     });
 
@@ -41,9 +41,9 @@ describe("Stake Delegation", function () {
         const { bridge, owner, chain1, validatorAddressChainData, bridgeAddrIndex } = await loadFixture(deployBridgeFixture);
 
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId);
+        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId, false);
 
-        await expect(bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId))
+        await expect(bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId, false))
             .to.be.revertedWithCustomError(bridge, "AddrAlreadyDelegatedToStake");
     });
 
@@ -55,7 +55,7 @@ describe("Stake Delegation", function () {
 
         expect(await claims.lastConfirmedTxNonce(chain1.id)).to.equal(0);
 
-        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId);
+        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId, false);
 
         expect(await claims.lastConfirmedTxNonce(chain1.id)).to.equal(1);
     });
@@ -66,7 +66,7 @@ describe("Stake Delegation", function () {
 
         //await registerChainAndDelegate(bridge, owner, validatorAddressChainData, bridgeAddrIndex, 1);
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId);
+        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId, false);
 
         const nonce = await claims.lastConfirmedTxNonce(chain1.id);
 
@@ -84,7 +84,7 @@ describe("Stake Delegation", function () {
             await loadFixture(deployBridgeFixture);
 
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId);
+        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId, false);
 
         // wait for next timeout
         for (let i = 0; i < 3; i++) {

@@ -132,10 +132,12 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @param chainId The ID of the chain where the delegation is made.
     /// @param bridgeAddrIndex The index of the bridging address being delegated.
     /// @param stakePoolId The identifier of the stake pool to delegate to. Should be at least 56 bytes long
+    /// @param doRegistration Whether to register the stake address.
     function delegateAddrToStakePool(
         uint8 chainId,
         uint8 bridgeAddrIndex,
-        string calldata stakePoolId
+        string calldata stakePoolId,
+        bool doRegistration
     ) external onlyBridge {
         // cardano stake pool id string can be: (Bech32, size=56–64, pool1...) or (Hex[raw ID], size=56)
         if (bytes(stakePoolId).length < 56) {
@@ -156,7 +158,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
 
         ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nextNonce];
-        confirmedTx.transactionType = TransactionTypesLib.STAKE_DELEGATION;
+        confirmedTx.transactionType = doRegistration
+            ? TransactionTypesLib.STAKE_REGISTRATION_AND_DELEGATION
+            : TransactionTypesLib.STAKE_DELEGATION;
         confirmedTx.nonce = nextNonce;
         confirmedTx.destinationChainId = chainId;
         confirmedTx.stakePoolId = stakePoolId;

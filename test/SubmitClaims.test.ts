@@ -1436,7 +1436,7 @@ describe("Submit Claims", function () {
 
         //await registerChainAndDelegate(bridge, owner, chain1, validatorAddressChainData, 2);
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId);
+        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId, false);
 
         // wait for next timeout
         for (let i = 0; i < 3; i++) {
@@ -1464,7 +1464,7 @@ describe("Submit Claims", function () {
 
         //await registerChainAndDelegate(bridge, owner, chain1, validatorAddressChainData, 2);
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId);
+        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId, false);
 
         // wait for next timeout
         for (let i = 0; i < 3; i++) {
@@ -1518,7 +1518,7 @@ describe("Submit Claims", function () {
         } = await loadFixture(deployBridgeFixture);
 
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId);
+        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId, false);
 
         const mineBlocks = async (count: number) => {
           for (let i = 0; i < count; i++) {
@@ -1602,7 +1602,7 @@ describe("Submit Claims", function () {
         expect(await claims.isAddrDelegatedToStake(chain1.id, bridgeAddrIndex)).to.be.false;
 
         // Re-delegate to verify delegation is now allowed again
-        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId);
+        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId, false);
         expect(await claims.getBatchingTxsCount(chain1.id)).to.equal(1);
     });
   });
