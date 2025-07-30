@@ -41,9 +41,9 @@ describe("Stake Delegation", function () {
         const { bridge, owner, chain1, validatorAddressChainData, bridgeAddrIndex } = await loadFixture(deployBridgeFixture);
 
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId, false);
+        await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId, true);
 
-        await expect(bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId, false))
+        await expect(bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId, true))
             .to.be.revertedWithCustomError(bridge, "AddrAlreadyDelegatedToStake");
     });
 

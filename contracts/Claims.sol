@@ -144,7 +144,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             revert InvalidData(stakePoolId);
         }
 
-        if (isAddrDelegatedToStake[chainId][bridgeAddrIndex]) {
+        if (isAddrDelegatedToStake[chainId][bridgeAddrIndex] && doRegistration) {
             revert AddrAlreadyDelegatedToStake(chainId, bridgeAddrIndex);
         }
 
@@ -154,7 +154,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         uint256 _confirmedTxCount = getBatchingTxsCount(chainId);
 
-        isAddrDelegatedToStake[chainId][bridgeAddrIndex] = false;
+        isAddrDelegatedToStake[chainId][bridgeAddrIndex] = true;
         uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
 
         ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nextNonce];
