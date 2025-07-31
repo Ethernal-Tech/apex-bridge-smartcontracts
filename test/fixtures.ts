@@ -15,6 +15,7 @@ export enum TransactionType {
   REFUND = 2,
   STAKE_REGISTRATION_AND_DELEGATION = 3,
   STAKE_DELEGATION = 4,
+  STAKE_DEREGISTRATION = 5,
 }
 
 export async function deployBridgeFixture() {
@@ -128,7 +129,8 @@ export async function deployBridgeFixture() {
     claimsProxy.target,
     signedBatchesProxy.target,
     slotsProxy.target,
-    validatorsProxy.target
+    validatorsProxy.target,
+    adminProxy.target
   );
 
   await claimsHelper.setDependencies(claims.target, signedBatches.target);
@@ -141,7 +143,7 @@ export async function deployBridgeFixture() {
 
   await validatorsc.setDependencies(bridge.target);
 
-  await admin.setDependencies(claims.target);
+  await admin.setDependencies(claims.target, bridge.target);
 
   const chain1 = {
     id: 1,

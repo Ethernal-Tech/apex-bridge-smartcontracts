@@ -1508,6 +1508,7 @@ describe("Submit Claims", function () {
           bridge,
           claims,
           signedBatches,
+          admin,
           owner,
           validators,
           signedBatchStakeDel,
@@ -1599,7 +1600,7 @@ describe("Submit Claims", function () {
 
         // Expect batching state reset
         expect(await claims.getBatchingTxsCount(chain1.id)).to.equal(0);
-        expect(await claims.isAddrDelegatedToStake(chain1.id, bridgeAddrIndex)).to.be.false;
+        expect(await admin.isAddrDelegatedToStake(chain1.id, bridgeAddrIndex)).to.be.false;
 
         // Re-delegate to verify delegation is now allowed again
         await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId, false);

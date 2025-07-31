@@ -6,6 +6,8 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./Utils.sol";
 import "./Claims.sol";
+import "./interfaces/IBridgeStructs.sol";
+import "./interfaces/TransactionTypesLib.sol";
 
 /// @title Admin Contract
 /// @notice Manages configuration and privileged updates for the bridge system
@@ -14,11 +16,17 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     address private upgradeAdmin;
     address public fundAdmin;
     Claims private claims;
+    address private bridgeAddress;
+    address private claimsAddress;
+
+    /// @notice Tracks whether a specific bridging address has been delegated to a stake pool on a given chain.
+    /// @dev Mapping: chainId => bridgeAddrIndex => true if delegated, false otherwise.
+    mapping(uint8 => mapping(uint8 => bool)) public isAddrDelegatedToStake;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[50] private __gap;
+    uint256[47] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -44,9 +52,75 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
 
     /// @notice Sets external contract dependencies.
     /// @param _claimsAddress Address of the deployed Claims contract
-    function setDependencies(address _claimsAddress) external onlyOwner {
-        if (!_isContract(_claimsAddress)) revert NotContractAddress();
+    /// @param _bridgeAddress Address of the Bridge contract
+    function setDependencies(address _claimsAddress, address _bridgeAddress) external onlyOwner {
+        if (!_isContract(_claimsAddress) || !_isContract(_bridgeAddress)) revert NotContractAddress();
         claims = Claims(_claimsAddress);
+        bridgeAddress = _bridgeAddress;
+        claimsAddress = _claimsAddress;
+    }
+
+    /// @notice Records a stake delegation transaction for a specific bridging address on a given chain.
+    /// @dev Reverts if the address is already delegated or the chain is not registered.
+    /// @param chainId The ID of the chain where the delegation is made.
+    /// @param bridgeAddrIndex The index of the bridging address being delegated.
+    /// @param stakePoolId The identifier of the stake pool to delegate to. Should be at least 56 bytes long
+    /// @param doRegistration Whether to register the stake address.
+    function delegateAddrToStakePool(
+        uint8 chainId,
+        uint8 bridgeAddrIndex,
+        string calldata stakePoolId,
+        bool doRegistration
+    ) external onlyBridge {
+        // cardano stake pool id string can be: (Bech32, size=56–64, pool1...) or (Hex[raw ID], size=56)
+        if (bytes(stakePoolId).length < 56) {
+            revert InvalidData(stakePoolId);
+        }
+
+        if (isAddrDelegatedToStake[chainId][bridgeAddrIndex] && doRegistration) {
+            revert AddrAlreadyDelegatedToStake(chainId, bridgeAddrIndex);
+        }
+
+        if (!claims.isChainRegistered(chainId)) {
+            revert ChainIsNotRegistered(chainId);
+        }
+
+        isAddrDelegatedToStake[chainId][bridgeAddrIndex] = true;
+        
+        uint8 transactionType = doRegistration
+            ? TransactionTypesLib.STAKE_REGISTRATION_AND_DELEGATION
+            : TransactionTypesLib.STAKE_DELEGATION;
+            
+        claims.createStakeTransaction(
+            chainId,
+            bridgeAddrIndex,
+            stakePoolId,
+            transactionType
+        );
+    }
+
+    /// @notice Deregisters a stake address for a specific bridging address on a given chain.
+    /// @param chainId The ID of the chain where the deregistration is made.
+    /// @param bridgeAddrIndex The index of the bridging address being deregistered.
+    function deregisterStakeAddress(
+        uint8 chainId,
+        uint8 bridgeAddrIndex
+    ) external onlyBridge {
+        if (!isAddrDelegatedToStake[chainId][bridgeAddrIndex]) {
+            revert AddrNotDelegatedToStake(chainId, bridgeAddrIndex);
+        }
+
+        if (!claims.isChainRegistered(chainId)) {
+            revert ChainIsNotRegistered(chainId);
+        }
+
+        isAddrDelegatedToStake[chainId][bridgeAddrIndex] = false;
+        claims.createStakeTransaction(
+            chainId,
+            bridgeAddrIndex,
+            "", // Empty string for deregistration since stakePoolId is not used
+            TransactionTypesLib.STAKE_DEREGISTRATION
+        );
     }
 
     /// @notice Updates token quantity for a specific chain
@@ -115,10 +189,36 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         emit UpdatedTimeoutBlocksNumber(_timeoutBlocksNumber);
     }
 
+    /// @notice this function is only for admin if stake pool registration goes wrong
+    function clearIsAddrDelegatedToStake() external onlyUpgradeAdmin {
+        // currently there are 4 chains and only one address
+        for (uint8 _chainID = 1; _chainID < 5; _chainID++) {
+            for (uint8 _indx = 0; _indx < 1; _indx++) {
+                isAddrDelegatedToStake[_chainID][_indx] = false;
+            }
+        }
+    }
+
+    /// @notice Check if a bridging address is delegated to stake on a given chain.
+    /// @param chainId The ID of the chain to check.
+    /// @param bridgeAddrIndex The index of the bridging address to check.
+    /// @return True if the address is delegated, false otherwise.
+    function isAddressDelegatedToStake(uint8 chainId, uint8 bridgeAddrIndex) external view returns (bool) {
+        return isAddrDelegatedToStake[chainId][bridgeAddrIndex];
+    }
+
+    /// @notice Set the delegation status for a bridging address on a given chain.
+    /// @param chainId The ID of the chain.
+    /// @param bridgeAddrIndex The index of the bridging address.
+    /// @param isDelegated The delegation status to set.
+    function setAddressDelegatedToStake(uint8 chainId, uint8 bridgeAddrIndex, bool isDelegated) external onlyClaims {
+        isAddrDelegatedToStake[chainId][bridgeAddrIndex] = isDelegated;
+    }
+
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.0";
+        return "1.1.0";
     }
 
     modifier onlyFundAdmin() {
@@ -128,6 +228,16 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
 
     modifier onlyUpgradeAdmin() {
         if (msg.sender != upgradeAdmin) revert NotUpgradeAdmin();
+        _;
+    }
+
+    modifier onlyBridge() {
+        if (msg.sender != bridgeAddress) revert NotBridge();
+        _;
+    }
+
+    modifier onlyClaims() {
+        if (msg.sender != claimsAddress) revert NotClaims();
         _;
     }
 }

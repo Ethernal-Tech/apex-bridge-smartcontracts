@@ -11,9 +11,11 @@ import "./Claims.sol";
 import "./SignedBatches.sol";
 import "./Slots.sol";
 import "./Validators.sol";
+import "./Admin.sol";
 
 /// @title Bridge
-/// @notice Cross-chain bridge for validator claim submission, batch transaction signing, and governance-based chain registration.
+/// @notice Cross-chain bridge for validator claim submission, batch transaction signing, and 
+///         governance-based chain registration.
 /// @dev UUPS upgradeable and modular via dependency contracts (Claims, Validators, Slots, SignedBatches).
 contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
@@ -21,6 +23,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     SignedBatches private signedBatches;
     Slots private slots;
     Validators private validators;
+    Admin private admin;
 
     /// @notice Array of registered chains.
     Chain[] private chains;
@@ -59,22 +62,26 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @param _signedBatchesAddress Address of SignedBatches contract.
     /// @param _slotsAddress Address of Slots contract.
     /// @param _validatorsAddress Address of Validators contract.
+    /// @param _adminAddress Address of Admin contract.
     function setDependencies(
         address _claimsAddress,
         address _signedBatchesAddress,
         address _slotsAddress,
-        address _validatorsAddress
+        address _validatorsAddress,
+        address _adminAddress
     ) external onlyOwner {
         if (
             !_isContract(_claimsAddress) ||
             !_isContract(_signedBatchesAddress) ||
             !_isContract(_slotsAddress) ||
-            !_isContract(_validatorsAddress)
+            !_isContract(_validatorsAddress) ||
+            !_isContract(_adminAddress)
         ) revert NotContractAddress();
         claims = Claims(_claimsAddress);
         signedBatches = SignedBatches(_signedBatchesAddress);
         slots = Slots(_slotsAddress);
         validators = Validators(_validatorsAddress);
+        admin = Admin(_adminAddress);
     }
 
     /// @notice Submit claims from validators for reaching consensus.
@@ -332,7 +339,18 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             revert InvalidBridgeAddrIndex(chainId, bridgeAddrIndex);
         }
 
-        claims.delegateAddrToStakePool(chainId, bridgeAddrIndex, stakePoolId, doRegistration);
+        admin.delegateAddrToStakePool(chainId, bridgeAddrIndex, stakePoolId, doRegistration);
+    }
+
+    function deregisterStakeAddress(
+        uint8 chainId,
+        uint8 bridgeAddrIndex) external override onlyOwner {
+        // there is only one bridge address currently, only index 0 is allowed
+        if (bridgeAddrIndex != 0) {
+            revert InvalidBridgeAddrIndex(chainId, bridgeAddrIndex);
+        }
+
+        admin.deregisterStakeAddress(chainId, bridgeAddrIndex);
     }
 
     /// @notice Get the confirmed batch for the given destination chain.

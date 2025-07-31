@@ -12,6 +12,7 @@ import "./Utils.sol";
 import "./Bridge.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
+import "./Admin.sol";
 
 /// @title Claims
 /// @notice Handles validator-submitted claims in a cross-chain bridge system.
@@ -21,6 +22,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
     Validators private validators;
+    Admin private adminContract;
 
     address private adminContractAddress;
 
@@ -65,14 +67,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Maximum number of receivers in a BridgingRequestClaim.
     uint8 private constant MAX_NUMBER_OF_RECEIVERS = 16;
 
-    /// @notice Tracks whether a specific bridging address has been delegated to a stake pool on a given chain.
-    /// @dev Mapping: chainId => bridgeAddrIndex => true if delegated, false otherwise.
-    mapping(uint8 => mapping(uint8 => bool)) public isAddrDelegatedToStake;
-
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[49] private __gap;
+    uint256[50] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -124,50 +122,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         validators = Validators(_validatorsAddress);
+        adminContract = Admin(_adminContractAddress);
         adminContractAddress = _adminContractAddress;
-    }
-
-    /// @notice Records a stake delegation transaction for a specific bridging address on a given chain.
-    /// @dev Reverts if the address is already delegated or the chain is not registered.
-    /// @param chainId The ID of the chain where the delegation is made.
-    /// @param bridgeAddrIndex The index of the bridging address being delegated.
-    /// @param stakePoolId The identifier of the stake pool to delegate to. Should be at least 56 bytes long
-    /// @param doRegistration Whether to register the stake address.
-    function delegateAddrToStakePool(
-        uint8 chainId,
-        uint8 bridgeAddrIndex,
-        string calldata stakePoolId,
-        bool doRegistration
-    ) external onlyBridge {
-        // cardano stake pool id string can be: (Bech32, size=56–64, pool1...) or (Hex[raw ID], size=56)
-        if (bytes(stakePoolId).length < 56) {
-            revert InvalidData(stakePoolId);
-        }
-
-        if (isAddrDelegatedToStake[chainId][bridgeAddrIndex] && doRegistration) {
-            revert AddrAlreadyDelegatedToStake(chainId, bridgeAddrIndex);
-        }
-
-        if (!isChainRegistered[chainId]) {
-            revert ChainIsNotRegistered(chainId);
-        }
-
-        uint256 _confirmedTxCount = getBatchingTxsCount(chainId);
-
-        isAddrDelegatedToStake[chainId][bridgeAddrIndex] = true;
-        uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
-
-        ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nextNonce];
-        confirmedTx.transactionType = doRegistration
-            ? TransactionTypesLib.STAKE_REGISTRATION_AND_DELEGATION
-            : TransactionTypesLib.STAKE_DELEGATION;
-        confirmedTx.nonce = nextNonce;
-        confirmedTx.destinationChainId = chainId;
-        confirmedTx.stakePoolId = stakePoolId;
-        confirmedTx.bridgeAddrIndex = bridgeAddrIndex;
-        confirmedTx.blockHeight = block.number;
-
-        _updateNextTimeoutBlockIfNeeded(chainId, _confirmedTxCount);
     }
 
     /// @notice Submit claims from validators for reaching consensus.
@@ -426,15 +382,22 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                     if (_ctx.retryCounter < MAX_NUMBER_OF_RETRIES) {
                         _retryTx(chainId, _ctx);
                     } else {
-                        isAddrDelegatedToStake[chainId][_ctx.bridgeAddrIndex] = false;
+                        adminContract.setAddressDelegatedToStake(chainId, _ctx.bridgeAddrIndex, false);
                         emit StakeDelegationFailedAfterMultipleRetries();
                     }
                 } else if (_txType == TransactionTypesLib.STAKE_REGISTRATION_AND_DELEGATION) {
                     if (_ctx.retryCounter < MAX_NUMBER_OF_RETRIES) {
                         _retryTx(chainId, _ctx);
                     } else {
-                        isAddrDelegatedToStake[chainId][_ctx.bridgeAddrIndex] = false;
+                        adminContract.setAddressDelegatedToStake(chainId, _ctx.bridgeAddrIndex, false);
                         emit StakeDelegationFailedAfterMultipleRetries();
+                    }
+                } else if (_txType == TransactionTypesLib.STAKE_DEREGISTRATION) {
+                    if (_ctx.retryCounter < MAX_NUMBER_OF_RETRIES) {
+                        _retryTx(chainId, _ctx);
+                    } else {
+                        adminContract.setAddressDelegatedToStake(chainId, _ctx.bridgeAddrIndex, true);
+                        emit StakeDeregistrationFailedAfterMultipleRetries();
                     }
                 }
             }
@@ -836,6 +799,32 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
     }
 
+    /// @notice Creates a stake transaction (delegation or deregistration) for the Admin contract.
+    /// @dev Only callable by the Admin contract.
+    /// @param chainId The ID of the chain where the transaction is made.
+    /// @param bridgeAddrIndex The index of the bridging address.
+    /// @param stakePoolId The identifier of the stake pool (only used for delegation).
+    /// @param transactionType The type of transaction (STAKE_DELEGATION, STAKE_REGISTRATION_AND_DELEGATION, or STAKE_DEREGISTRATION).
+    function createStakeTransaction(
+        uint8 chainId,
+        uint8 bridgeAddrIndex,
+        string calldata stakePoolId,
+        uint8 transactionType
+    ) external onlyAdminContract {
+        uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
+
+        ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nextNonce];
+        confirmedTx.transactionType = transactionType;
+        confirmedTx.nonce = nextNonce;
+        confirmedTx.destinationChainId = chainId;
+        confirmedTx.bridgeAddrIndex = bridgeAddrIndex;
+        confirmedTx.blockHeight = block.number;
+        confirmedTx.stakePoolId = stakePoolId;
+
+        uint256 _confirmedTxCount = getBatchingTxsCount(chainId);
+        _updateNextTimeoutBlockIfNeeded(chainId, _confirmedTxCount);
+    }
+
     /// @notice Retrieves a list of transactions for a specific batch on a given chain.
     /// @dev This function returns transaction details for a batch identified by its batch ID.
     ///      If the batch is a consolidation batch does not exist, an empty array
@@ -888,7 +877,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         // currently there are 4 chains and only one address
         for (uint8 _chainID = 1; _chainID < 5; _chainID++) {
             for (uint8 _indx = 0; _indx < 1; _indx++) {
-                isAddrDelegatedToStake[_chainID][_indx] = false;
+                adminContract.setAddressDelegatedToStake(_chainID, _indx, false);
             }
         }
     }

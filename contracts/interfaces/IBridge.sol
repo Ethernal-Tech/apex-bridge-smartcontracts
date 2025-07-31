@@ -90,6 +90,11 @@ abstract contract IBridge is IBridgeStructs {
         bool doRegistration
     ) external virtual;
 
+    function deregisterStakeAddress(
+        uint8 chainId,
+        uint8 bridgeAddrIndex
+    ) external virtual;
+
     /// @notice Get the confirmed batch for the given destination chain.
     /// @param _destinationChain ID of the destination chain.
     /// @return _batch The confirmed batch details.

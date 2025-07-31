@@ -69,7 +69,7 @@ describe("Deployment", function () {
     const { admin, bridge, claims, claimsHelper, signedBatches, slots, validatorsc, owner, validators } =
       await loadFixture(deployBridgeFixture);
 
-    await expect(admin.connect(owner).setDependencies(ZeroAddress)).to.be.revertedWithCustomError(
+    await expect(admin.connect(owner).setDependencies(ZeroAddress, ZeroAddress)).to.be.revertedWithCustomError(
       admin,
       "NotContractAddress"
     );
@@ -81,7 +81,8 @@ describe("Deployment", function () {
           validators[0].address,
           signedBatches.getAddress(),
           slots.getAddress(),
-          validatorsc.getAddress()
+          validatorsc.getAddress(),
+          admin.getAddress()
         )
     ).to.be.revertedWithCustomError(bridge, "NotContractAddress");
 

@@ -211,6 +211,7 @@ interface IBridgeStructs {
     error TooManyClaims(uint256 _claimsCount, uint256 _maxClaimsCount);
     error NotContractAddress();
     error AddrAlreadyDelegatedToStake(uint8 _chainId, uint8 _bridgeAddrIndex);
+    error AddrNotDelegatedToStake(uint8 _chainId, uint8 _bridgeAddrIndex);
     error InvalidBridgeAddrIndex(uint8 _chainId, uint8 _bridgeAddrIndex);
 
     // ------------------------------------------------------------------------
@@ -227,4 +228,5 @@ interface IBridgeStructs {
     event UpdatedMaxNumberOfTransactions(uint256 _maxNumberOfTransactions);
     event UpdatedTimeoutBlocksNumber(uint256 _timeoutBlocksNumber);
     event StakeDelegationFailedAfterMultipleRetries();
+    event StakeDeregistrationFailedAfterMultipleRetries();
 }
