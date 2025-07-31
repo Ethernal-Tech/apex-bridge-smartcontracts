@@ -378,26 +378,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                         _currentWrappedAmount += _ctx.totalWrappedAmount;
                         emit DefundFailedAfterMultipleRetries();
                     }
-                } else if (_txType == TransactionTypesLib.STAKE_DELEGATION) {
+                } else if (_txType == TransactionTypesLib.STAKE) {
                     if (_ctx.retryCounter < MAX_NUMBER_OF_RETRIES) {
                         _retryTx(chainId, _ctx);
                     } else {
-                        adminContract.setAddressDelegatedToStake(chainId, _ctx.bridgeAddrIndex, false);
-                        emit StakeDelegationFailedAfterMultipleRetries();
-                    }
-                } else if (_txType == TransactionTypesLib.STAKE_REGISTRATION_AND_DELEGATION) {
-                    if (_ctx.retryCounter < MAX_NUMBER_OF_RETRIES) {
-                        _retryTx(chainId, _ctx);
-                    } else {
-                        adminContract.setAddressDelegatedToStake(chainId, _ctx.bridgeAddrIndex, false);
-                        emit StakeDelegationFailedAfterMultipleRetries();
-                    }
-                } else if (_txType == TransactionTypesLib.STAKE_DEREGISTRATION) {
-                    if (_ctx.retryCounter < MAX_NUMBER_OF_RETRIES) {
-                        _retryTx(chainId, _ctx);
-                    } else {
-                        adminContract.setAddressDelegatedToStake(chainId, _ctx.bridgeAddrIndex, true);
-                        emit StakeDeregistrationFailedAfterMultipleRetries();
+                        adminContract.setAddressDelegatedToStake(
+                            chainId, _ctx.bridgeAddrIndex, _ctx.trasactionSubType == TransactionTypesLib.STAKE_DEREGISTRATION);
+                        emit StakeFailedAfterMultipleRetries(_ctx.trasactionSubType);
                     }
                 }
             }
@@ -804,24 +791,26 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @param chainId The ID of the chain where the transaction is made.
     /// @param bridgeAddrIndex The index of the bridging address.
     /// @param stakePoolId The identifier of the stake pool (only used for delegation).
-    /// @param transactionType The type of transaction (STAKE_DELEGATION, STAKE_REGISTRATION_AND_DELEGATION, or STAKE_DEREGISTRATION).
+    /// @param transactionSubType The type of transaction (STAKE_DELEGATION, STAKE_REGISTRATION_AND_DELEGATION, or STAKE_DEREGISTRATION).
     function createStakeTransaction(
         uint8 chainId,
         uint8 bridgeAddrIndex,
         string calldata stakePoolId,
-        uint8 transactionType
+        uint8 transactionSubType
     ) external onlyAdminContract {
+        uint256 _confirmedTxCount = getBatchingTxsCount(chainId);
+        
         uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
 
         ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nextNonce];
-        confirmedTx.transactionType = transactionType;
+        confirmedTx.transactionType = TransactionTypesLib.STAKE;
+        confirmedTx.trasactionSubType = transactionSubType;
         confirmedTx.nonce = nextNonce;
         confirmedTx.destinationChainId = chainId;
         confirmedTx.bridgeAddrIndex = bridgeAddrIndex;
         confirmedTx.blockHeight = block.number;
         confirmedTx.stakePoolId = stakePoolId;
 
-        uint256 _confirmedTxCount = getBatchingTxsCount(chainId);
         _updateNextTimeoutBlockIfNeeded(chainId, _confirmedTxCount);
     }
 

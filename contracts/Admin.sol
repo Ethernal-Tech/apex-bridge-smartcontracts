@@ -88,7 +88,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         isAddrDelegatedToStake[chainId][bridgeAddrIndex] = true;
         
         uint8 transactionType = doRegistration
-            ? TransactionTypesLib.STAKE_REGISTRATION_AND_DELEGATION
+            ? TransactionTypesLib.STAKE_REGISTRATION
             : TransactionTypesLib.STAKE_DELEGATION;
             
         claims.createStakeTransaction(

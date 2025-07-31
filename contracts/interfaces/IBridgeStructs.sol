@@ -58,6 +58,7 @@ interface IBridgeStructs {
         uint8 destinationChainId;
         string stakePoolId;
         uint8 bridgeAddrIndex;
+        uint8 trasactionSubType; // TransactionTypesLib
     }
 
     /// @notice Represents a block from the Cardano chain.
@@ -227,6 +228,5 @@ interface IBridgeStructs {
     event DefundFailedAfterMultipleRetries();
     event UpdatedMaxNumberOfTransactions(uint256 _maxNumberOfTransactions);
     event UpdatedTimeoutBlocksNumber(uint256 _timeoutBlocksNumber);
-    event StakeDelegationFailedAfterMultipleRetries();
-    event StakeDeregistrationFailedAfterMultipleRetries();
+    event StakeFailedAfterMultipleRetries(uint8 _type);
 }
