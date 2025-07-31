@@ -1,31 +1,31 @@
-import { loadFixture, setCode, reset } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { deployBridgeFixture, TransactionType } from "./fixtures";
 
 describe("Stake Delegation", function () {
-    
     const stakePoolId = "pool1y0uxkqyplyx6ld25e976t0s35va3ysqcscatwvy2sd2cwcareq7";
 
     it("Should revert if delegation is not sent by owner", async function () {
-      const { bridge, chain1, validators, bridgeAddrIndex } = await loadFixture(deployBridgeFixture);
+        const { bridge, chain1, validators, bridgeAddrIndex } = await loadFixture(deployBridgeFixture);
 
-      await expect(bridge.connect(validators[0]).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId))
-        .to.be.revertedWith("Ownable: caller is not the owner");
-    });
-
-    it("Should revert if pool id is invalid", async () => {
-        const { bridge, owner, chain1, bridgeAddrIndex } = await loadFixture(deployBridgeFixture);
-
-        await expect(bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, "none"))
-        .to.be.revertedWithCustomError(bridge, "InvalidData");
+        await expect(bridge.connect(validators[0]).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId))
+            .to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     it("Should revert if chain is not registered", async () => {
         const { bridge, owner, chain1, bridgeAddrIndex } = await loadFixture(deployBridgeFixture);
 
         await expect(bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId))
-        .to.be.revertedWithCustomError(bridge, "ChainIsNotRegistered");
+            .to.be.revertedWithCustomError(bridge, "InvalidBridgeAddrIndex");
+    });
+
+    it("Should revert if pool id is invalid", async () => {
+        const { bridge, owner, chain1, bridgeAddrIndex, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
+
+        await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
+        await expect(bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, "none"))
+            .to.be.revertedWithCustomError(bridge, "InvalidData");
     });
 
     it("Should revert if index of bridging address is invalid", async () => {
@@ -49,7 +49,7 @@ describe("Stake Delegation", function () {
 
     it("Should increase last confirmed tx nonce when delegation is added", async function () {
         const { bridge, claims, owner, chain1, validatorAddressChainData, bridgeAddrIndex } =
-        await loadFixture(deployBridgeFixture);
+            await loadFixture(deployBridgeFixture);
 
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
 
@@ -62,8 +62,7 @@ describe("Stake Delegation", function () {
 
     it("Should correctly store a new confirmed transaction of type stake delegation", async function () {
         const { bridge, claims, owner, chain1, validatorAddressChainData, bridgeAddrIndex } =
-        await loadFixture(deployBridgeFixture);
-
+            await loadFixture(deployBridgeFixture);
         //await registerChainAndDelegate(bridge, owner, validatorAddressChainData, bridgeAddrIndex, 1);
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
         await bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId);

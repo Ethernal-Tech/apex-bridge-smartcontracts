@@ -560,6 +560,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         confirmedTx.nonce = nextNonce;
         confirmedTx.retryCounter = _claim.retryCounter;
         confirmedTx.transactionType = TransactionTypesLib.NORMAL;
+        confirmedTx.bridgeAddrIndex = _claim.bridgeAddrIndex;
 
         uint256 receiversLength = _claim.receivers.length;
         for (uint i; i < receiversLength; i++) {
@@ -592,6 +593,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         confirmedTx.transactionType = TransactionTypesLib.REFUND;
         confirmedTx.outputIndexes = _claim.outputIndexes;
         confirmedTx.alreadyTriedBatch = _claim.shouldDecrementHotWallet;
+        confirmedTx.bridgeAddrIndex = _claim.bridgeAddrIndex;
 
         confirmedTx.receivers.push(
             Receiver(_claim.originAmount, _claim.originWrappedAmount, _claim.originSenderAddress)

@@ -88,6 +88,7 @@ interface IBridgeStructs {
         uint256 retryCounter;
         uint8 sourceChainId;
         uint8 destinationChainId;
+        uint8 bridgeAddrIndex;
     }
 
     /// @notice A claim that a batch was executed on a specific chain.
@@ -133,6 +134,8 @@ interface IBridgeStructs {
         bool shouldDecrementHotWallet;
         // ID of the original destination chain where the transaction should have been executed)
         uint8 destinationChainId;
+        // index of bridging address
+        uint8 bridgeAddrIndex;
     }
 
     /// @notice A claim to increase the balance of a chain's hot wallet.
@@ -212,6 +215,8 @@ interface IBridgeStructs {
     error NotContractAddress();
     error AddrAlreadyDelegatedToStake(uint8 _chainId, uint8 _bridgeAddrIndex);
     error InvalidBridgeAddrIndex(uint8 _chainId, uint8 _bridgeAddrIndex);
+    error InvalidBridgingAddrCount(uint8 _chainId, uint8 _bridgingAddrCount);
+    error BridgingAddrCountAlreadyInit(uint8 _chainId);
 
     // ------------------------------------------------------------------------
     // Events
