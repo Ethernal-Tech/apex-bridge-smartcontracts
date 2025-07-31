@@ -192,6 +192,7 @@ export async function deployBridgeFixture() {
         ],
         sourceChainId: 1,
         destinationChainId: 2,
+        bridgeAddrIndex: 1,
       },
     ],
     batchExecutedClaims: [],
@@ -217,6 +218,7 @@ export async function deployBridgeFixture() {
         ],
         sourceChainId: 1,
         destinationChainId: 2,
+        bridgeAddrIndex: 0,
       },
     ],
     batchExecutedClaims: [],
@@ -242,6 +244,7 @@ export async function deployBridgeFixture() {
       ],
       sourceChainId: 1,
       destinationChainId: 2,
+      bridgeAddrIndex: 0,
     })),
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
@@ -266,6 +269,7 @@ export async function deployBridgeFixture() {
       ],
       sourceChainId: 1,
       destinationChainId: 2,
+      bridgeAddrIndex: 0,
     })),
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
@@ -291,6 +295,7 @@ export async function deployBridgeFixture() {
         ],
         sourceChainId: 1,
         destinationChainId: 2,
+        bridgeAddrIndex: 0,
       },
     ],
     batchExecutedClaims: [],
@@ -318,6 +323,7 @@ export async function deployBridgeFixture() {
         ],
         sourceChainId: 1,
         destinationChainId: 2,
+        bridgeAddrIndex: 0,
       },
     ],
     batchExecutedClaims: [],
@@ -398,6 +404,7 @@ export async function deployBridgeFixture() {
         originChainId: 2,
         shouldDecrementHotWallet: false,
         destinationChainId: 1,
+        bridgeAddrIndex: 1,
       },
     ],
     hotWalletIncrementClaims: [],
@@ -419,6 +426,7 @@ export async function deployBridgeFixture() {
         originChainId: 2,
         shouldDecrementHotWallet: true,
         destinationChainId: 1,
+        bridgeAddrIndex: 0,
       },
     ],
     hotWalletIncrementClaims: [],
@@ -440,6 +448,7 @@ export async function deployBridgeFixture() {
         originChainId: 2,
         shouldDecrementHotWallet: false,
         destinationChainId: 1,
+        bridgeAddrIndex: 0,
       },
     ],
     hotWalletIncrementClaims: [],
@@ -579,4 +588,70 @@ export async function deployBridgeFixture() {
     cardanoBlocksTooManyBlocks,
     bridgeAddrIndex,
   };
+}
+
+export function encodeRefundRequestClaim(claim: any) {
+  const abiCoder = new ethers.AbiCoder();
+  const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
+  const encoded = abiCoder.encode(
+    ["bytes32", "bytes32", "uint256", "uint256", "bytes", "string", "uint64", "uint8", "bool", "uint8", "uint8"],
+    [
+      claim.originTransactionHash,
+      claim.refundTransactionHash,
+      claim.originAmount,
+      claim.originWrappedAmount,
+      claim.outputIndexes,
+      claim.originSenderAddress,
+      claim.retryCounter,
+      claim.originChainId,
+      claim.shouldDecrementHotWallet,
+      claim.destinationChainId,
+      claim.bridgeAddrIndex,
+    ]
+  );
+  return "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+    encodedPrefix.substring(66) +
+    encoded.substring(2);
+}
+
+export function encodeBridgeRequestClaim(claim: any) {
+  const abiCoder = new ethers.AbiCoder();
+  const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
+  const lst = [];
+  for (let receiver of claim.receivers) {
+    lst.push([
+      receiver.amount, receiver.amountWrapped, receiver.destinationAddress,
+    ])
+  }
+
+  const encoded = abiCoder.encode(
+    [
+      "bytes32",
+      "tuple(uint64, uint64, string)[]",
+      "uint256",
+      "uint256",
+      "uint256",
+      "uint256",
+      "uint256",
+      "uint8",
+      "uint8",
+      "uint8",
+    ],
+    [
+      claim.observedTransactionHash,
+      lst,
+      claim.nativeCurrencyAmountSource,
+      claim.wrappedTokenAmountSource,
+      claim.nativeCurrencyAmountDestination,
+      claim.wrappedTokenAmountDestination,
+      claim.retryCounter,
+      claim.sourceChainId,
+      claim.destinationChainId,
+      claim.bridgeAddrIndex,
+    ]
+  );
+
+  return "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+    encodedPrefix.substring(66) +
+    encoded.substring(2);
 }
