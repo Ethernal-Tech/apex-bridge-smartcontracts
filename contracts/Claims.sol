@@ -217,10 +217,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
         uint8 _quorumCount = validators.getQuorumNumberOfValidators();
-        uint256 _votesCount = claimsHelper.getVotesCount(_claimHash);
+        uint256 _votesCount = claimsHelper.numberOfVotes(_claimHash);
         // if quorum already reached -> exit
         if (_votesCount == _quorumCount) {
-            return; 
+            return;
         }
         // check token quantity on destination
         if (_chainTokenQuantityDestination < _receiversSumDst) {
@@ -228,7 +228,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
             return;
         }
-        // update votes count with current validator 
+        // update votes count with current validator
         bool _isNewVote = claimsHelper.updateVote(_claimHash, _validatorIdx);
         // check if quorum is reached for the first time
         if (_isNewVote && _votesCount + 1 == _quorumCount) {
@@ -396,10 +396,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         bytes32 _claimHash = keccak256(abi.encode("RRC", _claim));
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
         uint8 _quorumCount = validators.getQuorumNumberOfValidators();
-        uint256 _votesCount = claimsHelper.getVotesCount(_claimHash);
+        uint256 _votesCount = claimsHelper.numberOfVotes(_claimHash);
         // if quorum already reached -> exit
         if (_votesCount == _quorumCount) {
-            return; 
+            return;
         }
         // check token quantity on source if needed
         if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
@@ -410,7 +410,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 return;
             }
         }
-        // update votes count with current validator 
+        // update votes count with current validator
         bool _isNewVote = claimsHelper.updateVote(_claimHash, _validatorIdx);
         // check if quorum is reached for the first time
         if (_isNewVote && _votesCount + 1 == _quorumCount) {
@@ -746,7 +746,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.1";
+        return "1.0.2";
     }
 
     modifier onlyBridge() {
