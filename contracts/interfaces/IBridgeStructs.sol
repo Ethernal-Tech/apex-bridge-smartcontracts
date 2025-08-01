@@ -58,6 +58,7 @@ interface IBridgeStructs {
         uint8 destinationChainId;
         string stakePoolId;
         uint8 bridgeAddrIndex;
+        uint8 transactionSubType; // TransactionTypesLib
     }
 
     /// @notice Represents a block from the Cardano chain.
@@ -202,6 +203,7 @@ interface IBridgeStructs {
     error NotUpgradeAdmin();
     error NotAdminContract();
     error NotSignedBatchesOrClaims();
+    error NotBridgingAddresses();
     error CanNotCreateBatchYet(uint8 _chainId);
     error InvalidData(string data);
     error ChainIsNotRegistered(uint8 _chainId);
@@ -217,6 +219,8 @@ interface IBridgeStructs {
     error InvalidBridgeAddrIndex(uint8 _chainId, uint8 _bridgeAddrIndex);
     error InvalidBridgingAddrCount(uint8 _chainId, uint8 _bridgingAddrCount);
     error BridgingAddrCountAlreadyInit(uint8 _chainId);
+    error AddrNotRegistered(uint8 _chainId, uint8 _bridgeAddrIndex);
+    error InvalidStakeTransactionSubType(uint8 _transactionSubType);
 
     // ------------------------------------------------------------------------
     // Events
@@ -231,5 +235,5 @@ interface IBridgeStructs {
     event DefundFailedAfterMultipleRetries();
     event UpdatedMaxNumberOfTransactions(uint256 _maxNumberOfTransactions);
     event UpdatedTimeoutBlocksNumber(uint256 _timeoutBlocksNumber);
-    event StakeDelegationFailedAfterMultipleRetries();
+    event StakeOperationFailedAfterMultipleRetries(uint8 _transactionSubType);
 }

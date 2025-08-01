@@ -1241,4 +1241,57 @@ describe("Claims Contract", function () {
       expect(status).to.equal(1);
     });
   });
+
+  describe("setBridgingAddrsDependency", function () {
+    it("Should revert if not called by upgrade admin", async function () {
+      const { bridge, claims, validators, bridgingAddresses } = await loadFixture(deployBridgeFixture);
+      
+      await expect(
+        claims.connect(validators[0]).setBridgingAddrsDependency(bridgingAddresses.target)
+      ).to.be.revertedWithCustomError(bridge, "NotOwner");
+    });
+
+    it("Should revert if provided address is not a contract", async function () {
+      const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
+      
+      const nonContractAddress = "0x1234567890123456789012345678901234567890";
+      
+      await expect(
+        claims.connect(owner).setBridgingAddrsDependency(nonContractAddress)
+      ).to.be.revertedWithCustomError(bridge, "NotContractAddress");
+    });
+
+    it("Should successfully set bridging addresses dependency when called by upgrade admin", async function () {
+      const { bridge, claims, owner, bridgingAddresses } = await loadFixture(deployBridgeFixture);
+      
+      // Set the bridging addresses dependency
+      await expect(
+        claims.connect(owner).setBridgingAddrsDependency(bridgingAddresses.target)
+      ).to.not.be.reverted;
+    });
+
+    it("Should allow setting the same bridging addresses address again", async function () {
+      const { bridge, claims, owner, bridgingAddresses } = await loadFixture(deployBridgeFixture);
+      
+      // Set the bridging addresses dependency
+      await claims.connect(owner).setBridgingAddrsDependency(bridgingAddresses.target);
+      
+      // Set it again with the same address
+      await expect(
+        claims.connect(owner).setBridgingAddrsDependency(bridgingAddresses.target)
+      ).to.not.be.reverted;
+    });
+
+    it("Should work with a different valid contract address", async function () {
+      const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
+      
+      // Deploy a new BridgingAddresses contract for testing
+      const BridgingAddresses = await ethers.getContractFactory("BridgingAddresses");
+      const newBridgingAddresses = await BridgingAddresses.deploy();
+      
+      await expect(
+        claims.connect(owner).setBridgingAddrsDependency(await newBridgingAddresses.getAddress())
+      ).to.not.be.reverted;
+    });
+  });
 });
