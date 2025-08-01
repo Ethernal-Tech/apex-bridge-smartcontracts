@@ -94,7 +94,7 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
         string calldata stakePoolId,
         uint8 transactionSubType
     ) external onlyBridge {
-        if (checkBridgingAddrIndex(chainId, bridgeAddrIndex)) {
+        if (!checkBridgingAddrIndex(chainId, bridgeAddrIndex)) {
             revert InvalidBridgeAddrIndex(chainId, bridgeAddrIndex);
         }
 
@@ -115,6 +115,9 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
             !isAddrDelegatedToStake[chainId][bridgeAddrIndex]) {
             revert AddrNotRegistered(chainId, bridgeAddrIndex);
         }
+
+        // update the state of the address, if it is deregistration, we need to set the state to false - true otherwise
+        isAddrDelegatedToStake[chainId][bridgeAddrIndex] = transactionSubType != TransactionTypesLib.STAKE_DEREGISTRATION;
 
         claims.createStakeTransaction(chainId, bridgeAddrIndex, stakePoolId, transactionSubType);
     }
