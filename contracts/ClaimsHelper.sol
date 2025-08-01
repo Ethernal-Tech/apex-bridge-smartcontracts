@@ -100,6 +100,23 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         currentBatchBlock[destinationChainId] = int256(block.number);
     }
 
+    /// @notice Update number of votes for specific hash if needed and returns true if update was executed
+    /// @dev Update number of votes for specific hash if needed and returns true if update was executed
+    /// @param _hash hash
+    /// @param _validatorIdx index of validator
+    function updateVote(bytes32 _hash, uint8 _validatorIdx) external onlySignedBatchesOrClaims returns (bool) {
+        uint256 _bitmapValue = bitmap[_hash];
+        uint256 _newBitmapValue = _bitmapValue | (1 << _validatorIdx);
+
+        if (_newBitmapValue == _bitmapValue) {
+            return false;
+        }
+
+        bitmap[_hash] = _newBitmapValue;
+
+        return true;
+    }
+
     /// @notice Registers a vote for a specific claim hash only if the voter hasn't already voted and quorum hasn't been reached.
     /// @dev Increments the vote count if conditions are met and returns whether the quorum is now reached.
     /// @param _validatorIdx The index of validator in the validator set.
@@ -166,7 +183,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.1.0";
+        return "1.1.1";
     }
 
     modifier onlySignedBatchesOrClaims() {

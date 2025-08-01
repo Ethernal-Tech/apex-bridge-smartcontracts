@@ -266,8 +266,8 @@ export async function deployBridgeFixture() {
         retryCounter: 0,
         receivers: [
           {
+            amount: 99,
             destinationAddress: "0x234...",
-            amount: 100,
             amountWrapped: 0,
           },
         ],
@@ -293,8 +293,8 @@ export async function deployBridgeFixture() {
         retryCounter: 0,
         receivers: [
           ...Array.from({ length: 17 }, (_, i) => ({
+            amount: 99 + i,
             destinationAddress: `0x123...${(i + 1).toString().padStart(8, "0")}`,
-            amount: 100 + i,
             amountWrapped: 100 + i,
           })),
         ],

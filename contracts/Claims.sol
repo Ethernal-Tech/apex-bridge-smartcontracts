@@ -259,26 +259,28 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint256 _chainTokenQuantityDestination = chainTokenQuantity[_destinationChainId];
         uint256 _chainWrappedTokenQuantityDestination = chainWrappedTokenQuantity[_destinationChainId];
 
+        bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
+        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
+        uint8 _quorumCount = validators.getQuorumNumberOfValidators();
+        uint256 _votesCount = claimsHelper.numberOfVotes(_claimHash);
+        // if quorum already reached -> exit
+        if (_votesCount == _quorumCount) {
+            return;
+        }
+        // check token quantity on destination
         if (_chainTokenQuantityDestination < _nativeCurrencyAmountDestination) {
             emit NotEnoughFunds("BRC - Currency", i, _chainTokenQuantityDestination);
-            return;
+            return; // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
         }
 
         if (_chainWrappedTokenQuantityDestination < _wrappedTokenAmountDestination) {
             emit NotEnoughFunds("BRC - Native Token", i, _chainWrappedTokenQuantityDestination);
-            return;
+            return; // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
         }
-
-        bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
-        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
-
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
-            _validatorIdx,
-            _claimHash,
-            validators.getQuorumNumberOfValidators()
-        );
-
-        if (_quorumReached) {
+        // update votes count with current validator
+        bool _isNewVote = claimsHelper.updateVote(_claimHash, _validatorIdx);
+        // check if quorum is reached for the first time
+        if (_isNewVote && _votesCount + 1 == _quorumCount) {
             chainTokenQuantity[_destinationChainId] -= _nativeCurrencyAmountDestination;
             chainWrappedTokenQuantity[_destinationChainId] -= _wrappedTokenAmountDestination;
 
@@ -474,31 +476,33 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         uint8 originChainId = _claim.originChainId;
 
-        // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
+        bytes32 _claimHash = keccak256(abi.encode("RRC", _claim));
+        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
+        uint8 _quorumCount = validators.getQuorumNumberOfValidators();
+        uint256 _votesCount = claimsHelper.numberOfVotes(_claimHash);
+        // if quorum already reached -> exit
+        if (_votesCount == _quorumCount) {
+            return;
+        }
+        // check token quantity on source if needed
         if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
             uint256 _chainTokenQuantityOrigin = chainTokenQuantity[originChainId];
             if (_chainTokenQuantityOrigin < _claim.originAmount) {
                 emit NotEnoughFunds("RRC - Currency", 0, _chainTokenQuantityOrigin);
+                // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
                 return;
             }
 
             if (chainWrappedTokenQuantity[originChainId] < _claim.originWrappedAmount) {
                 emit NotEnoughFunds("RRC - Native Token", 0, chainWrappedTokenQuantity[originChainId]);
+                // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
                 return;
             }
         }
-
-        bytes32 claimHash = keccak256(abi.encode("RRC", _claim));
-
-        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
-
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
-            _validatorIdx,
-            claimHash,
-            validators.getQuorumNumberOfValidators()
-        );
-
-        if (_quorumReached) {
+        // update votes count with current validator
+        bool _isNewVote = claimsHelper.updateVote(_claimHash, _validatorIdx);
+        // check if quorum is reached for the first time
+        if (_isNewVote && _votesCount + 1 == _quorumCount) {
             uint256 _confirmedTxCount = getBatchingTxsCount(originChainId);
 
             if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
@@ -885,7 +889,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.1.1";
+        return "1.1.2";
     }
 
     modifier onlyBridge() {
