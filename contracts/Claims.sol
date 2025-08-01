@@ -217,7 +217,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
         uint8 _quorumCount = validators.getQuorumNumberOfValidators();
-        uint256 _votesCount = claimsHelper.getVotesCount(_claimHash);
+        uint256 _votesCount = claimsHelper.numberOfVotes(_claimHash);
         // if quorum already reached -> exit
         if (_votesCount == _quorumCount) {
             return; 
@@ -396,7 +396,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         bytes32 _claimHash = keccak256(abi.encode("RRC", _claim));
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
         uint8 _quorumCount = validators.getQuorumNumberOfValidators();
-        uint256 _votesCount = claimsHelper.getVotesCount(_claimHash);
+        uint256 _votesCount = claimsHelper.numberOfVotes(_claimHash);
         // if quorum already reached -> exit
         if (_votesCount == _quorumCount) {
             return; 
@@ -746,7 +746,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.1";
+        return "1.0.2";
     }
 
     modifier onlyBridge() {

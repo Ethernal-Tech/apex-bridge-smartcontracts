@@ -98,22 +98,6 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         currentBatchBlock[destinationChainId] = int256(block.number);
     }
 
-    /// @notice Returns number of votes for specific hash
-    /// @dev Returns number of votes for specific hash
-    /// @param _hash hash
-    function getVotesCount(bytes32 _hash) external onlySignedBatchesOrClaims view returns (uint8 _votesNum) {
-        // Brian Kernighan's algorithm
-        // @see https://github.com/estarriolvetch/solidity-bits/blob/main/contracts/Popcount.sol
-        uint256 _bitmapValue = bitmap[_hash];            
-        unchecked {
-            for (; _bitmapValue != 0; _votesNum++) {
-                _bitmapValue &= _bitmapValue - 1;
-            }
-        }
-
-        return _votesNum;
-    }
-
     /// @notice Update number of votes for specific hash if needed and returns true if update was executed
     /// @dev Update number of votes for specific hash if needed and returns true if update was executed
     /// @param _hash hash
@@ -197,7 +181,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.1";
+        return "1.0.2";
     }
 
     modifier onlySignedBatchesOrClaims() {
