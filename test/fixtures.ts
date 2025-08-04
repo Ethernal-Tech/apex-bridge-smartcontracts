@@ -158,7 +158,7 @@ export async function deployBridgeFixture() {
 
   await claims.setDependencies(bridge.target, claimsHelper.target, validatorsc.target, admin.target);
 
-  await claims.setBridgingAddrsDependency(
+  await claims.setBridgingAddrsDependencyAndSync(
     bridgingAddressesProxy.target
   );
 

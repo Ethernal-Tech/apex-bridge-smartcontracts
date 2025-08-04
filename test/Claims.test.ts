@@ -1247,7 +1247,7 @@ describe("Claims Contract", function () {
       const { bridge, claims, validators, bridgingAddresses } = await loadFixture(deployBridgeFixture);
       
       await expect(
-        claims.connect(validators[0]).setBridgingAddrsDependency(bridgingAddresses.target)
+        claims.connect(validators[0]).setBridgingAddrsDependencyAndSync(bridgingAddresses.target)
       ).to.be.revertedWithCustomError(bridge, "NotOwner");
     });
 
@@ -1257,7 +1257,7 @@ describe("Claims Contract", function () {
       const nonContractAddress = "0x1234567890123456789012345678901234567890";
       
       await expect(
-        claims.connect(owner).setBridgingAddrsDependency(nonContractAddress)
+        claims.connect(owner).setBridgingAddrsDependencyAndSync(nonContractAddress)
       ).to.be.revertedWithCustomError(bridge, "NotContractAddress");
     });
 
@@ -1266,7 +1266,7 @@ describe("Claims Contract", function () {
       
       // Set the bridging addresses dependency
       await expect(
-        claims.connect(owner).setBridgingAddrsDependency(bridgingAddresses.target)
+        claims.connect(owner).setBridgingAddrsDependencyAndSync(bridgingAddresses.target)
       ).to.not.be.reverted;
     });
 
@@ -1274,11 +1274,11 @@ describe("Claims Contract", function () {
       const { bridge, claims, owner, bridgingAddresses } = await loadFixture(deployBridgeFixture);
       
       // Set the bridging addresses dependency
-      await claims.connect(owner).setBridgingAddrsDependency(bridgingAddresses.target);
+      await claims.connect(owner).setBridgingAddrsDependencyAndSync(bridgingAddresses.target);
       
       // Set it again with the same address
       await expect(
-        claims.connect(owner).setBridgingAddrsDependency(bridgingAddresses.target)
+        claims.connect(owner).setBridgingAddrsDependencyAndSync(bridgingAddresses.target)
       ).to.not.be.reverted;
     });
 
@@ -1290,7 +1290,7 @@ describe("Claims Contract", function () {
       const newBridgingAddresses = await BridgingAddresses.deploy();
       
       await expect(
-        claims.connect(owner).setBridgingAddrsDependency(await newBridgingAddresses.getAddress())
+        claims.connect(owner).setBridgingAddrsDependencyAndSync(await newBridgingAddresses.getAddress())
       ).to.not.be.reverted;
     });
   });

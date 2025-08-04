@@ -22,7 +22,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
     Validators private validators;
-    BridgingAddresses private bridgingAddresses;
 
     address private adminContractAddress;
 
@@ -66,6 +65,12 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     uint8 private constant MAX_NUMBER_OF_CLAIMS = 32;
     /// @notice Maximum number of receivers in a BridgingRequestClaim.
     uint8 private constant MAX_NUMBER_OF_RECEIVERS = 16;
+
+    /// @dev Depricated: This mapping has been moved to the BridgingAddresses contract. 
+    ///      Use BridgingAddresses.isAddrDelegatedToStake instead.
+    mapping(uint8 => mapping(uint8 => bool)) private __isAddrDelegatedToStake;
+
+    BridgingAddresses private bridgingAddresses;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
@@ -129,9 +134,20 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev This function can only be called by the upgrade admin.
     ///      It verifies that the provided address is a contract before using it.
     /// @param _bridgingAddresses The address of the BridgingAddresses contract to set.
-    function setBridgingAddrsDependency(address _bridgingAddresses) external onlyUpgradeAdmin {
+    function setBridgingAddrsDependencyAndSync(address _bridgingAddresses) external onlyUpgradeAdmin {
         if (!_isContract(_bridgingAddresses)) revert NotContractAddress();
         bridgingAddresses = BridgingAddresses(_bridgingAddresses);
+        
+        // Sync isAddrDelegatedToStake mapping to BridgingAddresses contract
+        for (uint8 chainId = 1; chainId <= 5; chainId++) {
+            if (isChainRegistered[chainId]) {
+                uint8 bridgeAddrCount = bridgingAddresses.bridgingAddressesCount(chainId);
+                for (uint8 bridgeAddrIndex = 0; bridgeAddrIndex < bridgeAddrCount; bridgeAddrIndex++) {
+                    bridgingAddresses.updateBridgingAddressState(chainId, bridgeAddrIndex,
+                        __isAddrDelegatedToStake[chainId][bridgeAddrIndex]);
+                }
+            }
+        }
     }
 
     /// @notice Creates a stake type transaction for the BridgingAddresses contract.
