@@ -215,7 +215,7 @@ interface IBridgeStructs {
     error TooManyBlocks(uint256 _blocksCount, uint256 _maxBlocksCount);
     error TooManyClaims(uint256 _claimsCount, uint256 _maxClaimsCount);
     error NotContractAddress();
-    error AddrAlreadyDelegatedToStake(uint8 _chainId, uint8 _bridgeAddrIndex);
+    error AddrAlreadyRegistered(uint8 _chainId, uint8 _bridgeAddrIndex);
     error InvalidBridgeAddrIndex(uint8 _chainId, uint8 _bridgeAddrIndex);
     error InvalidBridgingAddrCount(uint8 _chainId, uint8 _bridgingAddrCount);
     error BridgingAddrCountAlreadyInit(uint8 _chainId);

@@ -54,6 +54,7 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
     /// @param _bridgeAddress The address of the bridge contract
     function setDependencies(address _bridgeAddress, address _claimsAddress) external onlyOwner {
         if (!_isContract(_bridgeAddress)) revert NotContractAddress();
+        if (!_isContract(_claimsAddress)) revert NotContractAddress();
         bridgeAddress = _bridgeAddress;
         claims = Claims(_claimsAddress);
     }
@@ -107,7 +108,7 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
         // Don't allow to register the same address again
         if (transactionSubType == TransactionTypesLib.STAKE_REGISTRATION &&
             isAddrDelegatedToStake[chainId][bridgeAddrIndex]) {
-            revert AddrAlreadyDelegatedToStake(chainId, bridgeAddrIndex);
+            revert AddrAlreadyRegistered(chainId, bridgeAddrIndex);
         }
 
         // Don't allow to deregister or redelegate the address if it is not registered already

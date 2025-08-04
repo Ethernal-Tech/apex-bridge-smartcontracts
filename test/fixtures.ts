@@ -16,6 +16,12 @@ export enum TransactionType {
   STAKE = 3,
 }
 
+export enum TransactionSubType {
+  STAKE_REGISTRATION = 0,
+  STAKE_DELEGATION = 1,
+  STAKE_DEREGISTRATION = 2,
+}
+
 export async function deployBridgeFixture() {
   const PRECOMPILE_MOCK = "0x600160005260206000F3"; // returns true for isSignatureValid
 
