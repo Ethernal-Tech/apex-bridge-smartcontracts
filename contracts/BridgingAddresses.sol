@@ -27,7 +27,7 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[48] private __gap;
+    uint256[50] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -127,7 +127,7 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
     function clearIsAddrDelegatedToStake() external onlyUpgradeAdmin {
         // currently there are 4 chains and only one address
         for (uint8 _chainID = 1; _chainID < 5; _chainID++) {
-            for (uint8 _indx = 0; _indx < 1; _indx++) {
+            for (uint8 _indx = 0; _indx < bridgingAddressesCount[_chainID]; _indx++) {
                 isAddrDelegatedToStake[_chainID][_indx] = false;
             }
         }

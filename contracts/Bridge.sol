@@ -12,6 +12,7 @@ import "./SignedBatches.sol";
 import "./Slots.sol";
 import "./Validators.sol";
 import "./BridgingAddresses.sol";
+import "./interfaces/TransactionTypesLib.sol";
 
 /// @title Bridge
 /// @notice Cross-chain bridge for validator claim submission, batch transaction signing, and governance-based chain registration.
@@ -359,7 +360,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             revert ChainIsNotRegistered(chainId);
         }
 
-        if (transactionSubType > 2) {
+        if (transactionSubType > TransactionTypesLib.STAKE_DEREGISTRATION) {
             revert InvalidStakeTransactionSubType(transactionSubType);
         }
 
