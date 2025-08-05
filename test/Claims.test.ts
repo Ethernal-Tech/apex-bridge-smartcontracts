@@ -223,42 +223,50 @@ describe("Claims Contract", function () {
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC_bunch32);
 
-      const hashes = [
-        "0x0e3de34b9226ccc89d77c50f5bd4b5a5b210ee7f9a537853e29c52671feb7970",
-        "0x29f1a754cc9ac0a5f21c262e68c1754620b1b37c7ff6bc88f310999d75962615",
-        "0xcce35eb43fbee1abc09292fd710346ac295826c3b9bc2eceb02c287f89a69972",
-        "0xf5da300435dff5bbc7ca24b0ef0b17bec24a424f83172c67ca357b02e782e3c5",
-        "0xd740d57726715b321d0d6f3afa8e281616e786420ef64f0fe2c4c13270ad2c31",
-        "0x2767a5b79e6cf5c1c4bfad4fb99f7ca13d06198b7d85e79882748d905a73a3bf",
-        "0x26a0b820c6a61743af9a8e3d1667bbd092864a41cb577f5599176fd584b8fa3f",
-        "0xf8bd4813c38bc8a36a87e057a28d4f1edac711d413a61f2d93a802dce2bfe679",
-        "0xc2f2b11fcb24919d7e9c0e0ed2add5de6402c16efcc3da81dad30363faae8957",
-        "0xdf94146b45abc6568eddbf2467c05fd7f7e24b0901509cace1b61f95d53f4df6",
-        "0xd5ce250e0acc1070ea28179cdb172323d122ba52a341471fd2fd711f5c971a87",
-        "0x4de873a20a045be3ca484046b15fe23bf0aa21d7dbf14b77c943215270905e33",
-        "0x2e0a9c1e69b6a9e35710a2a8680a1d0cb02b83200b2b65b6215edf8ce74b7978",
-        "0xfa96807cb29ede9b0dd694b3d0c36e229f70f1c4fe68d09b801c94459a6fa14a",
-        "0x05e8293f9cb5ec4202567e42593c316cdb305c7143b51ddb2610ba359392893d",
-        "0x96b773a3ce2a56cb9270b2bae0833463517ea846c4f7029a8d3c8048b1fd9252",
-        "0xa22542b6bac5ceb4324bae1e743e1b9906ba9ff0d3704a7b4cb1563f17651858",
-        "0x71ac2e9a51503d5069bd790f9f715a8eade573b680fd43636a8e3f877a4de8b0",
-        "0xce2109c761c033d5bdcea90182dbb223c50d960c6f47600dceefb5aca42552d9",
-        "0x501986a3d4cfb0e42bee9a08721fbcbe9aa16f7f3974d42f45dfc2c209a526be",
-        "0x1e986af36820668358ea185acb2f0bad6b7a9419b08b78c0103fb038c383458f",
-        "0x783a9098cb6582e320f440f04c6111760d9adaa5d81ee740b334fad0284eb3e5",
-        "0xaa72cf536109bc0372253d6e7ffa436f95b6138023ea5a0e457236cd2194f29b",
-        "0x3cba750d9866881a60111361e34079c628de742db41a171b447512af34dbf35b",
-        "0x295fd2d0326b69ee3ebd3b336d936361177fce1a38adaeb4dd31b571c97866f9",
-        "0x76b708a80b584fe55833fd83f98623a198832128fddb65314583a9ea60cb2e6a",
-        "0xffa5043a934d6a012903721336adfe00f04152aff796af889552dcdf0abff26a",
-        "0xb6d114a6bd5263ac5a7ea156540ee975c3da33f8f49c436e04bf8d8b8b499f14",
-        "0x33876493d7e92b3af3035a961903ff4ad3d41d7f5a44cf00d40d0ad4ec70db87",
-        "0x5846b09bd3e0273754312a76da23ee612bd96b8d89d5e972b7e7814cee2a95a6",
-        "0xb1f5b1737995d5c11f3e6e1f64bc4097c36a257bc3c2a2e38fbbed5da3342ea5",
-        "0x252f113638bd7af427a5c723459909f5180b1db2904d9aef2d8881494474305e",
-      ];
+      let hashes: string[] = [];
+      const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
 
-      for (let i = 0; i < 16; i++) {
+      for (let i = 0; i < validatorClaimsBRC_bunch32.bridgingRequestClaims.length; i++) {
+        const encoded = abiCoder.encode(
+          [
+            "bytes32",
+            "tuple(uint256, uint256, string)[]",
+            "uint256",
+            "uint256",
+            "uint256",
+            "uint256",
+            "uint256",
+            "uint8",
+            "uint8",
+          ],
+          [
+            validatorClaimsBRC_bunch32.bridgingRequestClaims[0].observedTransactionHash,
+            [
+              [
+                validatorClaimsBRC_bunch32.bridgingRequestClaims[0].receivers[0].amount,
+                validatorClaimsBRC_bunch32.bridgingRequestClaims[0].receivers[0].amountWrapped,
+                validatorClaimsBRC_bunch32.bridgingRequestClaims[0].receivers[0].destinationAddress,
+              ],
+            ],
+            validatorClaimsBRC_bunch32.bridgingRequestClaims[0].nativeCurrencyAmountSource,
+            validatorClaimsBRC_bunch32.bridgingRequestClaims[0].wrappedTokenAmountSource,
+            validatorClaimsBRC_bunch32.bridgingRequestClaims[0].nativeCurrencyAmountDestination,
+            validatorClaimsBRC_bunch32.bridgingRequestClaims[0].wrappedTokenAmountDestination,
+            validatorClaimsBRC_bunch32.bridgingRequestClaims[0].retryCounter,
+            validatorClaimsBRC_bunch32.bridgingRequestClaims[0].sourceChainId,
+            validatorClaimsBRC_bunch32.bridgingRequestClaims[0].destinationChainId,
+          ]
+        );
+        const encoded40 =
+          "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+          encodedPrefix.substring(66) +
+          encoded.substring(2);
+
+        hashes.push(ethers.keccak256(encoded40));
+      }
+
+      for (let i = 0; i < validatorClaimsBRC_bunch32.bridgingRequestClaims.length; i++) {
         expect(await claims.hasVoted(hashes[i], validators[0].address)).to.be.true;
         expect(await claimsHelper.numberOfVotes(hashes[i])).to.equal(1);
       }
