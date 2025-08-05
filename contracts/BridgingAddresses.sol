@@ -95,7 +95,7 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
         string calldata stakePoolId,
         uint8 transactionSubType
     ) external onlyBridge {
-        if (!checkBridgingAddrIndex(chainId, bridgeAddrIndex)) {
+        if (!_checkBridgingAddrIndex(chainId, bridgeAddrIndex)) {
             revert InvalidBridgeAddrIndex(chainId, bridgeAddrIndex);
         }
 
@@ -150,7 +150,7 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
     /// @param chainId The ID of the chain being queried.
     /// @param bridgeAddrIndex The bridge address index to validate.
     /// @return True if the index is valid; otherwise false.
-    function checkBridgingAddrIndex(uint8 chainId, uint8 bridgeAddrIndex) internal view returns (bool) {
+    function _checkBridgingAddrIndex(uint8 chainId, uint8 bridgeAddrIndex) internal view returns (bool) {
         return bridgingAddressesCount[chainId] > bridgeAddrIndex;
     }
 
