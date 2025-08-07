@@ -162,6 +162,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         string calldata stakePoolId,
         uint8 transactionSubType
     ) external onlyBridgingAddresses {
+        uint256 _confirmedTxCount = getBatchingTxsCount(chainId);
         uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
 
         ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nextNonce];
@@ -173,7 +174,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         confirmedTx.blockHeight = block.number;
         confirmedTx.stakePoolId = stakePoolId;
 
-        uint256 _confirmedTxCount = getBatchingTxsCount(chainId);
         _updateNextTimeoutBlockIfNeeded(chainId, _confirmedTxCount);
     }
 

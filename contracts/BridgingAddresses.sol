@@ -83,8 +83,12 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
         bridgingAddressesCount[_chainId] = 1;
     }
 
-    /// @notice Records a stake delegation transaction for a specific bridging address on a given chain.
-    /// @dev Reverts if the address is already delegated or the chain is not registered.
+    /// @notice Records a stake operation transaction for a specific bridging stake address on a given chain.
+    /// @dev Only callable by the bridge contract. Reverts if:
+    ///     1. The bridging address index is invalid.
+    ///     2. stakePoolId is invalid for registration or delegation.
+    ///     3. Address is already registered for registration.
+    ///     4. Address is not registered for redelegation or deregistration.
     /// @param chainId The ID of the chain where the delegation is made.
     /// @param bridgeAddrIndex The index of the bridging address being delegated.
     /// @param stakePoolId The identifier of the stake pool to delegate to. Should be at least 56 bytes long

@@ -345,11 +345,12 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         return _confirmedTransactions;
     }
 
-    /// @notice Queues a transaction to delegate a bridging address to a specific stake pool on a given chain.
+    /// @notice Queues a transaction that does the dedicated operation for a bridging stake address.
+    /// @dev Only callable by owner. Reverts if chain is not registered or transactionSubType is invalid.
     /// @param chainId The ID of the destination chain.
     /// @param bridgeAddrIndex The index of the bridging address to be delegated.
     /// @param stakePoolId The identifier of the stake pool to delegate to.
-    /// @param transactionSubType The type of transaction to be executed.
+    /// @param transactionSubType The type of stake transaction to be executed.
     function stakeAddressOperation(
         uint8 chainId,
         uint8 bridgeAddrIndex,
