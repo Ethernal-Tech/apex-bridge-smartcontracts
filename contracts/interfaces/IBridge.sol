@@ -93,6 +93,8 @@ abstract contract IBridge is IBridgeStructs {
         string calldata stakePoolId
     ) external virtual;
 
+    function getBridgingAddressesCount(uint8 chainId) external view virtual returns (uint8 bridgingAddrCount);
+
     /// @notice Get the confirmed batch for the given destination chain.
     /// @param _destinationChain ID of the destination chain.
     /// @return _batch The confirmed batch details.

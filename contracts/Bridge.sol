@@ -360,6 +360,10 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         claims.delegateAddrToStakePool(chainId, bridgeAddrIndex, stakePoolId);
     }
 
+    function getBridgingAddressesCount(uint8 chainId) external view override returns (uint8) {
+        return bridgingAddresses.bridgingAddressesCount(chainId);
+    }
+
     /// @notice Get the confirmed batch for the given destination chain.
     /// @param _destinationChain ID of the destination chain.
     /// @return _batch The confirmed batch details.
