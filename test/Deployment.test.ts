@@ -85,7 +85,12 @@ describe("Deployment", function () {
         )
     ).to.be.revertedWithCustomError(bridge, "NotContractAddress");
 
-    await expect(bridgingAddresses.connect(owner).setDependencies(ZeroAddress)).to.be.revertedWithCustomError(
+    await expect(bridgingAddresses.connect(owner).setDependencies(ZeroAddress, claims.getAddress())).to.be.revertedWithCustomError(
+      validatorsc,
+      "NotContractAddress"
+    );
+
+    await expect(bridgingAddresses.connect(owner).setDependencies(bridge.getAddress(), ZeroAddress)).to.be.revertedWithCustomError(
       validatorsc,
       "NotContractAddress"
     );
