@@ -12,6 +12,7 @@ import "./SignedBatches.sol";
 import "./Slots.sol";
 import "./Validators.sol";
 import "./BridgingAddresses.sol";
+import "./interfaces/TransactionTypesLib.sol";
 
 /// @title Bridge
 /// @notice Cross-chain bridge for validator claim submission, batch transaction signing, and governance-based chain registration.
@@ -344,20 +345,27 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         return _confirmedTransactions;
     }
 
-    /// @notice Queues a transaction to delegate a bridging address to a specific stake pool on a given chain.
+    /// @notice Queues a transaction that does the dedicated operation for a bridging stake address.
+    /// @dev Only callable by owner. Reverts if chain is not registered or transactionSubType is invalid.
     /// @param chainId The ID of the destination chain.
     /// @param bridgeAddrIndex The index of the bridging address to be delegated.
     /// @param stakePoolId The identifier of the stake pool to delegate to.
-    function delegateAddrToStakePool(
+    /// @param transactionSubType The type of stake transaction to be executed.
+    function stakeAddressOperation(
         uint8 chainId,
         uint8 bridgeAddrIndex,
-        string calldata stakePoolId
+        string calldata stakePoolId,
+        uint8 transactionSubType
     ) external override onlyOwner {
-        if (!bridgingAddresses.checkBridgingAddrIndex(chainId, bridgeAddrIndex)) {
-            revert InvalidBridgeAddrIndex(chainId, bridgeAddrIndex);
+        if (!claims.isChainRegistered(chainId)) {
+            revert ChainIsNotRegistered(chainId);
         }
 
-        claims.delegateAddrToStakePool(chainId, bridgeAddrIndex, stakePoolId);
+        if (transactionSubType > TransactionTypesLib.STAKE_DEREGISTRATION) {
+            revert InvalidStakeTransactionSubType(transactionSubType);
+        }
+
+        bridgingAddresses.stakeAddressOperation(chainId, bridgeAddrIndex, stakePoolId, transactionSubType);
     }
 
     function getBridgingAddressesCount(uint8 chainId) external view override returns (uint8) {

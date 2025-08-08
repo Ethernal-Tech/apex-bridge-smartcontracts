@@ -12,6 +12,7 @@ import "./Utils.sol";
 import "./Bridge.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
+import "./BridgingAddresses.sol";
 
 /// @title Claims
 /// @notice Handles validator-submitted claims in a cross-chain bridge system.
@@ -65,14 +66,16 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Maximum number of receivers in a BridgingRequestClaim.
     uint8 private constant MAX_NUMBER_OF_RECEIVERS = 16;
 
-    /// @notice Tracks whether a specific bridging address has been delegated to a stake pool on a given chain.
-    /// @dev Mapping: chainId => bridgeAddrIndex => true if delegated, false otherwise.
-    mapping(uint8 => mapping(uint8 => bool)) public isAddrDelegatedToStake;
+    /// @dev Depricated: This mapping has been moved to the BridgingAddresses contract. 
+    ///      Use BridgingAddresses.isAddrDelegatedToStake instead.
+    mapping(uint8 => mapping(uint8 => bool)) private __isAddrDelegatedToStake;
+
+    BridgingAddresses private bridgingAddresses;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[49] private __gap;
+    uint256[48] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -127,41 +130,49 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         adminContractAddress = _adminContractAddress;
     }
 
-    /// @notice Records a stake delegation transaction for a specific bridging address on a given chain.
-    /// @dev Reverts if the address is already delegated or the chain is not registered.
-    /// @param chainId The ID of the chain where the delegation is made.
-    /// @param bridgeAddrIndex The index of the bridging address being delegated.
-    /// @param stakePoolId The identifier of the stake pool to delegate to. Should be at least 56 bytes long
-    function delegateAddrToStakePool(
+    /// @notice Sets the BridgingAddresses contract dependency.
+    /// @dev This function can only be called by the upgrade admin.
+    ///      It verifies that the provided address is a contract before using it.
+    /// @param _bridgingAddresses The address of the BridgingAddresses contract to set.
+    function setBridgingAddrsDependencyAndSync(address _bridgingAddresses) external onlyUpgradeAdmin {
+        if (!_isContract(_bridgingAddresses)) revert NotContractAddress();
+        bridgingAddresses = BridgingAddresses(_bridgingAddresses);
+        
+        // Sync isAddrDelegatedToStake mapping to BridgingAddresses contract
+        for (uint8 chainId = 1; chainId <= 5; chainId++) {
+            if (isChainRegistered[chainId]) {
+                uint8 bridgeAddrCount = bridgingAddresses.bridgingAddressesCount(chainId);
+                for (uint8 bridgeAddrIndex = 0; bridgeAddrIndex < bridgeAddrCount; bridgeAddrIndex++) {
+                    bridgingAddresses.updateBridgingAddressState(chainId, bridgeAddrIndex,
+                        __isAddrDelegatedToStake[chainId][bridgeAddrIndex]);
+                }
+            }
+        }
+    }
+
+    /// @notice Creates a stake type transaction for the BridgingAddresses contract.
+    /// @dev Only callable by the BridgingAddresses contract.
+    /// @param chainId The ID of the chain where the transaction is made.
+    /// @param bridgeAddrIndex The index of the bridging address.
+    /// @param stakePoolId The identifier of the stake pool (only used for delegation).
+    /// @param transactionSubType The type of transaction (STAKE_REGISTRATION, STAKE_DELEGATION, or STAKE_DEREGISTRATION).
+    function createStakeTransaction(
         uint8 chainId,
         uint8 bridgeAddrIndex,
-        string calldata stakePoolId
-    ) external onlyBridge {
-        // cardano stake pool id string can be: (Bech32, size=56–64, pool1...) or (Hex[raw ID], size=56)
-        if (bytes(stakePoolId).length < 56) {
-            revert InvalidData(stakePoolId);
-        }
-
-        if (isAddrDelegatedToStake[chainId][bridgeAddrIndex]) {
-            revert AddrAlreadyDelegatedToStake(chainId, bridgeAddrIndex);
-        }
-
-        if (!isChainRegistered[chainId]) {
-            revert ChainIsNotRegistered(chainId);
-        }
-
+        string calldata stakePoolId,
+        uint8 transactionSubType
+    ) external onlyBridgingAddresses {
         uint256 _confirmedTxCount = getBatchingTxsCount(chainId);
-
-        isAddrDelegatedToStake[chainId][bridgeAddrIndex] = true;
         uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
 
         ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nextNonce];
-        confirmedTx.transactionType = TransactionTypesLib.STAKE_DELEGATION;
+        confirmedTx.transactionType = TransactionTypesLib.STAKE;
+        confirmedTx.transactionSubType = transactionSubType;
         confirmedTx.nonce = nextNonce;
         confirmedTx.destinationChainId = chainId;
-        confirmedTx.stakePoolId = stakePoolId;
         confirmedTx.bridgeAddrIndex = bridgeAddrIndex;
         confirmedTx.blockHeight = block.number;
+        confirmedTx.stakePoolId = stakePoolId;
 
         _updateNextTimeoutBlockIfNeeded(chainId, _confirmedTxCount);
     }
@@ -418,12 +429,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                         _currentWrappedAmount += _ctx.totalWrappedAmount;
                         emit DefundFailedAfterMultipleRetries();
                     }
-                } else if (_txType == TransactionTypesLib.STAKE_DELEGATION) {
+                } else if (_txType == TransactionTypesLib.STAKE) {
                     if (_ctx.retryCounter < MAX_NUMBER_OF_RETRIES) {
                         _retryTx(chainId, _ctx);
                     } else {
-                        isAddrDelegatedToStake[chainId][_ctx.bridgeAddrIndex] = false;
-                        emit StakeDelegationFailedAfterMultipleRetries();
+                        bridgingAddresses.updateBridgingAddressState(chainId, _ctx.bridgeAddrIndex, 
+                            _ctx.transactionSubType == TransactionTypesLib.STAKE_DEREGISTRATION);
+                        emit StakeOperationFailedAfterMultipleRetries(_ctx.transactionSubType);
                     }
                 }
             }
@@ -874,16 +886,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         timeoutBlocksNumber = _timeoutBlocksNumber;
     }
 
-    /// @notice this function is only for admin if stake pool registration goes wrong
-    function clearIsAddrDelegatedToStake() external onlyUpgradeAdmin {
-        // currently there are 4 chains and only one address
-        for (uint8 _chainID = 1; _chainID < 5; _chainID++) {
-            for (uint8 _indx = 0; _indx < 1; _indx++) {
-                isAddrDelegatedToStake[_chainID][_indx] = false;
-            }
-        }
-    }
-
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
@@ -902,6 +904,11 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     modifier onlyUpgradeAdmin() {
         if (msg.sender != upgradeAdmin) revert NotOwner();
+        _;
+    }
+
+    modifier onlyBridgingAddresses() {
+        if (msg.sender != address(bridgingAddresses)) revert NotBridgingAddresses();
         _;
     }
 }

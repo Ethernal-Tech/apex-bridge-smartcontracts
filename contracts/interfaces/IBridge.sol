@@ -87,10 +87,12 @@ abstract contract IBridge is IBridgeStructs {
     /// @param chainId The ID of the destination chain.
     /// @param bridgeAddrIndex The index of the bridging address to be delegated.
     /// @param stakePoolId The identifier of the stake pool to delegate to.
-    function delegateAddrToStakePool(
+    /// @param transactionSubType The type of transaction to be executed.
+    function stakeAddressOperation(
         uint8 chainId,
         uint8 bridgeAddrIndex,
-        string calldata stakePoolId
+        string calldata stakePoolId,
+        uint8 transactionSubType
     ) external virtual;
 
     function getBridgingAddressesCount(uint8 chainId) external view virtual returns (uint8 bridgingAddrCount);

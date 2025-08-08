@@ -132,17 +132,4 @@ describe("Bridging Addresses", function () {
         await expect(bridge.connect(owner).updateBridgingAddrsCount(chain1.id, 0))
             .to.be.revertedWithCustomError(bridge, "InvalidBridgingAddrCount");
     });
-
-    it("Should check bridging address index", async function () {
-        const { owner, bridge, bridgingAddresses, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-        const bridgingAddrCount = 10;
-
-        await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-        expect(await bridgingAddresses.connect(owner).checkBridgingAddrIndex(chain1.id, 0)).to.be.true;
-        expect(await bridgingAddresses.connect(owner).checkBridgingAddrIndex(chain1.id, 1)).to.be.false;
-
-        await bridge.connect(owner).updateBridgingAddrsCount(chain1.id, bridgingAddrCount);
-        expect(await bridgingAddresses.connect(owner).checkBridgingAddrIndex(chain1.id, bridgingAddrCount - 1)).to.be.true;
-        expect(await bridgingAddresses.connect(owner).checkBridgingAddrIndex(chain1.id, bridgingAddrCount)).to.be.false;
-    });
 });

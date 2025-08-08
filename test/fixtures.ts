@@ -13,7 +13,13 @@ export enum TransactionType {
   NORMAL = 0,
   DEFUND = 1,
   REFUND = 2,
-  STAKE_DELEGATION = 3,
+  STAKE = 3,
+}
+
+export enum TransactionSubType {
+  STAKE_REGISTRATION = 0,
+  STAKE_DELEGATION = 1,
+  STAKE_DEREGISTRATION = 2,
 }
 
 export async function deployBridgeFixture() {
@@ -142,7 +148,7 @@ export async function deployBridgeFixture() {
     validatorsProxy.target
   );
 
-  await bridgingAddresses.setDependencies(bridge.target);
+  await bridgingAddresses.setDependencies(bridge.target, claims.target);
 
   await bridge.setBridgingAddrsDependencyAndSync(
     bridgingAddressesProxy.target
@@ -151,6 +157,10 @@ export async function deployBridgeFixture() {
   await claimsHelper.setDependencies(claims.target, signedBatches.target);
 
   await claims.setDependencies(bridge.target, claimsHelper.target, validatorsc.target, admin.target);
+
+  await claims.setBridgingAddrsDependencyAndSync(
+    bridgingAddressesProxy.target
+  );
 
   await signedBatches.setDependencies(bridge.target, claimsHelper.target, validatorsc);
 
