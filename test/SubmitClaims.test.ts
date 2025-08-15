@@ -1384,7 +1384,7 @@ describe("Submit Claims", function () {
 
   describe("Submit new Stake Delegation Batch Executed Claims", function () {
     it("Should not create batch when no unbatched txs exist", async function () {
-      const { bridge, claims, owner, validators, signedBatchStakeDel, chain1, validatorAddressChainData, validatorClaimsBEC, bridgeAddrIndex } =
+      const { bridge, claims, owner, validators, signedBatchStakeDelOrRedistr, chain1, validatorAddressChainData, validatorClaimsBEC, bridgeAddrIndex } =
         await loadFixture(deployBridgeFixture);
 
       //await registerChainAndDelegate(bridge, owner, chain1, validatorAddressChainData, 2);
@@ -1397,7 +1397,7 @@ describe("Submit Claims", function () {
       }
 
       for (const v of validators.slice(0, 4)) {
-        await bridge.connect(v).submitSignedBatch(signedBatchStakeDel);
+        await bridge.connect(v).submitSignedBatch(signedBatchStakeDelOrRedistr);
       }
 
       validatorClaimsBEC.batchExecutedClaims[0].chainId = chain1.id;
@@ -1410,9 +1410,80 @@ describe("Submit Claims", function () {
     });
   });
 
+  describe("Submit new Redistribute Tokens Batch Executed Claims", function () {
+    it("Should successfully submit redistribute batch after timeout expires", async function () {
+      const { bridge, claims, owner, validators, signedBatchStakeDelOrRedistr, chain1, validatorAddressChainData, validatorClaimsBEC } =
+        await loadFixture(deployBridgeFixture);
+
+      //await registerChainAndDelegate(bridge, owner, chain1, validatorAddressChainData, 2);
+      await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
+      await bridge.connect(owner).redistributeBridgingAddrsTokens(chain1.id);
+
+      // wait for next timeout
+      for (let i = 0; i < 3; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      for (const v of validators.slice(0, 4)) {
+        await bridge.connect(v).submitSignedBatch(signedBatchStakeDelOrRedistr);
+      }
+
+      validatorClaimsBEC.batchExecutedClaims[0].chainId = chain1.id;
+      for (const v of validators.slice(0, 4)) {
+        await bridge.connect(v).submitClaims(validatorClaimsBEC);
+      }
+
+      expect(await claims.lastBatchedTxNonce(chain1.id)).to.equal(1);
+      expect(await claims.getBatchingTxsCount(chain1.id)).to.equal(0);
+    });
+
+    it("Should return token redistribution txs if previous batch failed", async function () {
+      const { bridge, claims, owner, validators, signedBatchStakeDelOrRedistr, chain1, validatorAddressChainData, validatorClaimsBEFC } =
+        await loadFixture(deployBridgeFixture);
+
+      //await registerChainAndDelegate(bridge, owner, chain1, validatorAddressChainData, 2);
+      await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
+      await bridge.connect(owner).redistributeBridgingAddrsTokens(chain1.id);
+
+      // wait for next timeout
+      for (let i = 0; i < 3; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      for (const v of validators.slice(0, 4)) {
+        await bridge.connect(v).submitSignedBatch(signedBatchStakeDelOrRedistr);
+      }
+
+      expect(await claims.lastBatchedTxNonce(chain1.id)).to.equal(0);
+
+      validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId = chain1.id;
+      for (const v of validators.slice(0, 4)) {
+        await bridge.connect(v).submitClaims(validatorClaimsBEFC);
+      }
+
+      expect(await claims.lastBatchedTxNonce(chain1.id)).to.equal(1);
+      expect(await claims.getBatchingTxsCount(chain1.id)).to.equal(1);
+
+      // wait for next timeout (current timeout is 5 blocks)
+      for (let i = 0; i < 5; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      const confirmedTxs = await bridge.getConfirmedTransactions(chain1.id);
+      expect(confirmedTxs.length).to.equal(1);
+
+      expect(confirmedTxs[0].destinationChainId).to.equal(chain1.id);
+      expect(confirmedTxs[0].nonce).to.equal(2);
+      expect(confirmedTxs[0].transactionType).to.equal(TransactionType.REDISTRIBUTION);
+      expect(confirmedTxs[0].retryCounter).to.equal(1);
+
+      expect(await claims.lastConfirmedTxNonce(chain1.id)).to.equal(2);
+    });
+  });
+
   describe("Submit new Stake Delegation Batch Execution Failed Claims", function () {
     it("Should return stake delegation txs if previous batch failed", async function () {
-      const { bridge, claims, claimsHelper, owner, validators, signedBatchStakeDel, chain1, validatorAddressChainData, validatorClaimsBEFC, bridgeAddrIndex } =
+      const { bridge, claims, claimsHelper, owner, validators, signedBatchStakeDelOrRedistr, chain1, validatorAddressChainData, validatorClaimsBEFC, bridgeAddrIndex } =
         await loadFixture(deployBridgeFixture);
 
       //await registerChainAndDelegate(bridge, owner, chain1, validatorAddressChainData, 2);
@@ -1425,7 +1496,7 @@ describe("Submit Claims", function () {
       }
 
       for (const v of validators.slice(0, 4)) {
-        await bridge.connect(v).submitSignedBatch(signedBatchStakeDel);
+        await bridge.connect(v).submitSignedBatch(signedBatchStakeDelOrRedistr);
       }
 
       expect(await claims.lastBatchedTxNonce(chain1.id)).to.equal(0);
@@ -1464,7 +1535,7 @@ describe("Submit Claims", function () {
         signedBatches,
         owner,
         validators,
-        signedBatchStakeDel,
+        signedBatchStakeDelOrRedistr,
         chain1,
         validatorAddressChainData,
         validatorClaimsBEFC,
@@ -1483,14 +1554,14 @@ describe("Submit Claims", function () {
 
       const submitFailedBatch = async () => {
         const lastConfirmedTxNonce = await claims.lastConfirmedTxNonce(chain1.id);
-        signedBatchStakeDel.firstTxNonceId = lastConfirmedTxNonce;
-        signedBatchStakeDel.lastTxNonceId = lastConfirmedTxNonce;
+        signedBatchStakeDelOrRedistr.firstTxNonceId = lastConfirmedTxNonce;
+        signedBatchStakeDelOrRedistr.lastTxNonceId = lastConfirmedTxNonce;
 
         const batchId = (await signedBatches.getConfirmedBatchId(chain1.id)) + 1n;
-        signedBatchStakeDel.id = batchId;
+        signedBatchStakeDelOrRedistr.id = batchId;
 
         for (const v of validators.slice(0, 4)) {
-          await bridge.connect(v).submitSignedBatch(signedBatchStakeDel);
+          await bridge.connect(v).submitSignedBatch(signedBatchStakeDelOrRedistr);
         }
 
         validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId = chain1.id;
@@ -1504,7 +1575,7 @@ describe("Submit Claims", function () {
       // Initial failed batch
       await mineBlocks(3);
       for (const v of validators.slice(0, 4)) {
-        await bridge.connect(v).submitSignedBatch(signedBatchStakeDel);
+        await bridge.connect(v).submitSignedBatch(signedBatchStakeDelOrRedistr);
       }
 
       validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId = chain1.id;
@@ -1531,14 +1602,14 @@ describe("Submit Claims", function () {
       await mineBlocks(5);
 
       const lastConfirmedTxNonce = await claims.lastConfirmedTxNonce(chain1.id);
-      signedBatchStakeDel.firstTxNonceId = lastConfirmedTxNonce;
-      signedBatchStakeDel.lastTxNonceId = lastConfirmedTxNonce;
+      signedBatchStakeDelOrRedistr.firstTxNonceId = lastConfirmedTxNonce;
+      signedBatchStakeDelOrRedistr.lastTxNonceId = lastConfirmedTxNonce;
 
       const lastBatchNonce = (await signedBatches.getConfirmedBatchId(chain1.id)) + 1n;
-      signedBatchStakeDel.id = lastBatchNonce;
+      signedBatchStakeDelOrRedistr.id = lastBatchNonce;
 
       for (const v of validators.slice(0, 4)) {
-        await bridge.connect(v).submitSignedBatch(signedBatchStakeDel);
+        await bridge.connect(v).submitSignedBatch(signedBatchStakeDelOrRedistr);
       }
 
       validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId = lastBatchNonce;

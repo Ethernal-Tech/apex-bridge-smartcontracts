@@ -66,7 +66,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Maximum number of receivers in a BridgingRequestClaim.
     uint8 private constant MAX_NUMBER_OF_RECEIVERS = 16;
 
-    /// @dev Depricated: This mapping has been moved to the BridgingAddresses contract. 
+    /// @dev Depricated: This mapping has been moved to the BridgingAddresses contract.
     ///      Use BridgingAddresses.isAddrDelegatedToStake instead.
     mapping(uint8 => mapping(uint8 => bool)) private __isAddrDelegatedToStake;
 
@@ -137,14 +137,17 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     function setBridgingAddrsDependencyAndSync(address _bridgingAddresses) external onlyUpgradeAdmin {
         if (!_isContract(_bridgingAddresses)) revert NotContractAddress();
         bridgingAddresses = BridgingAddresses(_bridgingAddresses);
-        
+
         // Sync isAddrDelegatedToStake mapping to BridgingAddresses contract
         for (uint8 chainId = 1; chainId <= 5; chainId++) {
             if (isChainRegistered[chainId]) {
                 uint8 bridgeAddrCount = bridgingAddresses.bridgingAddressesCount(chainId);
                 for (uint8 bridgeAddrIndex = 0; bridgeAddrIndex < bridgeAddrCount; bridgeAddrIndex++) {
-                    bridgingAddresses.updateBridgingAddressState(chainId, bridgeAddrIndex,
-                        __isAddrDelegatedToStake[chainId][bridgeAddrIndex]);
+                    bridgingAddresses.updateBridgingAddressState(
+                        chainId,
+                        bridgeAddrIndex,
+                        __isAddrDelegatedToStake[chainId][bridgeAddrIndex]
+                    );
                 }
             }
         }
@@ -163,16 +166,30 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint8 transactionSubType
     ) external onlyBridgingAddresses {
         uint256 _confirmedTxCount = getBatchingTxsCount(chainId);
-        uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
 
-        ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nextNonce];
-        confirmedTx.transactionType = TransactionTypesLib.STAKE;
+        ConfirmedTransaction storage confirmedTx = createConfirmedTxCore(
+            chainId,
+            TransactionTypesLib.STAKE,
+            bridgeAddrIndex,
+            0,
+            ConstantsLib.CHAIN_ID_AS_DESTINATION
+        );
         confirmedTx.transactionSubType = transactionSubType;
-        confirmedTx.nonce = nextNonce;
-        confirmedTx.destinationChainId = chainId;
-        confirmedTx.bridgeAddrIndex = bridgeAddrIndex;
-        confirmedTx.blockHeight = block.number;
         confirmedTx.stakePoolId = stakePoolId;
+
+        _updateNextTimeoutBlockIfNeeded(chainId, _confirmedTxCount);
+    }
+
+    function createRedistributeTokensTx(uint8 chainId) external onlyBridge {
+        uint256 _confirmedTxCount = getBatchingTxsCount(chainId);
+
+        createConfirmedTxCore(
+            chainId,
+            TransactionTypesLib.REDISTRIBUTION,
+            0,
+            0,
+            ConstantsLib.CHAIN_ID_AS_DESTINATION
+        );
 
         _updateNextTimeoutBlockIfNeeded(chainId, _confirmedTxCount);
     }
@@ -433,9 +450,18 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                     if (_ctx.retryCounter < MAX_NUMBER_OF_RETRIES) {
                         _retryTx(chainId, _ctx);
                     } else {
-                        bridgingAddresses.updateBridgingAddressState(chainId, _ctx.bridgeAddrIndex, 
-                            _ctx.transactionSubType == TransactionTypesLib.STAKE_DEREGISTRATION);
+                        bridgingAddresses.updateBridgingAddressState(
+                            chainId,
+                            _ctx.bridgeAddrIndex,
+                            _ctx.transactionSubType == TransactionTypesLib.STAKE_DEREGISTRATION
+                        );
                         emit StakeOperationFailedAfterMultipleRetries(_ctx.transactionSubType);
+                    }
+                } else if (_txType == TransactionTypesLib.REDISTRIBUTION) {
+                    if (_ctx.retryCounter < MAX_NUMBER_OF_RETRIES) {
+                        _retryTx(chainId, _ctx);
+                    } else {
+                        emit TokensRedistributionFailedAfterMultipleRetries();
                     }
                 }
             }
@@ -560,19 +586,19 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     ///      its retry counter and list of receivers.
     function _setConfirmedTransaction(BridgingRequestClaim memory _claim) internal {
         uint8 destinationChainId = _claim.destinationChainId;
-        uint64 nextNonce = ++lastConfirmedTxNonce[destinationChainId];
 
-        ConfirmedTransaction storage confirmedTx = confirmedTransactions[destinationChainId][nextNonce];
+        ConfirmedTransaction storage confirmedTx = createConfirmedTxCore(
+            destinationChainId,
+            TransactionTypesLib.NORMAL,
+            _claim.bridgeAddrIndex,
+            _claim.retryCounter,
+            ConstantsLib.CHAIN_ID_AS_DESTINATION
+        );
+
         confirmedTx.totalAmount = _claim.nativeCurrencyAmountDestination;
         confirmedTx.totalWrappedAmount = _claim.wrappedTokenAmountDestination;
-        confirmedTx.blockHeight = block.number;
         confirmedTx.observedTransactionHash = _claim.observedTransactionHash;
         confirmedTx.sourceChainId = _claim.sourceChainId;
-        confirmedTx.destinationChainId = destinationChainId;
-        confirmedTx.nonce = nextNonce;
-        confirmedTx.retryCounter = _claim.retryCounter;
-        confirmedTx.transactionType = TransactionTypesLib.NORMAL;
-        confirmedTx.bridgeAddrIndex = _claim.bridgeAddrIndex;
 
         uint256 receiversLength = _claim.receivers.length;
         for (uint i; i < receiversLength; i++) {
@@ -591,21 +617,20 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     ///      transaction type, output indexes, and receivers.
     function _setConfirmedTransactionsRRC(RefundRequestClaim memory _claim) internal {
         uint8 chainId = _claim.originChainId;
-        uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
 
-        ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nextNonce];
+        ConfirmedTransaction storage confirmedTx = createConfirmedTxCore(
+            chainId,
+            TransactionTypesLib.REFUND,
+            _claim.bridgeAddrIndex,
+            _claim.retryCounter,
+            ConstantsLib.CHAIN_ID_AS_SOURCE
+        );
         confirmedTx.totalAmount = _claim.originAmount;
         confirmedTx.totalWrappedAmount = _claim.originWrappedAmount;
-        confirmedTx.blockHeight = block.number;
         confirmedTx.observedTransactionHash = _claim.originTransactionHash;
-        confirmedTx.sourceChainId = chainId;
         confirmedTx.destinationChainId = _claim.destinationChainId;
-        confirmedTx.nonce = nextNonce;
-        confirmedTx.retryCounter = _claim.retryCounter;
-        confirmedTx.transactionType = TransactionTypesLib.REFUND;
         confirmedTx.outputIndexes = _claim.outputIndexes;
         confirmedTx.alreadyTriedBatch = _claim.shouldDecrementHotWallet;
-        confirmedTx.bridgeAddrIndex = _claim.bridgeAddrIndex;
 
         confirmedTx.receivers.push(
             Receiver(_claim.originAmount, _claim.originWrappedAmount, _claim.originSenderAddress)
@@ -754,17 +779,16 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         uint256 _confirmedTxCount = getBatchingTxsCount(_chainId);
 
-        uint64 nextNonce = ++lastConfirmedTxNonce[_chainId];
-
-        ConfirmedTransaction storage confirmedTx = confirmedTransactions[_chainId][nextNonce];
-        confirmedTx.transactionType = TransactionTypesLib.DEFUND;
-        confirmedTx.nonce = nextNonce;
-        confirmedTx.sourceChainId = _chainId;
-        confirmedTx.destinationChainId = _chainId;
+        ConfirmedTransaction storage confirmedTx = createConfirmedTxCore(
+            _chainId,
+            TransactionTypesLib.DEFUND,
+            0,
+            0,
+            ConstantsLib.CHAIN_ID_AS_BOTH
+        );
         confirmedTx.totalAmount = _amount;
         confirmedTx.totalWrappedAmount = _amountWrapped;
         confirmedTx.receivers.push(Receiver(_amount, _amountWrapped, _defundAddress));
-        confirmedTx.blockHeight = block.number;
 
         chainTokenQuantity[_chainId] = _currentAmount - _amount;
         chainWrappedTokenQuantity[_chainId] = _currentWrappedAmount - _amountWrapped;
@@ -884,6 +908,31 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     function updateTimeoutBlocksNumber(uint8 _timeoutBlocksNumber) external onlyAdminContract {
         timeoutBlocksNumber = _timeoutBlocksNumber;
+    }
+
+    function createConfirmedTxCore(
+        uint8 chainId,
+        uint8 transactionType,
+        uint8 bridgeAddrIndex,
+        uint256 retryCounter,
+        uint8 chainIdRoleFlag
+    ) internal returns (ConfirmedTransaction storage confirmedTx) {
+        uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
+
+        confirmedTx = confirmedTransactions[chainId][nextNonce];
+        confirmedTx.transactionType = transactionType;
+        confirmedTx.nonce = nextNonce;
+        confirmedTx.bridgeAddrIndex = bridgeAddrIndex;
+        confirmedTx.blockHeight = block.number;
+        confirmedTx.retryCounter = retryCounter;
+
+        if ((chainIdRoleFlag & ConstantsLib.CHAIN_ID_AS_DESTINATION) != 0) {
+            confirmedTx.destinationChainId = chainId;
+        }
+
+        if ((chainIdRoleFlag & ConstantsLib.CHAIN_ID_AS_SOURCE) != 0) {
+            confirmedTx.sourceChainId = chainId;
+        }
     }
 
     /// @notice Returns the current version of the contract

@@ -83,17 +83,19 @@ abstract contract IBridge is IBridgeStructs {
         uint8 _destinationChain
     ) external view virtual returns (ConfirmedTransaction[] memory _confirmedTransactions);
 
-    /// @notice Queues a transaction to delegate a bridging address to a specific stake pool on a given chain.
+    /// @notice Queues a transaction that does the dedicated operation for a bridging stake address.
     /// @param chainId The ID of the destination chain.
     /// @param bridgeAddrIndex The index of the bridging address to be delegated.
     /// @param stakePoolId The identifier of the stake pool to delegate to.
-    /// @param transactionSubType The type of transaction to be executed.
+    /// @param transactionSubType The type of stake transaction to be executed.
     function stakeAddressOperation(
         uint8 chainId,
         uint8 bridgeAddrIndex,
         string calldata stakePoolId,
         uint8 transactionSubType
     ) external virtual;
+
+    function redistributeBridgingAddrsTokens(uint8 chainId) external virtual;
 
     function getBridgingAddressesCount(uint8 chainId) external view virtual returns (uint8 bridgingAddrCount);
 
