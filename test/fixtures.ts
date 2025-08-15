@@ -14,6 +14,7 @@ export enum TransactionType {
   DEFUND = 1,
   REFUND = 2,
   STAKE = 3,
+  REDISTRIBUTION = 4,
 }
 
 export enum TransactionSubType {
@@ -514,7 +515,7 @@ export async function deployBridgeFixture() {
     stakeSignature: "0x746573740000000000000000000000000000000000000000000000000000000B",
   };
 
-  const signedBatchStakeDel = {
+  const signedBatchStakeDelOrRedistr = {
     id: 1,
     firstTxNonceId: 1,
     lastTxNonceId: 1,
@@ -590,7 +591,7 @@ export async function deployBridgeFixture() {
     signedBatch,
     signedBatchConsolidation,
     signedBatchDefund,
-    signedBatchStakeDel,
+    signedBatchStakeDelOrRedistr,
     validatorAddressChainData,
     validatorCardanoData,
     validators,

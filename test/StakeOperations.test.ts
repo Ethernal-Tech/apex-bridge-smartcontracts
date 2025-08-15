@@ -89,7 +89,7 @@ describe("Stake Registration", function () {
     });
 
     it("Should not create batch when execution is in progress", async function () {
-        const { bridge, claims, owner, validators, signedBatchStakeDel, chain1, validatorAddressChainData, bridgeAddrIndex } =
+        const { bridge, claims, owner, validators, signedBatchStakeDelOrRedistr, chain1, validatorAddressChainData, bridgeAddrIndex } =
             await loadFixture(deployBridgeFixture);
 
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
@@ -101,7 +101,7 @@ describe("Stake Registration", function () {
         }
 
         for (const v of validators.slice(0, 4)) {
-            await bridge.connect(v).submitSignedBatch(signedBatchStakeDel);
+            await bridge.connect(v).submitSignedBatch(signedBatchStakeDelOrRedistr);
         }
 
         expect(await claims.shouldCreateBatch(chain1.id)).to.be.false;
@@ -201,7 +201,7 @@ describe("Stake Redelegation", function () {
     });
 
     it("Should not create batch when execution is in progress", async function () {
-        const { bridge, claims, owner, validators, signedBatchStakeDel, chain1, validatorAddressChainData, bridgeAddrIndex } =
+        const { bridge, claims, owner, validators, signedBatchStakeDelOrRedistr, chain1, validatorAddressChainData, bridgeAddrIndex } =
             await loadFixture(deployBridgeFixture);
 
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
@@ -214,7 +214,7 @@ describe("Stake Redelegation", function () {
         }
 
         for (const v of validators.slice(0, 4)) {
-            await bridge.connect(v).submitSignedBatch(signedBatchStakeDel);
+            await bridge.connect(v).submitSignedBatch(signedBatchStakeDelOrRedistr);
         }
 
         expect(await claims.shouldCreateBatch(chain1.id)).to.be.false;
@@ -307,7 +307,7 @@ describe("Stake Deregistration", function () {
     });
 
     it("Should not create batch when execution is in progress", async function () {
-        const { bridge, claims, owner, validators, signedBatchStakeDel, chain1, validatorAddressChainData, bridgeAddrIndex } =
+        const { bridge, claims, owner, validators, signedBatchStakeDelOrRedistr, chain1, validatorAddressChainData, bridgeAddrIndex } =
             await loadFixture(deployBridgeFixture);
 
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
@@ -320,7 +320,7 @@ describe("Stake Deregistration", function () {
         }
 
         for (const v of validators.slice(0, 4)) {
-            await bridge.connect(v).submitSignedBatch(signedBatchStakeDel);
+            await bridge.connect(v).submitSignedBatch(signedBatchStakeDelOrRedistr);
         }
 
         expect(await claims.shouldCreateBatch(chain1.id)).to.be.false;

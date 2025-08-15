@@ -368,6 +368,14 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         bridgingAddresses.stakeAddressOperation(chainId, bridgeAddrIndex, stakePoolId, transactionSubType);
     }
 
+    function redistributeBridgingAddrsTokens(uint8 chainId) external override onlyOwner {
+        if (!claims.isChainRegistered(chainId)) {
+            revert ChainIsNotRegistered(chainId);
+        }
+
+        claims.createRedistributeTokensTx(chainId);
+    }
+
     function getBridgingAddressesCount(uint8 chainId) external view override returns (uint8) {
         return bridgingAddresses.bridgingAddressesCount(chainId);
     }

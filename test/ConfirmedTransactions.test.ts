@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { deployBridgeFixture } from "./fixtures";
 
-describe("Confirmed Transacrions", function () {
+describe("Confirmed Transactions", function () {
   async function impersonateAsContractAndMintFunds(contractAddress: string) {
     const hre = require("hardhat");
     const address = await contractAddress.toLowerCase();
