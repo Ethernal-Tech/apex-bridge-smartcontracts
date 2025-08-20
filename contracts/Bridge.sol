@@ -368,6 +368,9 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         bridgingAddresses.stakeAddressOperation(chainId, bridgeAddrIndex, stakePoolId, transactionSubType);
     }
 
+    /// @notice Queues a redistribution transaction for the bridging addresses on a given chain.
+    /// @dev Only callable by owner. Reverts if the specified chain is not registered.
+    /// @param chainId The ID of the chain where token redistribution should occur.
     function redistributeBridgingAddrsTokens(uint8 chainId) external override onlyOwner {
         if (!claims.isChainRegistered(chainId)) {
             revert ChainIsNotRegistered(chainId);
@@ -376,6 +379,10 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         claims.createRedistributeTokensTx(chainId);
     }
 
+    /// @notice Returns the number of bridging addresses for a given chain.
+    /// @dev Useful for querying how many multisig addresses are configured per chain.
+    /// @param chainId The ID of the chain to query.
+    /// @return The total count of bridging addresses for the specified chain.
     function getBridgingAddressesCount(uint8 chainId) external view override returns (uint8) {
         return bridgingAddresses.bridgingAddressesCount(chainId);
     }

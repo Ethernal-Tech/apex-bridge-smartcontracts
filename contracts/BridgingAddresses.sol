@@ -110,19 +110,24 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
         }
 
         // Don't allow to register the same address again
-        if (transactionSubType == TransactionTypesLib.STAKE_REGISTRATION &&
-            isAddrDelegatedToStake[chainId][bridgeAddrIndex]) {
+        if (
+            transactionSubType == TransactionTypesLib.STAKE_REGISTRATION &&
+            isAddrDelegatedToStake[chainId][bridgeAddrIndex]
+        ) {
             revert AddrAlreadyRegistered(chainId, bridgeAddrIndex);
         }
 
         // Don't allow to deregister or redelegate the address if it is not registered already
-        if (transactionSubType != TransactionTypesLib.STAKE_REGISTRATION &&
-            !isAddrDelegatedToStake[chainId][bridgeAddrIndex]) {
+        if (
+            transactionSubType != TransactionTypesLib.STAKE_REGISTRATION &&
+            !isAddrDelegatedToStake[chainId][bridgeAddrIndex]
+        ) {
             revert AddrNotRegistered(chainId, bridgeAddrIndex);
         }
 
         // update the state of the address, if it is deregistration, we need to set the state to false - true otherwise
-        isAddrDelegatedToStake[chainId][bridgeAddrIndex] = transactionSubType != TransactionTypesLib.STAKE_DEREGISTRATION;
+        isAddrDelegatedToStake[chainId][bridgeAddrIndex] =
+            transactionSubType != TransactionTypesLib.STAKE_DEREGISTRATION;
 
         claims.createStakeTransaction(chainId, bridgeAddrIndex, stakePoolId, transactionSubType);
     }

@@ -95,9 +95,14 @@ abstract contract IBridge is IBridgeStructs {
         uint8 transactionSubType
     ) external virtual;
 
+    /// @notice Queues a redistribution transaction for the bridging addresses on a given chain.
+    /// @param chainId The ID of the chain where token redistribution should occur.
     function redistributeBridgingAddrsTokens(uint8 chainId) external virtual;
 
-    function getBridgingAddressesCount(uint8 chainId) external view virtual returns (uint8 bridgingAddrCount);
+    /// @notice Returns the number of bridging addresses for a given chain.
+    /// @param chainId The ID of the chain to query.
+    /// @return The total count of bridging addresses for the specified chain.
+    function getBridgingAddressesCount(uint8 chainId) external view virtual returns (uint8);
 
     /// @notice Get the confirmed batch for the given destination chain.
     /// @param _destinationChain ID of the destination chain.
