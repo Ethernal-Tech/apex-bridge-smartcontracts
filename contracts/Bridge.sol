@@ -91,18 +91,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         bridgingAddresses.initRegisteredChains(chains);
     }
 
-    /// @notice Updates the number of bridge addresses for a specific chain.
-    /// @dev Only callable by the contract owner. Reverts if the chain ID is not registered.
-    /// @param _chainId The ID of the chain whose bridging address count is being updated.
-    /// @param bridgingAddrsCount The new number of bridging addresses for the specified chain.
-    function updateBridgingAddrsCount(uint8 _chainId, uint8 bridgingAddrsCount) external override onlyOwner {
-        if (!claims.isChainRegistered(_chainId)) {
-            revert ChainIsNotRegistered(_chainId);
-        }
-
-        bridgingAddresses.updateBridgingAddrsCount(_chainId, bridgingAddrsCount);
-    }
-
     /// @notice Submit claims from validators for reaching consensus.
     /// @param _claims The claims submitted by a validator.
     function submitClaims(ValidatorClaims calldata _claims) external override onlyValidator {
@@ -343,40 +331,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         return _confirmedTransactions;
-    }
-
-    /// @notice Queues a transaction that does the dedicated operation for a bridging stake address.
-    /// @dev Only callable by owner. Reverts if chain is not registered or transactionSubType is invalid.
-    /// @param chainId The ID of the destination chain.
-    /// @param bridgeAddrIndex The index of the bridging address to be delegated.
-    /// @param stakePoolId The identifier of the stake pool to delegate to.
-    /// @param transactionSubType The type of stake transaction to be executed.
-    function stakeAddressOperation(
-        uint8 chainId,
-        uint8 bridgeAddrIndex,
-        string calldata stakePoolId,
-        uint8 transactionSubType
-    ) external override onlyOwner {
-        if (!claims.isChainRegistered(chainId)) {
-            revert ChainIsNotRegistered(chainId);
-        }
-
-        if (transactionSubType > TransactionTypesLib.STAKE_DEREGISTRATION) {
-            revert InvalidStakeTransactionSubType(transactionSubType);
-        }
-
-        bridgingAddresses.stakeAddressOperation(chainId, bridgeAddrIndex, stakePoolId, transactionSubType);
-    }
-
-    /// @notice Queues a redistribution transaction for the bridging addresses on a given chain.
-    /// @dev Only callable by owner. Reverts if the specified chain is not registered.
-    /// @param chainId The ID of the chain where token redistribution should occur.
-    function redistributeBridgingAddrsTokens(uint8 chainId) external override onlyOwner {
-        if (!claims.isChainRegistered(chainId)) {
-            revert ChainIsNotRegistered(chainId);
-        }
-
-        claims.createRedistributeTokensTx(chainId);
     }
 
     /// @notice Returns the number of bridging addresses for a given chain.

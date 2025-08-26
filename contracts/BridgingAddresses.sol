@@ -15,6 +15,7 @@ import "./Claims.sol";
 contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
     address private bridgeAddress;
+    address private adminContractAddress;
     Claims private claims;
 
     /// @notice Mapping of chain IDs to the number of configured bridge addresses for each chain.
@@ -52,10 +53,16 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
 
     /// @notice Sets external contract dependencies.
     /// @param _bridgeAddress The address of the bridge contract
-    function setDependencies(address _bridgeAddress, address _claimsAddress) external onlyOwner {
+    function setDependencies(
+        address _bridgeAddress,
+        address _claimsAddress,
+        address _adminContractAddress
+    ) external onlyOwner {
         if (!_isContract(_bridgeAddress)) revert NotContractAddress();
+        if (!_isContract(_adminContractAddress)) revert NotContractAddress();
         if (!_isContract(_claimsAddress)) revert NotContractAddress();
         bridgeAddress = _bridgeAddress;
+        adminContractAddress = _adminContractAddress;
         claims = Claims(_claimsAddress);
     }
 
@@ -98,7 +105,7 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
         uint8 bridgeAddrIndex,
         string calldata stakePoolId,
         uint8 transactionSubType
-    ) external onlyBridge {
+    ) external onlyAdminContract {
         if (!_checkBridgingAddrIndex(chainId, bridgeAddrIndex)) {
             revert InvalidBridgeAddrIndex(chainId, bridgeAddrIndex);
         }
@@ -150,7 +157,7 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
     /// @dev Only callable by the bridge contract.
     /// @param _chainId The target chain ID to update.
     /// @param _bridgingAddrsCount The new count of bridge addresses for the chain.
-    function updateBridgingAddrsCount(uint8 _chainId, uint8 _bridgingAddrsCount) external onlyBridge {
+    function updateBridgingAddrsCount(uint8 _chainId, uint8 _bridgingAddrsCount) external onlyAdminContract {
         if (_bridgingAddrsCount == 0) revert InvalidBridgingAddrCount(_chainId, _bridgingAddrsCount);
         bridgingAddressesCount[_chainId] = _bridgingAddrsCount;
     }
@@ -181,6 +188,11 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
 
     modifier onlyClaims() {
         if (msg.sender != address(claims)) revert NotClaims();
+        _;
+    }
+
+    modifier onlyAdminContract() {
+        if (msg.sender != adminContractAddress) revert NotAdminContract();
         _;
     }
 }

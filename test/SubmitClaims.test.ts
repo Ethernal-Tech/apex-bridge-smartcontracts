@@ -107,7 +107,7 @@ describe("Submit Claims", function () {
 
       const timeoutBlocksNumber = 5;
       let currentBlock = await ethers.provider.getBlockNumber();
-      expect(currentBlock).to.equal(28);
+      expect(currentBlock).to.equal(29);
 
       // wait for next timeout
       for (let i = 0; i < 3; i++) {
@@ -116,7 +116,7 @@ describe("Submit Claims", function () {
 
       const currentBlock1 = await ethers.provider.getBlockNumber();
 
-      expect(currentBlock1).to.equal(31);
+      expect(currentBlock1).to.equal(32);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -129,7 +129,7 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       currentBlock = await ethers.provider.getBlockNumber();
-      expect(currentBlock).to.equal(35);
+      expect(currentBlock).to.equal(36);
 
       expect(await claims.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
         currentBlock + timeoutBlocksNumber
@@ -1384,12 +1384,12 @@ describe("Submit Claims", function () {
 
   describe("Submit new Stake Delegation Batch Executed Claims", function () {
     it("Should not create batch when no unbatched txs exist", async function () {
-      const { bridge, claims, owner, validators, signedBatchStakeDelOrRedistr, chain1, validatorAddressChainData, validatorClaimsBEC, bridgeAddrIndex } =
+      const { bridge, admin, claims, owner, validators, signedBatchStakeDelOrRedistr, chain1, validatorAddressChainData, validatorClaimsBEC, bridgeAddrIndex } =
         await loadFixture(deployBridgeFixture);
 
       //await registerChainAndDelegate(bridge, owner, chain1, validatorAddressChainData, 2);
       await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-      await bridge.connect(owner).stakeAddressOperation(chain1.id, bridgeAddrIndex, stakePoolId, TransactionSubType.STAKE_REGISTRATION);
+      await admin.connect(owner).stakeAddressOperation(chain1.id, bridgeAddrIndex, stakePoolId, TransactionSubType.STAKE_REGISTRATION);
 
       // wait for next timeout
       for (let i = 0; i < 3; i++) {
@@ -1412,12 +1412,12 @@ describe("Submit Claims", function () {
 
   describe("Submit new Redistribute Tokens Batch Executed Claims", function () {
     it("Should successfully submit redistribute batch after timeout expires", async function () {
-      const { bridge, claims, owner, validators, signedBatchStakeDelOrRedistr, chain1, validatorAddressChainData, validatorClaimsBEC } =
+      const { bridge, admin, claims, owner, validators, signedBatchStakeDelOrRedistr, chain1, validatorAddressChainData, validatorClaimsBEC } =
         await loadFixture(deployBridgeFixture);
 
       //await registerChainAndDelegate(bridge, owner, chain1, validatorAddressChainData, 2);
       await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-      await bridge.connect(owner).redistributeBridgingAddrsTokens(chain1.id);
+      await admin.connect(owner).redistributeBridgingAddrsTokens(chain1.id);
 
       // wait for next timeout
       for (let i = 0; i < 3; i++) {
@@ -1438,12 +1438,12 @@ describe("Submit Claims", function () {
     });
 
     it("Should return token redistribution txs if previous batch failed", async function () {
-      const { bridge, claims, owner, validators, signedBatchStakeDelOrRedistr, chain1, validatorAddressChainData, validatorClaimsBEFC } =
+      const { bridge, admin, claims, owner, validators, signedBatchStakeDelOrRedistr, chain1, validatorAddressChainData, validatorClaimsBEFC } =
         await loadFixture(deployBridgeFixture);
 
       //await registerChainAndDelegate(bridge, owner, chain1, validatorAddressChainData, 2);
       await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-      await bridge.connect(owner).redistributeBridgingAddrsTokens(chain1.id);
+      await admin.connect(owner).redistributeBridgingAddrsTokens(chain1.id);
 
       // wait for next timeout
       for (let i = 0; i < 3; i++) {
@@ -1483,12 +1483,12 @@ describe("Submit Claims", function () {
 
   describe("Submit new Stake Delegation Batch Execution Failed Claims", function () {
     it("Should return stake delegation txs if previous batch failed", async function () {
-      const { bridge, claims, claimsHelper, owner, validators, signedBatchStakeDelOrRedistr, chain1, validatorAddressChainData, validatorClaimsBEFC, bridgeAddrIndex } =
+      const { bridge, claims, admin, owner, validators, signedBatchStakeDelOrRedistr, chain1, validatorAddressChainData, validatorClaimsBEFC, bridgeAddrIndex } =
         await loadFixture(deployBridgeFixture);
 
       //await registerChainAndDelegate(bridge, owner, chain1, validatorAddressChainData, 2);
       await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-      await bridge.connect(owner).stakeAddressOperation(chain1.id, bridgeAddrIndex, stakePoolId, TransactionSubType.STAKE_REGISTRATION);
+      await admin.connect(owner).stakeAddressOperation(chain1.id, bridgeAddrIndex, stakePoolId, TransactionSubType.STAKE_REGISTRATION);
 
       // wait for next timeout
       for (let i = 0; i < 3; i++) {
@@ -1532,6 +1532,7 @@ describe("Submit Claims", function () {
       const {
         bridge,
         claims,
+        admin,
         signedBatches,
         owner,
         validators,
@@ -1544,7 +1545,7 @@ describe("Submit Claims", function () {
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-      await bridge.connect(owner).stakeAddressOperation(chain1.id, bridgeAddrIndex, stakePoolId, TransactionSubType.STAKE_REGISTRATION);
+      await admin.connect(owner).stakeAddressOperation(chain1.id, bridgeAddrIndex, stakePoolId, TransactionSubType.STAKE_REGISTRATION);
 
       const mineBlocks = async (count: number) => {
         for (let i = 0; i < count; i++) {
@@ -1628,7 +1629,7 @@ describe("Submit Claims", function () {
       expect(await bridgingAddresses.isAddrDelegatedToStake(chain1.id, bridgeAddrIndex)).to.be.false;
 
       // Re-delegate to verify delegation is now allowed again
-      await bridge.connect(owner).stakeAddressOperation(chain1.id, bridgeAddrIndex, stakePoolId, TransactionSubType.STAKE_REGISTRATION);
+      await admin.connect(owner).stakeAddressOperation(chain1.id, bridgeAddrIndex, stakePoolId, TransactionSubType.STAKE_REGISTRATION);
       expect(await claims.getBatchingTxsCount(chain1.id)).to.equal(1);
     });
   });

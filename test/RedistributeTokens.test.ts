@@ -5,35 +5,35 @@ import { deployBridgeFixture, TransactionSubType, TransactionType } from "./fixt
 
 describe("Redistribute Tokens", function () {
     it("Should revert if token redistribution is not sent by owner", async function () {
-        const { bridge, chain1, validators } = await loadFixture(deployBridgeFixture);
+        const { admin, chain1, validators } = await loadFixture(deployBridgeFixture);
 
-        await expect(bridge.connect(validators[0]).redistributeBridgingAddrsTokens(chain1.id))
+        await expect(admin.connect(validators[0]).redistributeBridgingAddrsTokens(chain1.id))
             .to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     it("Should revert if chain is not registered", async () => {
-        const { bridge, owner, chain1 } = await loadFixture(deployBridgeFixture);
+        const { admin, owner, chain1 } = await loadFixture(deployBridgeFixture);
 
-        await expect(bridge.connect(owner).redistributeBridgingAddrsTokens(chain1.id))
-            .to.be.revertedWithCustomError(bridge, "ChainIsNotRegistered");
+        await expect(admin.connect(owner).redistributeBridgingAddrsTokens(chain1.id))
+            .to.be.revertedWithCustomError(admin, "ChainIsNotRegistered");
     });
 
     it("Should revert on Claims if redistribution is not called by Bridge", async function () {
         const { claims, chain1, validators } = await loadFixture(deployBridgeFixture);
 
         await expect(claims.connect(validators[0]).createRedistributeTokensTx(chain1.id))
-            .to.be.revertedWithCustomError(claims, "NotBridge");
+            .to.be.revertedWithCustomError(claims, "NotAdminContract");
     });
 
     it("Should increase last confirmed tx nonce when redistribution transaction is added", async function () {
-        const { bridge, claims, owner, chain1, validatorAddressChainData } =
+        const { bridge, admin, claims, owner, chain1, validatorAddressChainData } =
             await loadFixture(deployBridgeFixture);
 
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
 
         expect(await claims.lastConfirmedTxNonce(chain1.id)).to.equal(0);
 
-        await bridge.connect(owner).redistributeBridgingAddrsTokens(chain1.id);
+        await admin.connect(owner).redistributeBridgingAddrsTokens(chain1.id);
 
         expect(await claims.lastConfirmedTxNonce(chain1.id)).to.equal(1);
 
@@ -50,12 +50,12 @@ describe("Redistribute Tokens", function () {
     });
 
     it("Should update next timeout when redistribution transaction is added", async function () {
-        const { bridge, claims, owner, chain1, validatorAddressChainData } =
+        const { bridge, admin, claims, owner, chain1, validatorAddressChainData } =
             await loadFixture(deployBridgeFixture);
 
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
 
-        await bridge.connect(owner).redistributeBridgingAddrsTokens(chain1.id);
+        await admin.connect(owner).redistributeBridgingAddrsTokens(chain1.id);
 
         await expect(bridge.connect(owner).getConfirmedTransactions(chain1.id))
             .to.be.revertedWithCustomError(claims, "CanNotCreateBatchYet");
@@ -77,11 +77,11 @@ describe("Redistribute Tokens", function () {
     });
 
     it("Should not create batch when redistribution is in progress", async function () {
-        const { bridge, claims, owner, validators, signedBatchStakeDelOrRedistr, chain1, validatorAddressChainData, bridgeAddrIndex } =
+        const { bridge, admin, claims, owner, validators, signedBatchStakeDelOrRedistr, chain1, validatorAddressChainData, bridgeAddrIndex } =
             await loadFixture(deployBridgeFixture);
 
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-        await bridge.connect(owner).redistributeBridgingAddrsTokens(chain1.id);
+        await admin.connect(owner).redistributeBridgingAddrsTokens(chain1.id);
 
         // wait for next timeout
         for (let i = 0; i < 5; i++) {

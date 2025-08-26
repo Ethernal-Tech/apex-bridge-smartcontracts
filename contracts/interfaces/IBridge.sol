@@ -6,11 +6,6 @@ import "./IBridgeStructs.sol";
 /// @title IBridge
 /// @notice Interface for cross-chain bridge functions supporting claims, batch submission, chain registration, and queries.
 abstract contract IBridge is IBridgeStructs {
-    /// @notice Updates the number of bridge addresses for a specific chain.
-    /// @param _chainId The ID of the chain whose bridging address count is being updated.
-    /// @param bridgingAddrsCount The new number of bridging addresses for the specified chain.
-    function updateBridgingAddrsCount(uint8 _chainId, uint8 bridgingAddrsCount) external virtual;
-
     /// @notice Submit claims from validators for reaching consensus.
     /// @param _claims The claims submitted by a validator.
     function submitClaims(ValidatorClaims calldata _claims) external virtual;
@@ -82,22 +77,6 @@ abstract contract IBridge is IBridgeStructs {
     function getConfirmedTransactions(
         uint8 _destinationChain
     ) external view virtual returns (ConfirmedTransaction[] memory _confirmedTransactions);
-
-    /// @notice Queues a transaction that does the dedicated operation for a bridging stake address.
-    /// @param chainId The ID of the destination chain.
-    /// @param bridgeAddrIndex The index of the bridging address to be delegated.
-    /// @param stakePoolId The identifier of the stake pool to delegate to.
-    /// @param transactionSubType The type of stake transaction to be executed.
-    function stakeAddressOperation(
-        uint8 chainId,
-        uint8 bridgeAddrIndex,
-        string calldata stakePoolId,
-        uint8 transactionSubType
-    ) external virtual;
-
-    /// @notice Queues a redistribution transaction for the bridging addresses on a given chain.
-    /// @param chainId The ID of the chain where token redistribution should occur.
-    function redistributeBridgingAddrsTokens(uint8 chainId) external virtual;
 
     /// @notice Returns the number of bridging addresses for a given chain.
     /// @param chainId The ID of the chain to query.

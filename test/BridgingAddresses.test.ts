@@ -11,9 +11,9 @@ describe("Bridging Addresses", function () {
     });
 
     it("Should revert if set bridging addresses count is not sent by owner", async function () {
-        const { bridge, chain1, validators } = await loadFixture(deployBridgeFixture);
+        const { admin, chain1, validators } = await loadFixture(deployBridgeFixture);
 
-        await expect(bridge.connect(validators[0]).updateBridgingAddrsCount(chain1.id, 5))
+        await expect(admin.connect(validators[0]).updateBridgingAddrsCount(chain1.id, 5))
             .to.be.revertedWith("Ownable: caller is not the owner");
     });
 
@@ -105,31 +105,31 @@ describe("Bridging Addresses", function () {
     });
 
     it("Should update bridging address count", async function () {
-        const { owner, validatorAddressChainData, bridge, bridgingAddresses, chain1 } = await loadFixture(deployBridgeFixture);
+        const { owner, validatorAddressChainData, bridge, admin, bridgingAddresses, chain1 } = await loadFixture(deployBridgeFixture);
         const bridgingAddrCount = 10;
 
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
         expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(1);
 
-        await bridge.connect(owner).updateBridgingAddrsCount(chain1.id, bridgingAddrCount);
+        await admin.connect(owner).updateBridgingAddrsCount(chain1.id, bridgingAddrCount);
         expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(bridgingAddrCount);
     });
 
     it("Should revert when updating bridging address count for non-registered chain", async function () {
-        const { owner, bridge, chain1 } = await loadFixture(deployBridgeFixture);
+        const { owner, admin, chain1 } = await loadFixture(deployBridgeFixture);
         const bridgingAddrCount = 10;
 
-        await expect(bridge.connect(owner).updateBridgingAddrsCount(chain1.id, bridgingAddrCount))
-            .to.be.revertedWithCustomError(bridge, "ChainIsNotRegistered");
+        await expect(admin.connect(owner).updateBridgingAddrsCount(chain1.id, bridgingAddrCount))
+            .to.be.revertedWithCustomError(admin, "ChainIsNotRegistered");
     });
 
     it("Should revert when updating bridging address count to zero", async function () {
-        const { owner, bridge, bridgingAddresses, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
+        const { owner, bridge, admin, bridgingAddresses, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
 
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
         expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(1);
 
-        await expect(bridge.connect(owner).updateBridgingAddrsCount(chain1.id, 0))
+        await expect(admin.connect(owner).updateBridgingAddrsCount(chain1.id, 0))
             .to.be.revertedWithCustomError(bridge, "InvalidBridgingAddrCount");
     });
 });

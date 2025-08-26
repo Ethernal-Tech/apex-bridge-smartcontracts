@@ -149,7 +149,7 @@ export async function deployBridgeFixture() {
     validatorsProxy.target
   );
 
-  await bridgingAddresses.setDependencies(bridge.target, claims.target);
+  await bridgingAddresses.setDependencies(bridge.target, claims.target, admin.target);
 
   await bridge.setBridgingAddrsDependencyAndSync(
     bridgingAddressesProxy.target
@@ -170,6 +170,8 @@ export async function deployBridgeFixture() {
   await validatorsc.setDependencies(bridge.target);
 
   await admin.setDependencies(claims.target);
+
+  await admin.setBridgingAddrsDependency(bridgingAddressesProxy.target);
 
   const chain1 = {
     id: 1,

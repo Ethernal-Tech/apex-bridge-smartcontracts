@@ -183,7 +183,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Creates a redistribution transaction for bridging addresses on a specific chain.
     /// @dev Can only be called by the bridge contract. This transaction redistributes tokens across bridging addresses.
     /// @param chainId The ID of the source chain for which the redistribution transaction should be created.
-    function createRedistributeTokensTx(uint8 chainId) external onlyBridge {
+    function createRedistributeTokensTx(uint8 chainId) external onlyAdminContract {
         uint256 _confirmedTxCount = getBatchingTxsCount(chainId);
 
         createConfirmedTxCore(chainId, TransactionTypesLib.REDISTRIBUTION, 0, 0, ConstantsLib.CHAIN_ID_AS_DESTINATION);
