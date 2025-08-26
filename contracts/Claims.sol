@@ -460,7 +460,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                     if (_ctx.retryCounter < MAX_NUMBER_OF_RETRIES) {
                         _retryTx(chainId, _ctx);
                     } else {
-                        emit TokensRedistributionFailedAfterMultipleRetries();
+                        emit TokensRedistributionFailedAfterMultipleRetries(chainId);
                     }
                 }
             }

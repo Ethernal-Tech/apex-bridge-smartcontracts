@@ -236,5 +236,5 @@ interface IBridgeStructs {
     event UpdatedMaxNumberOfTransactions(uint256 _maxNumberOfTransactions);
     event UpdatedTimeoutBlocksNumber(uint256 _timeoutBlocksNumber);
     event StakeOperationFailedAfterMultipleRetries(uint8 _transactionSubType);
-    event TokensRedistributionFailedAfterMultipleRetries();
+    event TokensRedistributionFailedAfterMultipleRetries(uint8 _chainId);
 }
