@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
 import "./interfaces/TransactionTypesLib.sol";
+import "./interfaces/IBridge.sol";
 import "./Utils.sol";
 import "./Claims.sol";
 
@@ -141,10 +142,12 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
 
     /// @notice this function is only for admin if stake pool registration goes wrong
     function clearIsAddrDelegatedToStake() external onlyUpgradeAdmin {
+        Chain[] memory registeredChains = IBridge(bridgeAddress).getAllRegisteredChains();
+
         // currently there are 4 chains and only one address
-        for (uint8 _chainID = 1; _chainID < 5; _chainID++) {
-            for (uint8 _indx = 0; _indx < bridgingAddressesCount[_chainID]; _indx++) {
-                isAddrDelegatedToStake[_chainID][_indx] = false;
+        for (uint8 i; i < registeredChains.length; i++) {
+            for (uint8 _indx = 0; _indx < bridgingAddressesCount[registeredChains[i].id]; _indx++) {
+                isAddrDelegatedToStake[registeredChains[i].id][_indx] = false;
             }
         }
     }

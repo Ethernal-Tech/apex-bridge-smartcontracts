@@ -1245,7 +1245,7 @@ describe("Claims Contract", function () {
   describe("setBridgingAddrsDependency", function () {
     it("Should revert if not called by upgrade admin", async function () {
       const { bridge, claims, validators, bridgingAddresses } = await loadFixture(deployBridgeFixture);
-      
+
       await expect(
         claims.connect(validators[0]).setBridgingAddrsDependencyAndSync(bridgingAddresses.target)
       ).to.be.revertedWithCustomError(bridge, "NotOwner");
@@ -1253,17 +1253,20 @@ describe("Claims Contract", function () {
 
     it("Should revert if provided address is not a contract", async function () {
       const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
-      
+
       const nonContractAddress = "0x1234567890123456789012345678901234567890";
-      
+
       await expect(
         claims.connect(owner).setBridgingAddrsDependencyAndSync(nonContractAddress)
       ).to.be.revertedWithCustomError(bridge, "NotContractAddress");
     });
 
     it("Should successfully set bridging addresses dependency when called by upgrade admin", async function () {
-      const { bridge, claims, owner, bridgingAddresses } = await loadFixture(deployBridgeFixture);
-      
+      const { bridge, claims, owner, bridgingAddresses, chain1, chain2, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorAddressChainData);
+
       // Set the bridging addresses dependency
       await expect(
         claims.connect(owner).setBridgingAddrsDependencyAndSync(bridgingAddresses.target)
@@ -1271,11 +1274,11 @@ describe("Claims Contract", function () {
     });
 
     it("Should allow setting the same bridging addresses address again", async function () {
-      const { bridge, claims, owner, bridgingAddresses } = await loadFixture(deployBridgeFixture);
-      
+      const { claims, owner, bridgingAddresses } = await loadFixture(deployBridgeFixture);
+
       // Set the bridging addresses dependency
       await claims.connect(owner).setBridgingAddrsDependencyAndSync(bridgingAddresses.target);
-      
+
       // Set it again with the same address
       await expect(
         claims.connect(owner).setBridgingAddrsDependencyAndSync(bridgingAddresses.target)
@@ -1283,12 +1286,12 @@ describe("Claims Contract", function () {
     });
 
     it("Should work with a different valid contract address", async function () {
-      const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
-      
+      const { claims, owner } = await loadFixture(deployBridgeFixture);
+
       // Deploy a new BridgingAddresses contract for testing
       const BridgingAddresses = await ethers.getContractFactory("BridgingAddresses");
       const newBridgingAddresses = await BridgingAddresses.deploy();
-      
+
       await expect(
         claims.connect(owner).setBridgingAddrsDependencyAndSync(await newBridgingAddresses.getAddress())
       ).to.not.be.reverted;

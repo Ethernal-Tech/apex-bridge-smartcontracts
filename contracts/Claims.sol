@@ -8,6 +8,7 @@ import "./interfaces/IBridgeStructs.sol";
 import "./interfaces/ConstantsLib.sol";
 import "./interfaces/BatchTypesLib.sol";
 import "./interfaces/TransactionTypesLib.sol";
+import "./interfaces/IBridge.sol";
 import "./Utils.sol";
 import "./Bridge.sol";
 import "./ClaimsHelper.sol";
@@ -137,18 +138,17 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     function setBridgingAddrsDependencyAndSync(address _bridgingAddresses) external onlyUpgradeAdmin {
         if (!_isContract(_bridgingAddresses)) revert NotContractAddress();
         bridgingAddresses = BridgingAddresses(_bridgingAddresses);
+        Chain[] memory registeredChains = IBridge(bridgeAddress).getAllRegisteredChains();
 
         // Sync isAddrDelegatedToStake mapping to BridgingAddresses contract
-        for (uint8 chainId = 1; chainId <= 5; chainId++) {
-            if (isChainRegistered[chainId]) {
-                uint8 bridgeAddrCount = bridgingAddresses.bridgingAddressesCount(chainId);
-                for (uint8 bridgeAddrIndex = 0; bridgeAddrIndex < bridgeAddrCount; bridgeAddrIndex++) {
-                    bridgingAddresses.updateBridgingAddressState(
-                        chainId,
-                        bridgeAddrIndex,
-                        __isAddrDelegatedToStake[chainId][bridgeAddrIndex]
-                    );
-                }
+        for (uint8 i; i < registeredChains.length; i++) {
+            uint8 bridgeAddrCount = bridgingAddresses.bridgingAddressesCount(registeredChains[i].id);
+            for (uint8 bridgeAddrIndex = 0; bridgeAddrIndex < bridgeAddrCount; bridgeAddrIndex++) {
+                bridgingAddresses.updateBridgingAddressState(
+                    registeredChains[i].id,
+                    bridgeAddrIndex,
+                    __isAddrDelegatedToStake[registeredChains[i].id][bridgeAddrIndex]
+                );
             }
         }
     }
@@ -939,7 +939,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.2.2";
+        return "1.2.0";
     }
 
     modifier onlyBridge() {
