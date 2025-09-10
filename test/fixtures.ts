@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin } from "../typechain-types";
+import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin, BridgingAddresses } from "../typechain-types";
 import { setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 
 export enum BatchType {
@@ -13,7 +13,14 @@ export enum TransactionType {
   NORMAL = 0,
   DEFUND = 1,
   REFUND = 2,
-  STAKE_DELEGATION = 3,
+  STAKE = 3,
+  REDISTRIBUTION = 4,
+}
+
+export enum TransactionSubType {
+  STAKE_REGISTRATION = 0,
+  STAKE_DELEGATION = 1,
+  STAKE_DEREGISTRATION = 2,
 }
 
 export async function deployBridgeFixture() {
@@ -30,6 +37,9 @@ export async function deployBridgeFixture() {
 
   const Bridge = await ethers.getContractFactory("Bridge");
   const bridgeLogic = await Bridge.deploy();
+
+  const BridgingAddresses = await ethers.getContractFactory("BridgingAddresses");
+  const bridgingAddressesLogic = await BridgingAddresses.deploy();
 
   const ClaimsHelper = await ethers.getContractFactory("ClaimsHelper");
   const claimsHelperLogic = await ClaimsHelper.deploy();
@@ -51,6 +61,7 @@ export async function deployBridgeFixture() {
 
   // deployment of contract proxy
   const BridgeProxy = await ethers.getContractFactory("ERC1967Proxy");
+  const BridgingAddressesProxy = await ethers.getContractFactory("ERC1967Proxy");
   const ClaimsHelperProxy = await ethers.getContractFactory("ERC1967Proxy");
   const ClaimsProxy = await ethers.getContractFactory("ERC1967Proxy");
   const SignedBatchesProxy = await ethers.getContractFactory("ERC1967Proxy");
@@ -61,6 +72,11 @@ export async function deployBridgeFixture() {
   const bridgeProxy = await BridgeProxy.deploy(
     await bridgeLogic.getAddress(),
     Bridge.interface.encodeFunctionData("initialize", [owner.address, owner.address])
+  );
+
+  const bridgingAddressesProxy = await BridgingAddressesProxy.deploy(
+    await bridgingAddressesLogic.getAddress(),
+    BridgingAddresses.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
   const claimsHelperProxy = await ClaimsHelperProxy.deploy(
@@ -105,6 +121,9 @@ export async function deployBridgeFixture() {
   const BridgeDeployed = await ethers.getContractFactory("Bridge");
   const bridge = BridgeDeployed.attach(bridgeProxy.target) as Bridge;
 
+  const BridgingAddressesDeployed = await ethers.getContractFactory("BridgingAddresses");
+  const bridgingAddresses = BridgingAddressesDeployed.attach(bridgingAddressesProxy.target) as BridgingAddresses;
+
   const ClaimsHelperDeployed = await ethers.getContractFactory("ClaimsHelper");
   const claimsHelper = ClaimsHelperDeployed.attach(claimsHelperProxy.target) as ClaimsHelper;
 
@@ -130,9 +149,19 @@ export async function deployBridgeFixture() {
     validatorsProxy.target
   );
 
+  await bridgingAddresses.setDependencies(bridge.target, claims.target, admin.target);
+
+  await bridge.setBridgingAddrsDependencyAndSync(
+    bridgingAddressesProxy.target
+  );
+
   await claimsHelper.setDependencies(claims.target, signedBatches.target);
 
   await claims.setDependencies(bridge.target, claimsHelper.target, validatorsc.target, admin.target);
+
+  await claims.setBridgingAddrsDependencyAndSync(
+    bridgingAddressesProxy.target
+  );
 
   await signedBatches.setDependencies(bridge.target, claimsHelper.target, validatorsc);
 
@@ -141,6 +170,8 @@ export async function deployBridgeFixture() {
   await validatorsc.setDependencies(bridge.target);
 
   await admin.setDependencies(claims.target);
+
+  await admin.setBridgingAddrsDependency(bridgingAddressesProxy.target);
 
   const chain1 = {
     id: 1,
@@ -174,6 +205,7 @@ export async function deployBridgeFixture() {
         ],
         sourceChainId: 1,
         destinationChainId: 2,
+        bridgeAddrIndex: 1,
       },
     ],
     batchExecutedClaims: [],
@@ -199,6 +231,7 @@ export async function deployBridgeFixture() {
         ],
         sourceChainId: 1,
         destinationChainId: 2,
+        bridgeAddrIndex: 0,
       },
     ],
     batchExecutedClaims: [],
@@ -224,6 +257,7 @@ export async function deployBridgeFixture() {
       ],
       sourceChainId: 1,
       destinationChainId: 2,
+      bridgeAddrIndex: 0,
     })),
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
@@ -248,6 +282,7 @@ export async function deployBridgeFixture() {
       ],
       sourceChainId: 1,
       destinationChainId: 2,
+      bridgeAddrIndex: 0,
     })),
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
@@ -273,6 +308,7 @@ export async function deployBridgeFixture() {
         ],
         sourceChainId: 1,
         destinationChainId: 2,
+        bridgeAddrIndex: 0,
       },
     ],
     batchExecutedClaims: [],
@@ -300,6 +336,7 @@ export async function deployBridgeFixture() {
         ],
         sourceChainId: 1,
         destinationChainId: 2,
+        bridgeAddrIndex: 0,
       },
     ],
     batchExecutedClaims: [],
@@ -380,6 +417,7 @@ export async function deployBridgeFixture() {
         originChainId: 2,
         shouldDecrementHotWallet: false,
         destinationChainId: 1,
+        bridgeAddrIndex: 1,
       },
     ],
     hotWalletIncrementClaims: [],
@@ -401,6 +439,7 @@ export async function deployBridgeFixture() {
         originChainId: 2,
         shouldDecrementHotWallet: true,
         destinationChainId: 1,
+        bridgeAddrIndex: 0,
       },
     ],
     hotWalletIncrementClaims: [],
@@ -422,6 +461,7 @@ export async function deployBridgeFixture() {
         originChainId: 2,
         shouldDecrementHotWallet: false,
         destinationChainId: 1,
+        bridgeAddrIndex: 0,
       },
     ],
     hotWalletIncrementClaims: [],
@@ -477,7 +517,7 @@ export async function deployBridgeFixture() {
     stakeSignature: "0x746573740000000000000000000000000000000000000000000000000000000B",
   };
 
-  const signedBatchStakeDel = {
+  const signedBatchStakeDelOrRedistr = {
     id: 1,
     firstTxNonceId: 1,
     lastTxNonceId: 1,
@@ -525,6 +565,7 @@ export async function deployBridgeFixture() {
   return {
     hre,
     bridge,
+    bridgingAddresses,
     claimsHelper,
     claims,
     signedBatches,
@@ -552,7 +593,7 @@ export async function deployBridgeFixture() {
     signedBatch,
     signedBatchConsolidation,
     signedBatchDefund,
-    signedBatchStakeDel,
+    signedBatchStakeDelOrRedistr,
     validatorAddressChainData,
     validatorCardanoData,
     validators,
@@ -560,4 +601,70 @@ export async function deployBridgeFixture() {
     cardanoBlocksTooManyBlocks,
     bridgeAddrIndex,
   };
+}
+
+export function encodeRefundRequestClaim(claim: any) {
+  const abiCoder = new ethers.AbiCoder();
+  const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
+  const encoded = abiCoder.encode(
+    ["bytes32", "bytes32", "uint256", "uint256", "bytes", "string", "uint64", "uint8", "bool", "uint8", "uint8"],
+    [
+      claim.originTransactionHash,
+      claim.refundTransactionHash,
+      claim.originAmount,
+      claim.originWrappedAmount,
+      claim.outputIndexes,
+      claim.originSenderAddress,
+      claim.retryCounter,
+      claim.originChainId,
+      claim.shouldDecrementHotWallet,
+      claim.destinationChainId,
+      claim.bridgeAddrIndex,
+    ]
+  );
+  return "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+    encodedPrefix.substring(66) +
+    encoded.substring(2);
+}
+
+export function encodeBridgeRequestClaim(claim: any) {
+  const abiCoder = new ethers.AbiCoder();
+  const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
+  const lst = [];
+  for (let receiver of claim.receivers) {
+    lst.push([
+      receiver.amount, receiver.amountWrapped, receiver.destinationAddress,
+    ])
+  }
+
+  const encoded = abiCoder.encode(
+    [
+      "bytes32",
+      "tuple(uint64, uint64, string)[]",
+      "uint256",
+      "uint256",
+      "uint256",
+      "uint256",
+      "uint256",
+      "uint8",
+      "uint8",
+      "uint8",
+    ],
+    [
+      claim.observedTransactionHash,
+      lst,
+      claim.nativeCurrencyAmountSource,
+      claim.wrappedTokenAmountSource,
+      claim.nativeCurrencyAmountDestination,
+      claim.wrappedTokenAmountDestination,
+      claim.retryCounter,
+      claim.sourceChainId,
+      claim.destinationChainId,
+      claim.bridgeAddrIndex,
+    ]
+  );
+
+  return "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+    encodedPrefix.substring(66) +
+    encoded.substring(2);
 }

@@ -11,10 +11,12 @@ import "./Claims.sol";
 import "./SignedBatches.sol";
 import "./Slots.sol";
 import "./Validators.sol";
+import "./BridgingAddresses.sol";
+import "./interfaces/TransactionTypesLib.sol";
 
 /// @title Bridge
 /// @notice Cross-chain bridge for validator claim submission, batch transaction signing, and governance-based chain registration.
-/// @dev UUPS upgradeable and modular via dependency contracts (Claims, Validators, Slots, SignedBatches).
+/// @dev UUPS upgradeable and modular via dependency contracts (Claims, Validators, Slots, SignedBatches, BridgingAddresses).
 contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
     Claims private claims;
@@ -28,10 +30,12 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Max number of blocks that can be submitted at once.
     uint8 constant MAX_NUMBER_OF_BLOCKS = 40;
 
+    BridgingAddresses public bridgingAddresses;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[50] private __gap;
+    uint256[49] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -75,6 +79,16 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         signedBatches = SignedBatches(_signedBatchesAddress);
         slots = Slots(_slotsAddress);
         validators = Validators(_validatorsAddress);
+    }
+
+    /// @notice Sets the BridgingAddresses contract dependency and syncs it with the registered chains.
+    /// @dev This function can only be called by the upgrade admin.
+    ///      It verifies that the provided address is a contract before using it.
+    /// @param _bridgingAddresses The address of the BridgingAddresses contract to set and sync.
+    function setBridgingAddrsDependencyAndSync(address _bridgingAddresses) external onlyUpgradeAdmin {
+        if (!_isContract(_bridgingAddresses)) revert NotContractAddress();
+        bridgingAddresses = BridgingAddresses(_bridgingAddresses);
+        bridgingAddresses.initRegisteredChains(chains);
     }
 
     /// @notice Submit claims from validators for reaching consensus.
@@ -202,6 +216,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         if (!claims.isChainRegistered(_chainId)) {
             chains.push(_chain);
             claims.setChainRegistered(_chainId, _tokenQuantity, _wrappedTokenQuantity);
+            bridgingAddresses.initRegisteredChain(_chainId);
             emit newChainRegistered(_chainId);
         }
     }
@@ -242,6 +257,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             chains.push(Chain(_chainId, _chainType, "", ""));
 
             claims.setChainRegistered(_chainId, _tokenQuantity, _wrappedTokenQuantity);
+            bridgingAddresses.initRegisteredChain(_chainId);
             emit newChainRegistered(_chainId);
         } else {
             emit newChainProposal(_chainId, msg.sender);
@@ -317,17 +333,12 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         return _confirmedTransactions;
     }
 
-    /// @notice Queues a transaction to delegate a bridging address to a specific stake pool on a given chain.
-    /// @param chainId The ID of the destination chain.
-    /// @param bridgeAddrIndex The index of the bridging address to be delegated.
-    /// @param stakePoolId The identifier of the stake pool to delegate to.
-    function delegateAddrToStakePool(uint8 chainId, uint8 bridgeAddrIndex, string calldata stakePoolId) external override onlyOwner {
-        // there is only one bridge address currently, only index 0 is allowed
-        if (bridgeAddrIndex != 0) {
-            revert InvalidBridgeAddrIndex(chainId, bridgeAddrIndex);
-        }
-
-        claims.delegateAddrToStakePool(chainId, bridgeAddrIndex, stakePoolId);
+    /// @notice Returns the number of bridging addresses for a given chain.
+    /// @dev Useful for querying how many multisig addresses are configured per chain.
+    /// @param chainId The ID of the chain to query.
+    /// @return The total count of bridging addresses for the specified chain.
+    function getBridgingAddressesCount(uint8 chainId) external view override returns (uint8) {
+        return bridgingAddresses.bridgingAddressesCount(chainId);
     }
 
     /// @notice Get the confirmed batch for the given destination chain.
@@ -391,7 +402,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.1.0";
+        return "1.2.0";
     }
 
     modifier onlyValidator() {

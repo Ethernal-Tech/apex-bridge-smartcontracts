@@ -14,11 +14,12 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     address private upgradeAdmin;
     address public fundAdmin;
     Claims private claims;
+    BridgingAddresses public bridgingAddresses;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[50] private __gap;
+    uint256[49] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -47,6 +48,14 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     function setDependencies(address _claimsAddress) external onlyOwner {
         if (!_isContract(_claimsAddress)) revert NotContractAddress();
         claims = Claims(_claimsAddress);
+    }
+
+    /// @notice Sets the external BridgingAddresses contract dependency.
+    /// @dev This function can only be called by the upgrade admin. It verifies that the provided address is a contract.
+    /// @param _bridgingAddresses The address of the deployed BridgingAddresses contract.
+    function setBridgingAddrsDependency(address _bridgingAddresses) external onlyUpgradeAdmin {
+        if (!_isContract(_bridgingAddresses)) revert NotContractAddress();
+        bridgingAddresses = BridgingAddresses(_bridgingAddresses);
     }
 
     /// @notice Updates token quantity for a specific chain
@@ -115,10 +124,56 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         emit UpdatedTimeoutBlocksNumber(_timeoutBlocksNumber);
     }
 
+    /// @notice Updates the number of bridge addresses for a specific chain.
+    /// @dev Only callable by the contract owner. Reverts if the chain ID is not registered.
+    /// @param _chainId The ID of the chain whose bridging address count is being updated.
+    /// @param bridgingAddrsCount The new number of bridging addresses for the specified chain.
+    function updateBridgingAddrsCount(uint8 _chainId, uint8 bridgingAddrsCount) external onlyOwner {
+        if (!claims.isChainRegistered(_chainId)) {
+            revert ChainIsNotRegistered(_chainId);
+        }
+
+        bridgingAddresses.updateBridgingAddrsCount(_chainId, bridgingAddrsCount);
+    }
+
+    /// @notice Queues a redistribution transaction for the bridging addresses on a given chain.
+    /// @dev Only callable by owner. Reverts if the specified chain is not registered.
+    /// @param chainId The ID of the chain where token redistribution should occur.
+    function redistributeBridgingAddrsTokens(uint8 chainId) external onlyOwner {
+        if (!claims.isChainRegistered(chainId)) {
+            revert ChainIsNotRegistered(chainId);
+        }
+
+        claims.createRedistributeTokensTx(chainId);
+    }
+
+    /// @notice Queues a transaction that does the dedicated operation for a bridging stake address.
+    /// @dev Only callable by owner. Reverts if chain is not registered or transactionSubType is invalid.
+    /// @param chainId The ID of the destination chain.
+    /// @param bridgeAddrIndex The index of the bridging address to be delegated.
+    /// @param stakePoolId The identifier of the stake pool to delegate to.
+    /// @param transactionSubType The type of stake transaction to be executed.
+    function stakeAddressOperation(
+        uint8 chainId,
+        uint8 bridgeAddrIndex,
+        string calldata stakePoolId,
+        uint8 transactionSubType
+    ) external onlyOwner {
+        if (!claims.isChainRegistered(chainId)) {
+            revert ChainIsNotRegistered(chainId);
+        }
+
+        if (transactionSubType > TransactionTypesLib.STAKE_DEREGISTRATION) {
+            revert InvalidStakeTransactionSubType(transactionSubType);
+        }
+
+        bridgingAddresses.stakeAddressOperation(chainId, bridgeAddrIndex, stakePoolId, transactionSubType);
+    }
+
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.0";
+        return "1.1.0";
     }
 
     modifier onlyFundAdmin() {
