@@ -5,6 +5,7 @@ import { deployBridgeFixture, TransactionSubType, TransactionType } from "./fixt
 
 describe("Stake Registration", function () {
     const stakePoolId = "pool1y0uxkqyplyx6ld25e976t0s35va3ysqcscatwvy2sd2cwcareq7";
+    const firstStakeBridgingAddrIndex = 100;
 
     it("Should revert if registration is not sent by owner", async function () {
         const { admin, chain1, validators, bridgeAddrIndex } = await loadFixture(deployBridgeFixture);
@@ -37,6 +38,19 @@ describe("Stake Registration", function () {
             .to.be.revertedWithCustomError(admin, "InvalidBridgeAddrIndex");
     });
 
+    it("Should revert if index of stake bridging address is invalid", async () => {
+        const { bridge, admin, owner, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
+        const stakeBridgingAddrCount = 2;
+
+        await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
+        await expect(admin.connect(owner).stakeAddressOperation(chain1.id, firstStakeBridgingAddrIndex, stakePoolId, TransactionSubType.STAKE_REGISTRATION))
+            .to.be.revertedWithCustomError(admin, "InvalidBridgeAddrIndex");
+
+        await admin.connect(owner).updateBridgingAddrsCount(chain1.id, 1, stakeBridgingAddrCount);
+        await expect(admin.connect(owner).stakeAddressOperation(chain1.id, firstStakeBridgingAddrIndex + stakeBridgingAddrCount, stakePoolId, TransactionSubType.STAKE_REGISTRATION))
+            .to.be.revertedWithCustomError(admin, "InvalidBridgeAddrIndex");
+    });
+
     it("Should revert if the bridging address has already been registered.", async () => {
         const { bridge, admin, owner, chain1, validatorAddressChainData, bridgeAddrIndex } = await loadFixture(deployBridgeFixture);
 
@@ -63,10 +77,19 @@ describe("Stake Registration", function () {
     it("Should set isAddrDelegatedToStake to true when registration is successful", async function () {
         const { bridge, admin, owner, chain1, validatorAddressChainData, bridgeAddrIndex, bridgingAddresses } =
             await loadFixture(deployBridgeFixture);
+        const stakeBridgingAddrCount = 2;
 
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
+        await admin.connect(owner).updateBridgingAddrsCount(chain1.id, 1, stakeBridgingAddrCount);
+
         await admin.connect(owner).stakeAddressOperation(chain1.id, bridgeAddrIndex, stakePoolId, TransactionSubType.STAKE_REGISTRATION);
         expect(await bridgingAddresses.isAddrDelegatedToStake(chain1.id, bridgeAddrIndex)).to.be.true;
+
+        for (let i = 0; i < stakeBridgingAddrCount; i++) {
+            const stakeBridgeAddrIndex = firstStakeBridgingAddrIndex + i;
+            await admin.connect(owner).stakeAddressOperation(chain1.id, stakeBridgeAddrIndex, stakePoolId, TransactionSubType.STAKE_REGISTRATION);
+            expect(await bridgingAddresses.isAddrDelegatedToStake(chain1.id, stakeBridgeAddrIndex)).to.be.true;
+        }
     });
 
     it("Should correctly store a new confirmed transaction of type stake registration", async function () {

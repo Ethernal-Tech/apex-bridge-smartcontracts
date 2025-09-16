@@ -128,12 +128,17 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     /// @dev Only callable by the contract owner. Reverts if the chain ID is not registered.
     /// @param _chainId The ID of the chain whose bridging address count is being updated.
     /// @param bridgingAddrsCount The new number of bridging addresses for the specified chain.
-    function updateBridgingAddrsCount(uint8 _chainId, uint8 bridgingAddrsCount) external onlyOwner {
+    /// @param _stakeBridgingAddrsCount The new number of stake bridging addresses for the specified chain.
+    function updateBridgingAddrsCount(
+        uint8 _chainId,
+        uint8 bridgingAddrsCount,
+        uint8 _stakeBridgingAddrsCount
+    ) external onlyOwner {
         if (!claims.isChainRegistered(_chainId)) {
             revert ChainIsNotRegistered(_chainId);
         }
 
-        bridgingAddresses.updateBridgingAddrsCount(_chainId, bridgingAddrsCount);
+        bridgingAddresses.updateBridgingAddrsCount(_chainId, bridgingAddrsCount, _stakeBridgingAddrsCount);
     }
 
     /// @notice Queues a redistribution transaction for the bridging addresses on a given chain.
@@ -173,7 +178,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.1.0";
+        return "1.2.0";
     }
 
     modifier onlyFundAdmin() {

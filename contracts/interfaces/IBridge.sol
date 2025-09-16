@@ -83,6 +83,11 @@ abstract contract IBridge is IBridgeStructs {
     /// @return The total count of bridging addresses for the specified chain.
     function getBridgingAddressesCount(uint8 chainId) external view virtual returns (uint8);
 
+    /// @notice Returns the number of stake bridging addresses for a given chain.
+    /// @param chainId The ID of the chain to query.
+    /// @return The total count of stake bridging addresses for the specified chain.
+    function getStakeBridgingAddressesCount(uint8 chainId) external view virtual returns (uint8);
+
     /// @notice Get the confirmed batch for the given destination chain.
     /// @param _destinationChain ID of the destination chain.
     /// @return _batch The confirmed batch details.

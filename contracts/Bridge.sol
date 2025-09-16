@@ -341,6 +341,14 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         return bridgingAddresses.bridgingAddressesCount(chainId);
     }
 
+    /// @notice Returns the number of stake bridging addresses for a given chain.
+    /// @dev Useful for querying how many stake multisig addresses are configured per chain.
+    /// @param chainId The ID of the chain to query.
+    /// @return The total count of stake bridging addresses for the specified chain.
+    function getStakeBridgingAddressesCount(uint8 chainId) external view override returns (uint8) {
+        return bridgingAddresses.stakeBridgingAddrsCount(chainId);
+    }
+
     /// @notice Get the confirmed batch for the given destination chain.
     /// @param _destinationChain ID of the destination chain.
     /// @return _batch The confirmed batch details.
@@ -402,7 +410,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.2.0";
+        return "1.3.0";
     }
 
     modifier onlyValidator() {

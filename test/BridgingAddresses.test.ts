@@ -13,7 +13,7 @@ describe("Bridging Addresses", function () {
     it("Should revert if set bridging addresses count is not sent by owner", async function () {
         const { admin, chain1, validators } = await loadFixture(deployBridgeFixture);
 
-        await expect(admin.connect(validators[0]).updateBridgingAddrsCount(chain1.id, 5))
+        await expect(admin.connect(validators[0]).updateBridgingAddrsCount(chain1.id, 5, 5))
             .to.be.revertedWith("Ownable: caller is not the owner");
     });
 
@@ -28,6 +28,9 @@ describe("Bridging Addresses", function () {
 
         expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(1);
         expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain2.id)).to.equal(1);
+
+        expect(await bridgingAddresses.connect(owner).stakeBridgingAddrsCount(chain1.id)).to.equal(0);
+        expect(await bridgingAddresses.connect(owner).stakeBridgingAddrsCount(chain2.id)).to.equal(0);
     });
 
     it("Should initialize chains registered with governance on bridging addresses", async function () {
@@ -92,6 +95,7 @@ describe("Bridging Addresses", function () {
             );
 
         expect(await bridgingAddresses.connect(validators[0]).bridgingAddressesCount(chain1.id)).to.equal(1);
+        expect(await bridgingAddresses.connect(validators[0]).stakeBridgingAddrsCount(chain1.id)).to.equal(0);
     });
 
     it("Should revert when bridging address count is initialized twice", async function () {
@@ -99,6 +103,7 @@ describe("Bridging Addresses", function () {
 
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
         expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(1);
+        expect(await bridgingAddresses.connect(owner).stakeBridgingAddrsCount(chain1.id)).to.equal(0);
 
         await expect(bridge.connect(owner).setBridgingAddrsDependencyAndSync(bridgingAddresses.target))
             .to.be.revertedWithCustomError(bridge, "BridgingAddrCountAlreadyInit");
@@ -107,19 +112,21 @@ describe("Bridging Addresses", function () {
     it("Should update bridging address count", async function () {
         const { owner, validatorAddressChainData, bridge, admin, bridgingAddresses, chain1 } = await loadFixture(deployBridgeFixture);
         const bridgingAddrCount = 10;
+        const stakeBridgingAddrCount = 5;
 
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
         expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(1);
+        expect(await bridgingAddresses.connect(owner).stakeBridgingAddrsCount(chain1.id)).to.equal(0);
 
-        await admin.connect(owner).updateBridgingAddrsCount(chain1.id, bridgingAddrCount);
+        await admin.connect(owner).updateBridgingAddrsCount(chain1.id, bridgingAddrCount, stakeBridgingAddrCount);
         expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(bridgingAddrCount);
+        expect(await bridgingAddresses.connect(owner).stakeBridgingAddrsCount(chain1.id)).to.equal(stakeBridgingAddrCount);
     });
 
     it("Should revert when updating bridging address count for non-registered chain", async function () {
         const { owner, admin, chain1 } = await loadFixture(deployBridgeFixture);
-        const bridgingAddrCount = 10;
 
-        await expect(admin.connect(owner).updateBridgingAddrsCount(chain1.id, bridgingAddrCount))
+        await expect(admin.connect(owner).updateBridgingAddrsCount(chain1.id, 10, 5))
             .to.be.revertedWithCustomError(admin, "ChainIsNotRegistered");
     });
 
@@ -128,8 +135,23 @@ describe("Bridging Addresses", function () {
 
         await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
         expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(1);
+        expect(await bridgingAddresses.connect(owner).stakeBridgingAddrsCount(chain1.id)).to.equal(0);
 
-        await expect(admin.connect(owner).updateBridgingAddrsCount(chain1.id, 0))
+        await expect(admin.connect(owner).updateBridgingAddrsCount(chain1.id, 0, 1))
             .to.be.revertedWithCustomError(bridge, "InvalidBridgingAddrCount");
+    });
+
+    it("Should be possible to set stake bridging address count to zero", async function () {
+        const { owner, validatorAddressChainData, bridge, admin, bridgingAddresses, chain1 } = await loadFixture(deployBridgeFixture);
+        const bridgingAddrCount = 10;
+        const stakeBridgingAddrCount = 0;
+
+        await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
+        expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(1);
+        expect(await bridgingAddresses.connect(owner).stakeBridgingAddrsCount(chain1.id)).to.equal(0);
+
+        await admin.connect(owner).updateBridgingAddrsCount(chain1.id, bridgingAddrCount, stakeBridgingAddrCount);
+        expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(bridgingAddrCount);
+        expect(await bridgingAddresses.connect(owner).stakeBridgingAddrsCount(chain1.id)).to.equal(stakeBridgingAddrCount);
     });
 });

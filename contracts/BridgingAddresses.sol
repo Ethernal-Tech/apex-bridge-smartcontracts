@@ -26,10 +26,15 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
     /// @dev Mapping: chainId => bridgeAddrIndex => true if delegated, false otherwise.
     mapping(uint8 => mapping(uint8 => bool)) public isAddrDelegatedToStake;
 
+    /// @notice Mapping of chain IDs to the number of configured stake bridge addresses for each chain.
+    mapping(uint8 => uint8) public stakeBridgingAddrsCount;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[50] private __gap;
+    uint256[49] private __gap;
+
+    uint8 private constant FIRST_STAKE_BRIDGING_ADDR_IDX = 100;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -149,6 +154,10 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
             for (uint8 _indx = 0; _indx < bridgingAddressesCount[registeredChains[i].id]; _indx++) {
                 isAddrDelegatedToStake[registeredChains[i].id][_indx] = false;
             }
+
+            for (uint8 _indx = 0; _indx < stakeBridgingAddrsCount[registeredChains[i].id]; _indx++) {
+                isAddrDelegatedToStake[registeredChains[i].id][FIRST_STAKE_BRIDGING_ADDR_IDX + _indx] = false;
+            }
         }
     }
 
@@ -160,9 +169,16 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
     /// @dev Only callable by the bridge contract.
     /// @param _chainId The target chain ID to update.
     /// @param _bridgingAddrsCount The new count of bridge addresses for the chain.
-    function updateBridgingAddrsCount(uint8 _chainId, uint8 _bridgingAddrsCount) external onlyAdminContract {
+    /// @param _stakeBridgingAddrsCount The new count of stake bridge addresses for the chain.
+    function updateBridgingAddrsCount(
+        uint8 _chainId,
+        uint8 _bridgingAddrsCount,
+        uint8 _stakeBridgingAddrsCount
+    ) external onlyAdminContract {
         if (_bridgingAddrsCount == 0) revert InvalidBridgingAddrCount(_chainId, _bridgingAddrsCount);
+
         bridgingAddressesCount[_chainId] = _bridgingAddrsCount;
+        stakeBridgingAddrsCount[_chainId] = _stakeBridgingAddrsCount;
     }
 
     /// @notice Checks whether a given bridge address index is valid for a specific chain.
@@ -170,13 +186,16 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
     /// @param bridgeAddrIndex The bridge address index to validate.
     /// @return True if the index is valid; otherwise false.
     function _checkBridgingAddrIndex(uint8 chainId, uint8 bridgeAddrIndex) internal view returns (bool) {
-        return bridgingAddressesCount[chainId] > bridgeAddrIndex;
+        return
+            bridgingAddressesCount[chainId] > bridgeAddrIndex ||
+            (bridgeAddrIndex >= FIRST_STAKE_BRIDGING_ADDR_IDX &&
+                bridgeAddrIndex < FIRST_STAKE_BRIDGING_ADDR_IDX + stakeBridgingAddrsCount[chainId]);
     }
 
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.0";
+        return "1.1.0";
     }
 
     modifier onlyBridge() {
