@@ -206,6 +206,34 @@ export async function deployBridgeFixture() {
         sourceChainId: 1,
         destinationChainId: 2,
         bridgeAddrIndex: 1,
+        bridgingType: 0, // normal bridging
+      },
+    ],
+    batchExecutedClaims: [],
+    batchExecutionFailedClaims: [],
+    refundRequestClaims: [],
+    hotWalletIncrementClaims: [],
+  };
+  const validatorClaimsStakeBRC = {
+    bridgingRequestClaims: [
+      {
+        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        nativeCurrencyAmountSource: 100,
+        wrappedTokenAmountSource: 100,
+        nativeCurrencyAmountDestination: 100,
+        wrappedTokenAmountDestination: 100,
+        retryCounter: 0,
+        receivers: [
+          {
+            amount: 100,
+            amountWrapped: 100,
+            destinationAddress: "0x123...",
+          },
+        ],
+        sourceChainId: 1,
+        destinationChainId: 2,
+        bridgeAddrIndex: 1,
+        bridgingType: 1, // stake bridging
       },
     ],
     batchExecutedClaims: [],
@@ -232,6 +260,7 @@ export async function deployBridgeFixture() {
         sourceChainId: 1,
         destinationChainId: 2,
         bridgeAddrIndex: 0,
+        bridgingType: 0, // normal bridging
       },
     ],
     batchExecutedClaims: [],
@@ -258,6 +287,7 @@ export async function deployBridgeFixture() {
       sourceChainId: 1,
       destinationChainId: 2,
       bridgeAddrIndex: 0,
+      bridgingType: 0, // normal bridging
     })),
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
@@ -283,6 +313,7 @@ export async function deployBridgeFixture() {
       sourceChainId: 1,
       destinationChainId: 2,
       bridgeAddrIndex: 0,
+      bridgingType: 0, // normal bridging
     })),
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
@@ -309,6 +340,7 @@ export async function deployBridgeFixture() {
         sourceChainId: 1,
         destinationChainId: 2,
         bridgeAddrIndex: 0,
+        bridgingType: 0, // normal bridging
       },
     ],
     batchExecutedClaims: [],
@@ -337,6 +369,7 @@ export async function deployBridgeFixture() {
         sourceChainId: 1,
         destinationChainId: 2,
         bridgeAddrIndex: 0,
+        bridgingType: 0, // normal bridging
       },
     ],
     batchExecutedClaims: [],
@@ -577,6 +610,7 @@ export async function deployBridgeFixture() {
     validatorsc,
     validator6,
     validatorClaimsBRC,
+    validatorClaimsStakeBRC,
     validatorClaimsBRC_bunch32,
     validatorClaimsBRC_bunch33,
     validatorClaimsBEC,
@@ -649,6 +683,7 @@ export function encodeBridgeRequestClaim(claim: any) {
       "uint8",
       "uint8",
       "uint8",
+      "uint8",
     ],
     [
       claim.observedTransactionHash,
@@ -661,6 +696,7 @@ export function encodeBridgeRequestClaim(claim: any) {
       claim.sourceChainId,
       claim.destinationChainId,
       claim.bridgeAddrIndex,
+      claim.bridgingType,
     ]
   );
 

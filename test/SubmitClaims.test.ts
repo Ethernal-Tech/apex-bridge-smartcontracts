@@ -933,6 +933,86 @@ describe("Submit Claims", function () {
       );
       expect(chain2WrappedTokenQuantityAfter).to.be.equal(chain2WrappedTokenQuantityStart);
     });
+    it("Staked Tokens: BRC -> BEFC", async function () {
+      const {
+        bridge,
+        claims,
+        owner,
+        validators,
+        chain1,
+        chain2,
+        validatorClaimsStakeBRC,
+        validatorClaimsBEFC,
+        signedBatch,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorAddressChainData);
+      let hotWalletStateOriginalSource = await claims.chainTokenQuantity(
+        validatorClaimsStakeBRC.bridgingRequestClaims[0].sourceChainId
+      );
+
+      let hotWalletWrappedStateOriginalSource = await claims.chainWrappedTokenQuantity(
+        validatorClaimsStakeBRC.bridgingRequestClaims[0].sourceChainId
+      );
+
+      let hotWalletStateOriginalDestination = await claims.chainTokenQuantity(
+        validatorClaimsStakeBRC.bridgingRequestClaims[0].destinationChainId
+      );
+
+      let hotWalletWrappedStateOriginalDestination = await claims.chainWrappedTokenQuantity(
+        validatorClaimsStakeBRC.bridgingRequestClaims[0].destinationChainId
+      );
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsStakeBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsStakeBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsStakeBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsStakeBRC);
+
+      expect(await claims.chainTokenQuantity(validatorClaimsStakeBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
+        hotWalletStateOriginalSource + BigInt(validatorClaimsStakeBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource)
+      );
+
+      expect(
+        await claims.chainWrappedTokenQuantity(validatorClaimsStakeBRC.bridgingRequestClaims[0].sourceChainId)
+      ).to.equal(hotWalletWrappedStateOriginalSource);
+
+      expect(await claims.chainTokenQuantity(validatorClaimsStakeBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
+        hotWalletStateOriginalDestination -
+        BigInt(validatorClaimsStakeBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination)
+      );
+
+      expect(
+        await claims.chainWrappedTokenQuantity(validatorClaimsStakeBRC.bridgingRequestClaims[0].destinationChainId)
+      ).to.equal(hotWalletWrappedStateOriginalDestination);
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
+
+      expect(await claims.chainTokenQuantity(validatorClaimsStakeBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
+        hotWalletStateOriginalSource + BigInt(validatorClaimsStakeBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource)
+      );
+
+      expect(
+        await claims.chainWrappedTokenQuantity(validatorClaimsStakeBRC.bridgingRequestClaims[0].sourceChainId)
+      ).to.equal(hotWalletWrappedStateOriginalSource);
+
+      expect(await claims.chainTokenQuantity(validatorClaimsStakeBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
+        hotWalletStateOriginalDestination
+      );
+
+      expect(
+        await claims.chainWrappedTokenQuantity(validatorClaimsStakeBRC.bridgingRequestClaims[0].destinationChainId)
+      ).to.equal(hotWalletWrappedStateOriginalDestination);
+    });
   });
 
   describe("Submit new Refund Request Claims", function () {

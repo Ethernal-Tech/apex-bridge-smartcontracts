@@ -278,6 +278,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev After quorum is reached, the destination chain's token quantity is reduced, and the source chain's token quantity is increased if it's the first retry.
     /// @dev The function also updates the next timeout block if necessary and sets the confirmed transaction details.
     function _submitClaimsBRC(BridgingRequestClaim calldata _claim, uint256 i, address _caller) internal {
+        uint8 _bridgingType = _claim.bridgingType;
         uint256 _nativeCurrencyAmountDestination = _claim.nativeCurrencyAmountDestination;
         uint256 _wrappedTokenAmountDestination = _claim.wrappedTokenAmountDestination;
         uint8 _destinationChainId = _claim.destinationChainId;
@@ -298,7 +299,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             return; // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
         }
 
-        if (_chainWrappedTokenQuantityDestination < _wrappedTokenAmountDestination) {
+        if (
+            _bridgingType == TransactionTypesLib.BRIDGING_NORMAL &&
+            _chainWrappedTokenQuantityDestination < _wrappedTokenAmountDestination
+        ) {
             emit NotEnoughFunds("BRC - Native Token", i, _chainWrappedTokenQuantityDestination);
             return; // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
         }
@@ -307,13 +311,18 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         // check if quorum is reached for the first time
         if (_isNewVote && _votesCount + 1 == _quorumCount) {
             chainTokenQuantity[_destinationChainId] -= _nativeCurrencyAmountDestination;
-            chainWrappedTokenQuantity[_destinationChainId] -= _wrappedTokenAmountDestination;
+
+            if (_bridgingType == TransactionTypesLib.BRIDGING_NORMAL) {
+                chainWrappedTokenQuantity[_destinationChainId] -= _wrappedTokenAmountDestination;
+            }
 
             // if it is the first occurance of Bridging Request Claim, add the amount to the source chain
             // otherwise, it is a retry and we do not add the amount to the source chain, since it has already been done
             if (_claim.retryCounter == 0) {
                 chainTokenQuantity[_claim.sourceChainId] += _claim.nativeCurrencyAmountSource;
-                chainWrappedTokenQuantity[_claim.sourceChainId] += _claim.wrappedTokenAmountSource;
+                if (_bridgingType == TransactionTypesLib.BRIDGING_NORMAL) {
+                    chainWrappedTokenQuantity[_claim.sourceChainId] += _claim.wrappedTokenAmountSource;
+                }
             }
 
             uint256 _confirmedTxCount = getBatchingTxsCount(_destinationChainId);
@@ -436,7 +445,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 uint8 _txType = _ctx.transactionType;
                 if (_txType == TransactionTypesLib.NORMAL) {
                     _currentAmount += _ctx.totalAmount;
-                    _currentWrappedAmount += _ctx.totalWrappedAmount;
+                    if (_ctx.transactionSubType == TransactionTypesLib.BRIDGING_NORMAL) {
+                        _currentWrappedAmount += _ctx.totalWrappedAmount;
+                    }
                 } else if (_txType == TransactionTypesLib.DEFUND) {
                     if (_ctx.retryCounter < MAX_NUMBER_OF_RETRIES) {
                         _retryTx(chainId, _ctx);
@@ -600,6 +611,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         confirmedTx.totalWrappedAmount = _claim.wrappedTokenAmountDestination;
         confirmedTx.observedTransactionHash = _claim.observedTransactionHash;
         confirmedTx.sourceChainId = _claim.sourceChainId;
+        confirmedTx.transactionSubType = _claim.bridgingType;
 
         uint256 receiversLength = _claim.receivers.length;
         for (uint i; i < receiversLength; i++) {

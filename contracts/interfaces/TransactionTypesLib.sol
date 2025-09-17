@@ -13,4 +13,8 @@ library TransactionTypesLib {
     uint8 internal constant STAKE_REGISTRATION = 0;
     uint8 internal constant STAKE_DELEGATION = 1;
     uint8 internal constant STAKE_DEREGISTRATION = 2;
+
+    // Status codes for bridging types
+    uint8 internal constant BRIDGING_NORMAL = 0;
+    uint8 internal constant BRIDGING_STAKE = 1;
 }

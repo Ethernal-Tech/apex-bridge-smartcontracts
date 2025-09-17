@@ -90,6 +90,7 @@ interface IBridgeStructs {
         uint8 sourceChainId;
         uint8 destinationChainId;
         uint8 bridgeAddrIndex;
+        uint8 bridgingType; // TransactionTypesLib
     }
 
     /// @notice A claim that a batch was executed on a specific chain.
