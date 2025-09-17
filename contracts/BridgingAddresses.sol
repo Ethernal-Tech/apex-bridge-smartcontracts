@@ -34,7 +34,7 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
     ///      Double check when setting structs or arrays.
     uint256[49] private __gap;
 
-    uint8 private constant FIRST_STAKE_BRIDGING_ADDR_IDX = 100;
+    uint8 public constant FIRST_STAKE_BRIDGING_ADDR_IDX = 100;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {

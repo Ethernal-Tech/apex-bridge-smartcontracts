@@ -206,7 +206,6 @@ export async function deployBridgeFixture() {
         sourceChainId: 1,
         destinationChainId: 2,
         bridgeAddrIndex: 1,
-        bridgingType: 0, // normal bridging
       },
     ],
     batchExecutedClaims: [],
@@ -232,8 +231,7 @@ export async function deployBridgeFixture() {
         ],
         sourceChainId: 1,
         destinationChainId: 2,
-        bridgeAddrIndex: 1,
-        bridgingType: 1, // stake bridging
+        bridgeAddrIndex: 100,
       },
     ],
     batchExecutedClaims: [],
@@ -260,7 +258,6 @@ export async function deployBridgeFixture() {
         sourceChainId: 1,
         destinationChainId: 2,
         bridgeAddrIndex: 0,
-        bridgingType: 0, // normal bridging
       },
     ],
     batchExecutedClaims: [],
@@ -287,7 +284,6 @@ export async function deployBridgeFixture() {
       sourceChainId: 1,
       destinationChainId: 2,
       bridgeAddrIndex: 0,
-      bridgingType: 0, // normal bridging
     })),
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
@@ -313,7 +309,6 @@ export async function deployBridgeFixture() {
       sourceChainId: 1,
       destinationChainId: 2,
       bridgeAddrIndex: 0,
-      bridgingType: 0, // normal bridging
     })),
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
@@ -340,7 +335,6 @@ export async function deployBridgeFixture() {
         sourceChainId: 1,
         destinationChainId: 2,
         bridgeAddrIndex: 0,
-        bridgingType: 0, // normal bridging
       },
     ],
     batchExecutedClaims: [],
@@ -369,7 +363,6 @@ export async function deployBridgeFixture() {
         sourceChainId: 1,
         destinationChainId: 2,
         bridgeAddrIndex: 0,
-        bridgingType: 0, // normal bridging
       },
     ],
     batchExecutedClaims: [],
@@ -683,7 +676,6 @@ export function encodeBridgeRequestClaim(claim: any) {
       "uint8",
       "uint8",
       "uint8",
-      "uint8",
     ],
     [
       claim.observedTransactionHash,
@@ -696,7 +688,6 @@ export function encodeBridgeRequestClaim(claim: any) {
       claim.sourceChainId,
       claim.destinationChainId,
       claim.bridgeAddrIndex,
-      claim.bridgingType,
     ]
   );
 
