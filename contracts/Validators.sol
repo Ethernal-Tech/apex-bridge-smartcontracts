@@ -150,7 +150,8 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         uint256 indx = addressValidatorIndex[_validatorAddr] - 1;
         uint256[4] memory key = chainData[_chainId][indx].key;
 
-        return isSignatureValid(_txRaw, _signatureFee, key[1], true) &&
+        return
+            isSignatureValid(_txRaw, _signatureFee, key[1], true) &&
             (_signature.length == 0 || isSignatureValid(_txRaw, _signature, key[0], true)) &&
             (_signatureStake.length == 0 || isSignatureValid(_txRaw, _signatureStake, key[2], true));
     }
@@ -187,7 +188,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     ) external onlyBridge {
         uint8 validatorsCnt = validatorsCount;
         if (validatorsCnt != _chainDatas.length) {
-            revert InvalidData("validators count");
+            revert InvalidData("Validators count");
         }
 
         // recreate array with n elements

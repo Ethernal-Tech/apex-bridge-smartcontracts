@@ -185,6 +185,10 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint256 _wrappedTokenQuantity,
         ValidatorAddressChainData[] calldata _validatorData
     ) public override onlyOwner {
+        if (_chain.id == 0) {
+            revert InvalidData("InvalidChainId");
+        }
+
         uint256 _validatorAddressChainDataLength = _validatorData.length;
 
         if (_validatorAddressChainDataLength < 4) {
@@ -237,6 +241,10 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         bytes calldata _keySignature,
         bytes calldata _keyFeeSignature
     ) external override onlyValidator {
+        if (_chainId == 0) {
+            revert InvalidData("InvalidChainId");
+        }
+
         if (claims.isChainRegistered(_chainId)) {
             revert ChainAlreadyRegistered(_chainId);
         }
@@ -288,6 +296,62 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
         } else {
             revert InvalidData("chainType");
+        }
+    }
+
+    /// @notice Register a new chain and its validator data.
+    /// @param _coloredCoin Colored Coin metadata.
+    function registerColoredCoin(ColoredCoin calldata _coloredCoin) public override onlyOwner {
+        _validateColoredCoin(_coloredCoin);
+
+        claims.registerColoredCoin(_coloredCoin);
+
+        emit newColoredCoinRegistered(_coloredCoin.coloredCoinId);
+    }
+
+    /// @notice Register a new Colored Coin using governance.
+    /// @param _coloredCoin The Colored Coin metadata.
+    function registerColoredCoinGovernance(ColoredCoin calldata _coloredCoin) external override onlyValidator {
+        //TODO: add validatorSet version when implemented
+        bytes32 coloredCoinHash = keccak256(abi.encode("ColoredCoin", _coloredCoin));
+
+        if (claims.hasVoted(coloredCoinHash, msg.sender)) {
+            revert AlreadyProposed(_coloredCoin.coloredCoinId);
+        }
+
+        _validateColoredCoin(_coloredCoin);
+
+        uint8 _validatorIdx = validators.getValidatorIndex(msg.sender) - 1;
+        uint8 _quorumCount = validators.getQuorumNumberOfValidators();
+        uint256 _votesCount = claims.numberOfVotes(coloredCoinHash);
+        // if quorum already reached -> exit
+        if (_votesCount == _quorumCount) {
+            return;
+        }
+
+        bool _isNewVote = claims.updateVote(coloredCoinHash, _validatorIdx);
+
+        if (_isNewVote && _votesCount + 1 == _quorumCount) {
+            claims.registerColoredCoin(_coloredCoin);
+            emit newColoredCoinRegistered(_coloredCoin.coloredCoinId);
+        } else {
+            emit newColoredCoinProposal(_coloredCoin.coloredCoinId);
+        }
+    }
+
+    /// @notice Checks validity of colored coin metadata submited for registration
+    /// @param _coloredCoin Colored Coin metadata.
+    function _validateColoredCoin(ColoredCoin calldata _coloredCoin) internal view {
+        if (!claims.isChainRegistered(_coloredCoin.chainId)) {
+            revert InvalidData("chainId is not registered");
+        }
+
+        if (_coloredCoin.coloredCoinId == 0) {
+            revert InvalidData("coloredCoinId is zero");
+        }
+
+        if (claims.isColoredCoinRegisteredOnChain(_coloredCoin.coloredCoinId, _coloredCoin.chainId)) {
+            revert InvalidData("coloredCoinId is already registered");
         }
     }
 

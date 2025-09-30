@@ -116,4 +116,12 @@ abstract contract IBridge is IBridgeStructs {
         uint8 _chainId,
         uint64 _batchId
     ) external virtual returns (uint8 status, TxDataInfo[] memory txs);
+
+    /// @notice Register a new colored coin by owner
+    /// @param _coloredCoin Colored Coin metadata.
+    function registerColoredCoin(ColoredCoin calldata _coloredCoin) external virtual;
+
+    /// @notice Register a new colored coin using governance.
+    /// @param _coloredCoin Colored Coin metadata.
+    function registerColoredCoinGovernance(ColoredCoin calldata _coloredCoin) external virtual;
 }

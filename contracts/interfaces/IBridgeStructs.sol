@@ -59,6 +59,7 @@ interface IBridgeStructs {
         string stakePoolId;
         uint8 bridgeAddrIndex;
         uint8 transactionSubType; // TransactionTypesLib
+        uint8 coloredCoinId;
     }
 
     /// @notice Represents a block from the Cardano chain.
@@ -90,9 +91,7 @@ interface IBridgeStructs {
         uint8 sourceChainId;
         uint8 destinationChainId;
         uint8 bridgeAddrIndex;
-        uint8 coloredCoinType;
-        uint256 coloredCoinAmountSource;
-        uint256 coloredCoinAmountDestination;
+        uint8 coloredCoinId;
     }
 
     /// @notice A claim that a batch was executed on a specific chain.
@@ -110,7 +109,7 @@ interface IBridgeStructs {
         bytes32 observedTransactionHash;
         // where the batch execution failed
         uint64 batchNonceId;
-        // chain id where the refund was executed
+        // chain id where the execution failed
         uint8 chainId;
     }
 
@@ -140,6 +139,8 @@ interface IBridgeStructs {
         uint8 destinationChainId;
         // index of bridging address
         uint8 bridgeAddrIndex;
+        // ID of coloredCoinId
+        uint8 coloredCoinId;
     }
 
     /// @notice A claim to increase the balance of a chain's hot wallet.
@@ -147,6 +148,7 @@ interface IBridgeStructs {
         uint8 chainId;
         uint256 amount;
         uint256 amountWrapped;
+        uint8 coloredCoinId;
     }
 
     /// @notice Destination address and amount for a transaction output.
@@ -192,6 +194,12 @@ interface IBridgeStructs {
         bytes[] stakeSignatures;
     }
 
+    /// @notice Contains information about a colored coin registered in the bridge.
+    struct ColoredCoin {
+        uint8 chainId;
+        uint8 coloredCoinId;
+    }
+
     // ------------------------------------------------------------------------
     // Errors
     // ------------------------------------------------------------------------
@@ -211,7 +219,7 @@ interface IBridgeStructs {
     error InvalidData(string data);
     error ChainIsNotRegistered(uint8 _chainId);
     error InvalidSignature();
-    error DefundRequestTooHigh(uint8 _chainId, uint256 _availableAmount, uint256 _requestedAmount);
+    error DefundRequestTooHigh(string token, uint8 _chainId, uint256 _availableAmount, uint256 _requestedAmount);
     error ZeroAddress();
     error NegativeChainTokenAmount(uint256 _availableAmount, uint256 _decreaseAmount);
     error TooManyReceivers(uint256 _receiversCount, uint256 _maxReceiversCount);
@@ -224,6 +232,7 @@ interface IBridgeStructs {
     error BridgingAddrCountAlreadyInit(uint8 _chainId);
     error AddrNotRegistered(uint8 _chainId, uint8 _bridgeAddrIndex);
     error InvalidStakeTransactionSubType(uint8 _transactionSubType);
+    error ColoredCoinNotNotRegisteredOnChain(uint8 _coloredCoinId, uint8 _chainId);
 
     // ------------------------------------------------------------------------
     // Events
@@ -231,7 +240,13 @@ interface IBridgeStructs {
     event newChainProposal(uint8 indexed _chainId, address indexed sender);
     event newChainRegistered(uint8 indexed _chainId);
     event NotEnoughFunds(string claimeType, uint256 index, uint256 availableAmount);
-    event ChainDefunded(uint8 _chainId, uint256 _amount);
+    event ChainDefunded(
+        uint8 _chainId,
+        uint256 _amount,
+        uint256 _amountWrapped,
+        uint8 _coloredCoinId,
+        string _defundAddress
+    );
     event FundAdminChanged(address _newFundAdmin);
     event UpdatedChainTokenQuantity(uint indexed chainId, bool isIncrement, uint256 chainTokenQuantity);
     event UpdatedChainWrappedTokenQuantity(uint indexed chainId, bool isIncrement, uint256 chainWrappedTokenQuantity);
@@ -240,4 +255,12 @@ interface IBridgeStructs {
     event UpdatedTimeoutBlocksNumber(uint256 _timeoutBlocksNumber);
     event StakeOperationFailedAfterMultipleRetries(uint8 _transactionSubType);
     event TokensRedistributionFailedAfterMultipleRetries(uint8 _chainId);
+    event newColoredCoinRegistered(uint8 indexed _coloredTokenId);
+    event newColoredCoinProposal(uint8 indexed _coloredTokenId);
+    event UpdatedChainColoredCoinQuantity(
+        uint indexed chainId,
+        bool isIncrement,
+        uint256 chainWrappedTokenQuantity,
+        uint8 coloredCoinId
+    );
 }

@@ -2,41 +2,11 @@ import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { deployBridgeFixture } from "./fixtures";
+import hre from "hardhat";
 
-describe("Confirmed Transactions", function () {
-  async function impersonateAsContractAndMintFunds(contractAddress: string) {
-    const hre = require("hardhat");
-    const address = await contractAddress.toLowerCase();
-    // impersonate as an contract on specified address
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [address],
-    });
-
-    const signer = await ethers.getSigner(address);
-    // minting 100000000000000000000 tokens to signer
-    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
-
-    return signer;
-  }
-
+describe("Confirmed Transacrions", function () {
   describe("Transaction Confirmation", function () {
     it("GetConfirmedTransaction should not return transaction that occured after the timeout", async function () {
-      const {
-        bridge,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        validatorClaimsBRC,
-        validatorClaimsBRC_confirmedTransactions,
-        validatorAddressChainData,
-        hre,
-        claims,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorAddressChainData);
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -61,19 +31,14 @@ describe("Confirmed Transactions", function () {
         params: [bridgeAddress],
       });
 
-      // wait for next timeout
-      for (let i = 0; i < 6; i++) {
-        await ethers.provider.send("evm_mine");
-      }
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC_confirmedTransactions);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC_confirmedTransactions);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC_confirmedTransactions);
-      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC_confirmedTransactions);
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       const confirmedTxs = await bridge
         .connect(validators[0])
-        .getConfirmedTransactions(validatorClaimsBRC_confirmedTransactions.bridgingRequestClaims[0].destinationChainId);
+        .getConfirmedTransactions(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId);
 
       const expectedReceiversAddress = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress;
       const expectedReceiversAmount = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount;
@@ -92,11 +57,6 @@ describe("Confirmed Transactions", function () {
     });
 
     it("GetConfirmedTransactions should not return more transaction than MAX_NUMBER_OF_TRANSACTIONS", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData, claims, hre } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorAddressChainData);
       const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
 
       // Impersonate as Bridge in order to set Next Timeout Block value
@@ -116,30 +76,34 @@ describe("Confirmed Transactions", function () {
         params: [bridgeAddress],
       });
 
+      const tempBRC = structuredClone(validatorClaimsBRC);
+      tempBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination = 1n;
+      tempBRC.bridgingRequestClaims[0].wrappedTokenAmountDestination = 1n;
+
       const validatorClaimsBRC2 = {
-        ...validatorClaimsBRC,
+        ...tempBRC,
         bridgingRequestClaims: [
           {
-            ...validatorClaimsBRC.bridgingRequestClaims[0],
+            ...tempBRC.bridgingRequestClaims[0],
             observedTransactionHash: "0x7465737500000000000000000000000000000000000000000000000000000000",
           },
         ],
       };
 
       const validatorClaimsBRC3 = {
-        ...validatorClaimsBRC,
+        ...tempBRC,
         bridgingRequestClaims: [
           {
-            ...validatorClaimsBRC.bridgingRequestClaims[0],
+            ...tempBRC.bridgingRequestClaims[0],
             observedTransactionHash: "0x7465737600000000000000000000000000000000000000000000000000000000",
           },
         ],
       };
 
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[0]).submitClaims(tempBRC);
+      await bridge.connect(validators[1]).submitClaims(tempBRC);
+      await bridge.connect(validators[2]).submitClaims(tempBRC);
+      await bridge.connect(validators[3]).submitClaims(tempBRC);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC2);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC2);
@@ -177,11 +141,6 @@ describe("Confirmed Transactions", function () {
     });
 
     it("GetConfirmedTransactions should return transactions with appropriate Observed Transaction Hashes", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData, claims, hre } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorAddressChainData);
       const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
 
       // Impersonate as Claims in order to set Next Timeout Block value
@@ -201,30 +160,34 @@ describe("Confirmed Transactions", function () {
         params: [bridgeContratAddress],
       });
 
+      const tempBRC = structuredClone(validatorClaimsBRC);
+      tempBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination = 1n;
+      tempBRC.bridgingRequestClaims[0].wrappedTokenAmountDestination = 1n;
+
       const validatorClaimsBRC2 = {
-        ...validatorClaimsBRC,
+        ...tempBRC,
         bridgingRequestClaims: [
           {
-            ...validatorClaimsBRC.bridgingRequestClaims[0],
+            ...tempBRC.bridgingRequestClaims[0],
             observedTransactionHash: "0x7465737700000000000000000000000000000000000000000000000000000000",
           },
         ],
       };
 
       const validatorClaimsBRC3 = {
-        ...validatorClaimsBRC,
+        ...tempBRC,
         bridgingRequestClaims: [
           {
-            ...validatorClaimsBRC.bridgingRequestClaims[0],
+            ...tempBRC.bridgingRequestClaims[0],
             observedTransactionHash: "0x7465737800000000000000000000000000000000000000000000000000000000",
           },
         ],
       };
 
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[0]).submitClaims(tempBRC);
+      await bridge.connect(validators[1]).submitClaims(tempBRC);
+      await bridge.connect(validators[2]).submitClaims(tempBRC);
+      await bridge.connect(validators[3]).submitClaims(tempBRC);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC3);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC3);
@@ -260,5 +223,48 @@ describe("Confirmed Transactions", function () {
       expect(confirmedTxs[1].sourceChainId).to.equal(validatorClaimsBRC3.bridgingRequestClaims[0].sourceChainId);
       expect(confirmedTxs[1].blockHeight).to.be.lessThan(blockNum);
     });
+  });
+
+  async function impersonateAsContractAndMintFunds(contractAddress: string) {
+    const address = contractAddress.toLowerCase();
+    // impersonate as an contract on specified address
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [address],
+    });
+
+    const signer = await ethers.getSigner(address);
+    // minting 100000000000000000000 tokens to signer
+    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+
+    return signer;
+  }
+
+  let bridge: any;
+  let claims: any;
+  let owner: any;
+  let chain1: any;
+  let chain2: any;
+  let validatorClaimsBRC: any;
+  let validatorAddressChainData: any;
+  let validators: any;
+  let coloredCoin: any;
+
+  beforeEach(async function () {
+    const fixture = await loadFixture(deployBridgeFixture);
+
+    bridge = fixture.bridge;
+    claims = fixture.claims;
+    owner = fixture.owner;
+    chain1 = fixture.chain1;
+    chain2 = fixture.chain2;
+    validatorClaimsBRC = fixture.validatorClaimsBRC;
+    validatorAddressChainData = fixture.validatorAddressChainData;
+    validators = fixture.validators;
+    coloredCoin = fixture.coloredCoin;
+
+    // Register chains
+    await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
+    await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
   });
 });
