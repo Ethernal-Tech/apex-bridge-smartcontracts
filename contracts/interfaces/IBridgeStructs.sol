@@ -90,6 +90,9 @@ interface IBridgeStructs {
         uint8 sourceChainId;
         uint8 destinationChainId;
         uint8 bridgeAddrIndex;
+        uint8 coloredCoinType;
+        uint256 coloredCoinAmountSource;
+        uint256 coloredCoinAmountDestination;
     }
 
     /// @notice A claim that a batch was executed on a specific chain.
