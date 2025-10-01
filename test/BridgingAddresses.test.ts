@@ -3,133 +3,149 @@ import { expect } from "chai";
 import { deployBridgeFixture } from "./fixtures";
 
 describe("Bridging Addresses", function () {
-    it("Should revert if init bridging addresses is not sent by upgrade admin", async function () {
-        const { bridge, validators, bridgingAddresses } = await loadFixture(deployBridgeFixture);
+  it("Should revert if init bridging addresses is not sent by upgrade admin", async function () {
+    await expect(
+      bridge.connect(validators[0]).setBridgingAddrsDependencyAndSync(bridgingAddresses.target)
+    ).to.be.revertedWithCustomError(bridge, "NotOwner");
+  });
 
-        await expect(bridge.connect(validators[0]).setBridgingAddrsDependencyAndSync(bridgingAddresses.target))
-            .to.be.revertedWithCustomError(bridge, "NotOwner");
-    });
+  it("Should revert if set bridging addresses count is not sent by owner", async function () {
+    await expect(admin.connect(validators[0]).updateBridgingAddrsCount(chain1.id, 5)).to.be.revertedWith(
+      "Ownable: caller is not the owner"
+    );
+  });
 
-    it("Should revert if set bridging addresses count is not sent by owner", async function () {
-        const { admin, chain1, validators } = await loadFixture(deployBridgeFixture);
+  it("Should initialize registered chains on bridging addresses", async function () {
+    expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(0);
+    expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain2.id)).to.equal(0);
 
-        await expect(admin.connect(validators[0]).updateBridgingAddrsCount(chain1.id, 5))
-            .to.be.revertedWith("Ownable: caller is not the owner");
-    });
+    await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
+    await bridge.connect(owner).registerChain(chain2, 10000, 10000, validatorAddressChainData);
 
-    it("Should initialize registered chains on bridging addresses", async function () {
-        const { owner, validatorAddressChainData, bridge, bridgingAddresses, chain1, chain2 } = await loadFixture(deployBridgeFixture);
+    expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(1);
+    expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain2.id)).to.equal(1);
+  });
 
-        expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(0);
-        expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain2.id)).to.equal(0);
+  it("Should initialize chains registered with governance on bridging addresses", async function () {
+    expect(await bridgingAddresses.connect(validators[0]).bridgingAddressesCount(chain1.id)).to.equal(0);
 
-        await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-        await bridge.connect(owner).registerChain(chain2, 10000, 10000, validatorAddressChainData);
+    await bridge
+      .connect(validators[0])
+      .registerChainGovernance(
+        chain1.id,
+        chain1.chainType,
+        100,
+        100,
+        validatorAddressChainData[0].data,
+        "0x7465737400000000000000000000000000000000000000000000000000000000",
+        "0x7465737400000000000000000000000000000000000000000000000000000000"
+      );
+    await bridge
+      .connect(validators[1])
+      .registerChainGovernance(
+        chain1.id,
+        chain1.chainType,
+        100,
+        100,
+        validatorAddressChainData[1].data,
+        "0x7465737400000000000000000000000000000000000000000000000000000000",
+        "0x7465737400000000000000000000000000000000000000000000000000000000"
+      );
+    await bridge
+      .connect(validators[2])
+      .registerChainGovernance(
+        chain1.id,
+        chain1.chainType,
+        100,
+        100,
+        validatorAddressChainData[2].data,
+        "0x7465737400000000000000000000000000000000000000000000000000000000",
+        "0x7465737400000000000000000000000000000000000000000000000000000000"
+      );
+    await bridge
+      .connect(validators[3])
+      .registerChainGovernance(
+        chain1.id,
+        chain1.chainType,
+        100,
+        100,
+        validatorAddressChainData[3].data,
+        "0x7465737400000000000000000000000000000000000000000000000000000000",
+        "0x7465737400000000000000000000000000000000000000000000000000000000"
+      );
+    await bridge
+      .connect(validators[4])
+      .registerChainGovernance(
+        chain1.id,
+        chain1.chainType,
+        100,
+        100,
+        validatorAddressChainData[4].data,
+        "0x7465737400000000000000000000000000000000000000000000000000000000",
+        "0x7465737400000000000000000000000000000000000000000000000000000000"
+      );
 
-        expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(1);
-        expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain2.id)).to.equal(1);
-    });
+    expect(await bridgingAddresses.connect(validators[0]).bridgingAddressesCount(chain1.id)).to.equal(1);
+  });
 
-    it("Should initialize chains registered with governance on bridging addresses", async function () {
-        const { validatorAddressChainData, bridge, bridgingAddresses, chain1, validators } = await loadFixture(deployBridgeFixture);
+  it("Should revert when bridging address count is initialized twice", async function () {
+    await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
+    expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(1);
 
-        expect(await bridgingAddresses.connect(validators[0]).bridgingAddressesCount(chain1.id)).to.equal(0);
+    await expect(
+      bridge.connect(owner).setBridgingAddrsDependencyAndSync(bridgingAddresses.target)
+    ).to.be.revertedWithCustomError(bridge, "BridgingAddrCountAlreadyInit");
+  });
 
-        await bridge
-            .connect(validators[0])
-            .registerChainGovernance(
-                chain1.id,
-                chain1.chainType,
-                100,
-                100,
-                validatorAddressChainData[0].data,
-                "0x7465737400000000000000000000000000000000000000000000000000000000",
-                "0x7465737400000000000000000000000000000000000000000000000000000000"
-            );
-        await bridge
-            .connect(validators[1])
-            .registerChainGovernance(
-                chain1.id,
-                chain1.chainType,
-                100,
-                100,
-                validatorAddressChainData[1].data,
-                "0x7465737400000000000000000000000000000000000000000000000000000000",
-                "0x7465737400000000000000000000000000000000000000000000000000000000"
-            );
-        await bridge
-            .connect(validators[2])
-            .registerChainGovernance(
-                chain1.id,
-                chain1.chainType,
-                100,
-                100,
-                validatorAddressChainData[2].data,
-                "0x7465737400000000000000000000000000000000000000000000000000000000",
-                "0x7465737400000000000000000000000000000000000000000000000000000000"
-            );
-        await bridge
-            .connect(validators[3])
-            .registerChainGovernance(
-                chain1.id,
-                chain1.chainType,
-                100,
-                100,
-                validatorAddressChainData[3].data,
-                "0x7465737400000000000000000000000000000000000000000000000000000000",
-                "0x7465737400000000000000000000000000000000000000000000000000000000"
-            );
-        await bridge
-            .connect(validators[4])
-            .registerChainGovernance(
-                chain1.id,
-                chain1.chainType,
-                100,
-                100,
-                validatorAddressChainData[4].data,
-                "0x7465737400000000000000000000000000000000000000000000000000000000",
-                "0x7465737400000000000000000000000000000000000000000000000000000000"
-            );
+  it("Should update bridging address count", async function () {
+    const bridgingAddrCount = 10;
 
-        expect(await bridgingAddresses.connect(validators[0]).bridgingAddressesCount(chain1.id)).to.equal(1);
-    });
+    await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
+    expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(1);
 
-    it("Should revert when bridging address count is initialized twice", async function () {
-        const { owner, validatorAddressChainData, bridge, bridgingAddresses, chain1 } = await loadFixture(deployBridgeFixture);
+    await admin.connect(owner).updateBridgingAddrsCount(chain1.id, bridgingAddrCount);
+    expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(bridgingAddrCount);
+  });
 
-        await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-        expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(1);
+  it("Should revert when updating bridging address count for non-registered chain", async function () {
+    const bridgingAddrCount = 10;
 
-        await expect(bridge.connect(owner).setBridgingAddrsDependencyAndSync(bridgingAddresses.target))
-            .to.be.revertedWithCustomError(bridge, "BridgingAddrCountAlreadyInit");
-    });
+    await expect(
+      admin.connect(owner).updateBridgingAddrsCount(chain1.id, bridgingAddrCount)
+    ).to.be.revertedWithCustomError(admin, "ChainIsNotRegistered");
+  });
 
-    it("Should update bridging address count", async function () {
-        const { owner, validatorAddressChainData, bridge, admin, bridgingAddresses, chain1 } = await loadFixture(deployBridgeFixture);
-        const bridgingAddrCount = 10;
+  it("Should revert when updating bridging address count to zero", async function () {
+    await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
+    expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(1);
 
-        await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-        expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(1);
+    await expect(admin.connect(owner).updateBridgingAddrsCount(chain1.id, 0)).to.be.revertedWithCustomError(
+      bridge,
+      "InvalidBridgingAddrCount"
+    );
+  });
 
-        await admin.connect(owner).updateBridgingAddrsCount(chain1.id, bridgingAddrCount);
-        expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(bridgingAddrCount);
-    });
+  let admin: any;
+  let bridge: any;
+  let bridgingAddresses: any;
+  let claims: any;
+  let owner: any;
+  let chain1: any;
+  let chain2: any;
+  let validatorAddressChainData: any;
+  let validators: any;
 
-    it("Should revert when updating bridging address count for non-registered chain", async function () {
-        const { owner, admin, chain1 } = await loadFixture(deployBridgeFixture);
-        const bridgingAddrCount = 10;
+  beforeEach(async function () {
+    const fixture = await loadFixture(deployBridgeFixture);
 
-        await expect(admin.connect(owner).updateBridgingAddrsCount(chain1.id, bridgingAddrCount))
-            .to.be.revertedWithCustomError(admin, "ChainIsNotRegistered");
-    });
-
-    it("Should revert when updating bridging address count to zero", async function () {
-        const { owner, bridge, admin, bridgingAddresses, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-
-        await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-        expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(1);
-
-        await expect(admin.connect(owner).updateBridgingAddrsCount(chain1.id, 0))
-            .to.be.revertedWithCustomError(bridge, "InvalidBridgingAddrCount");
-    });
+    admin = fixture.admin;
+    bridge = fixture.bridge;
+    bridgingAddresses = fixture.bridgingAddresses;
+    claims = fixture.claims;
+    owner = fixture.owner;
+    chain1 = fixture.chain1;
+    chain2 = fixture.chain2;
+    validatorAddressChainData = fixture.validatorAddressChainData;
+    validators = fixture.validators;
+  });
 });

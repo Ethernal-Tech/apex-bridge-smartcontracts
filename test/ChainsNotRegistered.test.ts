@@ -1,6 +1,6 @@
-import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
-import { deployBridgeFixture } from "./fixtures";
+import { TransactionSubType, deployBridgeFixture } from "./fixtures";
 
 describe("Unregistered Chains Contract", function () {
   it("Should revert submit BRC if either source and destination chains are not registered", async function () {
@@ -55,18 +55,42 @@ describe("Unregistered Chains Contract", function () {
       .withArgs(1);
   });
 
-  it("Should revert if delegateAddrToStakePool is called on unregistered chain", async () => {
-    const stakePoolId = "pool1y0uxkqyplyx6ld25e976t0s35va3ysqcscatwvy2sd2cwcareq7";
-    await expect(bridge.connect(owner).delegateAddrToStakePool(chain1.id, bridgeAddrIndex, stakePoolId))
-      .to.be.revertedWithCustomError(bridge, "ChainIsNotRegistered")
-      .withArgs(chain1.id);
-  });
-
   it("Should revert if defund is called on unregistered chain", async function () {
     await admin.setFundAdmin(validators[0].address);
     await expect(admin.connect(validators[0]).defund(1, 100, 100, 0, "address"))
       .to.be.revertedWithCustomError(admin, "ChainIsNotRegistered")
       .withArgs(1);
+  });
+
+  it("Should revert stakeAddressOperation for stake registration if chain is not registered", async () => {
+    await expect(
+      admin
+        .connect(owner)
+        .stakeAddressOperation(chain1.id, bridgeAddrIndex, stakePoolId, TransactionSubType.STAKE_REGISTRATION)
+    ).to.be.revertedWithCustomError(admin, "ChainIsNotRegistered");
+  });
+
+  it("Should revert stakeAddressOperation fir stake deregistrationif chain is not registered", async () => {
+    await expect(
+      admin
+        .connect(owner)
+        .stakeAddressOperation(chain1.id, bridgeAddrIndex, invalidStakePoolId, TransactionSubType.STAKE_DEREGISTRATION)
+    ).to.be.revertedWithCustomError(admin, "ChainIsNotRegistered");
+  });
+
+  it("Should revert stakeAddressOperation for stake delegation if chain is not registered", async () => {
+    await expect(
+      admin
+        .connect(owner)
+        .stakeAddressOperation(chain1.id, bridgeAddrIndex, stakePoolId, TransactionSubType.STAKE_DELEGATION)
+    ).to.be.revertedWithCustomError(admin, "ChainIsNotRegistered");
+  });
+
+  it("Should revert redistributeBridgingAddrsTokens if chain is not registered", async () => {
+    await expect(admin.connect(owner).redistributeBridgingAddrsTokens(chain1.id)).to.be.revertedWithCustomError(
+      admin,
+      "ChainIsNotRegistered"
+    );
   });
 
   it("Performance for registerChain", async function () {
@@ -77,7 +101,7 @@ describe("Unregistered Chains Contract", function () {
     console.log(`Gas spent: ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
   });
 
-  it("Performance forregisterChainGovernance", async function () {
+  it("Performance for registerChainGovernance", async function () {
     const { bridge, chain1, validators, validatorCardanoData } = await loadFixture(deployBridgeFixture);
 
     for (let i = 0; i < (validators.length * 2) / 3 + 1; i++) {
@@ -97,6 +121,9 @@ describe("Unregistered Chains Contract", function () {
       console.log(`Gas spent on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
     }
   });
+
+  const stakePoolId = "pool1y0uxkqyplyx6ld25e976t0s35va3ysqcscatwvy2sd2cwcareq7";
+  const invalidStakePoolId = "";
 
   let bridge: any;
   let admin: any;

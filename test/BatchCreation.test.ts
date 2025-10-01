@@ -378,6 +378,11 @@ describe("Batch creation", function () {
   it("Should not update nextTimeoutBlock when it is a consolidation batch", async function () {
     const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
+    const signedBatchConsolidation = structuredClone(signedBatch);
+    signedBatchConsolidation.batchType = BatchType.CONSOLIDATION;
+    signedBatchConsolidation.firstTxNonceId = 0;
+    signedBatchConsolidation.lastTxNonceId = 0;
+
     await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
     await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
     await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -425,7 +430,6 @@ describe("Batch creation", function () {
   let validatorClaimsBRC: any;
   let validatorClaimsBEC: any;
   let signedBatch: any;
-  let signedBatchConsolidation: any;
   let validatorAddressChainData: any;
   let validators: any;
   let coloredCoin: any;
@@ -443,7 +447,6 @@ describe("Batch creation", function () {
     validatorClaimsBRC = fixture.validatorClaimsBRC;
     validatorClaimsBEC = fixture.validatorClaimsBEC;
     signedBatch = fixture.signedBatch;
-    signedBatchConsolidation = fixture.signedBatchConsolidation;
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;
     coloredCoin = fixture.coloredCoin;
