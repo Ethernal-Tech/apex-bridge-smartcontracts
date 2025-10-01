@@ -14,6 +14,7 @@ import "./Bridge.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
 import "./BridgingAddresses.sol";
+import "hardhat/console.sol";
 
 /// @title Claims
 /// @notice Handles validator-submitted claims in a cross-chain bridge system.

@@ -1,4 +1,3 @@
-import { RefundRequestClaimStruct } from "./../typechain-types/contracts/BridgeV2";
 import { ethers } from "hardhat";
 import {
   Bridge,
@@ -422,12 +421,13 @@ export function encodeBridgeRequestClaim(claim: any) {
   const encoded = abiCoder.encode(
     [
       "bytes32",
-      "tuple(uint64, uint64, string)[]",
+      "tuple(uint256, uint256, string)[]",
       "uint256",
       "uint256",
       "uint256",
       "uint256",
       "uint256",
+      "uint8",
       "uint8",
       "uint8",
       "uint8",
@@ -443,6 +443,7 @@ export function encodeBridgeRequestClaim(claim: any) {
       claim.sourceChainId,
       claim.destinationChainId,
       claim.bridgeAddrIndex,
+      claim.coloredCoinId,
     ]
   );
 
@@ -531,7 +532,7 @@ export function encodeHotWalletIncrementClaim(claim: any) {
     [claim.chainId, claim.amount, claim.amountWrapped, claim.coloredCoinId]
   );
   return (
-    "0x0000000000000000000000000000000000000000000000000000000000000080" +
+    "0x00000000000000000000000000000000000000000000000000000000000000a0" +
     encoded.substring(2) +
     encodedPrefix.substring(66)
   );

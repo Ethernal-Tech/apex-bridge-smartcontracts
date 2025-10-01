@@ -661,6 +661,7 @@ describe("Claims Contract", function () {
 
     it("Should skip if same validator submits the same Hot Wallet Increment Claim twice", async function () {
       const encoded = encodeHotWalletIncrementClaim(validatorClaimsHWIC.hotWalletIncrementClaims[0]);
+
       const hash = ethers.keccak256(encoded);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC);
