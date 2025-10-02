@@ -208,9 +208,9 @@ describe("Admin Functions", function () {
     it("Should revert when defund coloredCoin amount is higher then availableTokens amount", async function () {
       await admin.setFundAdmin(validators[0].address);
 
-      await expect(admin.connect(validators[0]).defund(chain1.id, 1, 1000, 1, "address"))
+      await expect(admin.connect(validators[0]).defund(chain1.id, 1000, 1, 1, "address"))
         .to.be.revertedWithCustomError(claims, "DefundRequestTooHigh")
-        .withArgs("ColoredCoin", 1, 0, 1000);
+        .withArgs("ColoredCoin", 1, 0, 100);
     });
 
     it("Should remove defund amount from availableTokens amount", async function () {
@@ -228,8 +228,6 @@ describe("Admin Functions", function () {
 
       const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
       temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination = 0;
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource = 0;
 
       await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsBRC);
@@ -237,9 +235,11 @@ describe("Admin Functions", function () {
       await bridge.connect(validators[4]).submitClaims(temp_validatorClaimsBRC);
 
       expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
+      expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.equal(200);
       expect(await claims.chainColoredCoinQuantity(coloredCoin.chainId, coloredCoin.coloredCoinId)).to.equal(100);
       await admin.connect(validators[0]).defund(chain1.id, 1, 1, 1, "address");
-      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(99);
+      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
+      expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.equal(199);
       expect(await claims.chainColoredCoinQuantity(coloredCoin.chainId, coloredCoin.coloredCoinId)).to.equal(99);
     });
 
@@ -264,8 +264,6 @@ describe("Admin Functions", function () {
 
       const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
       temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination = 0;
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource = 0;
 
       await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsBRC);
@@ -310,8 +308,6 @@ describe("Admin Functions", function () {
 
       const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
       temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination = 0;
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource = 0;
 
       await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsBRC);

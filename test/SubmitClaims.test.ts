@@ -250,8 +250,6 @@ describe("Submit Claims", function () {
       await bridge.connect(owner).registerColoredCoin(coloredCoin);
       const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
       temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination = 0;
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource = 0;
       temp_validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount = 0;
 
       expect(
@@ -302,13 +300,13 @@ describe("Submit Claims", function () {
       ).to.equal(0);
     });
 
-    it("Should NOT remove amount of wrappedTokens from destination chain when Bridging Request Claim is confirmed and coloredCoinId != 0 and it is NOT a retry", async function () {
+    it("Should NOT remove amount of currency Tokens from destination chain when Bridging Request Claim is confirmed and coloredCoinId != 0 and it is NOT a retry", async function () {
       const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
       temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
 
-      expect(
-        await claims.chainWrappedTokenQuantity(temp_validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)
-      ).to.equal(100);
+      expect(await claims.chainTokenQuantity(temp_validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
+        100
+      );
 
       await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsBRC);
@@ -316,7 +314,7 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(temp_validatorClaimsBRC);
 
       expect(
-        await claims.chainWrappedTokenQuantity(temp_validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)
+        await claims.chainTokenQuantity(temp_validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)
       ).to.equal(100);
     });
 
@@ -902,7 +900,7 @@ describe("Submit Claims", function () {
       expect(chain2WrappedTokenQuantityAfter).to.be.equal(chain2WrappedTokenQuantityStart);
     });
 
-    it("Should increase chainTokenQuantity and should NOT increase chainWrappedTokenQuantity for destination chain when Bridging Excuted Failed Claim is confirmed and coloredCoinId != 0", async function () {
+    it("Should increase chainWrappedTokenQuantity and should NOT increase chainTokenQuantity for destination chain when Bridging Excuted Failed Claim is confirmed and coloredCoinId != 0", async function () {
       await bridge.connect(owner).registerColoredCoin(coloredCoin);
 
       const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
@@ -923,13 +921,14 @@ describe("Submit Claims", function () {
 
       expect(
         await claims.chainTokenQuantity(temp_validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)
-      ).to.be.equal(
-        chain2TokenQuantityStart - BigInt(temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource)
-      );
+      ).to.be.equal(chain2TokenQuantityStart);
 
       expect(
         await claims.chainWrappedTokenQuantity(temp_validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)
-      ).to.be.equal(chain2WrappedTokenQuantityStart);
+      ).to.be.equal(
+        chain2WrappedTokenQuantityStart -
+          BigInt(temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource)
+      );
 
       // wait for next timeout
       for (let i = 0; i < 5; i++) {
@@ -1095,12 +1094,12 @@ describe("Submit Claims", function () {
       );
     });
 
-    it("Should NOT decrease Hot Wallet status for wrappedTokens when Refund Request Claims has shouldDecrementHotWallet set to true, it is 0 retry and coloredCoinId != 0", async function () {
+    it("Should NOT decrease Hot Wallet status for currency when Refund Request Claims has shouldDecrementHotWallet set to true, it is 0 retry and coloredCoinId != 0", async function () {
       const temp_validatorClaimsRRC = structuredClone(validatorClaimsRRC);
       temp_validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = true;
       temp_validatorClaimsRRC.refundRequestClaims[0].coloredCoinId = 1;
 
-      const chainWrappedTokenQuantityBefore = await claims.chainWrappedTokenQuantity(
+      const chainTokenQuantityBefore = await claims.chainTokenQuantity(
         temp_validatorClaimsRRC.refundRequestClaims[0].originChainId
       );
 
@@ -1109,9 +1108,9 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[2]).submitClaims(temp_validatorClaimsRRC);
       await bridge.connect(validators[3]).submitClaims(temp_validatorClaimsRRC);
 
-      expect(
-        await claims.chainWrappedTokenQuantity(temp_validatorClaimsRRC.refundRequestClaims[0].originChainId)
-      ).to.equal(chainWrappedTokenQuantityBefore);
+      expect(await claims.chainTokenQuantity(temp_validatorClaimsRRC.refundRequestClaims[0].originChainId)).to.equal(
+        chainTokenQuantityBefore
+      );
     });
 
     it("Should NOT decrease Hot Wallet status when Refund Request Claims has shouldDecrementHotWallet set to true and it is NOT 0 retry", async function () {
