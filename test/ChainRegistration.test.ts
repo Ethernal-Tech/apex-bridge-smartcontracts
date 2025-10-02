@@ -671,7 +671,7 @@ describe("Chain Registration", function () {
       const signer = await impersonateAsContractAndMintFunds(bridgeAddress);
 
       validatorAddressChainData.push({
-        addr: validator6.address,
+        addr: owner.address,
         data: {
           key: [BigInt(4 * 5), BigInt(4 * 5 + 1), BigInt(4 * 5 + 2), BigInt(4 * 5 + 3)],
         },

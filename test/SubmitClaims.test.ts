@@ -3,9 +3,11 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import {
   deployBridgeFixture,
-  encodeBatchExecutedClaim,
-  encodeBatchExecutionFailedClaim,
-  encodeBridgeRequestClaim,
+  hashBatchExecutedClaim,
+  hashBatchExecutionFailedClaim,
+  hashBridgeRequestClaim,
+  hashRefundRequestClaim,
+  BatchType,
 } from "./fixtures";
 
 describe("Submit Claims", function () {
@@ -59,8 +61,7 @@ describe("Submit Claims", function () {
     });
 
     it("Should set voted on Bridging Request Claim", async function () {
-      const encoded = encodeBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const hash = hashBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
       expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
@@ -102,18 +103,18 @@ describe("Submit Claims", function () {
     });
 
     it("Should add requred amount of tokens on source chain when Bridging Request Claim is confirmed and it is NOT a retry", async function () {
-      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(1000);
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(100);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(1100);
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(200);
     });
 
     it("Should NOT add requred amount of tokens on source chain when Bridging Request Claim is confirmed and it is a retry", async function () {
-      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(1000);
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(100);
 
       validatorClaimsBRC.bridgingRequestClaims[0].retryCounter = 1;
 
@@ -124,7 +125,7 @@ describe("Submit Claims", function () {
 
       validatorClaimsBRC.bridgingRequestClaims[0].retryCounter = 0;
 
-      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(1000);
+      expect(await claims.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(100);
     });
 
     it("Should remove requred amount of tokens from destination chain when Bridging Request Claim is confirmed", async function () {
@@ -132,7 +133,7 @@ describe("Submit Claims", function () {
         validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId
       );
 
-      expect(totalAmountDstBefore).to.equal(1000);
+      expect(totalAmountDstBefore).to.equal(100);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -198,8 +199,7 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      const encoded = encodeBatchExecutedClaim(validatorClaimsBEC.batchExecutedClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const hash = hashBatchExecutedClaim(validatorClaimsBEC.batchExecutedClaims[0]);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
       expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
@@ -391,6 +391,11 @@ describe("Submit Claims", function () {
     });
 
     it("Should not update nextTimeoutBlock when Bridging Excuted Claim contains a consolidation batch", async function () {
+      const signedBatchConsolidation = structuredClone(signedBatch);
+      signedBatchConsolidation.batchType = BatchType.CONSOLIDATION;
+      signedBatchConsolidation.firstTxNonceId = 0;
+      signedBatchConsolidation.lastTxNonceId = 0;
+
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
@@ -438,8 +443,7 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      const encoded = encodeBatchExecutionFailedClaim(validatorClaimsBEFC.batchExecutionFailedClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const hash = hashBatchExecutionFailedClaim(validatorClaimsBEFC.batchExecutionFailedClaims[0]);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
       expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
@@ -510,6 +514,11 @@ describe("Submit Claims", function () {
     });
 
     it("Should not update nextTimeoutBlock when Bridging Excuted Failed Claim containis consolidation batch", async function () {
+      const signedBatchConsolidation = structuredClone(signedBatch);
+      signedBatchConsolidation.batchType = BatchType.CONSOLIDATION;
+      signedBatchConsolidation.firstTxNonceId = 0;
+      signedBatchConsolidation.lastTxNonceId = 0;
+
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
@@ -592,8 +601,7 @@ describe("Submit Claims", function () {
 
   describe("Submit new Refund Request Claims", function () {
     it("Should set voted on Refund Request Claim", async function () {
-      const encoded = encodeRefundRequestClaim(validatorClaimsRRC.refundRequestClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const hash = hashRefundRequestClaim(validatorClaimsRRC.refundRequestClaims[0]);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
       expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
@@ -941,7 +949,7 @@ describe("Submit Claims", function () {
     validators = fixture.validators;
 
     // Register chains
-    await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
-    await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
+    await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+    await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
   });
 });

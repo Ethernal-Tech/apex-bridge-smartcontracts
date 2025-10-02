@@ -11,6 +11,11 @@ describe("Slots Contract", function () {
     });
 
     it("Should revert if there are too many blocks", async function () {
+      const cardanoBlocksTooManyBlocks = Array.from({ length: 41 }, (_, i) => ({
+        blockSlot: i + 1,
+        blockHash: `0x${"74657374".padEnd(64, "0")}${(i + 1).toString(16).padStart(2, "0")}`.slice(0, 66),
+      }));
+
       await expect(
         bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocksTooManyBlocks)
       ).to.be.revertedWithCustomError(bridge, "TooManyBlocks");
@@ -106,7 +111,7 @@ describe("Slots Contract", function () {
     validatorAddressChainData = fixture.validatorAddressChainData;
 
     // Register chains
-    await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
-    await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
+    await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+    await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
   });
 });

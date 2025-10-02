@@ -53,7 +53,7 @@ describe("ClaimsHelper Contract", function () {
     validatorAddressChainData = fixture.validatorAddressChainData;
 
     // Register chains
-    await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
-    await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
+    await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+    await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
   });
 });

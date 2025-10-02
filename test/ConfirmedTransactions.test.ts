@@ -259,7 +259,7 @@ describe("Confirmed Transacrions", function () {
     validators = fixture.validators;
 
     // Register chains
-    await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
-    await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
+    await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+    await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
   });
 });

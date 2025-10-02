@@ -3,10 +3,10 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import {
   deployBridgeFixture,
-  encodeBridgeRequestClaim,
-  encodeBatchExecutionFailedClaim,
-  encodeRefundRequestClaim,
-  encodeBatchExecutedClaim,
+  hashBridgeRequestClaim,
+  hashBatchExecutionFailedClaim,
+  hashRefundRequestClaim,
+  hashBatchExecutedClaim,
 } from "./fixtures";
 
 describe("Claims Contract", function () {
@@ -30,8 +30,7 @@ describe("Claims Contract", function () {
     });
 
     it("Should skip if Bridging Request Claim is already confirmed", async function () {
-      const encoded = encodeBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const hash = hashBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -42,8 +41,7 @@ describe("Claims Contract", function () {
       expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
     });
     it("Should skip if same validator submits the same Bridging Request Claim twice", async function () {
-      const encoded = encodeBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const hash = hashBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
@@ -51,8 +49,7 @@ describe("Claims Contract", function () {
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
     it("Should skip Bridging Request Claim if there is not enough bridging tokens and emit NotEnoughFunds event", async function () {
-      const encoded = encodeBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const hash = hashBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
 
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC))
         .to.emit(claims, "NotEnoughFunds")
@@ -66,7 +63,7 @@ describe("Claims Contract", function () {
       let hashes: string[] = [];
 
       for (let i = 0; i < validatorClaimsBRC_bunch32.bridgingRequestClaims.length; i++) {
-        let encoded = encodeRefundRequestClaim(validatorClaimsBRC_bunch32.bridgingRequestClaims[i]);
+        let encoded = hashRefundRequestClaim(validatorClaimsBRC_bunch32.bridgingRequestClaims[i]);
         let hash = ethers.keccak256(encoded);
 
         hashes.push(hash);
@@ -118,8 +115,7 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
-      const encoded = encodeBatchExecutedClaim(validatorClaimsBEC.batchExecutedClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const hash = hashBatchExecutedClaim(validatorClaimsBEC.batchExecutedClaims[0]);
 
       expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
 
@@ -152,8 +148,7 @@ describe("Claims Contract", function () {
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
 
-      const encoded = encodeBatchExecutedClaim(validatorClaimsBEC.batchExecutedClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const hash = hashBatchExecutedClaim(validatorClaimsBEC.batchExecutedClaims[0]);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
 
@@ -200,12 +195,10 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
 
       // Calculate BEC hash
-      const encodedBEC = encodeBatchExecutedClaim(validatorClaimsBEC.batchExecutedClaims[0]);
-      const hashBEC = ethers.keccak256(encodedBEC);
+      const hashBEC = hashBatchExecutedClaim(validatorClaimsBEC.batchExecutedClaims[0]);
 
       // Calculate BEFC hash
-      const encodedBEFC = encodeBatchExecutionFailedClaim(validatorClaimsBEFC.batchExecutionFailedClaims[0]);
-      const hashBEFC = ethers.keccak256(encodedBEFC);
+      const hashBEFC = hashBatchExecutionFailedClaim(validatorClaimsBEFC.batchExecutionFailedClaims[0]);
 
       // Verify that the hashes are different
       expect(hashBEC).to.not.equal(hashBEFC);
@@ -263,12 +256,10 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC_another);
 
       // Calculate BEC hash
-      const encodedBEC = encodeBatchExecutedClaim(validatorClaimsBEC.batchExecutedClaims[0]);
-      const hashBEC = ethers.keccak256(encodedBEC);
+      const hashBEC = hashBatchExecutedClaim(validatorClaimsBEC.batchExecutedClaims[0]);
 
       // Calculate BEC_another hash
-      const encodedBEC_another = encodeBatchExecutedClaim(validatorClaimsBEC_another.batchExecutedClaims[0]);
-      const hashBEC_another = ethers.keccak256(encodedBEC_another);
+      const hashBEC_another = hashBatchExecutedClaim(validatorClaimsBEC_another.batchExecutedClaims[0]);
 
       // Verify that the hashes are different
       expect(hashBEC).to.not.equal(hashBEC_another);
@@ -326,8 +317,7 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
 
-      const encoded = encodeBatchExecutionFailedClaim(validatorClaimsBEFC.batchExecutionFailedClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const hash = hashBatchExecutionFailedClaim(validatorClaimsBEFC.batchExecutionFailedClaims[0]);
 
       expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
 
@@ -358,8 +348,7 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      const encoded = encodeBatchExecutionFailedClaim(validatorClaimsBEFC.batchExecutionFailedClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const hash = hashBatchExecutionFailedClaim(validatorClaimsBEFC.batchExecutionFailedClaims[0]);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
 
@@ -407,12 +396,10 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
 
       // Calculate BEC hash
-      const encodedBEC = encodeBatchExecutedClaim(validatorClaimsBEC.batchExecutedClaims[0]);
-      const hashBEC = ethers.keccak256(encodedBEC);
+      const hashBEC = hashBatchExecutedClaim(validatorClaimsBEC.batchExecutedClaims[0]);
 
       // Calculate BEFC hash
-      const encodedBEFC = encodeBatchExecutionFailedClaim(validatorClaimsBEFC.batchExecutionFailedClaims[0]);
-      const hashBEFC = ethers.keccak256(encodedBEFC);
+      const hashBEFC = hashBatchExecutionFailedClaim(validatorClaimsBEFC.batchExecutionFailedClaims[0]);
 
       // Verify that the hashes are different
       expect(hashBEC).to.not.equal(hashBEFC);
@@ -470,14 +457,10 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC_another);
 
       // Calculate BEFC hash
-      const encodedBEFC = encodeBatchExecutionFailedClaim(validatorClaimsBEFC.batchExecutionFailedClaims[0]);
-      const hashBEFC = ethers.keccak256(encodedBEFC);
+      const hashBEFC = hashBatchExecutionFailedClaim(validatorClaimsBEFC.batchExecutionFailedClaims[0]);
 
       // Calculate BEFC_another hash
-      const encodedBEC_another = encodeBatchExecutionFailedClaim(
-        validatorClaimsBEFC_another.batchExecutionFailedClaims[0]
-      );
-      const hashBEFC_another = ethers.keccak256(encodedBEC_another);
+      const hashBEFC_another = hashBatchExecutionFailedClaim(validatorClaimsBEFC_another.batchExecutionFailedClaims[0]);
 
       // Verify that the hashes are different
       expect(hashBEFC).to.not.equal(hashBEFC_another);
@@ -508,8 +491,7 @@ describe("Claims Contract", function () {
     });
 
     it("Should skip if Refund Request Claims is already confirmed", async function () {
-      const encoded = encodeRefundRequestClaim(validatorClaimsRRC.refundRequestClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const hash = hashRefundRequestClaim(validatorClaimsRRC.refundRequestClaims[0]);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
@@ -524,8 +506,7 @@ describe("Claims Contract", function () {
     });
 
     it("Should skip if same validator submits the same Refund Request Claims twice", async function () {
-      const encoded = encodeRefundRequestClaim(validatorClaimsRRC.refundRequestClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const hash = hashRefundRequestClaim(validatorClaimsRRC.refundRequestClaims[0]);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
 
@@ -567,14 +548,14 @@ describe("Claims Contract", function () {
       validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = false;
     });
     it("Should revert if refundTransactionHash is not empty in Refund Request Claims", async function () {
-      let encoded = encodeRefundRequestClaim(validatorClaimsRRC.refundRequestClaims[0]);
+      let encoded = hashRefundRequestClaim(validatorClaimsRRC.refundRequestClaims[0]);
       let hash = ethers.keccak256(encoded);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
 
-      encoded = encodeRefundRequestClaim(validatorClaimsRRC_wrongHash.refundRequestClaims[0]);
+      encoded = hashRefundRequestClaim(validatorClaimsRRC_wrongHash.refundRequestClaims[0]);
       hash = ethers.keccak256(encoded);
 
       await expect(
@@ -592,8 +573,7 @@ describe("Claims Contract", function () {
     });
 
     it("Should skip if Hot Wallet Increment Claim Claim is already confirmed", async function () {
-      const encoded = encodeRefundRequestClaim(validatorClaimsHWIC.refundRequestClaims[0]);
-      const hash = ethers.keccak256(encoded40);
+      const hash = hashRefundRequestClaim(validatorClaimsHWIC.refundRequestClaims[0]);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsHWIC);
@@ -613,8 +593,7 @@ describe("Claims Contract", function () {
     });
 
     it("Should skip if same validator submits the same Hot Wallet Increment Claim twice", async function () {
-      const encoded = encodeRefundRequestClaim(validatorClaimsHWIC.refundRequestClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const hash = hashRefundRequestClaim(validatorClaimsHWIC.refundRequestClaims[0]);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC);
 
@@ -759,7 +738,7 @@ describe("Claims Contract", function () {
     validators = fixture.validators;
 
     // Register chains
-    await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
-    await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
+    await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+    await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
   });
 });
