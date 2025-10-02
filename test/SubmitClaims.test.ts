@@ -6,10 +6,10 @@ import {
   BatchType,
   TransactionType,
   TransactionSubType,
-  encodeBridgeRequestClaim,
-  encodeBatchExecutedClaim,
-  encodeRefundRequestClaim,
-  encodeBatchExecutionFailedClaim,
+  hashBridgeRequestClaim,
+  hashBatchExecutedClaim,
+  hashRefundRequestClaim,
+  hashBatchExecutionFailedClaim,
 } from "./fixtures";
 
 describe("Submit Claims", function () {
@@ -108,8 +108,7 @@ describe("Submit Claims", function () {
     });
 
     it("Should set voted on Bridging Request Claim", async function () {
-      const encoded = encodeBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const hash = hashBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
       expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
@@ -478,8 +477,7 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      const encoded = encodeBatchExecutedClaim(validatorClaimsBEC.batchExecutedClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const hash = hashBatchExecutedClaim(validatorClaimsBEC.batchExecutedClaims[0]);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
       expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
@@ -723,8 +721,7 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      const encoded = encodeBatchExecutionFailedClaim(validatorClaimsBEFC.batchExecutionFailedClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const hash = hashBatchExecutionFailedClaim(validatorClaimsBEFC.batchExecutionFailedClaims[0]);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
       expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
@@ -1011,8 +1008,8 @@ describe("Submit Claims", function () {
 
   describe("Submit new Refund Request Claims", function () {
     it("Should set voted on Refund Request Claim", async function () {
-      const encoded = encodeRefundRequestClaim(validatorClaimsRRC.refundRequestClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const hash = hashRefundRequestClaim(validatorClaimsRRC.refundRequestClaims[0]);
+
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
       expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
       expect(await claims.hasVoted(hash, validators[2].address)).to.be.false;
