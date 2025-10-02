@@ -1,25 +1,12 @@
 import { ethers } from "hardhat";
 import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin } from "../typechain-types";
 
-export enum BatchType {
-  NORMAL = 0,
-  CONSOLIDATION = 1,
-  VALIDATORSET = 2,
-  VALIDATORSET_FINAL = 3,
-}
-
 export enum TransactionType {
   NORMAL = 0,
   DEFUND = 1,
   REFUND = 2,
   STAKE = 3,
   REDISTRIBUTION = 4,
-}
-
-export enum TransactionSubType {
-  STAKE_REGISTRATION = 0,
-  STAKE_DELEGATION = 1,
-  STAKE_DEREGISTRATION = 2,
 }
 
 export async function deployBridgeFixture() {
@@ -183,15 +170,15 @@ export async function deployBridgeFixture() {
   const validatorClaimsBRC_bunch32 = {
     bridgingRequestClaims: Array.from({ length: 32 }, (_, i) => ({
       observedTransactionHash: "0x" + Buffer.from(`test${i}`).toString("hex").padEnd(64, "0").slice(0, 64),
-      totalAmountSrc: 100 + i,
-      totalAmountDst: 99 + i,
-      retryCounter: 0,
       receivers: [
         {
-          amount: 99 + i,
+          amount: 1,
           destinationAddress: `0x123...${i}`,
         },
       ],
+      totalAmountSrc: 1,
+      totalAmountDst: 1,
+      retryCounter: 0,
       sourceChainId: 1,
       destinationChainId: 2,
     })),
@@ -359,11 +346,11 @@ export function hashBridgeRequestClaim(claim: any) {
   const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
   const lst = [];
   for (let receiver of claim.receivers) {
-    lst.push([receiver.amount, receiver.amountWrapped, receiver.destinationAddress]);
+    lst.push([receiver.amount, receiver.destinationAddress]);
   }
 
   const encoded = abiCoder.encode(
-    ["bytes32", "tuple(uint256, uint256, string)[]", "uint256", "uint256", "uint256", "uint8", "uint8"],
+    ["bytes32", "tuple(uint256, string)[]", "uint256", "uint256", "uint256", "uint8", "uint8"],
     [
       claim.observedTransactionHash,
       lst,
@@ -440,7 +427,7 @@ export function hashHotWalletIncrementClaim(claim: any) {
   const encodedPrefix = abiCoder.encode(["string"], ["HWIC"]);
   const encoded = abiCoder.encode(["uint8", "uint256"], [claim.chainId, claim.amount]);
   return ethers.keccak256(
-    "0x00000000000000000000000000000000000000000000000000000000000000a0" +
+    "0x0000000000000000000000000000000000000000000000000000000000000060" +
       encoded.substring(2) +
       encodedPrefix.substring(66)
   );

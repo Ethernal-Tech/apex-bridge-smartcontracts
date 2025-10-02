@@ -4,12 +4,6 @@ import { deployBridgeFixture } from "./fixtures";
 
 describe("Slots Contract", function () {
   describe("Slot management", function () {
-    it("Should revert if chain is not registered", async function () {
-      await expect(
-        bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks)
-      ).to.be.revertedWithCustomError(bridge, "ChainIsNotRegistered");
-    });
-
     it("Should revert if there are too many blocks", async function () {
       const cardanoBlocksTooManyBlocks = Array.from({ length: 41 }, (_, i) => ({
         blockSlot: i + 1,

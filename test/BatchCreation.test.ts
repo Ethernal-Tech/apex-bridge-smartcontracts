@@ -119,10 +119,6 @@ describe("Batch Creation", function () {
     });
 
     it("getNextBatchId should return 0 if there are no confirmed claims", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData } = await bridge
-        .connect(validators[0])
-        .submitClaims(validatorClaimsBRC);
-
       expect(await bridge.getNextBatchId(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(0);
 
       // wait for next timeout
@@ -372,6 +368,11 @@ describe("Batch Creation", function () {
 
     it("Should not update nextTimeoutBlock when it is a consolidation batch", async function () {
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
+
+      const signedBatchConsolidation = structuredClone(signedBatch);
+      signedBatchConsolidation.firstTxNonceId = 0;
+      signedBatchConsolidation.lastTxNonceId = 0;
+      signedBatchConsolidation.isConsolidation = true;
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);

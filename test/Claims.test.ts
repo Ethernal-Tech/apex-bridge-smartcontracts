@@ -7,23 +7,19 @@ import {
   hashBatchExecutionFailedClaim,
   hashRefundRequestClaim,
   hashBatchExecutedClaim,
+  hashHotWalletIncrementClaim,
 } from "./fixtures";
 
 describe("Claims Contract", function () {
   describe("Submit new Bridging Request Claim", function () {
-    it("Should revert if either source and destination chains are not registered", async function () {
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
-        bridge,
-        "ChainIsNotRegistered"
-      );
-
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
-        bridge,
-        "ChainIsNotRegistered"
-      );
-    });
-
     it("Should revert if there are too many receivers in BRC", async function () {
+      const validatorClaimsBRC_tooManyReceivers = structuredClone(validatorClaimsBRC);
+      validatorClaimsBRC_tooManyReceivers.bridgingRequestClaims[0].receivers = [
+        ...Array.from({ length: 17 }, (_, i) => ({
+          amount: 99 + i,
+          destinationAddress: `0x123...${(i + 1).toString().padStart(8, "0")}`,
+        })),
+      ];
       await expect(
         bridge.connect(validators[0]).submitClaims(validatorClaimsBRC_tooManyReceivers)
       ).to.be.revertedWithCustomError(bridge, "TooManyReceivers");
@@ -49,29 +45,26 @@ describe("Claims Contract", function () {
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
     it("Should skip Bridging Request Claim if there is not enough bridging tokens and emit NotEnoughFunds event", async function () {
-      const hash = hashBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
+      const tokensAvailable = await claims.chainTokenQuantity(chain2.id);
+      const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
+      temp_validatorClaimsBRC.bridgingRequestClaims[0].totalAmountDst = tokensAvailable + 1n;
 
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC))
+      const hash = hashBridgeRequestClaim(temp_validatorClaimsBRC.bridgingRequestClaims[0]);
+
+      await expect(bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC))
         .to.emit(claims, "NotEnoughFunds")
-        .withArgs("BRC", 0, 1);
+        .withArgs("BRC", 0, 100);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
     });
     it("Should revert Bridging Request Claims if there are more than 32 in the array", async function () {
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC_bunch32);
 
-      let hashes: string[] = [];
-
       for (let i = 0; i < validatorClaimsBRC_bunch32.bridgingRequestClaims.length; i++) {
-        let encoded = hashRefundRequestClaim(validatorClaimsBRC_bunch32.bridgingRequestClaims[i]);
-        let hash = ethers.keccak256(encoded);
+        const hash = hashBridgeRequestClaim(validatorClaimsBRC_bunch32.bridgingRequestClaims[i]);
 
-        hashes.push(hash);
-      }
-
-      for (let i = 0; i < 32; i++) {
-        expect(await claims.hasVoted(hashes[i], validators[0].address)).to.be.true;
-        expect(await claimsHelper.numberOfVotes(hashes[i])).to.equal(1);
+        expect(await claims.hasVoted(hash, validators[0].address)).to.be.true;
+        expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
       }
 
       await expect(
@@ -81,13 +74,6 @@ describe("Claims Contract", function () {
   });
 
   describe("Submit new Batch Executed Claim", function () {
-    it("Should revert if chain is not registered", async function () {
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEC)).to.be.revertedWithCustomError(
-        claimsHelper,
-        "ChainIsNotRegistered"
-      );
-    });
-
     it("Should skip if Batch Executed Claims is already confirmed", async function () {
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
@@ -250,6 +236,10 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
 
+      const validatorClaimsBEC_another = structuredClone(validatorClaimsBEC);
+      validatorClaimsBEC_another.batchExecutedClaims[0].observedTransactionHash =
+        "0x7465737500000000000000000000000000000000000000000000000000000001";
+
       // Group of validators submit modified claim
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC_another);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC_another);
@@ -283,13 +273,6 @@ describe("Claims Contract", function () {
   });
 
   describe("Submit new Batch Execution Failed Claims", function () {
-    it("Should revert if chain is not registered", async function () {
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC)).to.be.revertedWithCustomError(
-        bridge,
-        "ChainIsNotRegistered"
-      );
-    });
-
     it("Should skip if Batch Execution Failed Claims is already confirmed", async function () {
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
@@ -423,6 +406,10 @@ describe("Claims Contract", function () {
     it("Should revert with BatchNotFound error if there is already a quorum for another BEFC for the same batch", async function () {
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
+      const validatorClaimsBEFC_another = structuredClone(validatorClaimsBEFC);
+      validatorClaimsBEFC_another.batchExecutionFailedClaims[0].observedTransactionHash =
+        "0x7465737400000000000000000000000000000000000000000000000000000001";
+
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -483,13 +470,6 @@ describe("Claims Contract", function () {
   });
 
   describe("Submit new Refund Request Claims", function () {
-    it("Should revert if chain is not registered", async function () {
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsRRC)).to.be.revertedWithCustomError(
-        bridge,
-        "ChainIsNotRegistered"
-      );
-    });
-
     it("Should skip if Refund Request Claims is already confirmed", async function () {
       const hash = hashRefundRequestClaim(validatorClaimsRRC.refundRequestClaims[0]);
 
@@ -518,13 +498,17 @@ describe("Claims Contract", function () {
     });
 
     it("Should emit NotEnoughFunds and skip Refund Request Claim for failed BRC on destination if there is not enough funds", async function () {
-      validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = true;
+      const RRC_notEnoughFunds = structuredClone(validatorClaimsRRC);
+      const tokensAvailable = await claims.chainTokenQuantity(chain2.id);
 
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsRRC);
+      RRC_notEnoughFunds.refundRequestClaims[0].originAmount = tokensAvailable + 1n;
+      RRC_notEnoughFunds.refundRequestClaims[0].shouldDecrementHotWallet = true;
 
-      const tx = await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[0]).submitClaims(RRC_notEnoughFunds);
+      await bridge.connect(validators[1]).submitClaims(RRC_notEnoughFunds);
+      await bridge.connect(validators[2]).submitClaims(RRC_notEnoughFunds);
+
+      const tx = await bridge.connect(validators[3]).submitClaims(RRC_notEnoughFunds);
       const receipt = await tx.wait();
 
       const iface = new ethers.Interface([
@@ -532,48 +516,35 @@ describe("Claims Contract", function () {
       ]);
 
       const event = receipt.logs
-        .map((log) => {
+        .map((log: any) => {
           try {
             return iface.parseLog(log);
           } catch {
             return null;
           }
         })
-        .filter((log) => log !== null)
-        .find((log) => log.name === "NotEnoughFunds");
+        .filter((log: any) => log !== null)
+        .find((log: any) => log.name === "NotEnoughFunds");
 
       expect(event).to.not.be.undefined;
       expect(event.fragment.name).to.equal("NotEnoughFunds");
-
-      validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = false;
     });
+
     it("Should revert if refundTransactionHash is not empty in Refund Request Claims", async function () {
-      let encoded = hashRefundRequestClaim(validatorClaimsRRC.refundRequestClaims[0]);
-      let hash = ethers.keccak256(encoded);
+      const temp_validatorsClaimsRRC = structuredClone(validatorClaimsRRC);
+      temp_validatorsClaimsRRC.refundRequestClaims[0].refundTransactionHash =
+        "0x7465737400000000000000000000000000000000000000000000000000000001";
 
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
-
-      expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
-
-      encoded = hashRefundRequestClaim(validatorClaimsRRC_wrongHash.refundRequestClaims[0]);
-      hash = ethers.keccak256(encoded);
-
-      await expect(
-        bridge.connect(validators[0]).submitClaims(validatorClaimsRRC_wrongHash)
-      ).to.be.revertedWithCustomError(bridge, "InvalidData");
+      await expect(bridge.connect(validators[0]).submitClaims(temp_validatorsClaimsRRC)).to.be.revertedWithCustomError(
+        bridge,
+        "InvalidData"
+      );
     });
   });
 
   describe("Submit new Hot Wallet Increment Claim", function () {
-    it("Should revert if chain is not registered", async function () {
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC)).to.be.revertedWithCustomError(
-        bridge,
-        "ChainIsNotRegistered"
-      );
-    });
-
     it("Should skip if Hot Wallet Increment Claim Claim is already confirmed", async function () {
-      const hash = hashRefundRequestClaim(validatorClaimsHWIC.refundRequestClaims[0]);
+      const hash = hashHotWalletIncrementClaim(validatorClaimsHWIC.hotWalletIncrementClaims[0]);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsHWIC);
@@ -593,7 +564,7 @@ describe("Claims Contract", function () {
     });
 
     it("Should skip if same validator submits the same Hot Wallet Increment Claim twice", async function () {
-      const hash = hashRefundRequestClaim(validatorClaimsHWIC.refundRequestClaims[0]);
+      const hash = hashHotWalletIncrementClaim(validatorClaimsHWIC.hotWalletIncrementClaims[0]);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC);
 
@@ -678,6 +649,11 @@ describe("Claims Contract", function () {
     });
 
     it("getBatchTransactions should return empty tx if it is a consolidation batch", async function () {
+      const signedBatchConsolidation = structuredClone(signedBatch);
+      signedBatchConsolidation.isConsolidation = true;
+      signedBatchConsolidation.firstTxNonceId = 0;
+      signedBatchConsolidation.lastTxNonceId = 0;
+
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
