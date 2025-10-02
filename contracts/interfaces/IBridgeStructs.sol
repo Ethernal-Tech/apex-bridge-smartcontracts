@@ -255,8 +255,8 @@ interface IBridgeStructs {
     event UpdatedTimeoutBlocksNumber(uint256 _timeoutBlocksNumber);
     event StakeOperationFailedAfterMultipleRetries(uint8 _transactionSubType);
     event TokensRedistributionFailedAfterMultipleRetries(uint8 _chainId);
-    event newColoredCoinRegistered(uint8 indexed _coloredTokenId);
-    event newColoredCoinProposal(uint8 indexed _coloredTokenId);
+    event newColoredCoinRegistered(uint8 indexed _chainId, uint8 indexed _coloredTokenId);
+    event newColoredCoinProposal(uint8 indexed _chainId, uint8 indexed _coloredTokenId);
     event UpdatedChainColoredCoinQuantity(
         uint indexed chainId,
         bool isIncrement,
