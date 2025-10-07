@@ -1,6 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
-import { TransactionSubType, deployBridgeFixture } from "./fixtures";
+import { deployBridgeFixture } from "./fixtures";
 
 describe("Unregistered Chains Contract", function () {
   it("Should revert submit BRC if either source and destination chains are not registered", async function () {
@@ -83,9 +83,6 @@ describe("Unregistered Chains Contract", function () {
       console.log(`Gas spent on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
     }
   });
-
-  const stakePoolId = "pool1y0uxkqyplyx6ld25e976t0s35va3ysqcscatwvy2sd2cwcareq7";
-  const invalidStakePoolId = "";
 
   let bridge: any;
   let admin: any;
