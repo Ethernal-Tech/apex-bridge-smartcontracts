@@ -2,6 +2,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { deployBridgeFixture } from "./fixtures";
+import hre from "hardhat";
 
 describe("Confirmed Transacrions", function () {
   async function impersonateAsContractAndMintFunds(contractAddress: string) {
@@ -22,21 +23,6 @@ describe("Confirmed Transacrions", function () {
 
   describe("Transaction Confirmation", function () {
     it("GetConfirmedTransaction should not return transaction that occured after the timeout", async function () {
-      const {
-        bridge,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        validatorClaimsBRC,
-        validatorClaimsBRC_confirmedTransactions,
-        validatorAddressChainData,
-        hre,
-        claims,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorAddressChainData);
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -66,14 +52,14 @@ describe("Confirmed Transacrions", function () {
         await ethers.provider.send("evm_mine");
       }
 
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC_confirmedTransactions);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC_confirmedTransactions);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC_confirmedTransactions);
-      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC_confirmedTransactions);
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       const confirmedTxs = await bridge
         .connect(validators[0])
-        .getConfirmedTransactions(validatorClaimsBRC_confirmedTransactions.bridgingRequestClaims[0].destinationChainId);
+        .getConfirmedTransactions(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId);
 
       const expectedReceiversAddress = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress;
       const expectedReceiversAmount = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount;
@@ -92,11 +78,6 @@ describe("Confirmed Transacrions", function () {
     });
 
     it("GetConfirmedTransactions should not return more transaction than MAX_NUMBER_OF_TRANSACTIONS", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData, claims, hre } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorAddressChainData);
       const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
 
       // Impersonate as Bridge in order to set Next Timeout Block value
@@ -116,30 +97,33 @@ describe("Confirmed Transacrions", function () {
         params: [bridgeAddress],
       });
 
+      const tempBRC = structuredClone(validatorClaimsBRC);
+      tempBRC.bridgingRequestClaims[0].totalAmountDst = 1n;
+
       const validatorClaimsBRC2 = {
-        ...validatorClaimsBRC,
+        ...tempBRC,
         bridgingRequestClaims: [
           {
-            ...validatorClaimsBRC.bridgingRequestClaims[0],
+            ...tempBRC.bridgingRequestClaims[0],
             observedTransactionHash: "0x7465737500000000000000000000000000000000000000000000000000000000",
           },
         ],
       };
 
       const validatorClaimsBRC3 = {
-        ...validatorClaimsBRC,
+        ...tempBRC,
         bridgingRequestClaims: [
           {
-            ...validatorClaimsBRC.bridgingRequestClaims[0],
+            ...tempBRC.bridgingRequestClaims[0],
             observedTransactionHash: "0x7465737600000000000000000000000000000000000000000000000000000000",
           },
         ],
       };
 
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[0]).submitClaims(tempBRC);
+      await bridge.connect(validators[1]).submitClaims(tempBRC);
+      await bridge.connect(validators[2]).submitClaims(tempBRC);
+      await bridge.connect(validators[3]).submitClaims(tempBRC);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC2);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC2);
@@ -153,18 +137,18 @@ describe("Confirmed Transacrions", function () {
 
       const confirmedTxs = await bridge
         .connect(validators[0])
-        .getConfirmedTransactions(validatorClaimsBRC3.bridgingRequestClaims[0].destinationChainId);
+        .getConfirmedTransactions(tempBRC.bridgingRequestClaims[0].destinationChainId);
 
-      const expectedReceiversAddress = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress;
-      const expectedReceiversAmount = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount;
+      const expectedReceiversAddress = tempBRC.bridgingRequestClaims[0].receivers[0].destinationAddress;
+      const expectedReceiversAmount = tempBRC.bridgingRequestClaims[0].receivers[0].amount;
 
-      const blockNum = await claims.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId);
+      const blockNum = await claims.nextTimeoutBlock(tempBRC.bridgingRequestClaims[0].destinationChainId);
       expect(confirmedTxs.length).to.equal(2);
       expect(confirmedTxs[0].nonce).to.equal(1);
       expect(confirmedTxs[0].observedTransactionHash).to.equal(
-        validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash
+        tempBRC.bridgingRequestClaims[0].observedTransactionHash
       );
-      expect(confirmedTxs[0].sourceChainId).to.equal(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId);
+      expect(confirmedTxs[0].sourceChainId).to.equal(tempBRC.bridgingRequestClaims[0].sourceChainId);
       expect(confirmedTxs[0].blockHeight).to.be.lessThan(blockNum);
       expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
       expect(confirmedTxs[0].receivers[0].amount).to.equal(expectedReceiversAmount);
@@ -177,11 +161,6 @@ describe("Confirmed Transacrions", function () {
     });
 
     it("GetConfirmedTransactions should return transactions with appropriate Observed Transaction Hashes", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData, claims, hre } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorAddressChainData);
       const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
 
       // Impersonate as Claims in order to set Next Timeout Block value
@@ -201,30 +180,33 @@ describe("Confirmed Transacrions", function () {
         params: [bridgeContratAddress],
       });
 
+      const tempBRC = structuredClone(validatorClaimsBRC);
+      tempBRC.bridgingRequestClaims[0].totalAmountDst = 1n;
+
       const validatorClaimsBRC2 = {
-        ...validatorClaimsBRC,
+        ...tempBRC,
         bridgingRequestClaims: [
           {
-            ...validatorClaimsBRC.bridgingRequestClaims[0],
+            ...tempBRC.bridgingRequestClaims[0],
             observedTransactionHash: "0x7465737700000000000000000000000000000000000000000000000000000000",
           },
         ],
       };
 
       const validatorClaimsBRC3 = {
-        ...validatorClaimsBRC,
+        ...tempBRC,
         bridgingRequestClaims: [
           {
-            ...validatorClaimsBRC.bridgingRequestClaims[0],
+            ...tempBRC.bridgingRequestClaims[0],
             observedTransactionHash: "0x7465737800000000000000000000000000000000000000000000000000000000",
           },
         ],
       };
 
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[0]).submitClaims(tempBRC);
+      await bridge.connect(validators[1]).submitClaims(tempBRC);
+      await bridge.connect(validators[2]).submitClaims(tempBRC);
+      await bridge.connect(validators[3]).submitClaims(tempBRC);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC3);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC3);
@@ -238,18 +220,18 @@ describe("Confirmed Transacrions", function () {
 
       const confirmedTxs = await bridge
         .connect(validators[0])
-        .getConfirmedTransactions(validatorClaimsBRC3.bridgingRequestClaims[0].destinationChainId);
+        .getConfirmedTransactions(tempBRC.bridgingRequestClaims[0].destinationChainId);
 
-      const expectedReceiversAddress = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress;
-      const expectedReceiversAmount = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount;
+      const expectedReceiversAddress = tempBRC.bridgingRequestClaims[0].receivers[0].destinationAddress;
+      const expectedReceiversAmount = tempBRC.bridgingRequestClaims[0].receivers[0].amount;
 
-      const blockNum = await claims.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId);
+      const blockNum = await claims.nextTimeoutBlock(tempBRC.bridgingRequestClaims[0].destinationChainId);
       expect(confirmedTxs.length).to.equal(2);
       expect(confirmedTxs[0].nonce).to.equal(1);
       expect(confirmedTxs[0].observedTransactionHash).to.equal(
-        validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash
+        tempBRC.bridgingRequestClaims[0].observedTransactionHash
       );
-      expect(confirmedTxs[0].sourceChainId).to.equal(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId);
+      expect(confirmedTxs[0].sourceChainId).to.equal(tempBRC.bridgingRequestClaims[0].sourceChainId);
       expect(confirmedTxs[0].blockHeight).to.be.lessThan(blockNum);
       expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
       expect(confirmedTxs[0].receivers[0].amount).to.equal(expectedReceiversAmount);
@@ -260,5 +242,31 @@ describe("Confirmed Transacrions", function () {
       expect(confirmedTxs[1].sourceChainId).to.equal(validatorClaimsBRC3.bridgingRequestClaims[0].sourceChainId);
       expect(confirmedTxs[1].blockHeight).to.be.lessThan(blockNum);
     });
+  });
+
+  let bridge: any;
+  let claims: any;
+  let owner: any;
+  let chain1: any;
+  let chain2: any;
+  let validatorClaimsBRC: any;
+  let validatorAddressChainData: any;
+  let validators: any;
+
+  beforeEach(async function () {
+    const fixture = await loadFixture(deployBridgeFixture);
+
+    bridge = fixture.bridge;
+    claims = fixture.claims;
+    owner = fixture.owner;
+    chain1 = fixture.chain1;
+    chain2 = fixture.chain2;
+    validatorClaimsBRC = fixture.validatorClaimsBRC;
+    validatorAddressChainData = fixture.validatorAddressChainData;
+    validators = fixture.validators;
+
+    // Register chains
+    await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+    await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
   });
 });

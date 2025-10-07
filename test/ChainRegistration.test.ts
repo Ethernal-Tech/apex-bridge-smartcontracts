@@ -1,6 +1,6 @@
 import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
-import { artifacts, ethers } from "hardhat";
+import { ethers } from "hardhat";
 import { deployBridgeFixture } from "./fixtures";
 import { ZeroAddress } from "ethers";
 
@@ -23,16 +23,12 @@ describe("Chain Registration", function () {
 
   describe("Registering new chain with Owner", function () {
     it("Should revert new chain if not set by owner", async function () {
-      const { bridge, validators, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-
       await expect(
         bridge.connect(validators[0]).registerChain(chain1, 100, validatorAddressChainData)
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     it("Should revert if there is less than 4 validatorAddressChainData", async function () {
-      const { bridge, owner, chain1 } = await loadFixture(deployBridgeFixture);
-
       const validatorAddressChainData_empty = new Array();
 
       await expect(
@@ -41,8 +37,6 @@ describe("Chain Registration", function () {
     });
 
     it("Should revert if validator's address is zero", async function () {
-      const { bridge, owner, validators, chain1 } = await loadFixture(deployBridgeFixture);
-
       const validatorAddressChainData_zeroAddress = validators.map((val, index) => ({
         addr: ZeroAddress,
         data: {
@@ -63,8 +57,6 @@ describe("Chain Registration", function () {
     });
 
     it("Should revert Cardano chain proposal if validator message is not signed correctly", async function () {
-      const { bridge, owner, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-
       await setCode("0x0000000000000000000000000000000000002050", "0x60206000F3");
 
       await expect(
@@ -73,8 +65,6 @@ describe("Chain Registration", function () {
     });
 
     it("Should revert Nexus chain proposal if validator message is not signed correctly", async function () {
-      const { bridge, owner, chain2, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-
       await setCode("0x0000000000000000000000000000000000002060", "0x60206000F3");
 
       await expect(
@@ -83,8 +73,6 @@ describe("Chain Registration", function () {
     });
 
     it("Should add new chain if requested by owner", async function () {
-      const { bridge, claims, owner, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-
       expect(await claims.isChainRegistered(chain1.id)).to.be.false;
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
@@ -92,10 +80,6 @@ describe("Chain Registration", function () {
     });
 
     it("Should update chain if requested by owner and chain already exists", async function () {
-      const { bridge, claims, validatorsc, owner, chain1, validatorAddressChainData } = await loadFixture(
-        deployBridgeFixture
-      );
-
       expect(await claims.isChainRegistered(chain1.id)).to.be.false;
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
@@ -124,8 +108,6 @@ describe("Chain Registration", function () {
     });
 
     it("Should set correct nextTimeoutBlock when chain is registered by owner", async function () {
-      const { bridge, claims, owner, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-
       expect(await claims.nextTimeoutBlock(chain1.id)).to.equal(0);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
@@ -135,14 +117,11 @@ describe("Chain Registration", function () {
     });
 
     it("Should emit new chain registered when registered by owner after chain registration through governance", async function () {
-      const { bridge, owner, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-
       await expect(bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData))
         .to.emit(bridge, "newChainRegistered")
         .withArgs(1);
     });
     it("setChainAdditionalData should be allowed for owner", async function () {
-      const { bridge, chain1, owner, validators, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
       const [multisigAddr, feeAddr] = ["0xff0033", "0x0007788aa"];
 
       await expect(
@@ -216,8 +195,6 @@ describe("Chain Registration", function () {
 
   describe("Registering new chain with Governance", function () {
     it("Should revert proposal if chain is already registered with Governance", async function () {
-      const { bridge, claims, validators, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-
       await bridge
         .connect(validators[0])
         .registerChainGovernance(
@@ -292,8 +269,6 @@ describe("Chain Registration", function () {
     });
 
     it("Should revert proposal if not sent by validator", async function () {
-      const { bridge, owner, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-
       await expect(
         bridge
           .connect(owner)
@@ -309,10 +284,6 @@ describe("Chain Registration", function () {
     });
 
     it("Should revert if same validator votes twice for the same chain", async function () {
-      const { bridge, claimsHelper, validators, chain1, validatorAddressChainData } = await loadFixture(
-        deployBridgeFixture
-      );
-
       await bridge
         .connect(validators[0])
         .registerChainGovernance(
@@ -339,8 +310,6 @@ describe("Chain Registration", function () {
     });
 
     it("Should revert Cardano chain proposal if validator message is not signed correctly", async function () {
-      const { bridge, validators, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-
       await setCode("0x0000000000000000000000000000000000002050", "0x60206000F3");
 
       await expect(
@@ -358,8 +327,6 @@ describe("Chain Registration", function () {
     });
 
     it("Should revert Nexus chain proposal if validator message is not signed correctly", async function () {
-      const { bridge, validators, chain2, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-
       await setCode("0x0000000000000000000000000000000000002060", "0x60206000F3");
 
       await expect(
@@ -377,8 +344,6 @@ describe("Chain Registration", function () {
     });
 
     it("Should emit new chain proposal", async function () {
-      const { bridge, validators, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-
       await expect(
         bridge
           .connect(validators[0])
@@ -396,8 +361,6 @@ describe("Chain Registration", function () {
     });
 
     it("Should add new chain if there are enough votes (100% of them)", async function () {
-      const { bridge, claims, validators, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-
       await bridge
         .connect(validators[0])
         .registerChainGovernance(
@@ -456,8 +419,6 @@ describe("Chain Registration", function () {
     });
 
     it("Should set correct nextTimeoutBlock when chain is registered with Governance", async function () {
-      const { bridge, claims, validators, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-
       await bridge
         .connect(validators[0])
         .registerChainGovernance(
@@ -518,8 +479,6 @@ describe("Chain Registration", function () {
     });
 
     it("Should emit new chain registered when registered by Governance", async function () {
-      const { bridge, validators, chain1, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-
       await bridge
         .connect(validators[0])
         .registerChainGovernance(
@@ -581,8 +540,6 @@ describe("Chain Registration", function () {
     });
 
     it("Should list all registered chains", async function () {
-      const { bridge, chain1, chain2, validators, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-
       await bridge
         .connect(validators[0])
         .registerChainGovernance(
@@ -709,16 +666,12 @@ describe("Chain Registration", function () {
     });
 
     it("Should not update Validators Cardano Data until length of the list with the new data doesn't match the number of validators", async function () {
-      const { bridge, validatorsc, validatorAddressChainData, validators, hre, validator6 } = await loadFixture(
-        deployBridgeFixture
-      );
-
       const bridgeAddress = await bridge.getAddress();
 
       const signer = await impersonateAsContractAndMintFunds(bridgeAddress);
 
       validatorAddressChainData.push({
-        addr: validator6.address,
+        addr: owner.address,
         data: {
           key: [BigInt(4 * 5), BigInt(4 * 5 + 1), BigInt(4 * 5 + 2), BigInt(4 * 5 + 3)],
         },
@@ -743,5 +696,29 @@ describe("Chain Registration", function () {
         params: [bridgeAddress],
       });
     });
+  });
+
+  let bridge: any;
+  let claimsHelper: any;
+  let claims: any;
+  let owner: any;
+  let chain1: any;
+  let chain2: any;
+  let validatorsc: any;
+  let validatorAddressChainData: any;
+  let validators: any;
+
+  beforeEach(async function () {
+    const fixture = await loadFixture(deployBridgeFixture);
+
+    bridge = fixture.bridge;
+    claimsHelper = fixture.claimsHelper;
+    claims = fixture.claims;
+    owner = fixture.owner;
+    chain1 = fixture.chain1;
+    chain2 = fixture.chain2;
+    validatorsc = fixture.validatorsc;
+    validatorAddressChainData = fixture.validatorAddressChainData;
+    validators = fixture.validators;
   });
 });

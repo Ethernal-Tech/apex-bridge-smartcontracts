@@ -4,35 +4,8 @@ import { ethers } from "hardhat";
 import { deployBridgeFixture } from "./fixtures";
 
 describe("Batch Creation", function () {
-  beforeEach(async () => {
-    // mock isSignatureValid precompile to always return true
-    await setCode("0x0000000000000000000000000000000000002050", "0x600160005260206000F3");
-    await setCode("0x0000000000000000000000000000000000002060", "0x600160005260206000F3");
-  });
-
-  async function impersonateAsContractAndMintFunds(contractAddress: string) {
-    const hre = require("hardhat");
-    const address = await contractAddress.toLowerCase();
-    // impersonate as an contract on specified address
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [address],
-    });
-
-    const signer = await ethers.getSigner(address);
-    // minting 100000000000000000000 tokens to signer
-    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
-
-    return signer;
-  }
-
   describe("Batch creation", function () {
     it("SignedBatch submition should return imediatelly if chain is not registered", async function () {
-      const { bridge, validators, owner, chain1, chain2, validatorClaimsBRC, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -57,8 +30,6 @@ describe("Batch Creation", function () {
     });
 
     it("SignedBatch submition should be reverted if not called by validator", async function () {
-      const { bridge, owner, signedBatch } = await loadFixture(deployBridgeFixture);
-
       await expect(bridge.connect(owner).submitSignedBatch(signedBatch)).to.be.revertedWithCustomError(
         bridge,
         "NotValidator"
@@ -66,11 +37,6 @@ describe("Batch Creation", function () {
     });
 
     it("Should revert signedBatch submition if signature is not valid", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, signedBatch, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorAddressChainData);
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -84,16 +50,12 @@ describe("Batch Creation", function () {
     });
 
     it("SignedBatch submition in SignedBatches SC should be reverted if not called by Bridge SC", async function () {
-      const { bridge, signedBatches, owner, signedBatch } = await loadFixture(deployBridgeFixture);
-
       await expect(
         signedBatches.connect(owner).submitSignedBatch(signedBatch, owner.address)
       ).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
 
     it("If SignedBatch submition id is not expected submittion should be skipped", async function () {
-      const { bridge, signedBatches, validators, signedBatch } = await loadFixture(deployBridgeFixture);
-
       const encoded = ethers.solidityPacked(
         ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
         [
@@ -139,8 +101,6 @@ describe("Batch Creation", function () {
     });
 
     it("SignedBatch submition should do nothing if shouldCreateBatch is false", async function () {
-      const { bridge, claims, validators, signedBatch } = await loadFixture(deployBridgeFixture);
-
       const hash = ethers.solidityPackedKeccak256(
         ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
         [
@@ -159,13 +119,6 @@ describe("Batch Creation", function () {
     });
 
     it("getNextBatchId should return 0 if there are no confirmed claims", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 10000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 10000, validatorAddressChainData);
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-
       expect(await bridge.getNextBatchId(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(0);
 
       // wait for next timeout
@@ -177,11 +130,6 @@ describe("Batch Creation", function () {
     });
 
     it("getNextBatchId should return correct id if there are enough confirmed claims", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 10000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 10000, validatorAddressChainData);
       const validatorClaimsBRC2 = {
         ...validatorClaimsBRC,
         bridgingRequestClaims: [
@@ -206,11 +154,6 @@ describe("Batch Creation", function () {
     });
 
     it("getNextBatchId should return correct id if there is timeout", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 10000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 10000, validatorAddressChainData);
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -224,21 +167,6 @@ describe("Batch Creation", function () {
     });
 
     it("Should not create if current batch block is not -1", async function () {
-      const {
-        bridge,
-        claims,
-        claimsHelper,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        signedBatch,
-        validatorAddressChainData,
-        validatorClaimsBRC,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -270,20 +198,6 @@ describe("Batch Creation", function () {
     });
 
     it("SignedBatch should be added to signedBatches if there are enough votes", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        signedBatch,
-        validatorAddressChainData,
-        validatorClaimsBRC,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -316,11 +230,6 @@ describe("Batch Creation", function () {
     });
 
     it("Should create ConfirmedBatch if there are enough votes", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorAddressChainData, signedBatch, validatorClaimsBRC } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -356,20 +265,6 @@ describe("Batch Creation", function () {
     });
 
     it("Should create and execute batch after transactions are confirmed", async function () {
-      const {
-        bridge,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        validatorClaimsBRC,
-        validatorAddressChainData,
-        signedBatch,
-        validatorClaimsBEC,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
       await expect(
@@ -406,20 +301,6 @@ describe("Batch Creation", function () {
     });
 
     it("Should return appropriate token amount for signed batch", async function () {
-      const {
-        bridge,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        signedBatch,
-        validatorAddressChainData,
-        validatorClaimsBRC,
-        claims,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -446,20 +327,6 @@ describe("Batch Creation", function () {
     });
 
     it("Should delete multisigSignatures and feePayerMultisigSignatures for confirmed signed batches", async function () {
-      const {
-        bridge,
-        signedBatches,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        signedBatch,
-        validatorAddressChainData,
-        validatorClaimsBRC,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -500,22 +367,12 @@ describe("Batch Creation", function () {
     });
 
     it("Should not update nextTimeoutBlock when it is a consolidation batch", async function () {
-      const {
-        bridge,
-        claims,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        validatorClaimsBRC,
-        validatorClaimsBEC,
-        signedBatchConsolidation,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorAddressChainData);
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
+
+      const signedBatchConsolidation = structuredClone(signedBatch);
+      signedBatchConsolidation.firstTxNonceId = 0;
+      signedBatchConsolidation.lastTxNonceId = 0;
+      signedBatchConsolidation.isConsolidation = true;
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -537,5 +394,57 @@ describe("Batch Creation", function () {
 
       expect(nextBatchBlock).to.lessThan(currentBlock + 1);
     });
+  });
+  async function impersonateAsContractAndMintFunds(contractAddress: string) {
+    const hre = require("hardhat");
+    const address = await contractAddress.toLowerCase();
+    // impersonate as an contract on specified address
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [address],
+    });
+
+    const signer = await ethers.getSigner(address);
+    // minting 100000000000000000000 tokens to signer
+    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+
+    return signer;
+  }
+
+  let bridge: any;
+  let claimsHelper: any;
+  let claims: any;
+  let signedBatches: any;
+  let owner: any;
+  let chain1: any;
+  let chain2: any;
+  let validatorClaimsBRC: any;
+  let validatorClaimsBEC: any;
+  let signedBatch: any;
+  let validatorAddressChainData: any;
+  let validators: any;
+
+  beforeEach(async function () {
+    // mock isSignatureValid precompile to always return true
+    await setCode("0x0000000000000000000000000000000000002050", "0x600160005260206000F3");
+    await setCode("0x0000000000000000000000000000000000002060", "0x600160005260206000F3");
+    const fixture = await loadFixture(deployBridgeFixture);
+
+    bridge = fixture.bridge;
+    claimsHelper = fixture.claimsHelper;
+    claims = fixture.claims;
+    signedBatches = fixture.signedBatches;
+    owner = fixture.owner;
+    chain1 = fixture.chain1;
+    chain2 = fixture.chain2;
+    validatorClaimsBRC = fixture.validatorClaimsBRC;
+    validatorClaimsBEC = fixture.validatorClaimsBEC;
+    signedBatch = fixture.signedBatch;
+    validatorAddressChainData = fixture.validatorAddressChainData;
+    validators = fixture.validators;
+
+    // Register chains
+    await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+    await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
   });
 });
