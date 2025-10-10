@@ -299,10 +299,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint256 _chainWrappedTokenQuantityDestination = chainWrappedTokenQuantity[_destinationChainId];
 
         // flag for bridging direction for colored coins -> true for source to destination, false for destination to source
-        bool fromSource;
-        bool toDestination;
+        bool coloredCoinRegisteredOnSource;
+        bool coloredCoinRegisteredOnDestination;
         if (isColoredCoinRegisteredOnChain(_claim.coloredCoinId, _destinationChainId)) {
-            toDestination = true;
+            coloredCoinRegisteredOnDestination = true;
             // colored coin is "returning" to source chain, so it is burned on destination and unlocked on source
             uint256 _coloredCoinAmount = _nativeCurrencyAmountDestination;
             uint256 _coloredCoinAmountSourceChain = chainColoredCoinQuantity[_destinationChainId][_coloredCoinId];
@@ -311,10 +311,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 emit NotEnoughFunds("BRC - Colored Coin", i, _coloredCoinAmount);
                 return; // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
             }
-        }
-
-        if (isColoredCoinRegisteredOnChain(_claim.coloredCoinId, _sourceChainId)) {
-            fromSource = true;
+        } else if (isColoredCoinRegisteredOnChain(_claim.coloredCoinId, _sourceChainId)) {
+            coloredCoinRegisteredOnSource = true;
         }
 
         bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
@@ -345,7 +343,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 chainTokenQuantity[_destinationChainId] -= _nativeCurrencyAmountDestination;
             }
             chainWrappedTokenQuantity[_destinationChainId] -= _wrappedTokenAmountDestination;
-            if (toDestination) {
+            if (coloredCoinRegisteredOnDestination) {
                 chainColoredCoinQuantity[_destinationChainId][_coloredCoinId] -= _nativeCurrencyAmountDestination;
             }
 
@@ -358,7 +356,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 }
                 chainWrappedTokenQuantity[_claim.sourceChainId] += _claim.wrappedTokenAmountSource;
 
-                if (fromSource) {
+                if (coloredCoinRegisteredOnSource) {
                     chainColoredCoinQuantity[_sourceChainId][_coloredCoinId] += _claim.nativeCurrencyAmountSource;
                 }
             }
@@ -608,6 +606,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 }
             }
         }
+
         // update votes count with current validator
         bool _isNewVote = claimsHelper.updateVote(_claimHash, _validatorIdx);
         // check if quorum is reached for the first time
@@ -691,7 +690,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         for (uint i; i < receiversLength; i++) {
             confirmedTx.receivers.push(_claim.receivers[i]);
         }
-        confirmedTx.destinationChainId = destinationChainId;
         confirmedTx.coloredCoinId = _claim.coloredCoinId;
     }
 
@@ -870,8 +868,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
         if (isColoredCoinRegisteredOnChain(_coloredCoinId, _chainId)) {
             uint256 _currentColoredCoinAmount = chainColoredCoinQuantity[_chainId][_coloredCoinId];
-            if (_currentColoredCoinAmount < _currentAmount) {
-                revert DefundRequestTooHigh("ColoredCoin", _chainId, _currentColoredCoinAmount, _currentAmount);
+            if (_currentColoredCoinAmount < _amount) {
+                revert DefundRequestTooHigh("ColoredCoin", _chainId, _currentColoredCoinAmount, _amount);
             }
         }
 
@@ -891,7 +889,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         confirmedTx.coloredCoinId = _coloredCoinId;
 
         if (_coloredCoinId == 0) {
-            chainTokenQuantity[_chainId] = _currentAmount - _amount;
+            chainTokenQuantity[_chainId] -= _amount;
         }
 
         chainWrappedTokenQuantity[_chainId] = _currentWrappedAmount - _amountWrapped;
@@ -1076,12 +1074,12 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         uint256 _currentColoredCointAmount = chainColoredCoinQuantity[_chainId][_coloredCoinId];
         if (_isIncrease) {
-            chainColoredCoinQuantity[_chainId][_coloredCoinId] = _currentColoredCointAmount + _chainColoredCoinAmount;
+            chainColoredCoinQuantity[_chainId][_coloredCoinId] += _chainColoredCoinAmount;
         } else {
             if (_currentColoredCointAmount < _chainColoredCoinAmount) {
                 revert NegativeChainTokenAmount(_currentColoredCointAmount, _chainColoredCoinAmount);
             }
-            chainColoredCoinQuantity[_chainId][_coloredCoinId] = _currentColoredCointAmount - _chainColoredCoinAmount;
+            hainColoredCoinQuantity[_chainId][_coloredCoinId] -= _chainColoredCoinAmount;
         }
     }
 
