@@ -1079,7 +1079,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             if (_currentColoredCointAmount < _chainColoredCoinAmount) {
                 revert NegativeChainTokenAmount(_currentColoredCointAmount, _chainColoredCoinAmount);
             }
-            hainColoredCoinQuantity[_chainId][_coloredCoinId] -= _chainColoredCoinAmount;
+            chainColoredCoinQuantity[_chainId][_coloredCoinId] -= _chainColoredCoinAmount;
         }
     }
 

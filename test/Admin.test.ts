@@ -210,7 +210,7 @@ describe("Admin Functions", function () {
 
       await expect(admin.connect(validators[0]).defund(chain1.id, 1000, 1, 1, "address"))
         .to.be.revertedWithCustomError(claims, "DefundRequestTooHigh")
-        .withArgs("ColoredCoin", 1, 0, 100);
+        .withArgs("ColoredCoin", 1, 0, 1000);
     });
 
     it("Should remove defund amount from availableTokens amount", async function () {
