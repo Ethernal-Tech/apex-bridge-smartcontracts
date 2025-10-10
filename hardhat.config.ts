@@ -1,5 +1,6 @@
 import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox-mocha-ethers";
+import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
+import hardhatNetworkHelpers from "@nomicfoundation/hardhat-network-helpers";
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -12,6 +13,7 @@ const config: HardhatUserConfig = {
       },
     },
   },
+  plugins: [hardhatToolboxMochaEthers, hardhatNetworkHelpers],
 };
 
 export default config;

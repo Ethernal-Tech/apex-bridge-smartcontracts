@@ -1,7 +1,11 @@
-import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import { ethers } from "hardhat";
+const networkHelpers = require("@nomicfoundation/hardhat-network-helpers");
+const loadFixture = networkHelpers.loadFixture;
+const setCode = networkHelpers.setCode;
+// import { loadFixture, setCode } from "@nomicfoundation/hardhat-network-helpers";
+// import { ethers } from "hardhat";
+import { ethers } from "ethers";
 import { expect } from "chai";
-import { deployBridgeFixture } from "./fixtures";
+import { deployBridgeFixture } from "./fixtures.js";
 
 describe("Admin Functions", function () {
   beforeEach(async () => {
