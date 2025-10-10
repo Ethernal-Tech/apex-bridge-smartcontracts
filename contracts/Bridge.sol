@@ -343,15 +343,16 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Checks validity of colored coin metadata submited for registration
     /// @param _coloredCoin Colored Coin metadata.
     function _validateColoredCoin(ColoredCoin calldata _coloredCoin) internal view {
-        if (!claims.isChainRegistered(_coloredCoin.chainId)) {
+        uint8 _chainId = _coloredCoin.chainId;
+        uint8 _coloredCoinId = _coloredCoin.coloredCoinId;
+
+        if (!claims.isChainRegistered(_chainId)) {
             revert InvalidData("chainId is not registered");
         }
 
-        if (_coloredCoin.coloredCoinId == 0) {
+        if (_coloredCoinId == 0) {
             revert InvalidData("coloredCoinId is zero");
-        }
-
-        if (claims.isColoredCoinRegisteredOnChain(_coloredCoin.coloredCoinId, _coloredCoin.chainId)) {
+        } else if (claims.coloredCoinToChain(_coloredCoinId) == _chainId) {
             revert InvalidData("coloredCoinId is already registered");
         }
     }
