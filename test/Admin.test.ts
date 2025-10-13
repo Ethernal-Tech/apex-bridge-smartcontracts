@@ -209,14 +209,6 @@ describe("Admin Functions", function () {
       await bridge.connect(validators[2]).submitClaims(temp_validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(temp_validatorClaimsBRC);
 
-      console.log("KOLIKO IMA NA POCETKU TESTA");
-      console.log(
-        await claims.chainColoredCoinQuantity(
-          temp_validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
-          temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId
-        )
-      );
-
       await expect(admin.connect(validators[0]).defund(1, 1, 1000, 0, "address"))
         .to.be.revertedWithCustomError(claims, "DefundRequestTooHigh")
         .withArgs("Wrapped", 1, 200, 1000);
@@ -405,6 +397,7 @@ describe("Admin Functions", function () {
       signedBatchDefund.lastTxNonceId = 2;
 
       const temp_coloredCoin = structuredClone(coloredCoin);
+      temp_coloredCoin.coloredCoinId = 2;
       temp_coloredCoin.chainId = 2;
 
       await bridge.connect(owner).registerColoredCoin(temp_coloredCoin);
@@ -421,7 +414,7 @@ describe("Admin Functions", function () {
 
       await admin.setFundAdmin(validators[0].address);
 
-      await admin.connect(validators[0]).defund(chain2.id, 0, 1, 1, "address");
+      await admin.connect(validators[0]).defund(chain2.id, 0, 1, 2, "address");
 
       expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(2);
 
@@ -458,7 +451,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalAmount).to.equal(0);
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalWrappedAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(39);
-      expect((await claims.confirmedTransactions(chain2.id, 3)).coloredCoinId).to.equal(1);
+      expect((await claims.confirmedTransactions(chain2.id, 3)).coloredCoinId).to.equal(2);
     });
 
     it("Should reject defund after maximum number of retries", async function () {
@@ -518,11 +511,12 @@ describe("Admin Functions", function () {
       const temp_signedBatch = structuredClone(signedBatch);
 
       const temp_coloredCoin = structuredClone(coloredCoin);
+      temp_coloredCoin.coloredCoinId = 2;
       temp_coloredCoin.chainId = 2;
 
       await bridge.connect(owner).registerColoredCoin(temp_coloredCoin);
 
-      await admin.connect(validators[0]).defund(chain2.id, 0, 1, 1, "address");
+      await admin.connect(validators[0]).defund(chain2.id, 0, 1, 2, "address");
 
       //to avoid the need for public variable this value should be manually set to the value of MAX_NUMBER_OF_DEFUND_RETRIES
       const retryCounter = 3;

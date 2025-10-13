@@ -14,7 +14,6 @@ import "./Bridge.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
 import "./BridgingAddresses.sol";
-import "hardhat/console.sol";
 
 /// @title Claims
 /// @notice Handles validator-submitted claims in a cross-chain bridge system.
@@ -320,7 +319,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         if (_coloredCoinId == 0 && _chainTokenQuantityDestination < _nativeCurrencyAmountDestination) {
             emit NotEnoughFunds("BRC - Currency", i, _chainTokenQuantityDestination);
             return; // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-        } else if (coloredCoinToChain[_coloredCoinId] == _destinationChainId) {
+        } else if (_coloredCoinId == 1 && coloredCoinToChain[_coloredCoinId] == _destinationChainId) {
             // colored coin is "returning" to source chain, so it is burned on destination and unlocked on source
             uint256 _coloredCoinAmount = _nativeCurrencyAmountDestination;
 
@@ -859,7 +858,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint256 _currentAmount = chainTokenQuantity[_chainId];
         uint256 _currentWrappedAmount = chainWrappedTokenQuantity[_chainId];
         uint256 _currentColoredTokenAmount = chainColoredCoinQuantity[_chainId][_coloredCoinId];
-        console.log(_currentColoredTokenAmount);
 
         if (_coloredCoinId == 0 && _currentAmount < _amount) {
             revert DefundRequestTooHigh("Currency", _chainId, _currentAmount, _amount);

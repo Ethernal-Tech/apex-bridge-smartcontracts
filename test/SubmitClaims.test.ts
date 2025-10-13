@@ -1160,10 +1160,7 @@ describe("Submit Claims", function () {
       const temp_validatorClaimsRRC = structuredClone(validatorClaimsRRC);
       temp_validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = true;
       temp_validatorClaimsRRC.refundRequestClaims[0].coloredCoinId = 1;
-
-      const temp_coloredCoin = structuredClone(coloredCoin);
-      temp_coloredCoin.chainId = temp_validatorClaimsRRC.refundRequestClaims[0].originChainId;
-      await bridge.connect(owner).registerColoredCoin(temp_coloredCoin);
+      temp_validatorClaimsRRC.refundRequestClaims[0].originChainId = 1;
 
       await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsRRC);
       await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsRRC);

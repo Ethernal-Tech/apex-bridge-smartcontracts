@@ -352,7 +352,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         if (_coloredCoinId == 0) {
             revert InvalidData("coloredCoinId is zero");
-        } else if (claims.coloredCoinToChain(_coloredCoinId) == _chainId) {
+        } else if (claims.coloredCoinToChain(_coloredCoinId) != 0) {
             revert InvalidData("coloredCoinId is already registered");
         }
     }
