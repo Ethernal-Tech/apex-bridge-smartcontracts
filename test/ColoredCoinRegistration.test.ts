@@ -37,7 +37,7 @@ describe("Colored Coins", function () {
     it("Should set isRegistered if registerColoredCoin is successfull", async function () {
       await bridge.connect(owner).registerColoredCoin(coloredCoin);
 
-      expect(await claims.isColoredCoinRegisteredOnChain(coloredCoin.chainId, coloredCoin.coloredCoinId)).to.be.true;
+      expect(await claims.coloredCoinToChain(coloredCoin.coloredCoinId)).to.be.equal(coloredCoin.chainId);
     });
 
     it("Should emit newColoredCoinRegistered when coloredCoin is registered", async function () {
@@ -73,11 +73,11 @@ describe("Colored Coins", function () {
       await bridge.connect(validators[1]).registerColoredCoinGovernance(coloredCoin);
       await bridge.connect(validators[2]).registerColoredCoinGovernance(coloredCoin);
 
-      expect(await claims.isColoredCoinRegisteredOnChain(coloredCoin.chainId, coloredCoin.coloredCoinId)).to.be.false;
+      expect(await claims.coloredCoinToChain(coloredCoin.coloredCoinId)).not.to.be.equal(coloredCoin.chainId);
 
       await bridge.connect(validators[3]).registerColoredCoinGovernance(coloredCoin);
 
-      expect(await claims.isColoredCoinRegisteredOnChain(coloredCoin.chainId, coloredCoin.coloredCoinId)).to.be.true;
+      expect(await claims.coloredCoinToChain(coloredCoin.coloredCoinId)).to.be.equal(coloredCoin.chainId);
     });
 
     it("Should emit newColoredCoinRegistered when coloredCoin is registered", async function () {
