@@ -593,6 +593,7 @@ describe("Claims Contract", function () {
 
       RRC_notEnoughFunds.refundRequestClaims[0].originWrappedAmount = tokensAvailable + 1n;
       RRC_notEnoughFunds.refundRequestClaims[0].shouldDecrementHotWallet = true;
+      RRC_notEnoughFunds.refundRequestClaims[0].originAmount = 0;
 
       const hash = hashRefundRequestClaim(RRC_notEnoughFunds.refundRequestClaims[0]);
 

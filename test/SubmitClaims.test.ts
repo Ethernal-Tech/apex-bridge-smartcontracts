@@ -1096,6 +1096,21 @@ describe("Submit Claims", function () {
       temp_validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = true;
       temp_validatorClaimsRRC.refundRequestClaims[0].coloredCoinId = 1;
 
+      const temp_coloredCoin = structuredClone(coloredCoin);
+      temp_coloredCoin.chainId = temp_validatorClaimsRRC.refundRequestClaims[0].originChainId;
+      await bridge.connect(owner).registerColoredCoin(temp_coloredCoin);
+
+      const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
+      temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
+      temp_validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId = 1;
+      temp_validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId =
+        temp_validatorClaimsRRC.refundRequestClaims[0].originChainId;
+
+      await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(temp_validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(temp_validatorClaimsBRC);
+
       const chainTokenQuantityBefore = await claims.chainTokenQuantity(
         temp_validatorClaimsRRC.refundRequestClaims[0].originChainId
       );
@@ -1145,6 +1160,10 @@ describe("Submit Claims", function () {
       const temp_validatorClaimsRRC = structuredClone(validatorClaimsRRC);
       temp_validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = true;
       temp_validatorClaimsRRC.refundRequestClaims[0].coloredCoinId = 1;
+
+      const temp_coloredCoin = structuredClone(coloredCoin);
+      temp_coloredCoin.chainId = temp_validatorClaimsRRC.refundRequestClaims[0].originChainId;
+      await bridge.connect(owner).registerColoredCoin(temp_coloredCoin);
 
       await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsRRC);
       await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsRRC);
