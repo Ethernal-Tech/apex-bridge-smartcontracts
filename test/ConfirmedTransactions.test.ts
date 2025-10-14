@@ -4,7 +4,7 @@ import { ethers } from "hardhat";
 import { deployBridgeFixture } from "./fixtures";
 import hre from "hardhat";
 
-describe("Confirmed Transacrions", function () {
+describe("Confirmed Transactions", function () {
   describe("Transaction Confirmation", function () {
     it("GetConfirmedTransaction should not return transaction that occured after the timeout", async function () {
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);

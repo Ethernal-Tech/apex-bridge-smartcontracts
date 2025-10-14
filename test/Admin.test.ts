@@ -19,23 +19,23 @@ describe("Admin Functions", function () {
     });
 
     it("Should increase chainTokenQuantity after calling updateChainTokenQuantity", async function () {
-      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
+      expect(await chainTokens.chainTokenQuantity(chain1.id)).to.equal(100);
       await admin.updateChainTokenQuantity(chain1.id, true, 100);
-      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(200);
+      expect(await chainTokens.chainTokenQuantity(chain1.id)).to.equal(200);
     });
 
     it("Should increase chainTokenQuantity after calling updateChainTokenQuantity with a value higher than the current one", async function () {
-      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
+      expect(await chainTokens.chainTokenQuantity(chain1.id)).to.equal(100);
       await admin.updateChainTokenQuantity(chain1.id, true, 200);
-      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(300);
+      expect(await chainTokens.chainTokenQuantity(chain1.id)).to.equal(300);
     });
 
     it("Should emit event after increasing chain token quantity with updateChainTokenQuantity", async function () {
-      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
+      expect(await chainTokens.chainTokenQuantity(chain1.id)).to.equal(100);
       await expect(admin.updateChainTokenQuantity(chain1.id, true, 100))
         .to.emit(admin, "UpdatedChainTokenQuantity")
         .withArgs(chain1.id, true, 100);
-      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(200);
+      expect(await chainTokens.chainTokenQuantity(chain1.id)).to.equal(200);
     });
 
     it("Should revert if decreae amount is higher than available chainTokenQuantity", async function () {
@@ -47,7 +47,7 @@ describe("Admin Functions", function () {
     it("Should decrease chainTokenQuantity by required amount", async function () {
       await admin.updateChainTokenQuantity(chain1.id, false, 50);
 
-      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(50);
+      expect(await chainTokens.chainTokenQuantity(chain1.id)).to.equal(50);
     });
 
     it("Should emit event after decreasing chain token quantity with updateChainTokenQuantity", async function () {
@@ -70,18 +70,18 @@ describe("Admin Functions", function () {
     });
 
     it("Should increase chainWrappesTokenQuantity after calling updateChainWrappedTokenQuantity", async function () {
-      expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.equal(100);
+      expect(await chainTokens.chainWrappedTokenQuantity(chain1.id)).to.equal(100);
       await admin.updateChainWrappedTokenQuantity(chain1.id, true, 100);
-      expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.equal(200);
+      expect(await chainTokens.chainWrappedTokenQuantity(chain1.id)).to.equal(200);
     });
 
     it("Should emit event after increasing chain wrapped token quantity with updateChainWrappedTokenQuantity", async function () {
-      expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.equal(100);
+      expect(await chainTokens.chainWrappedTokenQuantity(chain1.id)).to.equal(100);
       await expect(admin.updateChainWrappedTokenQuantity(chain1.id, true, 100))
         .to.emit(admin, "UpdatedChainWrappedTokenQuantity")
         .withArgs(chain1.id, true, 100);
 
-      expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.equal(200);
+      expect(await chainTokens.chainWrappedTokenQuantity(chain1.id)).to.equal(200);
     });
 
     it("Should revert if decrese amount is higher than available chainWrappedTokenQuantity", async function () {
@@ -93,7 +93,7 @@ describe("Admin Functions", function () {
     it("Should decrease chainWrappedTokenQuantity by required amount", async function () {
       await admin.updateChainWrappedTokenQuantity(chain1.id, false, 50);
 
-      expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.equal(50);
+      expect(await chainTokens.chainWrappedTokenQuantity(chain1.id)).to.equal(50);
     });
 
     it("Should emit event after decreasing chain token quantity with updateChainWrappedTokenQuantity", async function () {
@@ -109,25 +109,25 @@ describe("Admin Functions", function () {
     });
 
     it("Should revert if updateChainColoredCoinQuantity in Clais is not called by Admin contract", async function () {
-      await expect(claims.updateChainColoredCoinQuantity(1, true, 100, 1)).to.be.revertedWithCustomError(
-        claims,
+      await expect(chainTokens.updateChainColoredCoinQuantity(1, true, 100, 1)).to.be.revertedWithCustomError(
+        chainTokens,
         "NotAdminContract"
       );
     });
 
     it("Should increase chainColoredCoinQuantity after calling updateChainColoredCoinQuantity", async function () {
-      expect(await claims.chainColoredCoinQuantity(chain1.id, 1)).to.equal(0);
+      expect(await chainTokens.chainColoredCoinQuantity(chain1.id, 1)).to.equal(0);
       await admin.updateChainColoredCoinQuantity(chain1.id, true, 100, 1);
-      expect(await claims.chainColoredCoinQuantity(chain1.id, 1)).to.equal(100);
+      expect(await chainTokens.chainColoredCoinQuantity(chain1.id, 1)).to.equal(100);
     });
 
     it("Should emit event after increasing chain coloredCoin quantity with updateChainColoredCoinQuantity", async function () {
-      expect(await claims.chainColoredCoinQuantity(chain1.id, 1)).to.equal(0);
+      expect(await chainTokens.chainColoredCoinQuantity(chain1.id, 1)).to.equal(0);
       await expect(admin.updateChainColoredCoinQuantity(chain1.id, true, 100, 1))
         .to.emit(admin, "UpdatedChainColoredCoinQuantity")
         .withArgs(chain1.id, true, 100, 1);
 
-      expect(await claims.chainColoredCoinQuantity(chain1.id, 1)).to.equal(100);
+      expect(await chainTokens.chainColoredCoinQuantity(chain1.id, 1)).to.equal(100);
     });
 
     it("Should revert if decrese amount is higher than available chainColoredCoinQuantity", async function () {
@@ -140,7 +140,7 @@ describe("Admin Functions", function () {
       await admin.updateChainColoredCoinQuantity(chain1.id, true, 50, 1);
       await admin.updateChainColoredCoinQuantity(chain1.id, false, 50, 1);
 
-      expect(await claims.chainColoredCoinQuantity(chain1.id, 1)).to.equal(0);
+      expect(await chainTokens.chainColoredCoinQuantity(chain1.id, 1)).to.equal(0);
     });
 
     it("Should emit event after decreasing chain coloredCoin quantity with updateChainColoredCoinQuantity", async function () {
@@ -194,7 +194,7 @@ describe("Admin Functions", function () {
 
       await expect(admin.connect(validators[0]).defund(chain1.id, 1000, 1, 0, "address"))
         .to.be.revertedWithCustomError(claims, "DefundRequestTooHigh")
-        .withArgs("Currency", 1, 100, 1000);
+        .withArgs("Defund - Currency", 1, 100, 1000);
     });
 
     it("Should revert when defund wrapped amount is higher then availableTokens amount", async function () {
@@ -210,7 +210,7 @@ describe("Admin Functions", function () {
 
       await expect(admin.connect(validators[0]).defund(1, 1, 1000, 0, "address"))
         .to.be.revertedWithCustomError(claims, "DefundRequestTooHigh")
-        .withArgs("Wrapped", 1, 200, 1000);
+        .withArgs("Defund - Native Token", 1, 200, 1000);
     });
 
     it("Should revert when defund coloredCoin amount is higher then availableTokens amount", async function () {
@@ -218,17 +218,17 @@ describe("Admin Functions", function () {
 
       await expect(admin.connect(validators[0]).defund(chain1.id, 1000, 1, 1, "address"))
         .to.be.revertedWithCustomError(claims, "DefundRequestTooHigh")
-        .withArgs("ColoredCoin", 1, 0, 1000);
+        .withArgs("Defund - Colored Coin", 1, 0, 1000);
     });
 
     it("Should remove defund amount from availableTokens amount", async function () {
       await admin.setFundAdmin(validators[0].address);
 
-      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
-      expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.equal(100);
+      expect(await chainTokens.chainTokenQuantity(chain1.id)).to.equal(100);
+      expect(await chainTokens.chainWrappedTokenQuantity(chain1.id)).to.equal(100);
       await admin.connect(validators[0]).defund(chain1.id, 1, 1, 0, "address");
-      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(99);
-      expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.equal(99);
+      expect(await chainTokens.chainTokenQuantity(chain1.id)).to.equal(99);
+      expect(await chainTokens.chainWrappedTokenQuantity(chain1.id)).to.equal(99);
     });
 
     it("Should remove defund amount from available coloredCoins amount", async function () {
@@ -242,13 +242,13 @@ describe("Admin Functions", function () {
       await bridge.connect(validators[2]).submitClaims(temp_validatorClaimsBRC);
       await bridge.connect(validators[4]).submitClaims(temp_validatorClaimsBRC);
 
-      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
-      expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.equal(200);
-      expect(await claims.chainColoredCoinQuantity(coloredCoin.chainId, coloredCoin.coloredCoinId)).to.equal(100);
+      expect(await chainTokens.chainTokenQuantity(chain1.id)).to.equal(100);
+      expect(await chainTokens.chainWrappedTokenQuantity(chain1.id)).to.equal(200);
+      expect(await chainTokens.chainColoredCoinQuantity(coloredCoin.chainId, coloredCoin.coloredCoinId)).to.equal(100);
       await admin.connect(validators[0]).defund(chain1.id, 1, 1, 1, "address");
-      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100);
-      expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.equal(199);
-      expect(await claims.chainColoredCoinQuantity(coloredCoin.chainId, coloredCoin.coloredCoinId)).to.equal(99);
+      expect(await chainTokens.chainTokenQuantity(chain1.id)).to.equal(100);
+      expect(await chainTokens.chainWrappedTokenQuantity(chain1.id)).to.equal(199);
+      expect(await chainTokens.chainColoredCoinQuantity(coloredCoin.chainId, coloredCoin.coloredCoinId)).to.equal(99);
     });
 
     it("Should emit ChainDefunded when currency defund is executed", async function () {
@@ -307,7 +307,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalWrappedAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(32);
+      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(38);
       expect((await claims.confirmedTransactions(chain1.id, 1)).coloredCoinId).to.equal(0);
     });
 
@@ -331,7 +331,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(0);
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalWrappedAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(36);
+      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(42);
       expect((await claims.confirmedTransactions(chain1.id, 1)).coloredCoinId).to.equal(1);
     });
 
@@ -387,7 +387,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalWrappedAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(38);
+      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(44);
       expect((await claims.confirmedTransactions(chain2.id, 3)).coloredCoinId).to.equal(0);
     });
 
@@ -449,7 +449,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalAmount).to.equal(0);
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalWrappedAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(39);
+      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(45);
       expect((await claims.confirmedTransactions(chain2.id, 3)).coloredCoinId).to.equal(2);
     });
 
@@ -602,6 +602,7 @@ describe("Admin Functions", function () {
   let bridge: any;
   let claimsHelper: any;
   let claims: any;
+  let chainTokens: any;
   let admin: any;
   let owner: any;
   let chain1: any;
@@ -619,6 +620,7 @@ describe("Admin Functions", function () {
     bridge = fixture.bridge;
     claimsHelper = fixture.claimsHelper;
     claims = fixture.claims;
+    chainTokens = fixture.chainTokens;
     admin = fixture.admin;
     owner = fixture.owner;
     chain1 = fixture.chain1;

@@ -62,8 +62,8 @@ describe("Chain Registration", function () {
 
       await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
       expect(await claims.isChainRegistered(chain1.id)).to.be.true;
-      expect(await claims.chainTokenQuantity(chain1.id)).to.be.equal(100);
-      expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.be.equal(100);
+      expect(await chainTokens.chainTokenQuantity(chain1.id)).to.be.equal(100);
+      expect(await chainTokens.chainWrappedTokenQuantity(chain1.id)).to.be.equal(100);
     });
 
     it("Should update chain if requested by owner and chain already exists", async function () {
@@ -73,8 +73,8 @@ describe("Chain Registration", function () {
       expect(await claims.isChainRegistered(chain1.id)).to.be.true;
       expect(await bridge.getAllRegisteredChains()).to.have.length(1);
       expect((await bridge.getAllRegisteredChains())[0].id).to.equal(1);
-      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100); //it should not be changed
-      expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.equal(100); //it should not be changed
+      expect(await chainTokens.chainTokenQuantity(chain1.id)).to.equal(100); //it should not be changed
+      expect(await chainTokens.chainWrappedTokenQuantity(chain1.id)).to.equal(100); //it should not be changed
       expect(await validatorsc.getValidatorsChainData(chain1.id)).to.have.length(5);
       expect((await validatorsc.getValidatorsChainData(chain1.id))[0].key[0]).to.equal(
         validatorAddressChainData[0].data.key[0]
@@ -87,8 +87,8 @@ describe("Chain Registration", function () {
       expect(await claims.isChainRegistered(chain1.id)).to.be.true;
       expect(await bridge.getAllRegisteredChains()).to.have.length(1);
       expect((await bridge.getAllRegisteredChains())[0].id).to.equal(1);
-      expect(await claims.chainTokenQuantity(chain1.id)).to.equal(100); //it should not be changed
-      expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.equal(100); //it should not be changed
+      expect(await chainTokens.chainTokenQuantity(chain1.id)).to.equal(100); //it should not be changed
+      expect(await chainTokens.chainWrappedTokenQuantity(chain1.id)).to.equal(100); //it should not be changed
       expect(await validatorsc.getValidatorsChainData(chain1.id)).to.have.length(5);
       expect((await validatorsc.getValidatorsChainData(chain1.id))[0].key[0]).to.equal(
         temp_validatorAddressChainData[0].data.key[0]
@@ -252,8 +252,8 @@ describe("Chain Registration", function () {
         );
 
       expect(await claims.isChainRegistered(chain1.id)).to.be.true;
-      expect(await claims.chainTokenQuantity(chain1.id)).to.be.equal(100);
-      expect(await claims.chainWrappedTokenQuantity(chain1.id)).to.be.equal(100);
+      expect(await chainTokens.chainTokenQuantity(chain1.id)).to.be.equal(100);
+      expect(await chainTokens.chainWrappedTokenQuantity(chain1.id)).to.be.equal(100);
 
       await expect(
         bridge
@@ -750,6 +750,7 @@ describe("Chain Registration", function () {
   let bridge: any;
   let claimsHelper: any;
   let claims: any;
+  let chainTokens: any;
   let owner: any;
   let chain1: any;
   let chain2: any;
@@ -764,6 +765,7 @@ describe("Chain Registration", function () {
     bridge = fixture.bridge;
     claimsHelper = fixture.claimsHelper;
     claims = fixture.claims;
+    chainTokens = fixture.chainTokens;
     owner = fixture.owner;
     chain1 = fixture.chain1;
     chain2 = fixture.chain2;

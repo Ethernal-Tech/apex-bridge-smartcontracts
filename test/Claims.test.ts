@@ -55,28 +55,28 @@ describe("Claims Contract", function () {
     });
 
     it("Should skip Bridging Request Claim if there is not enough bridging tokens and emit NotEnoughFunds event", async function () {
-      const tokensAvailable = await claims.chainTokenQuantity(chain2.id);
+      const tokensAvailable = await chainTokens.chainTokenQuantity(chain2.id);
       const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
       temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination = tokensAvailable + 1n;
 
       const hash = hashBridgeRequestClaim(temp_validatorClaimsBRC.bridgingRequestClaims[0]);
 
       await expect(bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC))
-        .to.emit(claims, "NotEnoughFunds")
+        .to.emit(chainTokens, "NotEnoughFunds")
         .withArgs("BRC - Currency", 0, 100);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
     });
 
     it("Should skip Bridging Request Claim if there is not enough wrapped tokens and emit NotEnoughFunds event", async function () {
-      const tokensAvailable = await claims.chainWrappedTokenQuantity(chain2.id);
+      const tokensAvailable = await chainTokens.chainWrappedTokenQuantity(chain2.id);
       const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
       temp_validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountDestination = tokensAvailable + 1n;
 
       const hash = hashBridgeRequestClaim(temp_validatorClaimsBRC.bridgingRequestClaims[0]);
 
       await expect(bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC))
-        .to.emit(claims, "NotEnoughFunds")
+        .to.emit(chainTokens, "NotEnoughFunds")
         .withArgs("BRC - Native Token", 0, 100);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
@@ -541,7 +541,7 @@ describe("Claims Contract", function () {
 
     it("Should emit NotEnoughFunds and skip Refund Request Claim for failed BRC on destination if there is not enough funds", async function () {
       const RRC_notEnoughFunds = structuredClone(validatorClaimsRRC);
-      const tokensAvailable = await claims.chainTokenQuantity(chain2.id);
+      const tokensAvailable = await chainTokens.chainTokenQuantity(chain2.id);
 
       RRC_notEnoughFunds.refundRequestClaims[0].originAmount = tokensAvailable + 1n;
       RRC_notEnoughFunds.refundRequestClaims[0].shouldDecrementHotWallet = true;
@@ -573,7 +573,7 @@ describe("Claims Contract", function () {
 
     it("Should skip Refund Request Claim if there is not enough bridging tokens and emit NotEnoughFunds event", async function () {
       const RRC_notEnoughFunds = structuredClone(validatorClaimsRRC);
-      const tokensAvailable = await claims.chainTokenQuantity(chain1.id);
+      const tokensAvailable = await chainTokens.chainTokenQuantity(chain1.id);
 
       RRC_notEnoughFunds.refundRequestClaims[0].originAmount = tokensAvailable + 1n;
       RRC_notEnoughFunds.refundRequestClaims[0].shouldDecrementHotWallet = true;
@@ -581,7 +581,7 @@ describe("Claims Contract", function () {
       const hash = hashRefundRequestClaim(RRC_notEnoughFunds.refundRequestClaims[0]);
 
       await expect(bridge.connect(validators[0]).submitClaims(RRC_notEnoughFunds))
-        .to.emit(claims, "NotEnoughFunds")
+        .to.emit(chainTokens, "NotEnoughFunds")
         .withArgs("RRC - Currency", 0, tokensAvailable);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
@@ -589,7 +589,7 @@ describe("Claims Contract", function () {
 
     it("Should skip Refund Request Claim if there is not enough bridging wrapped tokens and emit NotEnoughFunds event", async function () {
       const RRC_notEnoughFunds = structuredClone(validatorClaimsRRC);
-      const tokensAvailable = await claims.chainTokenQuantity(chain1.id);
+      const tokensAvailable = await chainTokens.chainTokenQuantity(chain1.id);
 
       RRC_notEnoughFunds.refundRequestClaims[0].originWrappedAmount = tokensAvailable + 1n;
       RRC_notEnoughFunds.refundRequestClaims[0].shouldDecrementHotWallet = true;
@@ -598,7 +598,7 @@ describe("Claims Contract", function () {
       const hash = hashRefundRequestClaim(RRC_notEnoughFunds.refundRequestClaims[0]);
 
       await expect(bridge.connect(validators[0]).submitClaims(RRC_notEnoughFunds))
-        .to.emit(claims, "NotEnoughFunds")
+        .to.emit(chainTokens, "NotEnoughFunds")
         .withArgs("RRC - Native Token", 0, tokensAvailable);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
@@ -650,24 +650,24 @@ describe("Claims Contract", function () {
     });
 
     it("Should NOT increment totalQuantity if there is still no consensus on Hot Wallet Increment Claim", async function () {
-      expect(await claims.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(100);
+      expect(await chainTokens.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(100);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsHWIC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsHWIC);
 
-      expect(await claims.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(100);
+      expect(await chainTokens.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(100);
     });
 
     it("Should increment totalQuantity if there is consensus on Hot Wallet Increment Claim", async function () {
-      expect(await claims.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(100);
+      expect(await chainTokens.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(100);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsHWIC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsHWIC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsHWIC);
 
-      expect(await claims.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(
+      expect(await chainTokens.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(
         100 + validatorClaimsHWIC.hotWalletIncrementClaims[0].amount
       );
     });
@@ -764,7 +764,7 @@ describe("Claims Contract", function () {
   let bridge: any;
   let claimsHelper: any;
   let claims: any;
-  let signedBatches: any;
+  let chainTokens: any
   let owner: any;
   let chain1: any;
   let chain2: any;
@@ -787,7 +787,7 @@ describe("Claims Contract", function () {
     bridge = fixture.bridge;
     claimsHelper = fixture.claimsHelper;
     claims = fixture.claims;
-    signedBatches = fixture.signedBatches;
+    chainTokens = fixture.chainTokens;
     owner = fixture.owner;
     chain1 = fixture.chain1;
     chain2 = fixture.chain2;

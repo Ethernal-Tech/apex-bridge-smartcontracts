@@ -321,8 +321,8 @@ describe("Batch creation", function () {
     await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
     await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-    const tokenAmountDestination = await claims.chainTokenQuantity(signedBatch.destinationChainId);
-    const tokenWrappedAmountDestination = await claims.chainWrappedTokenQuantity(signedBatch.destinationChainId);
+    const tokenAmountDestination = await chainTokens.chainTokenQuantity(signedBatch.destinationChainId);
+    const tokenWrappedAmountDestination = await chainTokens.chainWrappedTokenQuantity(signedBatch.destinationChainId);
 
     let sumAmount = 0;
     let sumWrappedAmount = 0;
@@ -423,6 +423,7 @@ describe("Batch creation", function () {
   let bridge: any;
   let claimsHelper: any;
   let claims: any;
+  let chainTokens: any;
   let signedBatches: any;
   let owner: any;
   let chain1: any;
@@ -440,6 +441,7 @@ describe("Batch creation", function () {
     bridge = fixture.bridge;
     claimsHelper = fixture.claimsHelper;
     claims = fixture.claims;
+    chainTokens = fixture.chainTokens;
     signedBatches = fixture.signedBatches;
     owner = fixture.owner;
     chain1 = fixture.chain1;
