@@ -80,10 +80,10 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
             );
     }
 
-    function validateRRC(RefundRequestClaim calldata _claim, uint8 originChainId) external onlyClaims returns (bool) {
+    function validateRRC(RefundRequestClaim calldata _claim) external onlyClaims returns (bool) {
         return
             _validateBalanceCheck(
-                originChainId,
+                _claim.originChainId,
                 _claim.coloredCoinId,
                 _claim.originAmount,
                 _claim.originWrappedAmount,
@@ -148,9 +148,9 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         _updateChainBalances(chainId, coloredCoinId, totalAmount, totalWrappedAmount, true);
     }
 
-    function updateTokensRRC(RefundRequestClaim calldata _claim, uint8 originChainId) external onlyClaims {
+    function updateTokensRRC(RefundRequestClaim calldata _claim) external onlyClaims {
         _updateChainBalances(
-            originChainId,
+            _claim.originChainId,
             _claim.coloredCoinId,
             _claim.originAmount,
             _claim.originWrappedAmount,
@@ -172,7 +172,7 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     }
 
     // onlyClaims
-    function setChainRegistered(
+    function setInitialTokenQuantities(
         uint8 _chainId,
         uint256 _initialTokenSupply,
         uint256 _initialWrappedTokenSupply
@@ -238,21 +238,19 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         uint256 _currentToken = chainTokenQuantity[_chainId];
         uint256 _currentWrapped = chainWrappedTokenQuantity[_chainId];
 
-        if (_coloredCoinId != 0) {
-            if (coloredCoinToChain[_coloredCoinId] == _chainId) {
-                uint256 _currentColored = chainColoredCoinQuantity[_chainId][_coloredCoinId];
-                if (_currentColored < _tokenAmount) {
-                    return
-                        _handleInsufficientFunds(
-                            _shouldRevert,
-                            _prefix,
-                            "Colored Coin",
-                            _chainId,
-                            _currentColored,
-                            _tokenAmount,
-                            _index
-                        );
-                }
+        if (_coloredCoinId != 0 && coloredCoinToChain[_coloredCoinId] == _chainId) {
+            uint256 _currentColored = chainColoredCoinQuantity[_chainId][_coloredCoinId];
+            if (_currentColored < _tokenAmount) {
+                return
+                    _handleInsufficientFunds(
+                        _shouldRevert,
+                        _prefix,
+                        "Colored Coin",
+                        _chainId,
+                        _currentColored,
+                        _tokenAmount,
+                        _index
+                    );
             }
         }
         // Check native currency balance

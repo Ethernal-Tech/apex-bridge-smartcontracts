@@ -162,7 +162,11 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         for (uint8 i; i < registeredChains.length; i++) {
             uint8 chainId = registeredChains[i].id;
-            chainTokens.setChainRegistered(chainId, _chainTokenQuantity[chainId], _chainWrappedTokenQuantity[chainId]);
+            chainTokens.setInitialTokenQuantities(
+                chainId,
+                _chainTokenQuantity[chainId],
+                _chainWrappedTokenQuantity[chainId]
+            );
         }
     }
 
@@ -533,11 +537,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint8 originChainId = _claim.originChainId;
 
         // check token quantity on source if needed
-        if (
-            _claim.shouldDecrementHotWallet &&
-            _claim.retryCounter == 0 &&
-            !chainTokens.validateRRC(_claim, originChainId)
-        ) {
+        if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0 && !chainTokens.validateRRC(_claim)) {
             // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
             return;
         }
@@ -550,7 +550,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
             if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
                 // refund after failing on destination chain, return funds to hot wallet
-                chainTokens.updateTokensRRC(_claim, originChainId);
+                chainTokens.updateTokensRRC(_claim);
             }
 
             _setConfirmedTransactionsRRC(_claim);
@@ -734,7 +734,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint256 _initialWrappedTokenSupply
     ) external onlyBridge {
         isChainRegistered[_chainId] = true;
-        chainTokens.setChainRegistered(_chainId, _initialTokenSupply, _initialWrappedTokenSupply);
+        chainTokens.setInitialTokenQuantities(_chainId, _initialTokenSupply, _initialWrappedTokenSupply);
 
         nextTimeoutBlock[_chainId] = block.number + timeoutBlocksNumber;
         claimsHelper.resetCurrentBatchBlock(_chainId);
