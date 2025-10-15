@@ -329,11 +329,9 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     /// @dev Safe internal update for a mapping
     function _updateSingle(mapping(uint8 => uint256) storage store, uint8 key, uint256 amount, bool increase) internal {
         if (amount == 0) return;
-        uint256 current = store[key];
 
         if (increase) store[key] += amount;
         else {
-            if (current < amount) revert NegativeChainTokenAmount(current, amount);
             store[key] -= amount;
         }
     }

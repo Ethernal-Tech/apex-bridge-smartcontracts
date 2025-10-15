@@ -74,6 +74,12 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         bool _isIncrease,
         uint256 _chainTokenQuantity
     ) external onlyFundAdmin {
+        if (!_isIncrease) {
+            uint256 currentQuantity = chainTokens.chainTokenQuantity(_chainId);
+            if (currentQuantity < _chainTokenQuantity) {
+                revert NegativeChainTokenAmount(currentQuantity, _chainTokenQuantity);
+            }
+        }
         claims.updateChainTokenQuantity(_chainId, _isIncrease, _chainTokenQuantity);
         emit UpdatedChainTokenQuantity(_chainId, _isIncrease, _chainTokenQuantity);
     }
@@ -87,6 +93,12 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         bool _isIncrease,
         uint256 _chainWrappedTokenQuantity
     ) external onlyFundAdmin {
+        if (!_isIncrease) {
+            uint256 currentWrappedQuantity = chainTokens.chainWrappedTokenQuantity(_chainId);
+            if (currentWrappedQuantity < _chainWrappedTokenQuantity) {
+                revert NegativeChainTokenAmount(currentWrappedQuantity, _chainWrappedTokenQuantity);
+            }
+        }
         claims.updateChainWrappedTokenQuantity(_chainId, _isIncrease, _chainWrappedTokenQuantity);
         emit UpdatedChainWrappedTokenQuantity(_chainId, _isIncrease, _chainWrappedTokenQuantity);
     }
@@ -102,6 +114,12 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         uint256 _chainColoredCointQuantity,
         uint8 _coloredCoinId
     ) external onlyFundAdmin {
+        if (!_isIncrease) {
+            uint256 currentColoredCoinQuantity = chainTokens.chainColoredCoinQuantity(_chainId, _coloredCoinId);
+            if (currentColoredCoinQuantity < _chainColoredCointQuantity) {
+                revert NegativeChainTokenAmount(currentColoredCoinQuantity, _chainColoredCointQuantity);
+            }
+        }
         chainTokens.updateChainColoredCoinQuantity(_chainId, _isIncrease, _chainColoredCointQuantity, _coloredCoinId);
         emit UpdatedChainColoredCoinQuantity(_chainId, _isIncrease, _chainColoredCointQuantity, _coloredCoinId);
     }
