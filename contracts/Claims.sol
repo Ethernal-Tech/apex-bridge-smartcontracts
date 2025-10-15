@@ -186,7 +186,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 revert ChainIsNotRegistered(_claim.originChainId);
             }
 
-            _submitClaimsRRC(_claim, _caller);
+            _submitClaimsRRC(_claim, i, _caller);
         }
         for (uint i; i < hotWalletIncrementClaimsLength; i++) {
             HotWalletIncrementClaim calldata _claim = _claims.hotWalletIncrementClaims[i];
@@ -376,6 +376,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev This function checks if a batch has been processed, validates the claim, and handles the failed batch execution
     ///      by updating the state, retrying failed transactions if applicable, and resetting the current batch block.
     /// @param _claim The batch execution failed claim containing the details of the failed batch execution.
+    /// @param i The index of the claim in the array of refund request claims.
     /// @param _caller The address of the caller who is submitting the claim.
     /// @dev If the batch has already been processed (first and last transaction nonces are zero), the function exits early
     ///      to prevent double-processing of the same batch.
@@ -383,7 +384,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev The batch's failed transactions are handled by retrying the transactions up to a maximum retry count,
     ///      or marking them as failed if retries exceed the limit.
     /// @dev The batch's token quantity is updated, and the corresponding batch data is deleted once the claim is processed.
-    function _submitClaimsRRC(RefundRequestClaim calldata _claim, address _caller) internal {
+    function _submitClaimsRRC(RefundRequestClaim calldata _claim, uint256 i, address _caller) internal {
         // temporary check until automatic refund is implemented
         // once automatic refund is implemented, this check should be that
         // either originTransactionHash or refundTransactionHash should be empty
@@ -405,7 +406,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
             uint256 _chainTokenQuantityOrigin = chainTokenQuantity[originChainId];
             if (_chainTokenQuantityOrigin < _claim.originAmount) {
-                emit NotEnoughFunds("RRC", 0, _chainTokenQuantityOrigin);
+                emit NotEnoughFunds("RRC", i, _chainTokenQuantityOrigin);
                 // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit
                 return;
             }
@@ -746,7 +747,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.2";
+        return "1.0.3";
     }
 
     modifier onlyBridge() {
