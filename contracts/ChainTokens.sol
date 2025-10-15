@@ -54,6 +54,7 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
 
     /// @notice Sets external contract dependencies.
     /// @param _bridgeAddress Address of the Bridge contract.
+    /// @param _claimsAddress Address of the Claims contract.
     /// @param _adminContractAddress Address of the Admin contract.
     function setDependencies(
         address _bridgeAddress,
@@ -67,7 +68,13 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         adminContractAddress = _adminContractAddress;
     }
 
-    function validateBRC(BridgingRequestClaim calldata _claim, uint256 i) external onlyClaims returns (bool) {
+    /// @notice Validates a Bridging Request Claim (BRC) by ensuring sufficient balances exist
+    ///         on the destination chain for both native and wrapped tokens (and colored coins if applicable).
+    /// @dev Emits a `NotEnoughFunds` event instead of reverting when balances are insufficient.
+    /// @param _claim The BridgingRequestClaim struct containing claim details such as amounts and chain IDs.
+    /// @param _index The index of the claim in the batch, used for event emission.
+    /// @return bool Returns true if all required balances are sufficient, otherwise false.
+    function validateBRC(BridgingRequestClaim calldata _claim, uint256 _index) external onlyClaims returns (bool) {
         return
             _validateBalanceCheck(
                 _claim.destinationChainId,
@@ -75,12 +82,19 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
                 _claim.nativeCurrencyAmountDestination,
                 _claim.wrappedTokenAmountDestination,
                 "BRC",
-                i,
+                _index,
                 false // use emit (no revert)
             );
     }
 
-    function validateRRC(RefundRequestClaim calldata _claim) external onlyClaims returns (bool) {
+    /// @notice Validates a Refund Request Claim (RRC) by checking if sufficient balances exist
+    ///         on the origin chain for both native and wrapped tokens (and colored coins if applicable).
+    /// @dev Emits a `NotEnoughFunds` event instead of reverting when balances are insufficient.
+    ///      Used to verify refund operations before processing them.
+    /// @param _claim The RefundRequestClaim struct containing refund details such as chain ID, token amounts, and coin ID.
+    /// @param _index The index of the claim in the batch, used for event emission.
+    /// @return bool Returns true if all required balances are sufficient, otherwise false.
+    function validateRRC(RefundRequestClaim calldata _claim, uint256 _index) external onlyClaims returns (bool) {
         return
             _validateBalanceCheck(
                 _claim.originChainId,
@@ -88,11 +102,20 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
                 _claim.originAmount,
                 _claim.originWrappedAmount,
                 "RRC",
-                0,
+                _index,
                 false // use emit (no revert)
             );
     }
 
+    /// @notice Validates a defund request by ensuring sufficient token, wrapped token, or colored coin balances
+    ///         exist on the specified chain before processing the defund.
+    /// @dev Reverts if balances are insufficient, unlike other validation functions which emit events.
+    ///      This function ensures that defund operations do not proceed if there are not enough funds
+    ///      available on the given chain for the requested withdrawal.
+    /// @param _chainId The ID of the chain from which funds are being defunded.
+    /// @param _amount The amount of native tokens (or colored coin equivalent) to defund.
+    /// @param _amountWrapped The amount of wrapped tokens to defund.
+    /// @param _coloredCoinId The ID of the colored coin involved in the defund, if applicable.
     function validateDefund(
         uint8 _chainId,
         uint256 _amount,
@@ -115,6 +138,14 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         );
     }
 
+    /// @notice Updates token balances after processing a Bridging Request Claim (BRC).
+    /// @dev
+    /// - Decreases balances on the destination chain to reflect tokens or wrapped tokens being sent out.
+    /// - Increases balances on the source chain **only if** this is the first occurrence of the claim
+    ///   (i.e., not a retry).
+    /// - Retries do not increase source balances again to avoid double-counting.
+    /// @param _claim The Bridging Request Claim containing source/destination chain IDs,
+    ///        colored coin ID, token amounts, and retry counter.
     function updateTokensBRC(BridgingRequestClaim calldata _claim) external onlyClaims {
         // decrease destination
         _updateChainBalances(
@@ -139,6 +170,12 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         }
     }
 
+    /// @notice Updates chain token balances after a Bridging Execution Failed Claim (BEFC).
+    /// @dev Increases both native and wrapped token balances on the specified chain.
+    /// @param chainId The ID of the chain whose balances are being updated.
+    /// @param coloredCoinId The ID of the colored coin involved in the operation.
+    /// @param totalAmount The amount of native tokens to add to the chain balance.
+    /// @param totalWrappedAmount The amount of wrapped tokens to add to the chain balance.
     function updateTokensBEFC(
         uint8 chainId,
         uint8 coloredCoinId,
@@ -148,6 +185,11 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         _updateChainBalances(chainId, coloredCoinId, totalAmount, totalWrappedAmount, true);
     }
 
+    /// @notice Updates chain token balances after processing a Refund Request Claim (RRC).
+    /// @dev Decreases the origin chain’s balances to reflect tokens or wrapped tokens
+    ///      being returned as part of a refund operation.
+    /// @param _claim The Refund Request Claim containing origin chain ID, colored coin ID,
+    ///        and token/ wrapped token amounts.
     function updateTokensRRC(RefundRequestClaim calldata _claim) external onlyClaims {
         _updateChainBalances(
             _claim.originChainId,
@@ -158,10 +200,21 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         );
     }
 
+    /// @notice Updates chain token balances after processing a Hot Wallet Increment Claim (HWIC).
+    /// @dev Increases chain balances to reflect funds being added to the hot wallet.
+    /// @param _claim The Hot Wallet Increment Claim containing chain ID, colored coin ID,
+    ///        and token/ wrapped token amounts to add.
     function updateTokensHWIC(HotWalletIncrementClaim calldata _claim) external onlyClaims {
         _updateChainBalances(_claim.chainId, _claim.coloredCoinId, _claim.amount, _claim.amountWrapped, true);
     }
 
+    /// @notice Updates chain balances after a Defund operation.
+    /// @dev Decreases the specified chain’s token and wrapped token balances to reflect
+    ///      a successful defund transaction.
+    /// @param _chainId The ID of the chain from which tokens are being defunded.
+    /// @param _amount The amount of native tokens to subtract from the chain balance.
+    /// @param _amountWrapped The amount of wrapped tokens to subtract from the chain balance.
+    /// @param _coloredCoinId The ID of the colored coin involved in the defund, if applicable.
     function updateDefund(
         uint8 _chainId,
         uint256 _amount,
@@ -171,7 +224,13 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         _updateChainBalances(_chainId, _coloredCoinId, _amount, _amountWrapped, false);
     }
 
-    // onlyClaims
+    /// @notice Sets the initial token and wrapped token quantities for a specific chain.
+    /// @dev This function is typically called during the initial setup or synchronization process
+    ///      to establish the starting state of token balances on a given chain.
+    ///      Only the Claims contract is authorized to call this function.
+    /// @param _chainId The ID of the chain whose initial balances are being set.
+    /// @param _initialTokenSupply The initial amount of native tokens available on the chain.
+    /// @param _initialWrappedTokenSupply The initial amount of wrapped tokens available on the chain.
     function setInitialTokenQuantities(
         uint8 _chainId,
         uint256 _initialTokenSupply,
@@ -222,6 +281,11 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         _updateSingle(chainColoredCoinQuantity[_chainId], _coloredCoinId, _chainColoredCoinAmount, _isIncrease);
     }
 
+    /// @notice Registers a new colored coin and associates it with a specific chain.
+    /// @dev Updates the mapping of colored coin IDs to their corresponding chain IDs.
+    ///      This function can only be called by the Bridge contract.
+    /// @param _coloredCoin The colored coin data structure containing the colored coin ID
+    ///        and the chain ID it belongs to.
     function registerColoredCoin(ColoredCoin calldata _coloredCoin) external onlyBridge {
         coloredCoinToChain[_coloredCoin.coloredCoinId] = _coloredCoin.chainId;
     }
@@ -238,7 +302,20 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         uint256 _currentToken = chainTokenQuantity[_chainId];
         uint256 _currentWrapped = chainWrappedTokenQuantity[_chainId];
 
-        if (_coloredCoinId != 0 && coloredCoinToChain[_coloredCoinId] == _chainId) {
+        // Check native currency balance
+        if (_coloredCoinId == 0 && _currentToken < _tokenAmount) {
+            return
+                _handleInsufficientFunds(
+                    _shouldRevert,
+                    _prefix,
+                    "Currency",
+                    _chainId,
+                    _currentToken,
+                    _tokenAmount,
+                    _index
+                );
+            // Check colored coin balance
+        } else if (coloredCoinToChain[_coloredCoinId] == _chainId) {
             uint256 _currentColored = chainColoredCoinQuantity[_chainId][_coloredCoinId];
             if (_currentColored < _tokenAmount) {
                 return
@@ -252,19 +329,6 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
                         _index
                     );
             }
-        }
-        // Check native currency balance
-        else if (_currentToken < _tokenAmount) {
-            return
-                _handleInsufficientFunds(
-                    _shouldRevert,
-                    _prefix,
-                    "Currency",
-                    _chainId,
-                    _currentToken,
-                    _tokenAmount,
-                    _index
-                );
         }
 
         // Check wrapped token balance
@@ -328,8 +392,6 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
 
     /// @dev Safe internal update for a mapping
     function _updateSingle(mapping(uint8 => uint256) storage store, uint8 key, uint256 amount, bool increase) internal {
-        if (amount == 0) return;
-
         if (increase) store[key] += amount;
         else {
             store[key] -= amount;

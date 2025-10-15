@@ -277,7 +277,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 revert ColoredCoinNotNotRegisteredOnChain(_claim.coloredCoinId, originChainId);
             }
 
-            _submitClaimsRRC(_claim, _caller);
+            _submitClaimsRRC(_claim, i, _caller);
         }
         for (uint i; i < hotWalletIncrementClaimsLength; i++) {
             HotWalletIncrementClaim calldata _claim = _claims.hotWalletIncrementClaims[i];
@@ -515,7 +515,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// Effects:
     /// - Sets the validator's vote via `claimsHelper`.
     /// - If quorum is reached, updates token balances, confirms the refund transaction, and adjusts timeout blocks.
-    function _submitClaimsRRC(RefundRequestClaim calldata _claim, address _caller) internal {
+    function _submitClaimsRRC(RefundRequestClaim calldata _claim, uint256 _index, address _caller) internal {
         // temporary check until automatic refund is implemented
         // once automatic refund is implemented, this check should be that
         // either originTransactionHash or refundTransactionHash should be empty
@@ -533,7 +533,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
 
         // check token quantity on source if needed
-        if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0 && !chainTokens.validateRRC(_claim)) {
+        if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0 && !chainTokens.validateRRC(_claim, _index)) {
             // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
             return;
         }

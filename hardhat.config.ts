@@ -1,6 +1,7 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomiclabs/hardhat-solhint";
+import "./tasks/size-all";
 
 const config: HardhatUserConfig = {
   solidity: {
