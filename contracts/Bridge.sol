@@ -83,17 +83,32 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         validators = Validators(_validatorsAddress);
     }
 
-    /// @notice Sets the BridgingAddresses contract dependency and syncs it with the registered chains.
+    /// @notice Sets the BridgingAddresses and ChainTokens contracts dependencies and syncs it with the registered chains.
     /// @dev This function can only be called by the upgrade admin.
     ///      It verifies that the provided address is a contract before using it.
     /// @param _bridgingAddresses The address of the BridgingAddresses contract to set and sync.
-    function setBridgingAddrsDependencyAndSync(address _bridgingAddresses) external onlyUpgradeAdmin {
+    /// @param _chainTokens The address of the ChainTokens contract to set.
+    function setAdditionalDependenciesAndSync(
+        address _bridgingAddresses,
+        address _chainTokens
+    ) external onlyUpgradeAdmin {
         if (!_isContract(_bridgingAddresses)) revert NotContractAddress();
+
+        _setChainTokensDependency(_chainTokens);
+
         bridgingAddresses = BridgingAddresses(_bridgingAddresses);
         bridgingAddresses.initRegisteredChains(chains);
     }
 
+    /// @notice Sets the ChainTokens contract dependency.
+    /// @dev This function can only be called by the upgrade admin.
+    ///      It verifies that the provided address is a contract before using it.
+    /// @param _chainTokens The address of the ChainTokens contract to set.
     function setChainTokensDependency(address _chainTokens) external onlyUpgradeAdmin {
+        _setChainTokensDependency(_chainTokens);
+    }
+
+    function _setChainTokensDependency(address _chainTokens) internal {
         if (!_isContract(_chainTokens)) revert NotContractAddress();
         chainTokens = ChainTokens(_chainTokens);
     }

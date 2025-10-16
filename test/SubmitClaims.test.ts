@@ -131,7 +131,7 @@ describe("Submit Claims", function () {
     it("Should update next timeout block when Bridging Request Claim is confirmed and requirements are met", async function () {
       const timeoutBlocksNumber = await claims.timeoutBlocksNumber();
       let currentBlock = await ethers.provider.getBlockNumber();
-      expect(currentBlock).to.equal(35);
+      expect(currentBlock).to.equal(33);
 
       // wait for next timeout
       for (let i = 0; i < 8; i++) {
