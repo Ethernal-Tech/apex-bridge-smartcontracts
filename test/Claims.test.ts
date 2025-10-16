@@ -107,6 +107,10 @@ describe("Claims Contract", function () {
 
       await setCode("0x0000000000000000000000000000000000002050", "0x60206000F3"); // should return false for precompile
 
+      for (let i = 0; i < 5; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
       await expect(bridge.connect(validators[0]).submitSignedBatch(signedBatch)).to.be.revertedWithCustomError(
         bridge,
         "InvalidSignature"
@@ -122,8 +126,9 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
-      await ethers.provider.send("evm_mine");
-      await ethers.provider.send("evm_mine");
+      for (let i = 0; i < 7; i++) {
+        await ethers.provider.send("evm_mine");
+      }
 
       const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(_destinationChain);
 
@@ -158,8 +163,9 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
-      await ethers.provider.send("evm_mine");
-      await ethers.provider.send("evm_mine");
+      for (let i = 0; i < 7; i++) {
+        await ethers.provider.send("evm_mine");
+      }
 
       const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(_destinationChain);
 
@@ -193,8 +199,9 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
-      await ethers.provider.send("evm_mine");
-      await ethers.provider.send("evm_mine");
+      for (let i = 0; i < 7; i++) {
+        await ethers.provider.send("evm_mine");
+      }
 
       const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(_destinationChain);
 
@@ -255,8 +262,9 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
-      await ethers.provider.send("evm_mine");
-      await ethers.provider.send("evm_mine");
+      for (let i = 0; i < 7; i++) {
+        await ethers.provider.send("evm_mine");
+      }
 
       const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(_destinationChain);
 
@@ -323,8 +331,9 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
-      await ethers.provider.send("evm_mine");
-      await ethers.provider.send("evm_mine");
+      for (let i = 0; i < 7; i++) {
+        await ethers.provider.send("evm_mine");
+      }
 
       const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(_destinationChain);
 
@@ -359,8 +368,9 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
-      await ethers.provider.send("evm_mine");
-      await ethers.provider.send("evm_mine");
+      for (let i = 0; i < 7; i++) {
+        await ethers.provider.send("evm_mine");
+      }
 
       const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(_destinationChain);
 
@@ -392,8 +402,9 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
-      await ethers.provider.send("evm_mine");
-      await ethers.provider.send("evm_mine");
+      for (let i = 0; i < 7; i++) {
+        await ethers.provider.send("evm_mine");
+      }
 
       const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(_destinationChain);
 
@@ -458,8 +469,9 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
-      await ethers.provider.send("evm_mine");
-      await ethers.provider.send("evm_mine");
+      for (let i = 0; i < 7; i++) {
+        await ethers.provider.send("evm_mine");
+      }
 
       const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(_destinationChain);
 
@@ -650,17 +662,23 @@ describe("Claims Contract", function () {
     });
 
     it("Should NOT increment totalQuantity if there is still no consensus on Hot Wallet Increment Claim", async function () {
-      expect(await chainTokens.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(100);
+      expect(await chainTokens.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(
+        100
+      );
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsHWIC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsHWIC);
 
-      expect(await chainTokens.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(100);
+      expect(await chainTokens.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(
+        100
+      );
     });
 
     it("Should increment totalQuantity if there is consensus on Hot Wallet Increment Claim", async function () {
-      expect(await chainTokens.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(100);
+      expect(await chainTokens.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(
+        100
+      );
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsHWIC);
@@ -676,13 +694,6 @@ describe("Claims Contract", function () {
   describe("Claims getters/setters", function () {
     it("Should revert if Claims SC setChainRegistered is not called by Bridge SC", async function () {
       await expect(claims.connect(owner).setChainRegistered(1, 100, 100)).to.be.revertedWithCustomError(
-        bridge,
-        "NotBridge"
-      );
-    });
-
-    it("Should revert if Claims SC setNextTimeoutBlock is not called by Bridge SC", async function () {
-      await expect(claims.connect(owner).setNextTimeoutBlock(1, 100)).to.be.revertedWithCustomError(
         bridge,
         "NotBridge"
       );
@@ -713,6 +724,10 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
+      for (let i = 0; i < 5; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
@@ -741,6 +756,10 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
+      for (let i = 0; i < 5; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
       await bridge.connect(validators[0]).submitSignedBatch(signedBatchConsolidation);
       await bridge.connect(validators[1]).submitSignedBatch(signedBatchConsolidation);
       await bridge.connect(validators[2]).submitSignedBatch(signedBatchConsolidation);
@@ -760,7 +779,7 @@ describe("Claims Contract", function () {
   let bridge: any;
   let claimsHelper: any;
   let claims: any;
-  let chainTokens: any
+  let chainTokens: any;
   let owner: any;
   let chain1: any;
   let chain2: any;

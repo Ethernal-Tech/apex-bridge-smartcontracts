@@ -103,7 +103,7 @@ export async function deployBridgeFixture() {
 
   const claimsProxy = await ClaimsProxy.deploy(
     await claimsLogic.getAddress(),
-    Claims.interface.encodeFunctionData("initialize", [owner.address, owner.address, 2, 5])
+    Claims.interface.encodeFunctionData("initialize", [owner.address, owner.address, 2, 10])
   );
 
   const signedBatchesProxy = await SignedBatchesProxy.deploy(
@@ -471,8 +471,8 @@ export function hashBridgeRequestClaim(claim: any) {
 
   return ethers.keccak256(
     "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-    encodedPrefix.substring(66) +
-    encoded.substring(2)
+      encodedPrefix.substring(66) +
+      encoded.substring(2)
   );
 }
 
@@ -486,8 +486,8 @@ export function hashBatchExecutedClaim(claim: any) {
 
   return ethers.keccak256(
     "0x0000000000000000000000000000000000000000000000000000000000000080" +
-    encoded.substring(2) +
-    encodedPrefix.substring(66)
+      encoded.substring(2) +
+      encodedPrefix.substring(66)
   );
 }
 
@@ -501,8 +501,8 @@ export function hashBatchExecutionFailedClaim(claim: any) {
 
   return ethers.keccak256(
     "0x0000000000000000000000000000000000000000000000000000000000000080" +
-    encoded.substring(2) +
-    encodedPrefix.substring(66)
+      encoded.substring(2) +
+      encodedPrefix.substring(66)
   );
 }
 
@@ -541,8 +541,8 @@ export function hashRefundRequestClaim(claim: any) {
   );
   return ethers.keccak256(
     "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-    encodedPrefix.substring(66) +
-    encoded.substring(2)
+      encodedPrefix.substring(66) +
+      encoded.substring(2)
   );
 }
 
@@ -556,7 +556,7 @@ export function hashHotWalletIncrementClaim(claim: any) {
 
   return ethers.keccak256(
     "0x00000000000000000000000000000000000000000000000000000000000000a0" +
-    encoded.substring(2) +
-    encodedPrefix.substring(66)
+      encoded.substring(2) +
+      encodedPrefix.substring(66)
   );
 }

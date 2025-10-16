@@ -356,7 +356,7 @@ describe("Admin Functions", function () {
       expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(2);
 
       // wait for next timeout
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 8; i++) {
         await ethers.provider.send("evm_mine");
       }
 
@@ -418,7 +418,7 @@ describe("Admin Functions", function () {
       expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(2);
 
       // wait for next timeout
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 8; i++) {
         await ethers.provider.send("evm_mine");
       }
 
@@ -468,7 +468,7 @@ describe("Admin Functions", function () {
         expect((await claims.confirmedTransactions(chain2.id, i + 1)).retryCounter).to.equal(i);
 
         // wait for next timeout
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 8; i++) {
           await ethers.provider.send("evm_mine");
         }
 
@@ -525,7 +525,7 @@ describe("Admin Functions", function () {
         expect((await claims.confirmedTransactions(chain2.id, i + 1)).retryCounter).to.equal(i);
 
         // wait for next timeout
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 8; i++) {
           await ethers.provider.send("evm_mine");
         }
 

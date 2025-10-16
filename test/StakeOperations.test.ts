@@ -87,7 +87,7 @@ describe("Stake Operations", function () {
         .stakeAddressOperation(chain1.id, bridgeAddrIndex, stakePoolId, TransactionSubType.STAKE_REGISTRATION);
 
       // wait for next timeout
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 8; i++) {
         await ethers.provider.send("evm_mine");
       }
 
@@ -196,7 +196,7 @@ describe("Stake Operations", function () {
         .stakeAddressOperation(chain1.id, bridgeAddrIndex, stakePoolId, TransactionSubType.STAKE_DELEGATION);
 
       // wait for next timeout
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 8; i++) {
         await ethers.provider.send("evm_mine");
       }
 
@@ -313,7 +313,7 @@ describe("Stake Operations", function () {
         .stakeAddressOperation(chain1.id, bridgeAddrIndex, invalidStakePoolId, TransactionSubType.STAKE_DEREGISTRATION);
 
       // wait for next timeout
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 8; i++) {
         await ethers.provider.send("evm_mine");
       }
 
