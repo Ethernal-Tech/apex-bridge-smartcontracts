@@ -674,10 +674,6 @@ describe("Claims Contract", function () {
   });
 
   describe("Claims getters/setters", function () {
-    it("Should revert if Claims SC resetCurrentBatchBlock is not called by Bridge SC", async function () {
-      await expect(claims.connect(owner).resetCurrentBatchBlock(1)).to.be.revertedWithCustomError(bridge, "NotBridge");
-    });
-
     it("Should revert if Claims SC setChainRegistered is not called by Bridge SC", async function () {
       await expect(claims.connect(owner).setChainRegistered(1, 100, 100)).to.be.revertedWithCustomError(
         bridge,

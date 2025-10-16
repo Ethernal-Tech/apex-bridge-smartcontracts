@@ -713,12 +713,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
     }
 
-    /// @notice Resets the current batch block for a given chain.
-    /// @param _chainId The ID of the chain for which to reset the current batch block.
-    function resetCurrentBatchBlock(uint8 _chainId) external onlyBridge {
-        claimsHelper.resetCurrentBatchBlock(_chainId);
-    }
-
     /// @notice Registers a new chain and initializes its token supply.
     /// @dev This function is restricted to be called only by the Bridge contract.
     ///      It marks the chain as registered, sets the initial token quantity,
@@ -806,40 +800,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         {
             nextTimeoutBlock[_chainId] = block.number + timeoutBlocksNumber;
         }
-    }
-
-    /// @notice Updates the token quantity for a registered chain by increasing or decreasing the amount.
-    /// @dev Reverts if the chain is not registered or if subtraction causes underflow.
-    /// @param _chainId The ID of the chain whose token quantity is to be updated.
-    /// @param _isIncrease A boolean indicating whether to increase (true) or decrease (false) the token amount.
-    /// @param _chainTokenAmount The amount of tokens to add or subtract from the chain's total.
-    function updateChainTokenQuantity(
-        uint8 _chainId,
-        bool _isIncrease,
-        uint256 _chainTokenAmount
-    ) external onlyAdminContract {
-        if (!isChainRegistered[_chainId]) {
-            revert ChainIsNotRegistered(_chainId);
-        }
-
-        chainTokens.updateChainTokenQuantity(_chainId, _isIncrease, _chainTokenAmount);
-    }
-
-    /// @notice Updates the wrapped token quantity for a registered chain by increasing or decreasing the amount.
-    /// @dev Reverts if the chain is not registered or if subtraction causes underflow.
-    /// @param _chainId The ID of the chain whose token quantity is to be updated.
-    /// @param _isIncrease A boolean indicating whether to increase (true) or decrease (false) the token amount.
-    /// @param _chainWrappedTokenAmount The amount of tokens to add or subtract from the chain's total.
-    function updateChainWrappedTokenQuantity(
-        uint8 _chainId,
-        bool _isIncrease,
-        uint256 _chainWrappedTokenAmount
-    ) external onlyAdminContract {
-        if (!isChainRegistered[_chainId]) {
-            revert ChainIsNotRegistered(_chainId);
-        }
-
-        chainTokens.updateChainWrappedTokenQuantity(_chainId, _isIncrease, _chainWrappedTokenAmount);
     }
 
     /// @notice Retrieves a list of transactions for a specific batch on a given chain.

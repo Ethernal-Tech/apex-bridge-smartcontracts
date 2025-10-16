@@ -245,7 +245,11 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     /// @param _chainId The ID of the chain whose token quantity is to be updated.
     /// @param _isIncrease A boolean indicating whether to increase (true) or decrease (false) the token amount.
     /// @param _chainTokenAmount The amount of tokens to add or subtract from the chain's total.
-    function updateChainTokenQuantity(uint8 _chainId, bool _isIncrease, uint256 _chainTokenAmount) external onlyClaims {
+    function updateChainTokenQuantity(
+        uint8 _chainId,
+        bool _isIncrease,
+        uint256 _chainTokenAmount
+    ) external onlyAdminContract {
         _updateSingle(chainTokenQuantity, _chainId, _chainTokenAmount, _isIncrease);
     }
 
@@ -258,7 +262,7 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         uint8 _chainId,
         bool _isIncrease,
         uint256 _chainWrappedTokenAmount
-    ) external onlyClaims {
+    ) external onlyAdminContract {
         _updateSingle(chainWrappedTokenQuantity, _chainId, _chainWrappedTokenAmount, _isIncrease);
     }
 

@@ -80,7 +80,12 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
                 revert NegativeChainTokenAmount(currentQuantity, _chainTokenQuantity);
             }
         }
-        claims.updateChainTokenQuantity(_chainId, _isIncrease, _chainTokenQuantity);
+
+        if (!claims.isChainRegistered(_chainId)) {
+            revert ChainIsNotRegistered(_chainId);
+        }
+
+        chainTokens.updateChainTokenQuantity(_chainId, _isIncrease, _chainTokenQuantity);
         emit UpdatedChainTokenQuantity(_chainId, _isIncrease, _chainTokenQuantity);
     }
 
@@ -99,7 +104,12 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
                 revert NegativeChainTokenAmount(currentWrappedQuantity, _chainWrappedTokenQuantity);
             }
         }
-        claims.updateChainWrappedTokenQuantity(_chainId, _isIncrease, _chainWrappedTokenQuantity);
+
+        if (!claims.isChainRegistered(_chainId)) {
+            revert ChainIsNotRegistered(_chainId);
+        }
+
+        chainTokens.updateChainWrappedTokenQuantity(_chainId, _isIncrease, _chainWrappedTokenQuantity);
         emit UpdatedChainWrappedTokenQuantity(_chainId, _isIncrease, _chainWrappedTokenQuantity);
     }
 
