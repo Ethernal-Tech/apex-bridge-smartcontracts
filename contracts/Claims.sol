@@ -255,7 +255,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 revert ChainIsNotRegistered(_claim.originChainId);
             }
 
-            _submitClaimsRRC(_claim, _caller);
+            _submitClaimsRRC(_claim, i, _caller);
         }
         for (uint i; i < hotWalletIncrementClaimsLength; i++) {
             HotWalletIncrementClaim calldata _claim = _claims.hotWalletIncrementClaims[i];
@@ -488,6 +488,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     ///      and, if applicable, performs hot wallet refund operations and transaction confirmation updates.
     ///      Quorum is tracked via a hashed claim and set through the `claimsHelper`.
     /// @param _claim The RefundRequestClaim struct containing all data relevant to the refund request.
+    /// @param i The index of the claim in the array of refund request claims.
     /// @param _caller The address of the validator submitting the claim.
     ///
     /// Requirements:
@@ -501,7 +502,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// Effects:
     /// - Sets the validator's vote via `claimsHelper`.
     /// - If quorum is reached, updates token balances, confirms the refund transaction, and adjusts timeout blocks.
-    function _submitClaimsRRC(RefundRequestClaim calldata _claim, address _caller) internal {
+    function _submitClaimsRRC(RefundRequestClaim calldata _claim, uint256 i, address _caller) internal {
         // temporary check until automatic refund is implemented
         // once automatic refund is implemented, this check should be that
         // either originTransactionHash or refundTransactionHash should be empty
@@ -523,13 +524,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
             uint256 _chainTokenQuantityOrigin = chainTokenQuantity[originChainId];
             if (_chainTokenQuantityOrigin < _claim.originAmount) {
-                emit NotEnoughFunds("RRC - Currency", 0, _chainTokenQuantityOrigin);
+                emit NotEnoughFunds("RRC - Currency", i, _chainTokenQuantityOrigin);
                 // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
                 return;
             }
 
             if (chainWrappedTokenQuantity[originChainId] < _claim.originWrappedAmount) {
-                emit NotEnoughFunds("RRC - Native Token", 0, chainWrappedTokenQuantity[originChainId]);
+                emit NotEnoughFunds("RRC - Native Token", i, chainWrappedTokenQuantity[originChainId]);
                 // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
                 return;
             }
@@ -939,7 +940,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.2.0";
+        return "1.2.1";
     }
 
     modifier onlyBridge() {
