@@ -827,13 +827,14 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             _batchId
         );
 
-        uint64 _firstTxNonce = _confirmedSignedBatch.firstTxNonceId;
-        uint64 _lastTxNonce = _confirmedSignedBatch.lastTxNonceId;
         uint8 _status = _confirmedSignedBatch.status;
         // if the batch is a consolidation or does not exist, return empty array
         if (_status == ConstantsLib.NOT_EXISTS || _confirmedSignedBatch.batchType == BatchTypesLib.CONSOLIDATION) {
             return (_status, new TxDataInfo[](0));
         }
+
+        uint64 _firstTxNonce = _confirmedSignedBatch.firstTxNonceId;
+        uint64 _lastTxNonce = _confirmedSignedBatch.lastTxNonceId;
 
         TxDataInfo[] memory _txHashes = new TxDataInfo[](_lastTxNonce - _firstTxNonce + 1);
         for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {

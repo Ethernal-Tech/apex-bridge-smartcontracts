@@ -56,7 +56,7 @@ describe("Batch creation", function () {
 
   it("SignedBatch submition in SignedBatches SC should be reverted if not called by Bridge SC", async function () {
     await expect(
-      signedBatches.connect(owner).submitSignedBatch(signedBatch, owner.address)
+      signedBatches.connect(owner).submitSignedBatch(signedBatch, owner.address, false)
     ).to.be.revertedWithCustomError(bridge, "NotBridge");
   });
 
@@ -69,7 +69,7 @@ describe("Batch creation", function () {
         signedBatch.lastTxNonceId,
         signedBatch.destinationChainId,
         signedBatch.rawTransaction,
-        BatchType.NORMAL,
+        signedBatch.batchType,
       ]
     );
 
@@ -77,30 +77,28 @@ describe("Batch creation", function () {
 
     const bridgeContract = await impersonateAsContractAndMintFunds(await bridge.getAddress());
 
-    await signedBatches.connect(bridgeContract).submitSignedBatch(signedBatch, validators[0].address);
+    await signedBatches.connect(bridgeContract).submitSignedBatch(signedBatch, validators[0].address, false);
 
     expect(await signedBatches.hasVoted(hash, validators[0].address)).to.equal(true);
 
-    const oldId = signedBatch.id;
-    signedBatch.id = 1000; //invalid id
+    const temp_signedBatch = structuredClone(signedBatch);
+    temp_signedBatch.id = 1000;
 
     const encodedFalse = ethers.solidityPacked(
       ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
       [
-        signedBatch.id,
-        signedBatch.firstTxNonceId,
-        signedBatch.lastTxNonceId,
-        signedBatch.destinationChainId,
-        signedBatch.rawTransaction,
-        false,
+        temp_signedBatch.id,
+        temp_signedBatch.firstTxNonceId,
+        temp_signedBatch.lastTxNonceId,
+        temp_signedBatch.destinationChainId,
+        temp_signedBatch.rawTransaction,
+        temp_signedBatch.batchType,
       ]
     );
 
     const hashFalse = ethers.keccak256(encodedFalse);
 
-    await signedBatches.connect(bridgeContract).submitSignedBatch(signedBatch, validators[0].address);
-
-    signedBatch.id = oldId;
+    await signedBatches.connect(bridgeContract).submitSignedBatch(temp_signedBatch, validators[0].address, false);
 
     expect(await signedBatches.hasVoted(hashFalse, validators[0].address)).to.equal(false);
   });

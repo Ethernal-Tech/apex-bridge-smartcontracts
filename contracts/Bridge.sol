@@ -126,19 +126,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             return;
         }
 
-        if (
-            !validators.areSignaturesValid(
-                _signedBatch.destinationChainId,
-                _signedBatch.rawTransaction,
-                _signedBatch.signature,
-                _signedBatch.feeSignature,
-                _signedBatch.stakeSignature,
-                msg.sender
-            )
-        ) {
-            revert InvalidSignature();
-        }
-        signedBatches.submitSignedBatch(_signedBatch, msg.sender);
+        signedBatches.submitSignedBatch(_signedBatch, msg.sender, false);
     }
 
     /// @notice Submit a signed transaction batch for an EVM-compatible chain.
@@ -148,17 +136,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             return;
         }
 
-        if (
-            !validators.isBlsSignatureValidByValidatorAddress(
-                _signedBatch.destinationChainId,
-                keccak256(_signedBatch.rawTransaction),
-                _signedBatch.signature,
-                msg.sender
-            )
-        ) {
-            revert InvalidSignature();
-        }
-        signedBatches.submitSignedBatch(_signedBatch, msg.sender);
+        signedBatches.submitSignedBatch(_signedBatch, msg.sender, true);
     }
 
     /// @notice Submit the last observed Cardano blocks from validators for synchronization purposes.
