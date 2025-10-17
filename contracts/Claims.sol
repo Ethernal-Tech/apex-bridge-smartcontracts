@@ -133,44 +133,22 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         adminContractAddress = _adminContractAddress;
     }
 
-    /// @notice Sets the BridgingAddresses and ChainTokens contracts dependency and syncs it with the registered chains..
+    /// @notice Sets the external contracts dependencies and syncs it with the registered chains.
     /// @dev This function can only be called by the upgrade admin.
     ///      It verifies that the provided address is a contract before using it.
-    /// @param _bridgingAddresses The address of the BridgingAddresses contract to set.
-    /// @param _chainTokens The address of the ChainTokens contract to set.
+    /// @param _bridgingAddresses The address of the deployed BridgingAddresses contract.
+    /// @param _chainTokens The address of the deployed ChainTokens contract to set and sync.
+    /// @param isInitialDeployment Indicates whether this call occurs during the initial deployment of the contract. Set to false for upgrades.
     function setAdditionalDependenciesAndSync(
         address _bridgingAddresses,
-        address _chainTokens
+        address _chainTokens,
+        bool isInitialDeployment
     ) external onlyUpgradeAdmin {
-        if (!_isContract(_bridgingAddresses)) revert NotContractAddress();
-
-        _setChainTokensDependencyAndSync(_chainTokens);
-
-        bridgingAddresses = BridgingAddresses(_bridgingAddresses);
-        Chain[] memory registeredChains = IBridge(bridgeAddress).getAllRegisteredChains();
-
-        // Sync isAddrDelegatedToStake mapping to BridgingAddresses contract
-        for (uint8 i; i < registeredChains.length; i++) {
-            uint8 bridgeAddrCount = bridgingAddresses.bridgingAddressesCount(registeredChains[i].id);
-            for (uint8 bridgeAddrIndex = 0; bridgeAddrIndex < bridgeAddrCount; bridgeAddrIndex++) {
-                bridgingAddresses.updateBridgingAddressState(
-                    registeredChains[i].id,
-                    bridgeAddrIndex,
-                    __isAddrDelegatedToStake[registeredChains[i].id][bridgeAddrIndex]
-                );
-            }
+        if (isInitialDeployment) {
+            if (!_isContract(_bridgingAddresses)) revert NotContractAddress();
+            bridgingAddresses = BridgingAddresses(_bridgingAddresses);
         }
-    }
 
-    /// @notice Sets the ChainTokens contract dependency and syncs it with the registered chains.
-    /// @dev This function can only be called by the upgrade admin.
-    ///      It verifies that the provided address is a contract before using it.
-    /// @param _chainTokens The address of the ChainTokens contract to set.
-    function setChainTokensDependencyAndSync(address _chainTokens) external onlyUpgradeAdmin {
-        _setChainTokensDependencyAndSync(_chainTokens);
-    }
-
-    function _setChainTokensDependencyAndSync(address _chainTokens) internal {
         if (!_isContract(_chainTokens)) revert NotContractAddress();
         chainTokens = ChainTokens(_chainTokens);
         Chain[] memory registeredChains = IBridge(bridgeAddress).getAllRegisteredChains();

@@ -5,7 +5,7 @@ import { deployBridgeFixture } from "./fixtures";
 describe("Bridging Addresses", function () {
   it("Should revert if init bridging addresses is not sent by upgrade admin", async function () {
     await expect(
-      bridge.connect(validators[0]).setAdditionalDependenciesAndSync(bridgingAddresses.target, chainTokens.target)
+      bridge.connect(validators[0]).setAdditionalDependenciesAndSync(bridgingAddresses.target, chainTokens.target, true)
     ).to.be.revertedWithCustomError(bridge, "NotOwner");
   });
 
@@ -86,15 +86,6 @@ describe("Bridging Addresses", function () {
       );
 
     expect(await bridgingAddresses.connect(validators[0]).bridgingAddressesCount(chain1.id)).to.equal(1);
-  });
-
-  it("Should revert when bridging address count is initialized twice", async function () {
-    await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-    expect(await bridgingAddresses.connect(owner).bridgingAddressesCount(chain1.id)).to.equal(1);
-
-    await expect(
-      bridge.connect(owner).setAdditionalDependenciesAndSync(bridgingAddresses.target, chainTokens.target)
-    ).to.be.revertedWithCustomError(bridge, "BridgingAddrCountAlreadyInit");
   });
 
   it("Should update bridging address count", async function () {

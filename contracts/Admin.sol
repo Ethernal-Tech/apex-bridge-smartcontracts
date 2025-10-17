@@ -52,15 +52,21 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         claims = Claims(_claimsAddress);
     }
 
-    /// @notice Sets the external BridgingAddresses contract dependency.
+    /// @notice Sets the external contract dependencies.
     /// @dev This function can only be called by the upgrade admin. It verifies that the provided address is a contract.
     /// @param _bridgingAddresses The address of the deployed BridgingAddresses contract.
-    function setBridgingAddrsDependency(address _bridgingAddresses) external onlyUpgradeAdmin {
-        if (!_isContract(_bridgingAddresses)) revert NotContractAddress();
-        bridgingAddresses = BridgingAddresses(_bridgingAddresses);
-    }
+    /// @param _chainTokens The address of the deployed ChainTokens contract.
+    /// @param isInitialDeployment Indicates whether this call occurs during the initial deployment of the contract. Set to false for upgrades.
+    function setAdditionalDependenciesAndSync(
+        address _bridgingAddresses,
+        address _chainTokens,
+        bool isInitialDeployment
+    ) external onlyUpgradeAdmin {
+        if (isInitialDeployment) {
+            if (!_isContract(_bridgingAddresses)) revert NotContractAddress();
+            bridgingAddresses = BridgingAddresses(_bridgingAddresses);
+        }
 
-    function setChainTokensDependency(address _chainTokens) external onlyUpgradeAdmin {
         if (!_isContract(_chainTokens)) revert NotContractAddress();
         chainTokens = ChainTokens(_chainTokens);
     }
