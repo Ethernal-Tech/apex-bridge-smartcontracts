@@ -36,10 +36,12 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @dev max possible number of validators is 127
     uint8 public validatorsCount;
 
+    address private registrationAddress;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[50] private __gap;
+    uint256[49] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -76,6 +78,11 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     function setDependencies(address _bridgeAddress) external onlyOwner {
         if (!_isContract(_bridgeAddress)) revert NotContractAddress();
         bridgeAddress = _bridgeAddress;
+    }
+
+    function setAdditionalDependenciesAndSync(address _registrationAddress) external onlyUpgradeAdmin {
+        if (!_isContract(_registrationAddress)) revert NotContractAddress();
+        registrationAddress = _registrationAddress;
     }
 
     function isValidator(address _addr) public view returns (bool) {
@@ -185,7 +192,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     function setValidatorsChainData(
         uint8 _chainId,
         ValidatorAddressChainData[] calldata _chainDatas
-    ) external onlyBridge {
+    ) external onlyRegistration {
         uint8 validatorsCnt = validatorsCount;
         if (validatorsCnt != _chainDatas.length) {
             revert InvalidData("Validators count");
@@ -220,7 +227,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         uint8 _chainId,
         address _addr,
         ValidatorChainData calldata _data
-    ) external onlyBridge {
+    ) external onlyRegistration {
         if (chainData[_chainId].length == 0) {
             // recreate array with n elements
             for (uint i; i < validatorsCount; i++) {
@@ -247,16 +254,16 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.1.1";
+        return "1.1.2";
     }
 
-    modifier onlyBridge() {
-        if (msg.sender != bridgeAddress) revert NotBridge();
+    modifier onlyRegistration() {
+        if (msg.sender != registrationAddress) revert NotRegistration();
         _;
     }
 
     modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
+        if (msg.sender != upgradeAdmin) revert NotUpgradeAdmin();
         _;
     }
 }

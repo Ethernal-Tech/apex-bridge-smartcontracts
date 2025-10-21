@@ -30,7 +30,7 @@ describe("Colored Coins", function () {
     it("Should revert if registerColoredCoin in claims is not called by Bridge SC", async function () {
       await expect(chainTokens.connect(owner).registerColoredCoin(coloredCoin)).to.be.revertedWithCustomError(
         claims,
-        "NotBridge"
+        "NotRegistration"
       );
     });
 

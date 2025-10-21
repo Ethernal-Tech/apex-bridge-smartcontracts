@@ -35,11 +35,12 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
+      const validatorIndex = Number(await validatorsc.getValidatorIndex(validators[4])) - 1;
+      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
 
       await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
 
-      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
     });
 
     it("Should skip if same validator submits the same Bridging Request Claim twice", async function () {
@@ -65,7 +66,9 @@ describe("Claims Contract", function () {
         .to.emit(chainTokens, "NotEnoughFunds")
         .withArgs("BRC - Currency", 0, 100);
 
-      expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
+      const validatorIndex = Number(await validatorsc.getValidatorIndex(validators[0])) - 1;
+
+      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
     });
 
     it("Should skip Bridging Request Claim if there is not enough wrapped tokens and emit NotEnoughFunds event", async function () {
@@ -79,7 +82,9 @@ describe("Claims Contract", function () {
         .to.emit(chainTokens, "NotEnoughFunds")
         .withArgs("BRC - Native Token", 0, 100);
 
-      expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
+      const validatorIndex = Number(await validatorsc.getValidatorIndex(validators[0])) - 1;
+
+      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
     });
 
     it("Should revert Bridging Request Claims if there are more than 32 in the array", async function () {
@@ -88,7 +93,9 @@ describe("Claims Contract", function () {
       for (let i = 0; i < validatorClaimsBRC_bunch32.bridgingRequestClaims.length; i++) {
         const hash = hashBridgeRequestClaim(validatorClaimsBRC_bunch32.bridgingRequestClaims[i]);
 
-        expect(await claims.hasVoted(hash, validators[0].address)).to.be.true;
+        const validatorIndex = Number(await validatorsc.getValidatorIndex(validators[0])) - 1;
+
+        expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.true;
         expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
       }
 
@@ -147,11 +154,13 @@ describe("Claims Contract", function () {
 
       const hash = hashBatchExecutedClaim(validatorClaimsBEC.batchExecutedClaims[0]);
 
-      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
+      const validatorIndex = Number(await validatorsc.getValidatorIndex(validators[4])) - 1;
+
+      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
 
       await bridge.connect(validators[4]).submitClaims(validatorClaimsBEC);
 
-      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
     });
 
     it("Should skip if same validator submits the same Batch Executed Claim twice", async function () {
@@ -352,11 +361,13 @@ describe("Claims Contract", function () {
 
       const hash = hashBatchExecutionFailedClaim(validatorClaimsBEFC.batchExecutionFailedClaims[0]);
 
-      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
+      const validatorIndex = Number(await validatorsc.getValidatorIndex(validators[4])) - 1;
 
+      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
+      1;
       await bridge.connect(validators[4]).submitClaims(validatorClaimsBEFC);
 
-      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
     });
 
     it("Should skip if same validator submits the same Batch Execution Failed Claim twice", async function () {
@@ -532,11 +543,13 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
 
-      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
+      const validatorIndex = Number(await validatorsc.getValidatorIndex(validators[4])) - 1;
+
+      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
 
       await bridge.connect(validators[4]).submitClaims(validatorClaimsRRC);
 
-      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
     });
 
     it("Should skip if same validator submits the same Refund Request Claims twice", async function () {
@@ -596,7 +609,9 @@ describe("Claims Contract", function () {
         .to.emit(chainTokens, "NotEnoughFunds")
         .withArgs("RRC - Currency", 0, tokensAvailable);
 
-      expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
+      const validatorIndex = Number(await validatorsc.getValidatorIndex(validators[0])) - 1;
+
+      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
     });
 
     it("Should skip Refund Request Claim if there is not enough bridging wrapped tokens and emit NotEnoughFunds event", async function () {
@@ -613,7 +628,9 @@ describe("Claims Contract", function () {
         .to.emit(chainTokens, "NotEnoughFunds")
         .withArgs("RRC - Native Token", 0, tokensAvailable);
 
-      expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
+      const validatorIndex = Number(await validatorsc.getValidatorIndex(validators[0])) - 1;
+
+      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
     });
 
     it("Should revert if refundTransactionHash is not empty in Refund Request Claims", async function () {
@@ -636,17 +653,13 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsHWIC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsHWIC);
 
-      expect(
-        await claims.hasVoted(
-          // "0x4ec43138854a8260f51de42ae197fcd87f5d22a6ea8499e1c0b261e1e4ffa575",
-          hash,
-          validators[4].address
-        )
-      ).to.be.false;
+      const validatorIndex = Number(await validatorsc.getValidatorIndex(validators[4])) - 1;
+
+      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
 
       await bridge.connect(validators[4]).submitClaims(validatorClaimsHWIC);
 
-      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
+      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
     });
 
     it("Should skip if same validator submits the same Hot Wallet Increment Claim twice", async function () {
@@ -695,20 +708,20 @@ describe("Claims Contract", function () {
     it("Should revert if Claims SC setChainRegistered is not called by Bridge SC", async function () {
       await expect(claims.connect(owner).setChainRegistered(1, 100, 100)).to.be.revertedWithCustomError(
         bridge,
-        "NotBridge"
+        "NotRegistration"
       );
     });
 
     it("Claims SC setVotedOnlyIfNeededReturnQuorumReached should revert if not called by Bridge SC", async function () {
       await expect(
-        claims
+        claimsHelper
           .connect(owner)
           .setVotedOnlyIfNeededReturnQuorumReached(
             1,
             "0x7465737400000000000000000000000000000000000000000000000000000000",
             1
           )
-      ).to.be.revertedWithCustomError(bridge, "NotBridge");
+      ).to.be.revertedWithCustomError(bridge, "NotClaimsProcessorOrRegistration");
     });
 
     it("Should revert claim submition in Claims SC if not called by bridge SC", async function () {
@@ -780,6 +793,7 @@ describe("Claims Contract", function () {
   let claimsHelper: any;
   let claims: any;
   let chainTokens: any;
+  let validatorsc: any;
   let owner: any;
   let chain1: any;
   let chain2: any;
@@ -803,6 +817,7 @@ describe("Claims Contract", function () {
     claimsHelper = fixture.claimsHelper;
     claims = fixture.claims;
     chainTokens = fixture.chainTokens;
+    validatorsc = fixture.validatorsc;
     owner = fixture.owner;
     chain1 = fixture.chain1;
     chain2 = fixture.chain2;

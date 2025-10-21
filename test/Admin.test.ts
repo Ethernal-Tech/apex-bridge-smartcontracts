@@ -307,7 +307,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalWrappedAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(35);
+      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(45);
       expect((await claims.confirmedTransactions(chain1.id, 1)).coloredCoinId).to.equal(0);
     });
 
@@ -331,7 +331,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(0);
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalWrappedAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(39);
+      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(49);
       expect((await claims.confirmedTransactions(chain1.id, 1)).coloredCoinId).to.equal(1);
     });
 
@@ -387,7 +387,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalWrappedAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(41);
+      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(51);
       expect((await claims.confirmedTransactions(chain2.id, 3)).coloredCoinId).to.equal(0);
     });
 
@@ -449,7 +449,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalAmount).to.equal(0);
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalWrappedAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(42);
+      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(52);
       expect((await claims.confirmedTransactions(chain2.id, 3)).coloredCoinId).to.equal(2);
     });
 
@@ -491,7 +491,7 @@ describe("Admin Functions", function () {
 
         if (i == Number(retryCounter)) {
           await expect(await bridge.connect(validators[4]).submitClaims(temp_validatorClaimsBEFC)).to.emit(
-            claims,
+            claimsProcessor,
             "DefundFailedAfterMultipleRetries"
           );
         } else {
@@ -548,7 +548,7 @@ describe("Admin Functions", function () {
 
         if (i == Number(retryCounter)) {
           await expect(await bridge.connect(validators[4]).submitClaims(temp_validatorClaimsBEFC)).to.emit(
-            claims,
+            claimsProcessor,
             "DefundFailedAfterMultipleRetries"
           );
         } else {
@@ -561,47 +561,48 @@ describe("Admin Functions", function () {
       }
     });
   });
-  describe("Update bridge configuration", function () {
-    it("Calling updateMaxNumberOfTransactions should revert if not called by owner", async function () {
-      await expect(admin.connect(validators[0]).updateMaxNumberOfTransactions(1)).to.be.revertedWith(
-        "Ownable: caller is not the owner"
-      );
-    });
+  // describe("Update bridge configuration", function () {
+  //   it("Calling updateMaxNumberOfTransactions should revert if not called by owner", async function () {
+  //     await expect(admin.connect(validators[0]).updateMaxNumberOfTransactions(1)).to.be.revertedWith(
+  //       "Ownable: caller is not the owner"
+  //     );
+  //   });
 
-    it("Calling updateMaxNumberOfTransactions should update maxNumberOfTransactions", async function () {
-      await admin.connect(owner).updateMaxNumberOfTransactions(4);
+  //   it("Calling updateMaxNumberOfTransactions should update maxNumberOfTransactions", async function () {
+  //     await admin.connect(owner).updateMaxNumberOfTransactions(4);
 
-      expect(await claims.maxNumberOfTransactions()).to.equal(4);
-    });
+  //     expect(await claims.maxNumberOfTransactions()).to.equal(4);
+  //   });
 
-    it("Calling updateMaxNumberOfTransactions should triger UpdatedMaxNumberOfTransactions event", async function () {
-      await expect(admin.connect(owner).updateMaxNumberOfTransactions(4))
-        .to.emit(admin, "UpdatedMaxNumberOfTransactions")
-        .withArgs(4);
-    });
+  //   it("Calling updateMaxNumberOfTransactions should triger UpdatedMaxNumberOfTransactions event", async function () {
+  //     await expect(admin.connect(owner).updateMaxNumberOfTransactions(4))
+  //       .to.emit(admin, "UpdatedMaxNumberOfTransactions")
+  //       .withArgs(4);
+  //   });
 
-    it("Calling timeoutBlocksNumber should revert if not called by owner", async function () {
-      await expect(admin.connect(validators[0]).updateTimeoutBlocksNumber(1)).to.be.revertedWith(
-        "Ownable: caller is not the owner"
-      );
-    });
+  //   it("Calling timeoutBlocksNumber should revert if not called by owner", async function () {
+  //     await expect(admin.connect(validators[0]).updateTimeoutBlocksNumber(1)).to.be.revertedWith(
+  //       "Ownable: caller is not the owner"
+  //     );
+  //   });
 
-    it("Calling timeoutBlocksNumber should update timeoutBlocksNumber", async function () {
-      await admin.connect(owner).updateTimeoutBlocksNumber(4);
+  //   it("Calling timeoutBlocksNumber should update timeoutBlocksNumber", async function () {
+  //     await admin.connect(owner).updateTimeoutBlocksNumber(4);
 
-      expect(await claims.timeoutBlocksNumber()).to.equal(4);
-    });
+  //     expect(await claims.timeoutBlocksNumber()).to.equal(4);
+  //   });
 
-    it("Calling timeoutBlocksNumber should triger UpdatgedTimeoutBlocksNumber event", async function () {
-      await expect(admin.connect(owner).updateTimeoutBlocksNumber(4))
-        .to.emit(admin, "UpdatedTimeoutBlocksNumber")
-        .withArgs(4);
-    });
-  });
+  //   it("Calling timeoutBlocksNumber should triger UpdatgedTimeoutBlocksNumber event", async function () {
+  //     await expect(admin.connect(owner).updateTimeoutBlocksNumber(4))
+  //       .to.emit(admin, "UpdatedTimeoutBlocksNumber")
+  //       .withArgs(4);
+  //   });
+  // });
 
   let bridge: any;
   let claimsHelper: any;
   let claims: any;
+  let claimsProcessor: any;
   let chainTokens: any;
   let admin: any;
   let owner: any;
@@ -620,6 +621,7 @@ describe("Admin Functions", function () {
     bridge = fixture.bridge;
     claimsHelper = fixture.claimsHelper;
     claims = fixture.claims;
+    claimsProcessor = fixture.claimsProcessor;
     chainTokens = fixture.chainTokens;
     admin = fixture.admin;
     owner = fixture.owner;

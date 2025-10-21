@@ -118,7 +118,9 @@ describe("Batch creation", function () {
 
     await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
 
-    expect(await claims.hasVoted(hash, validators[0].address)).to.equal(false);
+    const validatorIndex = Number(await validatorsc.getValidatorIndex(validators[0])) - 1;
+
+    expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.equal(false);
   });
 
   it("getNextBatchId should return 0 if there are no confirmed claims", async function () {
@@ -433,6 +435,7 @@ describe("Batch creation", function () {
   let claims: any;
   let chainTokens: any;
   let signedBatches: any;
+  let validatorsc: any;
   let owner: any;
   let chain1: any;
   let chain2: any;
@@ -451,6 +454,7 @@ describe("Batch creation", function () {
     claims = fixture.claims;
     chainTokens = fixture.chainTokens;
     signedBatches = fixture.signedBatches;
+    validatorsc = fixture.validatorsc;
     owner = fixture.owner;
     chain1 = fixture.chain1;
     chain2 = fixture.chain2;

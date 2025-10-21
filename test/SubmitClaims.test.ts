@@ -109,29 +109,31 @@ describe("Submit Claims", function () {
 
     it("Should set voted on Bridging Request Claim", async function () {
       const hash = hashBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
+      let validatorIndex;
 
-      expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
-      expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
-      expect(await claims.hasVoted(hash, validators[2].address)).to.be.false;
-      expect(await claims.hasVoted(hash, validators[3].address)).to.be.false;
-      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
+      for (let i = 0; i < 5; i++) {
+        validatorIndex = Number(await validatorsc.getValidatorIndex(validators[i])) - 1;
+        expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
+      }
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-      expect(await claims.hasVoted(hash, validators[0].address)).to.be.true;
-      expect(await claims.hasVoted(hash, validators[1].address)).to.be.true;
-      expect(await claims.hasVoted(hash, validators[2].address)).to.be.true;
-      expect(await claims.hasVoted(hash, validators[3].address)).to.be.true;
-      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
+      for (let i = 0; i < 4; i++) {
+        validatorIndex = Number(await validatorsc.getValidatorIndex(validators[i])) - 1;
+        expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.true;
+      }
+
+      validatorIndex = Number(await validatorsc.getValidatorIndex(validators[4])) - 1;
+      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
     });
 
     it("Should update next timeout block when Bridging Request Claim is confirmed and requirements are met", async function () {
       const timeoutBlocksNumber = await claims.timeoutBlocksNumber();
       let currentBlock = await ethers.provider.getBlockNumber();
-      expect(currentBlock).to.equal(32);
+      expect(currentBlock).to.equal(42);
 
       // wait for next timeout
       for (let i = 0; i < 8; i++) {
@@ -140,7 +142,7 @@ describe("Submit Claims", function () {
 
       const currentBlock1 = await ethers.provider.getBlockNumber();
 
-      expect(currentBlock1).to.equal(40);
+      expect(currentBlock1).to.equal(50);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -153,7 +155,7 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       currentBlock = await ethers.provider.getBlockNumber();
-      expect(currentBlock).to.equal(44);
+      expect(currentBlock).to.equal(54);
 
       expect(await claims.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
         currentBlock + Number(timeoutBlocksNumber)
@@ -480,6 +482,8 @@ describe("Submit Claims", function () {
         await ethers.provider.send("evm_mine");
       }
 
+      const tx = await claims.connect(validators[0]).getBatchingTxsCount(_destinationChain);
+
       const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(_destinationChain);
       expect(confirmedTxs.length).to.equal(1);
 
@@ -492,22 +496,25 @@ describe("Submit Claims", function () {
 
       const hash = hashBatchExecutedClaim(validatorClaimsBEC.batchExecutedClaims[0]);
 
-      expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
-      expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
-      expect(await claims.hasVoted(hash, validators[2].address)).to.be.false;
-      expect(await claims.hasVoted(hash, validators[3].address)).to.be.false;
-      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
+      let validatorIndex;
+      for (let i = 0; i < 5; i++) {
+        validatorIndex = Number(await validatorsc.getValidatorIndex(validators[i])) - 1;
+        expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
+      }
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
-      expect(await claims.hasVoted(hash, validators[0].address)).to.be.true;
-      expect(await claims.hasVoted(hash, validators[1].address)).to.be.true;
-      expect(await claims.hasVoted(hash, validators[2].address)).to.be.true;
-      expect(await claims.hasVoted(hash, validators[3].address)).to.be.true;
-      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
+      validatorIndex;
+      for (let i = 0; i < 4; i++) {
+        validatorIndex = Number(await validatorsc.getValidatorIndex(validators[i])) - 1;
+        expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.true;
+      }
+
+      validatorIndex = Number(await validatorsc.getValidatorIndex(validators[4])) - 1;
+      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
     });
 
     it("Should set status executed for confirmed signed batch after reaching quorum on Bridging Executed Claim", async function () {
@@ -686,9 +693,6 @@ describe("Submit Claims", function () {
       const lastBatchedTxNonce = await claims.lastBatchedTxNonce(_destinationChain);
       const nextBatchBlock = await claims.nextTimeoutBlock(_destinationChain);
       const currentBlock = await ethers.provider.getBlockNumber();
-      console.log("EVO GA");
-      console.log("currentBlock", currentBlock);
-      console.log("nextBatchBlock", nextBatchBlock);
 
       expect(nextBatchBlock).to.greaterThan(currentBlock + 6);
       expect(lastConfirmedTxNonce - lastBatchedTxNonce).to.be.lessThanOrEqual(1);
@@ -750,22 +754,24 @@ describe("Submit Claims", function () {
 
       const hash = hashBatchExecutionFailedClaim(validatorClaimsBEFC.batchExecutionFailedClaims[0]);
 
-      expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
-      expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
-      expect(await claims.hasVoted(hash, validators[2].address)).to.be.false;
-      expect(await claims.hasVoted(hash, validators[3].address)).to.be.false;
-      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
+      let validatorIndex;
+      for (let i = 0; i < 5; i++) {
+        validatorIndex = Number(await validatorsc.getValidatorIndex(validators[i])) - 1;
+        expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
+      }
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
 
-      expect(await claims.hasVoted(hash, validators[0].address)).to.be.true;
-      expect(await claims.hasVoted(hash, validators[1].address)).to.be.true;
-      expect(await claims.hasVoted(hash, validators[2].address)).to.be.true;
-      expect(await claims.hasVoted(hash, validators[3].address)).to.be.true;
-      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
+      for (let i = 0; i < 4; i++) {
+        validatorIndex = Number(await validatorsc.getValidatorIndex(validators[i])) - 1;
+        expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.true;
+      }
+
+      validatorIndex = Number(await validatorsc.getValidatorIndex(validators[4])) - 1;
+      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
     });
 
     it("Should reset currentBatchBlock when Bridging Executed Failed Claim is confirmed", async function () {
@@ -963,7 +969,7 @@ describe("Submit Claims", function () {
         await chainTokens.chainWrappedTokenQuantity(temp_validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)
       ).to.be.equal(
         chain2WrappedTokenQuantityStart -
-        BigInt(temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource)
+          BigInt(temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource)
       );
 
       // wait for next timeout
@@ -1049,21 +1055,25 @@ describe("Submit Claims", function () {
     it("Should set voted on Refund Request Claim", async function () {
       const hash = hashRefundRequestClaim(validatorClaimsRRC.refundRequestClaims[0]);
 
-      expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
-      expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
-      expect(await claims.hasVoted(hash, validators[2].address)).to.be.false;
-      expect(await claims.hasVoted(hash, validators[3].address)).to.be.false;
-      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
+      let validatorIndex;
+      for (let i = 0; i < 5; i++) {
+        validatorIndex = Number(await validatorsc.getValidatorIndex(validators[i])) - 1;
+        expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
+      }
+
       await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[4]).submitClaims(validatorClaimsRRC);
-      expect(await claims.hasVoted(hash, validators[0].address)).to.be.true;
-      expect(await claims.hasVoted(hash, validators[1].address)).to.be.true;
-      expect(await claims.hasVoted(hash, validators[2].address)).to.be.true;
-      expect(await claims.hasVoted(hash, validators[3].address)).to.be.true;
-      expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
+
+      for (let i = 0; i < 4; i++) {
+        validatorIndex = Number(await validatorsc.getValidatorIndex(validators[i])) - 1;
+        expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.true;
+      }
+
+      validatorIndex = Number(await validatorsc.getValidatorIndex(validators[4])) - 1;
+      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
     });
 
     it("Should store new confirmedTransactions when Refund Request Claim is confirmed", async function () {
@@ -1284,21 +1294,21 @@ describe("Submit Claims", function () {
         await chainTokens.chainWrappedTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)
       ).to.equal(
         hotWalletWrappedStateOriginalSource +
-        BigInt(validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountSource)
+          BigInt(validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountSource)
       );
 
       expect(
         await chainTokens.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)
       ).to.equal(
         hotWalletStateOriginalDestination -
-        BigInt(validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination)
+          BigInt(validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination)
       );
 
       expect(
         await chainTokens.chainWrappedTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)
       ).to.equal(
         hotWalletWrappedStateOriginalDestination -
-        BigInt(validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountDestination)
+          BigInt(validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountDestination)
       );
 
       for (let i = 0; i < 5; i++) {
@@ -1323,7 +1333,7 @@ describe("Submit Claims", function () {
         await chainTokens.chainWrappedTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)
       ).to.equal(
         hotWalletWrappedStateOriginalSource +
-        BigInt(validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountSource)
+          BigInt(validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountSource)
       );
 
       expect(
@@ -1386,21 +1396,21 @@ describe("Submit Claims", function () {
         await chainTokens.chainWrappedTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)
       ).to.equal(
         hotWalletWrappedStateOriginalSource +
-        BigInt(validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountSource)
+          BigInt(validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountSource)
       );
 
       expect(
         await chainTokens.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)
       ).to.equal(
         hotWalletStateOriginalDestination -
-        BigInt(validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination)
+          BigInt(validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination)
       );
 
       expect(
         await chainTokens.chainWrappedTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)
       ).to.equal(
         hotWalletWrappedStateOriginalDestination -
-        BigInt(validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountDestination)
+          BigInt(validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountDestination)
       );
 
       // --- END BRC ---
@@ -1429,7 +1439,7 @@ describe("Submit Claims", function () {
         await chainTokens.chainWrappedTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)
       ).to.equal(
         hotWalletWrappedStateOriginalSource +
-        BigInt(validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountSource)
+          BigInt(validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountSource)
       );
 
       expect(
@@ -1677,8 +1687,8 @@ describe("Submit Claims", function () {
       expect(await claims.lastBatchedTxNonce(chain1.id)).to.equal(1);
       expect(await claims.getBatchingTxsCount(chain1.id)).to.equal(1);
 
-      // wait for next timeout (current timeout is 5 blocks)
-      for (let i = 0; i < 10; i++) {
+      // wait for next timeout (current timeout is 10 blocks)
+      for (let i = 0; i < 30; i++) {
         await ethers.provider.send("evm_mine");
       }
 
@@ -1714,17 +1724,13 @@ describe("Submit Claims", function () {
         const lastConfirmedTxNonce = await claims.lastConfirmedTxNonce(chain1.id);
         signedBatchStakeDelOrRedistr.firstTxNonceId = lastConfirmedTxNonce;
         signedBatchStakeDelOrRedistr.lastTxNonceId = lastConfirmedTxNonce;
-
         const batchId = (await signedBatches.getConfirmedBatchId(chain1.id)) + 1n;
         signedBatchStakeDelOrRedistr.id = batchId;
-
         for (const v of validators.slice(0, 4)) {
           await bridge.connect(v).submitSignedBatch(signedBatchStakeDelOrRedistr);
         }
-
         validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId = chain1.id;
         validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId = batchId;
-
         for (const v of validators.slice(0, 4)) {
           await bridge.connect(v).submitClaims(validatorClaimsBEFC);
         }
@@ -1777,7 +1783,7 @@ describe("Submit Claims", function () {
       }
 
       await expect(bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC)).to.emit(
-        claims,
+        claimsProcessor,
         "StakeOperationFailedAfterMultipleRetries"
       );
 
@@ -1798,8 +1804,10 @@ describe("Submit Claims", function () {
   let bridgingAddresses: any;
   let claimsHelper: any;
   let claims: any;
+  let claimsProcessor: any;
   let chainTokens: any;
   let signedBatches: any;
+  let validatorsc: any;
   let owner: any;
   let chain1: any;
   let chain2: any;
@@ -1821,8 +1829,10 @@ describe("Submit Claims", function () {
     bridgingAddresses = fixture.bridgingAddresses;
     claimsHelper = fixture.claimsHelper;
     claims = fixture.claims;
+    claimsProcessor = fixture.claimsProcessor;
     chainTokens = fixture.chainTokens;
     signedBatches = fixture.signedBatches;
+    validatorsc = fixture.validatorsc;
     owner = fixture.owner;
     chain1 = fixture.chain1;
     chain2 = fixture.chain2;

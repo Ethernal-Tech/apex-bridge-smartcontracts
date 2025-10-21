@@ -106,7 +106,7 @@ describe("Chain Registration", function () {
 
     it("Should emit new chain registered when registered by owner after chain registration through governance", async function () {
       await expect(bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData))
-        .to.emit(bridge, "newChainRegistered")
+        .to.emit(registration, "newChainRegistered")
         .withArgs(1);
     });
 
@@ -365,7 +365,7 @@ describe("Chain Registration", function () {
             "0x7465737400000000000000000000000000000000000000000000000000000000"
           )
       )
-        .to.emit(bridge, "newChainProposal")
+        .to.emit(registration, "newChainProposal")
         .withArgs(1, validators[0].address);
     });
 
@@ -559,7 +559,7 @@ describe("Chain Registration", function () {
             "0x7465737400000000000000000000000000000000000000000000000000000000"
           )
       )
-        .to.emit(bridge, "newChainRegistered")
+        .to.emit(registration, "newChainRegistered")
         .withArgs(1);
     });
 
@@ -700,9 +700,9 @@ describe("Chain Registration", function () {
     });
 
     it("Should not update Validators Cardano Data until length of the list with the new data doesn't match the number of validators", async function () {
-      const bridgeAddress = await bridge.getAddress();
+      const registrationAddress = await registration.getAddress();
 
-      const signer = await impersonateAsContractAndMintFunds(bridgeAddress);
+      const signer = await impersonateAsContractAndMintFunds(registrationAddress);
 
       validatorAddressChainData.push({
         addr: owner.address,
@@ -727,7 +727,7 @@ describe("Chain Registration", function () {
 
       await hre.network.provider.request({
         method: "hardhat_stopImpersonatingAccount",
-        params: [bridgeAddress],
+        params: [registrationAddress],
       });
     });
   });
@@ -754,6 +754,7 @@ describe("Chain Registration", function () {
   let owner: any;
   let chain1: any;
   let chain2: any;
+  let registration: any;
   let validatorsc: any;
   let validatorAddressChainData: any;
   let validators: any;
@@ -769,6 +770,7 @@ describe("Chain Registration", function () {
     owner = fixture.owner;
     chain1 = fixture.chain1;
     chain2 = fixture.chain2;
+    registration = fixture.registration;
     validatorsc = fixture.validatorsc;
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;

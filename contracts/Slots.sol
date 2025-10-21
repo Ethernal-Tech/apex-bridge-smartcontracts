@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
+import "./Bridge.sol";
 import "./Utils.sol";
 import "./Validators.sol";
 
@@ -23,6 +24,8 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     /// @notice Mapping from (chain ID, block hash, slot) hash to bitmap contains all validator votes.
     /// @dev hash(slot, hash) -> bitmap
     mapping(bytes32 => uint256) private bitmap;
+
+    uint8 constant MAX_NUMBER_OF_BLOCKS = 40;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
@@ -66,6 +69,10 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     /// @param _blocks An array of `CardanoBlock` objects containing block metadata to process.
     /// @param _caller The address of the validator submitting the block votes.
     function updateBlocks(uint8 _chainId, CardanoBlock[] calldata _blocks, address _caller) external onlyBridge {
+        if (_blocks.length > MAX_NUMBER_OF_BLOCKS) {
+            revert TooManyBlocks(_blocks.length, MAX_NUMBER_OF_BLOCKS);
+        }
+
         // Check if the caller has already voted for this claim
         uint256 _quorumCnt = validators.getQuorumNumberOfValidators();
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
@@ -130,7 +137,7 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     }
 
     modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
+        if (msg.sender != upgradeAdmin) revert NotUpgradeAdmin();
         _;
     }
 }
