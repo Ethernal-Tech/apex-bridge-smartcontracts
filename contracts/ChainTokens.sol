@@ -86,10 +86,7 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     /// @param _claim The BridgingRequestClaim struct containing claim details such as amounts and chain IDs.
     /// @param _index The index of the claim in the batch, used for event emission.
     /// @return bool Returns true if all required balances are sufficient, otherwise false.
-    function validateBRC(
-        BridgingRequestClaim calldata _claim,
-        uint256 _index
-    ) external onlyClaimsProcessor returns (bool) {
+    function validateBRC(BridgingRequestClaim calldata _claim, uint256 _index) external returns (bool) {
         return
             _validateBalanceCheck(
                 _claim.destinationChainId,
@@ -109,10 +106,7 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     /// @param _claim The RefundRequestClaim struct containing refund details such as chain ID, token amounts, and coin ID.
     /// @param _index The index of the claim in the batch, used for event emission.
     /// @return bool Returns true if all required balances are sufficient, otherwise false.
-    function validateRRC(
-        RefundRequestClaim calldata _claim,
-        uint256 _index
-    ) external onlyClaimsProcessor returns (bool) {
+    function validateRRC(RefundRequestClaim calldata _claim, uint256 _index) external returns (bool) {
         return
             _validateBalanceCheck(
                 _claim.originChainId,
@@ -134,12 +128,7 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     /// @param _amount The amount of native tokens (or colored coin equivalent) to defund.
     /// @param _amountWrapped The amount of wrapped tokens to defund.
     /// @param _coloredCoinId The ID of the colored coin involved in the defund, if applicable.
-    function validateDefund(
-        uint8 _chainId,
-        uint256 _amount,
-        uint256 _amountWrapped,
-        uint8 _coloredCoinId
-    ) external onlyClaims {
+    function validateDefund(uint8 _chainId, uint256 _amount, uint256 _amountWrapped, uint8 _coloredCoinId) external {
         if (_coloredCoinId != 0 && coloredCoinToChain[_coloredCoinId] != _chainId) {
             revert ColoredCoinNotNotRegisteredOnChain(_coloredCoinId, _chainId);
         }
