@@ -14,9 +14,9 @@ import "./ClaimsHelper.sol";
 import "./Validators.sol";
 import "./Utils.sol";
 
-/// @title Bridge
-/// @notice Cross-chain bridge for validator claim submission, batch transaction signing, and governance-based chain registration.
-/// @dev UUPS upgradeable and modular via dependency contracts (Claims, Validators, BridgingAddresses).
+/// @title Registration
+/// @notice Registration of chains and colored tokens.
+/// @dev UUPS upgradeable and modular via dependency contracts (Bridge, BridgingAddresses, ChainTokens, Claims, ClaimsHelper, Validators).
 contract Registration is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
     Bridge private bridge;

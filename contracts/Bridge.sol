@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridge.sol";
+import "./interfaces/TransactionTypesLib.sol";
 import "./BridgingAddresses.sol";
 import "./ChainTokens.sol";
 import "./Claims.sol";
@@ -13,9 +14,8 @@ import "./ClaimsHelper.sol";
 import "./Registration.sol";
 import "./SignedBatches.sol";
 import "./Slots.sol";
-import "./Validators.sol";
 import "./Utils.sol";
-import "./interfaces/TransactionTypesLib.sol";
+import "./Validators.sol";
 
 /// @title Bridge
 /// @notice Cross-chain bridge for validator claim submission, batch transaction signing, and governance-based chain registration.

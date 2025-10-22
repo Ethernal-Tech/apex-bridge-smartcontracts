@@ -6,8 +6,8 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
 import "./Bridge.sol";
-import "./Utils.sol";
 import "./Validators.sol";
+import "./Utils.sol";
 
 /// @title Slots Contract
 /// @notice Manages observation of Cardano blocks and validator votes across multiple chains.

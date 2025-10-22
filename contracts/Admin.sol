@@ -4,9 +4,9 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "./Utils.sol";
 import "./Claims.sol";
 import "./ChainTokens.sol";
+import "./Utils.sol";
 
 /// @title Admin Contract
 /// @notice Manages configuration and privileged updates for the bridge system
@@ -140,14 +140,15 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         emit UpdatedChainColoredCoinQuantity(_chainId, _isIncrease, _chainColoredCointQuantity, _coloredCoinId);
     }
 
-    function getChainTokenQuantity(uint8 _chainId) external view returns (uint256) {
-        return chainTokens.chainTokenQuantity(_chainId);
-    }
-
-    function getChainWrappedTokenQuantity(uint8 _chainId) external view returns (uint256) {
-        return chainTokens.chainWrappedTokenQuantity(_chainId);
-    }
-
+    /// @notice Initiates a defund operation for a specific chain
+    /// @dev Calls the Claims contract to perform the defund and then emits {ChainDefunded}
+    /// @param _chainId ID of the chain to defund
+    /// @param _amount Amount of native token to defund
+    /// @param _amountWrapped Amount of wrapped token to defund
+    /// @param _coloredCoinId Identifier of the colored coin used in the defund
+    /// @param _defundAddress Destination address (as string) where funds will be sent
+    /// Requirements:
+    /// - Caller must be authorized as Fund Admin (`onlyFundAdmin`)
     function defund(
         uint8 _chainId,
         uint256 _amount,
@@ -225,6 +226,14 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         }
 
         bridgingAddresses.stakeAddressOperation(chainId, bridgeAddrIndex, stakePoolId, transactionSubType);
+    }
+
+    function getChainTokenQuantity(uint8 _chainId) external view returns (uint256) {
+        return chainTokens.chainTokenQuantity(_chainId);
+    }
+
+    function getChainWrappedTokenQuantity(uint8 _chainId) external view returns (uint256) {
+        return chainTokens.chainWrappedTokenQuantity(_chainId);
     }
 
     /// @notice Returns the current version of the contract
