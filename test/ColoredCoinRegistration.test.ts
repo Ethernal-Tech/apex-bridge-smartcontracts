@@ -60,14 +60,6 @@ describe("Colored Coins", function () {
         .withArgs(coloredCoin.chainId, coloredCoin.coloredCoinId);
     });
 
-    it("Should revert if same validator votes twice for the same coloredCoin", async function () {
-      await bridge.connect(validators[0]).registerColoredCoinGovernance(coloredCoin);
-
-      await expect(
-        bridge.connect(validators[0]).registerColoredCoinGovernance(coloredCoin)
-      ).to.be.revertedWithCustomError(claimsHelper, "AlreadyProposed");
-    });
-
     it("Should set isRegistered if registerColoredCoin is successfull", async function () {
       await bridge.connect(validators[0]).registerColoredCoinGovernance(coloredCoin);
       await bridge.connect(validators[1]).registerColoredCoinGovernance(coloredCoin);

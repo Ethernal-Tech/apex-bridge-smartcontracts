@@ -193,10 +193,6 @@ contract Registration is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
 
         bytes32 chainHash = keccak256(abi.encode(_chainId, _chainType, _tokenQuantity));
 
-        if (claimsHelper.hasVoted(chainHash, validators.getValidatorIndex(_caller) - 1)) {
-            revert AlreadyProposed(_chainId);
-        }
-
         _validateSignatures(_chainType, _caller, _keySignature, _keyFeeSignature, _validatorChainData);
 
         validators.addValidatorChainData(_chainId, _caller, _validatorChainData);
@@ -257,25 +253,13 @@ contract Registration is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @param _coloredCoin The Colored Coin metadata.
     function registerColoredCoinGovernance(ColoredCoin calldata _coloredCoin, address _caller) external onlyBridge {
         //TODO: add validatorSet version when implemented
-        bytes32 coloredCoinHash = keccak256(abi.encode("ColoredCoin", _coloredCoin));
-
-        if (claimsHelper.hasVoted(coloredCoinHash, validators.getValidatorIndex(_caller) - 1)) {
-            revert AlreadyProposed(_coloredCoin.coloredCoinId);
-        }
-
         _validateColoredCoin(_coloredCoin);
-
-        uint8 _quorumCount = validators.getQuorumNumberOfValidators();
-        // if quorum already reached -> exit
-        if (claimsHelper.numberOfVotes(coloredCoinHash) == _quorumCount) {
-            return;
-        }
 
         if (
             claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
                 validators.getValidatorIndex(_caller) - 1,
-                coloredCoinHash,
-                _quorumCount
+                keccak256(abi.encode("ColoredCoin", _coloredCoin)),
+                validators.getQuorumNumberOfValidators()
             )
         ) {
             chainTokens.registerColoredCoin(_coloredCoin);

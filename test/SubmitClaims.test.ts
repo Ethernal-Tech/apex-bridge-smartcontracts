@@ -112,8 +112,7 @@ describe("Submit Claims", function () {
       let validatorIndex;
 
       for (let i = 0; i < 5; i++) {
-        validatorIndex = Number(await validatorsc.getValidatorIndex(validators[i])) - 1;
-        expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
+        expect(await hasVoted(hash, validators[i])).to.be.false;
       }
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
@@ -122,12 +121,10 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       for (let i = 0; i < 4; i++) {
-        validatorIndex = Number(await validatorsc.getValidatorIndex(validators[i])) - 1;
-        expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.true;
+        expect(await hasVoted(hash, validators[i])).to.be.true;
       }
 
-      validatorIndex = Number(await validatorsc.getValidatorIndex(validators[4])) - 1;
-      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
+      expect(await hasVoted(hash, validators[4])).to.be.false;
     });
 
     it("Should update next timeout block when Bridging Request Claim is confirmed and requirements are met", async function () {
@@ -498,8 +495,7 @@ describe("Submit Claims", function () {
 
       let validatorIndex;
       for (let i = 0; i < 5; i++) {
-        validatorIndex = Number(await validatorsc.getValidatorIndex(validators[i])) - 1;
-        expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
+        expect(await hasVoted(hash, validators[i])).to.be.false;
       }
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
@@ -509,12 +505,10 @@ describe("Submit Claims", function () {
 
       validatorIndex;
       for (let i = 0; i < 4; i++) {
-        validatorIndex = Number(await validatorsc.getValidatorIndex(validators[i])) - 1;
-        expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.true;
+        expect(await hasVoted(hash, validators[i])).to.be.true;
       }
 
-      validatorIndex = Number(await validatorsc.getValidatorIndex(validators[4])) - 1;
-      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
+      expect(await hasVoted(hash, validators[4])).to.be.false;
     });
 
     it("Should set status executed for confirmed signed batch after reaching quorum on Bridging Executed Claim", async function () {
@@ -756,8 +750,7 @@ describe("Submit Claims", function () {
 
       let validatorIndex;
       for (let i = 0; i < 5; i++) {
-        validatorIndex = Number(await validatorsc.getValidatorIndex(validators[i])) - 1;
-        expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
+        expect(await hasVoted(hash, validators[i])).to.be.false;
       }
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
@@ -766,12 +759,10 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
 
       for (let i = 0; i < 4; i++) {
-        validatorIndex = Number(await validatorsc.getValidatorIndex(validators[i])) - 1;
-        expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.true;
+        expect(await hasVoted(hash, validators[i])).to.be.true;
       }
 
-      validatorIndex = Number(await validatorsc.getValidatorIndex(validators[4])) - 1;
-      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
+      expect(await hasVoted(hash, validators[4])).to.be.false;
     });
 
     it("Should reset currentBatchBlock when Bridging Executed Failed Claim is confirmed", async function () {
@@ -1057,8 +1048,7 @@ describe("Submit Claims", function () {
 
       let validatorIndex;
       for (let i = 0; i < 5; i++) {
-        validatorIndex = Number(await validatorsc.getValidatorIndex(validators[i])) - 1;
-        expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
+        expect(await hasVoted(hash, validators[i])).to.be.false;
       }
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
@@ -1068,12 +1058,10 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[4]).submitClaims(validatorClaimsRRC);
 
       for (let i = 0; i < 4; i++) {
-        validatorIndex = Number(await validatorsc.getValidatorIndex(validators[i])) - 1;
-        expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.true;
+        expect(await hasVoted(hash, validators[i])).to.be.true;
       }
 
-      validatorIndex = Number(await validatorsc.getValidatorIndex(validators[4])) - 1;
-      expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.be.false;
+      expect(await hasVoted(hash, validators[4])).to.be.false;
     });
 
     it("Should store new confirmedTransactions when Refund Request Claim is confirmed", async function () {
@@ -1850,4 +1838,12 @@ describe("Submit Claims", function () {
     await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
     await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
   });
+
+  async function hasVoted(hash: string, _addr: string): Promise<boolean> {
+    // bitmap(...) returns bigint in ethers v6
+    const validatorIndex = ((await validatorsc.getValidatorIndex(_addr)) as bigint) - 1n;
+    const bitmap = (await claimsHelper.bitmap(hash)) as bigint;
+
+    return (bitmap & (1n << BigInt(validatorIndex))) !== 0n;
+  }
 });

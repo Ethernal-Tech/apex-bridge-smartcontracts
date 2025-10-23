@@ -159,26 +159,6 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         confirmedSignedBatches[_chainId][_batchId].status = _status;
     }
 
-    function hasVoted(bytes32 _hash, uint8 _validatorIndex) external view returns (bool) {
-        uint256 _bitmapValue = bitmap[_hash];
-        return (_bitmapValue & (1 << _validatorIndex)) != 0;
-    }
-
-    function numberOfVotes(bytes32 _hash) external view returns (uint8) {
-        uint8 _votesNum;
-        uint256 _bitmapValue = bitmap[_hash];
-
-        // Brian Kernighan's algorithm
-        // @see https://github.com/estarriolvetch/solidity-bits/blob/main/contracts/Popcount.sol
-        unchecked {
-            for (_votesNum = 0; _bitmapValue != 0; _votesNum++) {
-                _bitmapValue &= _bitmapValue - 1;
-            }
-        }
-
-        return _votesNum;
-    }
-
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {

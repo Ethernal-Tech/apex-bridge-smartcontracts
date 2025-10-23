@@ -102,14 +102,6 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
     /// @dev After quorum is reached, the destination chain's token quantity is reduced, and the source chain's token quantity is increased if it's the first retry.
     /// @dev The function also updates the next timeout block if necessary and sets the confirmed transaction details.
     function submitClaimsBRC(BridgingRequestClaim calldata _claim, uint256 i, address _caller) external onlyClaims {
-        bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
-
-        uint8 _quorumCount = validators.getQuorumNumberOfValidators();
-
-        if (claimsHelper.numberOfVotes(_claimHash) == _quorumCount) {
-            return;
-        }
-
         if (!chainTokens.validateBRC(_claim, i)) {
             return;
         }
@@ -117,8 +109,8 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
         if (
             claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
                 validators.getValidatorIndex(_caller) - 1,
-                _claimHash,
-                _quorumCount
+                keccak256(abi.encode("BRC", _claim)),
+                validators.getQuorumNumberOfValidators()
             )
         ) {
             chainTokens.updateTokensBRC(_claim);
@@ -162,12 +154,10 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
             return;
         }
 
-        bytes32 claimHash = keccak256(abi.encode("BEC", _claim));
-
         if (
             claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
                 validators.getValidatorIndex(_caller) - 1,
-                claimHash,
+                keccak256(abi.encode("BEC", _claim)),
                 validators.getQuorumNumberOfValidators()
             )
         ) {
@@ -208,12 +198,10 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
             return;
         }
 
-        bytes32 claimHash = keccak256(abi.encode("BEFC", _claim));
-
         if (
             claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
                 validators.getValidatorIndex(_caller) - 1,
-                claimHash,
+                keccak256(abi.encode("BEFC", _claim)),
                 validators.getQuorumNumberOfValidators()
             )
         ) {
@@ -309,14 +297,6 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
             revert InvalidData("refundTransactionHash");
         }
 
-        bytes32 _claimHash = keccak256(abi.encode("RRC", _claim));
-        uint8 _quorumCount = validators.getQuorumNumberOfValidators();
-
-        // if quorum already reached -> exit
-        if (claimsHelper.numberOfVotes(_claimHash) == _quorumCount) {
-            return;
-        }
-
         // check token quantity on source if needed
         if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0 && !chainTokens.validateRRC(_claim, _index)) {
             // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
@@ -326,8 +306,8 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
         if (
             claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
                 validators.getValidatorIndex(_caller) - 1,
-                _claimHash,
-                _quorumCount
+                keccak256(abi.encode("RRC", _claim)),
+                validators.getQuorumNumberOfValidators()
             )
         ) {
             uint8 originChainId = _claim.originChainId;
@@ -353,12 +333,10 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
     /// @dev The claim is validated by ensuring that a quorum of validators has approved it before proceeding.
     /// @dev If the quorum is reached, the specified amount is added to the hot wallet balance for the given chain.
     function submitClaimHWIC(HotWalletIncrementClaim calldata _claim, address _caller) external onlyClaims {
-        bytes32 claimHash = keccak256(abi.encode("HWIC", _claim));
-
         if (
             claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
                 validators.getValidatorIndex(_caller) - 1,
-                claimHash,
+                keccak256(abi.encode("HWIC", _claim)),
                 validators.getQuorumNumberOfValidators()
             )
         ) {

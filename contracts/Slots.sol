@@ -73,7 +73,6 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         }
 
         // Check if the caller has already voted for this claim
-        uint256 _quorumCnt = validators.getQuorumNumberOfValidators();
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
         uint256 _blocksLength = _blocks.length;
         CardanoBlock memory _lastObservedBlock = lastObservedBlock[_chainId];
@@ -109,7 +108,7 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
                 }
             }
 
-            if (_votesNum >= _quorumCnt) {
+            if (_votesNum >= validators.getQuorumNumberOfValidators()) {
                 _lastObservedBlock = _cblock;
                 // can delete because of check
                 //  if (_cblock.blockSlot <= _lastObservedBlock.blockSlot)
