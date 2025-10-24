@@ -246,7 +246,7 @@ export async function deployBridgeFixture() {
     validatorsc.target
   );
 
-  await registration.setAdditionalDependenciesAndSync();
+  // await registration.setAdditionalDependenciesAndSync();
 
   await signedBatches.setDependencies(bridge.target, claimsHelper.target, validatorsc.target);
 

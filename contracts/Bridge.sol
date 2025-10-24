@@ -113,6 +113,11 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         chainTokens = ChainTokens(_chainTokensAddress);
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         registration = Registration(_registrationAddress);
+
+        uint8 _chainsLength = uint8(__chains.length);
+        for (uint8 i = 0; i < _chainsLength; i++) {
+            registration.addChain(__chains[i]);
+        }
     }
 
     /// @notice Submit claims from validators for reaching consensus.
