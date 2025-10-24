@@ -210,18 +210,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         );
     }
 
-    /// @notice Register a new chain and its validator data.
-    /// @param _coloredCoin Colored Coin metadata.
-    function registerColoredCoin(ColoredCoin calldata _coloredCoin) public override onlyOwner {
-        registration.registerColoredCoin(_coloredCoin);
-    }
-
-    /// @notice Register a new Colored Coin using governance.
-    /// @param _coloredCoin The Colored Coin metadata.
-    function registerColoredCoinGovernance(ColoredCoin calldata _coloredCoin) external override onlyValidator {
-        registration.registerColoredCoinGovernance(_coloredCoin, msg.sender);
-    }
-
     /// @notice Check if a regular or stake delegation batch should be created for the destination chain.
     /// @param _destinationChain ID of the destination chain.
     /// @return _shouldCreateBatch Returns true if a batch should be created.

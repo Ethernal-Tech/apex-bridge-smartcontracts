@@ -194,12 +194,6 @@ interface IBridgeStructs {
         bytes[] stakeSignatures;
     }
 
-    /// @notice Contains information about a colored coin registered in the bridge.
-    struct ColoredCoin {
-        uint8 chainId;
-        uint8 coloredCoinId;
-    }
-
     // ------------------------------------------------------------------------
     // Errors
     // ------------------------------------------------------------------------
@@ -231,7 +225,6 @@ interface IBridgeStructs {
     error BridgingAddrCountAlreadyInit(uint8 _chainId);
     error AddrNotRegistered(uint8 _chainId, uint8 _bridgeAddrIndex);
     error InvalidStakeTransactionSubType(uint8 _transactionSubType);
-    error ColoredCoinNotNotRegisteredOnChain(uint8 _coloredCoinId, uint8 _chainId);
     error NotRegistration();
     error NotClaimsProcessor();
     error NotClaimsOrClaimsProcessor();
@@ -258,12 +251,4 @@ interface IBridgeStructs {
     event UpdatedTimeoutBlocksNumber(uint256 _timeoutBlocksNumber);
     event StakeOperationFailedAfterMultipleRetries(uint8 _transactionSubType);
     event TokensRedistributionFailedAfterMultipleRetries(uint8 _chainId);
-    event newColoredCoinRegistered(uint8 indexed _chainId, uint8 indexed _coloredTokenId);
-    event newColoredCoinProposal(uint8 indexed _chainId, uint8 indexed _coloredTokenId);
-    event UpdatedChainColoredCoinQuantity(
-        uint indexed chainId,
-        bool isIncrement,
-        uint256 chainWrappedTokenQuantity,
-        uint8 coloredCoinId
-    );
 }

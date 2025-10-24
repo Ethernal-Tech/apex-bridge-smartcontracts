@@ -245,7 +245,6 @@ describe("Confirmed Transactions", function () {
   let validatorClaimsBRC: any;
   let validatorAddressChainData: any;
   let validators: any;
-  let coloredCoin: any;
 
   beforeEach(async function () {
     const fixture = await loadFixture(deployBridgeFixture);
@@ -258,7 +257,6 @@ describe("Confirmed Transactions", function () {
     validatorClaimsBRC = fixture.validatorClaimsBRC;
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;
-    coloredCoin = fixture.coloredCoin;
 
     // Register chains
     await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);

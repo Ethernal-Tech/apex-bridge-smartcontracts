@@ -231,55 +231,8 @@ contract Registration is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         }
     }
 
-    /// @notice Register a new chain and its validator data.
-    /// @param _coloredCoin Colored Coin metadata.
-    function registerColoredCoin(ColoredCoin calldata _coloredCoin) public onlyBridge {
-        _validateColoredCoin(_coloredCoin);
-
-        chainTokens.registerColoredCoin(_coloredCoin);
-
-        emit newColoredCoinRegistered(_coloredCoin.chainId, _coloredCoin.coloredCoinId);
-    }
-
-    /// @notice Register a new Colored Coin using governance.
-    /// @param _coloredCoin The Colored Coin metadata.
-    function registerColoredCoinGovernance(ColoredCoin calldata _coloredCoin, address _caller) external onlyBridge {
-        //TODO: add validatorSet version when implemented
-        _validateColoredCoin(_coloredCoin);
-
-        if (
-            claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
-                validators.getValidatorIndex(_caller) - 1,
-                keccak256(abi.encode("ColoredCoin", _coloredCoin)),
-                validators.getQuorumNumberOfValidators()
-            )
-        ) {
-            chainTokens.registerColoredCoin(_coloredCoin);
-            emit newColoredCoinRegistered(_coloredCoin.chainId, _coloredCoin.coloredCoinId);
-        } else {
-            emit newColoredCoinProposal(_coloredCoin.chainId, _coloredCoin.coloredCoinId);
-        }
-    }
-
     function addChain(Chain calldata _chain) external onlyBridge {
         chains.push(_chain);
-    }
-
-    /// @notice Checks validity of colored coin metadata submited for registration
-    /// @param _coloredCoin Colored Coin metadata.
-    function _validateColoredCoin(ColoredCoin calldata _coloredCoin) internal view {
-        uint8 _chainId = _coloredCoin.chainId;
-        uint8 _coloredCoinId = _coloredCoin.coloredCoinId;
-
-        if (!claims.isChainRegistered(_chainId)) {
-            revert InvalidData("chainId is not registered");
-        }
-
-        if (_coloredCoinId == 0) {
-            revert InvalidData("coloredCoinId is zero");
-        } else if (chainTokens.coloredCoinToChain(_coloredCoinId) != 0) {
-            revert InvalidData("coloredCoinId is already registered");
-        }
     }
 
     function getAllRegisteredChains() external view returns (Chain[] memory _chains) {

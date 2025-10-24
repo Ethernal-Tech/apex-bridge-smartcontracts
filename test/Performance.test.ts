@@ -81,7 +81,6 @@ describe("Performance", function () {
   let validatorAddressChainData: any;
   let validatorCardanoData: any;
   let validators: any;
-  let coloredCoin: any;
 
   beforeEach(async function () {
     const fixture = await loadFixture(deployBridgeFixture);
@@ -99,7 +98,6 @@ describe("Performance", function () {
     validatorAddressChainData = fixture.validatorAddressChainData;
     validatorCardanoData = fixture.validatorCardanoData;
     validators = fixture.validators;
-    coloredCoin = fixture.coloredCoin;
 
     // Register chains
     await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);

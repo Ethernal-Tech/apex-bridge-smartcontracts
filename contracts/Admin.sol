@@ -119,30 +119,6 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         emit UpdatedChainWrappedTokenQuantity(_chainId, _isIncrease, _chainWrappedTokenQuantity);
     }
 
-    /// @notice Updates coloredCoin quantity for a specific chain
-    /// @param _chainId ID of the chain to update
-    /// @param _isIncrease Whether to increase (true) or decrease (false) the quantity
-    /// @param _chainColoredCointQuantity Amount of tokens to add or subtract
-    /// @param _coloredCoinId ID of the colored coin to update
-    function updateChainColoredCoinQuantity(
-        uint8 _chainId,
-        bool _isIncrease,
-        uint256 _chainColoredCointQuantity,
-        uint8 _coloredCoinId
-    ) external onlyFundAdmin {
-        if (_coloredCoinId != 0 && chainTokens.coloredCoinToChain(_coloredCoinId) != _chainId) {
-            revert ColoredCoinNotNotRegisteredOnChain(_coloredCoinId, _chainId);
-        }
-        if (!_isIncrease) {
-            uint256 currentColoredCoinQuantity = chainTokens.chainColoredCoinQuantity(_chainId, _coloredCoinId);
-            if (currentColoredCoinQuantity < _chainColoredCointQuantity) {
-                revert NegativeChainTokenAmount(currentColoredCoinQuantity, _chainColoredCointQuantity);
-            }
-        }
-        chainTokens.updateChainColoredCoinQuantity(_chainId, _isIncrease, _chainColoredCointQuantity, _coloredCoinId);
-        emit UpdatedChainColoredCoinQuantity(_chainId, _isIncrease, _chainColoredCointQuantity, _coloredCoinId);
-    }
-
     /// @notice Initiates a defund operation for a specific chain
     /// @dev Calls the Claims contract to perform the defund and then emits {ChainDefunded}
     /// @param _chainId ID of the chain to defund

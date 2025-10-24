@@ -23,14 +23,6 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     /// @dev BlockchainId -> TokenQuantity
     mapping(uint8 => uint256) public chainWrappedTokenQuantity;
 
-    /// @notice Registered colored coins
-    /// @dev ColoredCoinId -> ChainId (!=0 if registered)
-    mapping(uint8 => uint8) public coloredCoinToChain;
-
-    /// @notice Mapping from chain ID to colored coin quantity.
-    /// @dev BlockchainId -> ColoredCoinId -> ColoredCoinQuantity
-    mapping(uint8 => mapping(uint8 => uint256)) public chainColoredCoinQuantity;
-
     uint256[50] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -129,10 +121,6 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     /// @param _amountWrapped The amount of wrapped tokens to defund.
     /// @param _coloredCoinId The ID of the colored coin involved in the defund, if applicable.
     function validateDefund(uint8 _chainId, uint256 _amount, uint256 _amountWrapped, uint8 _coloredCoinId) external {
-        if (_coloredCoinId != 0 && coloredCoinToChain[_coloredCoinId] != _chainId) {
-            revert ColoredCoinNotNotRegisteredOnChain(_coloredCoinId, _chainId);
-        }
-
         // For Defund, we revert instead of returning false
         _validateBalanceCheck(
             _chainId,
@@ -273,30 +261,6 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         _updateSingle(chainWrappedTokenQuantity, _chainId, _chainWrappedTokenAmount, _isIncrease);
     }
 
-    /// @notice Updates the coloredCoin quantity for a registered chain by increasing or decreasing the amount.
-    /// @dev Reverts if the chain is not registered or if subtraction causes underflow.
-    /// @param _chainId The ID of the chain whose token quantity is to be updated.
-    /// @param _isIncrease A boolean indicating whether to increase (true) or decrease (false) the token amount.
-    /// @param _chainColoredCoinAmount The amount of tokens to add or subtract from the chain's total.
-    /// @param _coloredCoinId The ID of the colored coin to update.
-    function updateChainColoredCoinQuantity(
-        uint8 _chainId,
-        bool _isIncrease,
-        uint256 _chainColoredCoinAmount,
-        uint8 _coloredCoinId
-    ) external onlyAdminContract {
-        _updateSingle(chainColoredCoinQuantity[_chainId], _coloredCoinId, _chainColoredCoinAmount, _isIncrease);
-    }
-
-    /// @notice Registers a new colored coin and associates it with a specific chain.
-    /// @dev Updates the mapping of colored coin IDs to their corresponding chain IDs.
-    ///      This function can only be called by the Bridge contract.
-    /// @param _coloredCoin The colored coin data structure containing the colored coin ID
-    ///        and the chain ID it belongs to.
-    function registerColoredCoin(ColoredCoin calldata _coloredCoin) external onlyRegistration {
-        coloredCoinToChain[_coloredCoin.coloredCoinId] = _coloredCoin.chainId;
-    }
-
     function _validateBalanceCheck(
         uint8 _chainId,
         uint8 _coloredCoinId,
@@ -322,20 +286,6 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
                     _index
                 );
             // Check colored coin balance
-        } else if (coloredCoinToChain[_coloredCoinId] == _chainId) {
-            uint256 _currentColored = chainColoredCoinQuantity[_chainId][_coloredCoinId];
-            if (_currentColored < _tokenAmount) {
-                return
-                    _handleInsufficientFunds(
-                        _shouldRevert,
-                        _prefix,
-                        "Colored Coin",
-                        _chainId,
-                        _currentColored,
-                        _tokenAmount,
-                        _index
-                    );
-            }
         }
 
         // Check wrapped token balance
@@ -390,8 +340,6 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     ) internal {
         if (_coloredCoinId == 0) {
             _updateSingle(chainTokenQuantity, _chainId, _amount, _increase);
-        } else if (coloredCoinToChain[_coloredCoinId] == _chainId) {
-            _updateSingle(chainColoredCoinQuantity[_chainId], _coloredCoinId, _amount, _increase);
         }
 
         _updateSingle(chainWrappedTokenQuantity, _chainId, _wrapped, _increase);
