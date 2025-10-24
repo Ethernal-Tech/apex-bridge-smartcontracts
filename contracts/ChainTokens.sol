@@ -285,10 +285,6 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         uint256 _chainColoredCoinAmount,
         uint8 _coloredCoinId
     ) external onlyAdminContract {
-        if (_coloredCoinId != 0 && coloredCoinToChain[_coloredCoinId] != _chainId) {
-            revert ColoredCoinNotNotRegisteredOnChain(_coloredCoinId, _chainId);
-        }
-
         _updateSingle(chainColoredCoinQuantity[_chainId], _coloredCoinId, _chainColoredCoinAmount, _isIncrease);
     }
 
