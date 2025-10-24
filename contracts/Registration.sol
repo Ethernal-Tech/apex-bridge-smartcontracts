@@ -98,7 +98,7 @@ contract Registration is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         if (!claims.isChainRegistered(_chainId)) {
             revert ChainIsNotRegistered(_chainId);
         }
-        uint8 _chainsLength = uint8(bridge.getAllRegisteredChains().length);
+        uint8 _chainsLength = uint8(chains.length);
         for (uint8 i = 0; i < _chainsLength; i++) {
             if (chains[i].id == _chainId) {
                 chains[i].addressMultisig = addressMultisig;

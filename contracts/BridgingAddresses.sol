@@ -77,7 +77,7 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
         address _claimsProcessorAddress,
         address _registrationAddress
     ) external onlyUpgradeAdmin {
-        if (!_isContract(_registrationAddress)) revert NotContractAddress();
+        if (!_isContract(_claimsProcessorAddress) || !_isContract(_registrationAddress)) revert NotContractAddress();
         claimsProcessorAddress = _claimsProcessorAddress;
         registrationAddress = _registrationAddress;
     }
