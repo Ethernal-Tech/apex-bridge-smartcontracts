@@ -8,26 +8,7 @@ describe("Performance", function () {
       // fourth one is quorum
       const tx = await bridge.connect(validators[i]).submitClaims(validatorClaimsBRC);
       const receipt = await tx.wait();
-      console.log(`Gas spent on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
-    }
-  });
-
-  it("submitSignedBatch", async function () {
-    await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
-
-    // wait for next timeout
-    for (let i = 0; i < 8; i++) {
-      await ethers.provider.send("evm_mine");
-    }
-
-    for (let i = 0; i < validators.length; i++) {
-      // fourth one is quorum
-      const tx = await bridge.connect(validators[i]).submitSignedBatch(signedBatch);
-      const receipt = await tx.wait();
-      console.log(`Gas spent on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
+      console.log(`Gas spent for BRC on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
     }
   });
 
@@ -55,7 +36,35 @@ describe("Performance", function () {
       // fourth one is quorum
       const tx = await bridge.connect(validators[i]).submitClaims(validatorClaimsBEC);
       const receipt = await tx.wait();
-      console.log(`Gas spent on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
+      console.log(`Gas spent for BEC on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
+    }
+  });
+
+  it("submitClaims BEFC", async function () {
+    await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+    await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+    await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+    await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
+
+    // wait for next timeout
+    for (let i = 0; i < 8; i++) {
+      await ethers.provider.send("evm_mine");
+    }
+
+    for (let i = 0; i < (validators.length * 2) / 3 + 1; i++) {
+      await bridge.connect(validators[i]).submitSignedBatch(signedBatch);
+    }
+
+    // wait for next timeout
+    for (let i = 0; i < 8; i++) {
+      await ethers.provider.send("evm_mine");
+    }
+
+    for (let i = 0; i < validators.length; i++) {
+      // fourth one is quorum
+      const tx = await bridge.connect(validators[i]).submitClaims(validatorClaimsBEFC);
+      const receipt = await tx.wait();
+      console.log(`Gas spent for BEFC on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
     }
   });
 
@@ -64,7 +73,35 @@ describe("Performance", function () {
       // fourth one is quorum
       const tx = await bridge.connect(validators[i]).submitClaims(validatorClaimsRRC);
       const receipt = await tx.wait();
-      console.log(`Gas spent on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
+      console.log(`Gas spent for RRC on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
+    }
+  });
+
+  it("submitClaims HWIC", async function () {
+    for (let i = 0; i < validators.length; i++) {
+      // fourth one is quorum
+      const tx = await bridge.connect(validators[i]).submitClaims(validatorClaimsHWIC);
+      const receipt = await tx.wait();
+      console.log(`Gas spent for HWIC on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
+    }
+  });
+
+  it("submitSignedBatch", async function () {
+    await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+    await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+    await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+    await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
+
+    // wait for next timeout
+    for (let i = 0; i < 8; i++) {
+      await ethers.provider.send("evm_mine");
+    }
+
+    for (let i = 0; i < validators.length; i++) {
+      // fourth one is quorum
+      const tx = await bridge.connect(validators[i]).submitSignedBatch(signedBatch);
+      const receipt = await tx.wait();
+      console.log(`Gas spent for SignerBatch on (${i}): ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
     }
   });
 
@@ -79,7 +116,6 @@ describe("Performance", function () {
   let validatorClaimsHWIC: any;
   let signedBatch: any;
   let validatorAddressChainData: any;
-  let validatorCardanoData: any;
   let validators: any;
 
   beforeEach(async function () {
@@ -96,7 +132,6 @@ describe("Performance", function () {
     validatorClaimsHWIC = fixture.validatorClaimsHWIC;
     signedBatch = fixture.signedBatch;
     validatorAddressChainData = fixture.validatorAddressChainData;
-    validatorCardanoData = fixture.validatorCardanoData;
     validators = fixture.validators;
 
     // Register chains
