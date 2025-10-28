@@ -96,7 +96,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     /// @notice Submit claims from validators for updating the validator set.
     /// @param _claims The claims submitted by a validator.
-    function submitSpecialClaims(SpecialValidatorClaims calldata _claims) external override onlyValidator {
+    function submitSpecialClaims(ValidatorClaims calldata _claims) external override onlyValidator {
         if (!validators.newValidatorSetPending()) {
             revert NoNewValidatorSetPending();
         }

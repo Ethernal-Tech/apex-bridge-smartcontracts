@@ -63,12 +63,6 @@ interface IBridgeStructs {
         HotWalletIncrementClaim[] hotWalletIncrementClaims;
     }
 
-    /// @notice Collection of claims submitted by validators.
-    struct SpecialValidatorClaims {
-        BatchExecutedClaim[] batchExecutedClaims;
-        BatchExecutionFailedClaim[] batchExecutionFailedClaims;
-    }
-
     /// @notice A claim that a bridging request was observed on the source chain.
     struct BridgingRequestClaim {
         // hash of tx on the source chain
