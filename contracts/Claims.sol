@@ -60,7 +60,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     uint8 public newValidatorSetBitmap;
 
     /// @notice Maximum number of retries allowed for defund claims.
-    uint8 private constant MAX_NUMBER_OF_DEFUND_RETRIES = 3;
+    uint8 private constant MAX_NUMBER_OF_RETRIES = 3;
     /// @notice Maximum number of claims allowed per submission.
     uint8 public constant MAX_NUMBER_OF_CLAIMS = 32;
     /// @notice Maximum number of receivers in a BridgingRequestClaim.
@@ -391,7 +391,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 if (_txType == TransactionTypesLib.NORMAL) {
                     _currentAmount += _ctx.totalAmount;
                 } else if (_txType == TransactionTypesLib.DEFUND) {
-                    if (_ctx.retryCounter < MAX_NUMBER_OF_DEFUND_RETRIES) {
+                    if (_ctx.retryCounter < MAX_NUMBER_OF_RETRIES) {
                         uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
                         confirmedTransactions[chainId][nextNonce] = _ctx;
                         confirmedTransactions[chainId][nextNonce].nonce = nextNonce;
