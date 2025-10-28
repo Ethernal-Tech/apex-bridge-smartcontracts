@@ -98,7 +98,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         uint8 _chainId,
         uint64 _batchId
     ) external view returns (ConfirmedSignedBatchData memory _confirmedSignedBatchData) {
-        return confirmedSignedBatches[_chainId][_batchId];
+        return confirmedSpecialSignedBatches[_chainId][_batchId];
     }
 
     /// @notice Resets the current batch block for a given chain.
