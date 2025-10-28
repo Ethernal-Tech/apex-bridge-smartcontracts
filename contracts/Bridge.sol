@@ -403,7 +403,8 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     // TODO: explanation
     function validatorSetUpdated() external override onlySystem {
-        // validators.updateValidatorSet();
+        validators.removeOldValidators();
+        validators.updateValidatorSet();
         validators.deleteValidatorsToBeRemoved();
         validators.setNewValidatorSetPending(false);
     }

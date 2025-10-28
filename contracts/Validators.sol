@@ -32,11 +32,15 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @dev validator address index(+1) in chainData mapping
     mapping(address => uint8) private addressValidatorIndex;
 
-    ValidatorSet[] public newValidatorSet;
-
     /// @notice Total number of registered validators
     /// @dev max possible number of validators is 127
     uint8 public validatorsCount;
+
+    /// @notice Addresses of validators in the current validator set
+    address[] public validatorAddresses;
+
+    /// @notice newValidatorSet for update
+    ValidatorSet[] public newValidatorSet;
 
     /// @notice Flag for new validator set peding
     bool public newValidatorSetPending;
@@ -71,6 +75,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
                 revert InvalidData("Duplicate validator");
             }
             addressValidatorIndex[_validators[i]] = i + 1;
+            validatorAddresses.push(_validators[i]);
         }
         validatorsCount = uint8(_validators.length);
     }
@@ -355,17 +360,28 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         newValidatorSetPending = _pending;
     }
 
+    function removeOldValidators() external onlyBridge {
+        uint256 _validatorsAddressesLength = validatorAddresses.length;
+
+        for (uint256 i; i < _validatorsAddressesLength; i++) {
+            addressValidatorIndex[validatorAddresses[i]] = 0;
+        }
+
+        delete validatorAddresses;
+    }
+
     function updateValidatorSet() external onlyBridge {
         uint256 _newValidatorSetLength = newValidatorSet.length;
-        for (uint256 i; i < _newValidatorSetLength; i++) {
+        uint256 _validatorsLength = newValidatorSet[0].validators.length;
+        validatorsCount = uint8(_validatorsLength);
+
+        for (uint8 i; i < _newValidatorSetLength; i++) {
             ValidatorSet memory _validatorSet = newValidatorSet[i];
-            uint256 _validatorsLength = _validatorSet.validators.length;
-            for (uint256 j; j < _validatorsLength; j++) {
-                addValidatorChainData(
-                    _validatorSet.chainId,
-                    _validatorSet.validators[j].addr,
-                    _validatorSet.validators[j].data
-                );
+            for (uint8 j; j < _validatorsLength; j++) {
+                address _validatorAddres = _validatorSet.validators[j].addr;
+                addressValidatorIndex[_validatorAddres] = j + 1;
+                addValidatorChainData(_validatorSet.chainId, _validatorAddres, _validatorSet.validators[j].data);
+                validatorAddresses.push(_validatorAddres);
             }
         }
     }
