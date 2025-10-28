@@ -302,6 +302,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
     }
 
+    //TODO explanation
     function _submitClaimsBEFC(BatchExecutionFailedClaim calldata _claim, address _caller) internal {
         uint8 chainId = _claim.chainId;
         uint64 batchId = _claim.batchNonceId;

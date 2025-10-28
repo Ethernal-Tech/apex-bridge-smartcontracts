@@ -17,6 +17,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     address private upgradeAdmin;
     address private claimsAddress;
     address private signedBatchesAddress;
+    address private specialSignedBatchesAddress;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
@@ -63,10 +64,19 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @notice Sets external contract dependencies.
     /// @param _claimsAddress Address of the Claims contract.
     /// @param _signedBatchesAddress Address of the SignedBatches contract.
-    function setDependencies(address _claimsAddress, address _signedBatchesAddress) external onlyOwner {
-        if (!_isContract(_claimsAddress) || !_isContract(_signedBatchesAddress)) revert NotContractAddress();
+    function setDependencies(
+        address _claimsAddress,
+        address _signedBatchesAddress,
+        address _specialSignedBatchesAddress
+    ) external onlyOwner {
+        if (
+            !_isContract(_claimsAddress) ||
+            !_isContract(_signedBatchesAddress) ||
+            !_isContract(_specialSignedBatchesAddress)
+        ) revert NotContractAddress();
         claimsAddress = _claimsAddress;
         signedBatchesAddress = _signedBatchesAddress;
+        specialSignedBatchesAddress = _specialSignedBatchesAddress;
     }
 
     /// @notice Retrieves confirmed signed batch data.
@@ -116,7 +126,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @notice Stores a confirmed special signed batch for a specific destination chain and batch ID.
     /// @dev Updates both `confirmedSignedBatches`
     /// @param _signedBatch The special signed batch data
-    function setConfirmedSpecialSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
+    function setConfirmedSpecialSignedBatchData(SignedBatch calldata _signedBatch) external onlySpecialSignedBatches {
         uint8 destinationChainId = _signedBatch.destinationChainId;
         uint64 signedBatchId = _signedBatch.id;
 
@@ -230,6 +240,11 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
 
     modifier onlySignedBatches() {
         if (msg.sender != signedBatchesAddress) revert NotSignedBatches();
+        _;
+    }
+
+    modifier onlySpecialSignedBatches() {
+        if (msg.sender != specialSignedBatchesAddress) revert NotSpecialSignedBatches();
         _;
     }
 

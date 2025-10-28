@@ -16,6 +16,7 @@ import "./Validators.sol";
 contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
     address private specialClaimsAddress;
+    address private specialSignedBatchesAddress;
     Bridge private bridge;
     ClaimsHelper private claimsHelper;
     Validators private validators;
@@ -62,17 +63,20 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     function setDependencies(
         address _bridgeAddress,
         address _specialClaimsAddress,
+        address _specialSignedBatchesAddress,
         address _claimsHelperAddress,
         address _validatorsAddress
     ) external onlyOwner {
         if (
             !_isContract(_bridgeAddress) ||
             !_isContract(_specialClaimsAddress) ||
+            !_isContract(_specialSignedBatchesAddress) ||
             !_isContract(_claimsHelperAddress) ||
             !_isContract(_validatorsAddress)
         ) revert NotContractAddress();
         bridge = Bridge(_bridgeAddress);
         specialClaimsAddress = _specialClaimsAddress;
+        specialSignedBatchesAddress = _specialSignedBatchesAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         validators = Validators(_validatorsAddress);
     }
@@ -167,19 +171,19 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         return votes[_hash].bitmap & (1 << (_validatorIdx - 1)) != 0;
     }
 
-    function addSignature(bytes32 _hash, bytes calldata _signature) external {
+    function addSignature(bytes32 _hash, bytes calldata _signature) external onlySpecialSignedBatches {
         signatures[_hash].push(_signature);
     }
 
-    function addFeeSignature(bytes32 _hash, bytes calldata _signature) external {
+    function addFeeSignature(bytes32 _hash, bytes calldata _signature) external onlySpecialSignedBatches {
         feeSignatures[_hash].push(_signature);
     }
 
-    function setBitmap(bytes32 _hash, uint256 _bitmapValue) external {
+    function setBitmap(bytes32 _hash, uint256 _bitmapValue) external onlySpecialSignedBatches {
         bitmap[_hash] = _bitmapValue;
     }
 
-    function deleteSignaturesFeeSignaturesBitmap(bytes32 _hash) external onlySpecialClaims {
+    function deleteSignaturesFeeSignaturesBitmap(bytes32 _hash) external onlySpecialClaimsOrSpecialSignedBatches {
         delete signatures[_hash];
         delete feeSignatures[_hash];
         delete bitmap[_hash];
@@ -204,8 +208,14 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         _;
     }
 
-    modifier onlySpecialClaims() {
-        if (msg.sender != specialClaimsAddress) revert NotSpecialClaims();
+    modifier onlySpecialClaimsOrSpecialSignedBatches() {
+        if (msg.sender != specialClaimsAddress && msg.sender != specialSignedBatchesAddress)
+            revert NotSpecialClaimsOrSpecialSignedBatches();
+        _;
+    }
+
+    modifier onlySpecialSignedBatches() {
+        if (msg.sender != specialSignedBatchesAddress) revert NotSpecialSignedBatches();
         _;
     }
 
