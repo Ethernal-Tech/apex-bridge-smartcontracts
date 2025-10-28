@@ -375,6 +375,8 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     }
 
     function removeOldValidatorsData(Chain[] calldata _chains) external onlyBridge {
+        if (newValidatorSetDelta.removedValidators.length == 0) return;
+
         address[] memory _validatorAddressesToRemove = newValidatorSetDelta.removedValidators;
 
         // Mark validator addresses as removed
