@@ -58,7 +58,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     mapping(uint8 => uint64) public lastBatchedTxNonce;
 
     // @notice Bitmap used to flag that validator set has been confirmed for specific chains.
-    uint8 public bitmap;
+    uint8 public newValidatoSetBitmap;
 
     /// @notice Maximum number of retries allowed for defund claims.
     uint8 private constant MAX_NUMBER_OF_DEFUND_RETRIES = 3;
@@ -309,9 +309,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_EXECUTED);
 
             if (_confirmedSignedBatch.batchType == BatchTypesLib.VALIDATORSET_FINAL) {
-                bitmap |= uint8(1 << chainId);
+                newValidatoSetBitmap |= uint8(1 << chainId);
 
-                if (_countSetBits(bitmap) == Bridge(bridgeAddress).getAllRegisteredChains().length) {
+                if (_countSetBits(newValidatoSetBitmap) == Bridge(bridgeAddress).getAllRegisteredChains().length) {
                     //TODO call stakeManager
                 }
 
@@ -832,9 +832,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         timeoutBlocksNumber = _timeoutBlocksNumber;
     }
 
-    function _countSetBits(uint256 _bitmap) internal pure returns (uint256 count) {
-        while (_bitmap != 0) {
-            _bitmap &= (_bitmap - 1);
+    function _countSetBits(uint256 _newValidatoSetBitmap) internal pure returns (uint256 count) {
+        while (_newValidatoSetBitmap != 0) {
+            _newValidatoSetBitmap &= (_newValidatoSetBitmap - 1);
             count++;
         }
     }
