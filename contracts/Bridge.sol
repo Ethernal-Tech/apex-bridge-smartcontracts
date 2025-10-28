@@ -31,6 +31,9 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Flaging contracts for test mode
     bool private testMode;
 
+    /// @notice system address to limit access to certain functions
+    address public constant SYSTEM = 0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
@@ -445,13 +448,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     modifier onlySystem() {
         if (!testMode) {
-            uint256 codeSize;
-            address sender = msg.sender;
-            assembly {
-                codeSize := extcodesize(sender)
-            }
-            // No contracts or EOA (Externally Owned Account) allowed
-            if (codeSize != 0 || tx.origin == sender) revert NotSystem();
+            if (msg.sender != SYSTEM) revert NotSystem();
         }
         _;
     }
