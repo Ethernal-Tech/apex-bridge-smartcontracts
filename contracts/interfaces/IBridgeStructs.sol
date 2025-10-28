@@ -194,7 +194,6 @@ interface IBridgeStructs {
     error TooManyBlocks(uint256 _blocksCount, uint256 _maxBlocksCount);
     error TooManyClaims(uint256 _claimsCount, uint256 _maxClaimsCount);
     error NotContractAddress();
-    error BatchInProgress();
     error NewValidatorSetAlreadyPending();
     error NoNewValidatorSetPending();
     error NotSpecialClaimsOrSpecialSignedBatches();
@@ -202,6 +201,7 @@ interface IBridgeStructs {
     error WrongSpecialClaims();
     error NotSignedBatchesOrClaimsorSpecialClaims();
     error NotSpecialClaims();
+    error NotSystem();
 
     // ------------------------------------------------------------------------
     // Events
@@ -216,4 +216,6 @@ interface IBridgeStructs {
     event UpdatedMaxNumberOfTransactions(uint256 _maxNumberOfTransactions);
     event UpdatedTimeoutBlocksNumber(uint256 _timeoutBlocksNumber);
     event newValidatorSetSubmitted();
+    event SpecialSignedBatchExecutionFailed(uint8 indexed chainId, uint64 indexed batchId);
+    event ValidatorSetUpdateReady();
 }

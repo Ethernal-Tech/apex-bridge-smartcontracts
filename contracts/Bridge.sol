@@ -32,6 +32,9 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Max number of blocks that can be submitted at once.
     uint8 constant MAX_NUMBER_OF_BLOCKS = 40;
 
+    /// @notice Flaging contracts for test mode
+    bool private testMode;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
@@ -45,13 +48,14 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Initializes the contract.
     /// @param _owner Owner of the contract.
     /// @param _upgradeAdmin Admin address authorized to upgrade the contract.
-    function initialize(address _owner, address _upgradeAdmin) public initializer {
+    function initialize(address _owner, address _upgradeAdmin, bool _testMode) public initializer {
         __Ownable_init();
         __UUPSUpgradeable_init();
         _transferOwnership(_owner);
         if (_owner == address(0)) revert ZeroAddress();
         if (_upgradeAdmin == address(0)) revert ZeroAddress();
         upgradeAdmin = _upgradeAdmin;
+        testMode = _testMode;
     }
 
     /// @notice Authorizes a new implementation for upgrade
@@ -168,11 +172,10 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Submit new validator set data
     /// @param _validatorSet Full validator data for all of the new validators.
     /// @param _removedValidators List of addresses of validators that are removed from the set.
-    //TODO: add modifier
     function submitNewValidatorSet(
         ValidatorSet[] calldata _validatorSet,
         address[] calldata _removedValidators
-    ) external override {
+    ) external override onlySystem {
         if (validators.newValidatorSetPending()) {
             revert NewValidatorSetAlreadyPending();
         }
@@ -399,8 +402,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     // TODO: explanation
-    // TODO: modifier
-    function validatorSetUpdated() external override {
+    function validatorSetUpdated() external override onlySystem {
         // TODO copy validators data for all chains
         // TODO unlock the bridge
         // uint256 _newValidatorSetLength = validators.getNewValidatorSetLength();
@@ -429,6 +431,19 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     modifier onlyUpgradeAdmin() {
         if (msg.sender != upgradeAdmin) revert NotOwner();
+        _;
+    }
+
+    modifier onlySystem() {
+        if (!testMode) {
+            uint256 codeSize;
+            address sender = msg.sender;
+            assembly {
+                codeSize := extcodesize(sender)
+            }
+            // No contracts or EOA (Externally Owned Account) allowed
+            if (codeSize != 0 || tx.origin == sender) revert NotSystem();
+        }
         _;
     }
 }

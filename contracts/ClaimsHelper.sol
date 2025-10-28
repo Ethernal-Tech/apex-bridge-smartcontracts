@@ -228,7 +228,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @param _chainId The ID of the blockchain where the batch resides.
     /// @param _batchId The unique identifier of the batch to delete.
     /// @param _status The new status to set for the batch.
-    function setConfirmedSpecialSignedBatchStatus(
+    function setSpecialConfirmedSignedBatchStatus(
         uint8 _chainId,
         uint64 _batchId,
         uint8 _status

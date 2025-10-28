@@ -194,19 +194,20 @@ describe("Deployment", function () {
 //       "ZeroAddress"
 //     );
 
-//     const Bridge = await ethers.getContractFactory("Bridge");
-//     const BridgeLogic = await Bridge.deploy();
-//     const BridgeProxy = await ethers.getContractFactory("ERC1967Proxy");
-//     // Prepare initialization data with zero addresses
-//     initData = Admin.interface.encodeFunctionData("initialize", [
-//       ZERO_ADDRESS, // owner address
-//       ZERO_ADDRESS, // upgrade admin address
-//     ]);
-//     // Deploy proxy with initialization
-//     await expect(BridgeProxy.deploy(await BridgeLogic.getAddress(), initData)).to.be.revertedWithCustomError(
-//       Bridge,
-//       "ZeroAddress"
-//     );
+    const Bridge = await ethers.getContractFactory("Bridge");
+    const BridgeLogic = await Bridge.deploy();
+    const BridgeProxy = await ethers.getContractFactory("ERC1967Proxy");
+    // Prepare initialization data with zero addresses
+    initData = Bridge.interface.encodeFunctionData("initialize", [
+      ZERO_ADDRESS, // owner address
+      ZERO_ADDRESS, // upgrade admin address
+      true,
+    ]);
+    // Deploy proxy with initialization
+    await expect(BridgeProxy.deploy(await BridgeLogic.getAddress(), initData)).to.be.revertedWithCustomError(
+      Bridge,
+      "ZeroAddress"
+    );
 
 //     const Claims = await ethers.getContractFactory("Claims");
 //     const ClaimsLogic = await Claims.deploy();
