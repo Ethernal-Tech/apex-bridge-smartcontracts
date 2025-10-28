@@ -74,13 +74,14 @@ describe("Deployment", function () {
     );
 
     await expect(
-      bridge.connect(owner).setDependencies(
-        validators[0].address,
-        signedBatches.getAddress(),
-        slots.getAddress(),
-        validatorsc.getAddress(),
-        validatorsc.getAddress() // fake address for bladeStakeManagerAddress
-      )
+      bridge
+        .connect(owner)
+        .setDependencies(
+          validators[0].address,
+          signedBatches.getAddress(),
+          slots.getAddress(),
+          validatorsc.getAddress()
+        )
     ).to.be.revertedWithCustomError(bridge, "NotContractAddress");
 
     await expect(

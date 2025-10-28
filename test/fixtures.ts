@@ -129,8 +129,7 @@ export async function deployBridgeFixture() {
     claimsProxy.target,
     signedBatchesProxy.target,
     slotsProxy.target,
-    validatorsProxy.target,
-    validatorsProxy.target //fake address for bladeStakeManagerAddress
+    validatorsProxy.target
   );
 
   await claimsHelper.setDependencies(claims.target, signedBatches.target);

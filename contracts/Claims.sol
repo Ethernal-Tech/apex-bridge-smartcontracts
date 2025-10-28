@@ -62,6 +62,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     uint8 public constant MAX_NUMBER_OF_CLAIMS = 32;
     /// @notice Maximum number of receivers in a BridgingRequestClaim.
     uint8 private constant MAX_NUMBER_OF_RECEIVERS = 16;
+    /// @dev Address of StakeManger contract
+    address constant STAKE_MANAGER_ADDRESS = 0x0000000000000000000000000000000000010022;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
@@ -308,7 +310,16 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 newValidatorSetBitmap |= uint8(1 << chainId);
 
                 if (_countSetBits(newValidatorSetBitmap) == Bridge(bridgeAddress).getAllRegisteredChains().length) {
-                    //TODO call stakeManager
+                    (bool success, ) = address(STAKE_MANAGER_ADDRESS).call(
+                        abi.encodeWithSignature(
+                            "updateValidatorSet(((uint8,(address,uint256[4],bytes,bytes)[])[],address[]))",
+                            validators.getNewValidatorSetDelta()
+                        )
+                    );
+
+                    if (!success) {
+                        revert StakeManagerUpdateFailed();
+                    }
                 }
 
                 return;
@@ -327,7 +338,25 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
     }
 
-    //TODO explanation
+    /// @notice Submits a Batch Execution Failed Claim (BEFC) for processing.
+    /// @dev
+    /// - Computes a claim hash for BEFC using the current validator set and claim data.
+    /// - Checks if the claim is still `IN_PROGRESS` before processing.
+    /// - Records validator vote and checks if quorum has been reached.
+    /// - On quorum:
+    ///     * Resets current batch block to unblock bridge.
+    ///     * Marks the batch status as FAILED.
+    ///     * Emits events if batch is related to validator set update.
+    ///     * For consolidation batches, stops further processing.
+    ///     * For other batch types, iterates through included transactions:
+    ///         - Refunds NORMAL transactions back to the chain balance.
+    ///         - Retries DEFUND transactions up to `MAX_NUMBER_OF_RETRIES`; refunds if retries exhausted.
+    /// - Updates chain token quantity, last batched nonce, and timeout block after processing.
+    /// @param _claim Struct containing details of the failed batch execution claim.
+    /// @param _caller Address of the validator submitting the claim.
+    /// Emits:
+    /// - `SignedBatchValidatorSetExecutionFailed(chainId, batchId)` if validator set execution fails.
+    /// - `DefundFailedAfterMultipleRetries()` if DEFUND transaction retries are exhausted.
     function _submitClaimsBEFC(BatchExecutionFailedClaim calldata _claim, address _caller) internal {
         uint8 chainId = _claim.chainId;
         uint64 batchId = _claim.batchNonceId;
