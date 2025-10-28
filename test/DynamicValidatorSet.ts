@@ -1,4 +1,3 @@
-import { SpecialSignedBatches } from "./../typechain-types/contracts/SpecialSignedBatches";
 import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
@@ -22,152 +21,131 @@ describe("Dynamic Validator Set", function () {
   }
   describe("Submit new validator set", function () {
     it("Should revert if there is already a new validator set pending", async function () {
-      const { bridge, owner, validatorsc, validators, validatorSets } = await loadFixture(deployBridgeFixture);
+      const { bridge, owner, validatorsc, newValidatorSetDelta } = await loadFixture(deployBridgeFixture);
 
       const bridgeContract = await impersonateAsContractAndMintFunds(await bridge.getAddress());
       await validatorsc.connect(bridgeContract).setNewValidatorSetPending(true);
 
-      await expect(
-        bridge.connect(owner).submitNewValidatorSet(validatorSets, validators)
-      ).to.be.revertedWithCustomError(bridge, "NewValidatorSetAlreadyPending");
+      await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta)).to.be.revertedWithCustomError(
+        bridge,
+        "NewValidatorSetAlreadyPending"
+      );
     });
 
     it("Should revert if there is no new data set for all registered chains", async function () {
-      const { bridge, owner, validators, chain1, chain2, validatorSets_notEnoughChains, validatorAddressChainData } =
+      const { bridge, owner, chain1, chain2, newValidatorSetDelta_notEnoughChains, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await expect(bridge.connect(owner).submitNewValidatorSet(validatorSets_notEnoughChains, validators))
+      await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta_notEnoughChains))
         .to.be.revertedWithCustomError(bridge, "InvalidData")
         .withArgs("WrongNumberOfChains");
     });
 
     it("Should revert if there is too many data sets compared to registered chains", async function () {
-      const { bridge, owner, validators, chain1, chain2, validatorSets_TooManyChains, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
+      const { bridge, owner, newValidatorSetDelta_TooManyChains } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-      await expect(bridge.connect(owner).submitNewValidatorSet(validatorSets_TooManyChains, validators))
+      await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta_TooManyChains))
         .to.be.revertedWithCustomError(bridge, "InvalidData")
         .withArgs("WrongNumberOfChains");
     });
 
     it("Should revert if there is not enough validators in the new validator set for all registered chains", async function () {
-      const {
-        bridge,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        validatorSets_NotEnoughValidators,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-      await expect(bridge.connect(owner).submitNewValidatorSet(validatorSets_NotEnoughValidators, validators))
-        .to.be.revertedWithCustomError(bridge, "InvalidData")
-        .withArgs("WrongNumberOfValidators");
-    });
-
-    it("Should revert if there is too many validators in the new validator set for all registered chains", async function () {
-      const { bridge, owner, validators, chain1, chain2, validatorSets_TooManyValidators, validatorAddressChainData } =
+      const { bridge, owner, chain1, chain2, newValidatorSetDelta_NotEnoughValidators, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await expect(bridge.connect(owner).submitNewValidatorSet(validatorSets_TooManyValidators, validators))
+      await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta_NotEnoughValidators))
+        .to.be.revertedWithCustomError(bridge, "InvalidData")
+        .withArgs("WrongNumberOfValidators");
+    });
+
+    it("Should revert if there is too many validators in the new validator set for all registered chains", async function () {
+      const { bridge, owner, chain1, chain2, newValidatorSetDelta_TooManyValidators, validatorAddressChainData } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta_TooManyValidators))
         .to.be.revertedWithCustomError(bridge, "InvalidData")
         .withArgs("WrongNumberOfValidators");
     });
 
     it("Should revert if validator address is zero address", async function () {
-      const { bridge, owner, validators, chain1, chain2, validatorSets_ZeroAddress, validatorAddressChainData } =
+      const { bridge, owner, chain1, chain2, newValidatorSetDelta_ZeroAddress, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
       await expect(
-        bridge.connect(owner).submitNewValidatorSet(validatorSets_ZeroAddress, validators)
+        bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta_ZeroAddress)
       ).to.be.revertedWithCustomError(bridge, "ZeroAddress");
     });
 
     it("Should revert if validator address is duplicated within a set", async function () {
-      const { bridge, owner, validators, chain1, chain2, validatorSets_DoubleAddress, validatorAddressChainData } =
+      const { bridge, owner, chain1, chain2, newValidatorSetDelta_DoubleAddress, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await expect(bridge.connect(owner).submitNewValidatorSet(validatorSets_DoubleAddress, validators))
+      await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta_DoubleAddress))
         .to.be.revertedWithCustomError(bridge, "InvalidData")
         .withArgs("DuplicatedValidator");
     });
 
-    it("Should store addresses of validators to be removed from the new set", async function () {
-      const { bridge, validatorsc, owner, validators, chain1, chain2, validatorSets, validatorAddressChainData } =
+    it("Should store proposed newValidatorSetDelta", async function () {
+      const { bridge, validatorsc, owner, chain1, chain2, newValidatorSetDelta, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      expect((await validatorsc.getValidatorsToBeRemoved()).length).to.equal(0);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      expect((await validatorsc.getNewValidatorSetDelta()).addedValidators.length).to.be.equal(
+        newValidatorSetDelta.addedValidators.length
+      );
 
-      expect((await validatorsc.getValidatorsToBeRemoved()).length).to.be.equal(validators.length);
+      const storednewValidatorSetDelta = await validatorsc.getNewValidatorSetDelta();
+      const addedValidators = storednewValidatorSetDelta.addedValidators;
 
-      const validatorsToBeRemoved = await validatorsc.getValidatorsToBeRemoved();
-      const validatorsToBeRemovedLenght = validatorsToBeRemoved.length;
-
-      for (let i = 0; i < validatorsToBeRemovedLenght; i++) {
-        expect(validatorsToBeRemoved[i]).to.be.equal(validators[i]);
-      }
-    });
-
-    it("Should store proposed validator set", async function () {
-      const { bridge, validatorsc, owner, validators, chain1, chain2, validatorSets, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
-
-      expect((await validatorsc.getNewValidatorSet()).length).to.be.equal(validatorSets.length);
-
-      const newValidatorSet = await validatorsc.getNewValidatorSet();
-
-      for (let i = 0; i < newValidatorSet.length; i++) {
-        expect(newValidatorSet[i].chainId).to.be.equal(validatorSets[i].chainId);
-        for (let j = 0; j < newValidatorSet[i].validators.length; j++) {
-          expect(newValidatorSet[i].validators[j].addr.toLocaleLowerCase()).to.be.equal(
-            validatorSets[i].validators[j].addr
+      for (let i = 0; i < addedValidators.length; i++) {
+        expect(addedValidators[i].chainId).to.be.equal(newValidatorSetDelta.addedValidators[i].chainId);
+        for (let j = 0; j < addedValidators[i].validators.length; j++) {
+          expect(addedValidators[i].validators[j].addr.toLocaleLowerCase()).to.be.equal(
+            newValidatorSetDelta.addedValidators[i].validators[j].addr
           );
-          expect(newValidatorSet[i].validators[j].keySignature).to.be.equal(
-            validatorSets[i].validators[j].keySignature
+          expect(addedValidators[i].validators[j].keySignature).to.be.equal(
+            newValidatorSetDelta.addedValidators[i].validators[j].keySignature
           );
-          expect(newValidatorSet[i].validators[j].keyFeeSignature).to.be.equal(
-            validatorSets[i].validators[j].keyFeeSignature
+          expect(addedValidators[i].validators[j].keyFeeSignature).to.be.equal(
+            newValidatorSetDelta.addedValidators[i].validators[j].keyFeeSignature
           );
-          for (let k = 0; k < newValidatorSet[i].validators[j].data.length; k++) {
-            expect(newValidatorSet[i].validators[j].data.key[k]).to.be.equal(
-              validatorSets[i].validators[j].data.key[k]
+          for (let k = 0; k < addedValidators[i].validators[j].data.length; k++) {
+            expect(addedValidators[i].validators[j].data.key[k]).to.be.equal(
+              newValidatorSetDelta.addedValidators[i].validators[j].data.key[k]
             );
           }
         }
       }
+
+      const storedNewValidatorSetDelta = await validatorsc.getNewValidatorSetDelta();
+      const removedValidators = storedNewValidatorSetDelta.removedValidators;
+
+      for (let i = 0; i < removedValidators.length; i++) {
+        expect(removedValidators[i]).to.be.equal(newValidatorSetDelta.removedValidators[i]);
+      }
     });
 
     it("Should set newPendingValidatorSet to true when new ValidatorSet is submitted", async function () {
-      const { bridge, validatorsc, owner, validators, chain1, chain2, validatorSets, validatorAddressChainData } =
+      const { bridge, validatorsc, owner, chain1, chain2, newValidatorSetDelta, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
@@ -175,20 +153,20 @@ describe("Dynamic Validator Set", function () {
 
       expect(await validatorsc.newValidatorSetPending()).to.be.false;
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       expect(await validatorsc.newValidatorSetPending()).to.be.true;
     });
 
     it("Should emit newValidatorSetSubmitted when new ValidatorSet is submitted", async function () {
-      const { bridge, owner, validators, chain1, chain2, validatorSets, validatorAddressChainData } = await loadFixture(
+      const { bridge, owner, chain1, chain2, newValidatorSetDelta, validatorAddressChainData } = await loadFixture(
         deployBridgeFixture
       );
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await expect(bridge.connect(owner).submitNewValidatorSet(validatorSets, validators)).to.emit(
+      await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta)).to.emit(
         bridge,
         "newValidatorSetSubmitted"
       );
@@ -213,14 +191,14 @@ describe("Dynamic Validator Set", function () {
         chain2,
         validators,
         specialSignedBatch,
-        validatorSets,
+        newValidatorSetDelta,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       await setCode("0x0000000000000000000000000000000000002050", "0x60206000F3"); // should return false for precompile
       await expect(
@@ -296,7 +274,7 @@ describe("Dynamic Validator Set", function () {
         chain1,
         chain2,
         validators,
-        validatorSets,
+        newValidatorSetDelta,
         specialSignedBatch,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
@@ -304,7 +282,7 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
       await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
@@ -348,7 +326,7 @@ describe("Dynamic Validator Set", function () {
         chain1,
         chain2,
         validators,
-        validatorSets,
+        newValidatorSetDelta,
         specialSignedBatch,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
@@ -356,7 +334,7 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
       await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
@@ -410,14 +388,14 @@ describe("Dynamic Validator Set", function () {
         validators,
         chain1,
         chain2,
-        validatorSets,
+        newValidatorSetDelta,
         validatorClaimsBRC,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       await expect(bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
         bridge,
@@ -432,15 +410,15 @@ describe("Dynamic Validator Set", function () {
         chain1,
         chain2,
         validators,
-        validatorSets,
+        newValidatorSetDelta,
         validatorClaimsBEC_bunch33,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       await expect(
         bridge.connect(validators[1]).submitClaims(validatorClaimsBEC_bunch33)
@@ -455,16 +433,16 @@ describe("Dynamic Validator Set", function () {
         chain1,
         chain2,
         validators,
-        validatorSets,
+        newValidatorSetDelta,
         signedBatch,
         validatorClaimsBEC,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       await bridge.connect(validators[0]).submitSpecialSignedBatch(signedBatch);
       await bridge.connect(validators[1]).submitSpecialSignedBatch(signedBatch);
@@ -504,14 +482,14 @@ describe("Dynamic Validator Set", function () {
         chain2,
         validatorClaimsBEC,
         specialSignedBatch,
-        validatorSets,
+        newValidatorSetDelta,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
       await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
@@ -558,14 +536,14 @@ describe("Dynamic Validator Set", function () {
         chain2,
         validatorClaimsBEC,
         specialSignedBatch,
-        validatorSets,
+        newValidatorSetDelta,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
       await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
@@ -610,14 +588,14 @@ describe("Dynamic Validator Set", function () {
         validatorClaimsBEC,
         validatorClaimsBEFC,
         specialSignedBatch,
-        validatorSets,
+        newValidatorSetDelta,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
       await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
@@ -696,14 +674,14 @@ describe("Dynamic Validator Set", function () {
         specialSignedBatch,
         validatorClaimsBEC,
         validatorClaimsBEC_another,
-        validatorSets,
+        newValidatorSetDelta,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
       await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
@@ -782,14 +760,14 @@ describe("Dynamic Validator Set", function () {
         chain2,
         specialSignedBatch,
         validatorClaimsBEC,
-        validatorSets,
+        newValidatorSetDelta,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
       await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
@@ -823,79 +801,6 @@ describe("Dynamic Validator Set", function () {
       ).to.equal(2);
     });
 
-    it("Should emit ValidatorSetUpdateReady if there is quorum on final batch in SBEC for all registered chains", async function () {
-      const {
-        bridge,
-        specialClaims,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        specialSignedBatch,
-        validatorClaimsBEC,
-        validatorSets,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
-
-      //first chain
-      // sets consolidation to true for this test
-      specialSignedBatch.isConsolidation = true;
-
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
-
-      // reset
-      specialSignedBatch.isConsolidation = false; // reset
-
-      //first chain
-      // sets consolidation to true for this test
-      specialSignedBatch.isConsolidation = true;
-      specialSignedBatch.destinationChainId = 1;
-
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
-
-      // reset
-      specialSignedBatch.destinationChainId = 2;
-
-      //second chain
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
-
-      // reset
-      specialSignedBatch.isConsolidation = false;
-
-      // first chain
-      validatorClaimsBEC.batchExecutedClaims[0].chainId = 1;
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEC);
-      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEC);
-      await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEC);
-      await bridge.connect(validators[3]).submitSpecialClaims(validatorClaimsBEC);
-
-      // reset
-      validatorClaimsBEC.batchExecutedClaims[0].chainId = 2;
-
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEC);
-      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEC);
-      await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEC);
-
-      await expect(bridge.connect(validators[3]).submitSpecialClaims(validatorClaimsBEC)).to.emit(
-        specialClaims,
-        "ValidatorSetUpdateReady"
-      );
-    });
-
     it("Should NOT set bitmap to +1 if there is quorum on non-final batch in SBEC", async function () {
       const {
         bridge,
@@ -906,14 +811,14 @@ describe("Dynamic Validator Set", function () {
         chain2,
         specialSignedBatch,
         validatorClaimsBEC,
-        validatorSets,
+        newValidatorSetDelta,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       // specialSignedBatch has isConsolidation set to false
 
@@ -959,14 +864,14 @@ describe("Dynamic Validator Set", function () {
         chain2,
         specialSignedBatch,
         validatorClaimsBEC,
-        validatorSets,
+        newValidatorSetDelta,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       // sets consolidation to true for this test
       specialSignedBatch.isConsolidation = true;
@@ -1016,16 +921,16 @@ describe("Dynamic Validator Set", function () {
         chain1,
         chain2,
         validators,
-        validatorSets,
+        newValidatorSetDelta,
         signedBatch,
         validatorClaimsBEFC,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       await bridge.connect(validators[0]).submitSpecialSignedBatch(signedBatch);
       await bridge.connect(validators[1]).submitSpecialSignedBatch(signedBatch);
@@ -1065,14 +970,14 @@ describe("Dynamic Validator Set", function () {
         chain2,
         validatorClaimsBEFC,
         specialSignedBatch,
-        validatorSets,
+        newValidatorSetDelta,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
       await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
@@ -1119,14 +1024,14 @@ describe("Dynamic Validator Set", function () {
         chain2,
         validatorClaimsBEFC,
         specialSignedBatch,
-        validatorSets,
+        newValidatorSetDelta,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
       await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
@@ -1171,14 +1076,14 @@ describe("Dynamic Validator Set", function () {
         validatorClaimsBEC,
         validatorClaimsBEFC,
         specialSignedBatch,
-        validatorSets,
+        newValidatorSetDelta,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
       await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
@@ -1257,14 +1162,14 @@ describe("Dynamic Validator Set", function () {
         specialSignedBatch,
         validatorClaimsBEFC,
         validatorClaimsBEFC_another,
-        validatorSets,
+        newValidatorSetDelta,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
       await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
@@ -1343,14 +1248,14 @@ describe("Dynamic Validator Set", function () {
         chain2,
         specialSignedBatch,
         validatorClaimsBEFC,
-        validatorSets,
+        newValidatorSetDelta,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
       await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
@@ -1394,14 +1299,14 @@ describe("Dynamic Validator Set", function () {
         chain2,
         specialSignedBatch,
         validatorClaimsBEFC,
-        validatorSets,
+        newValidatorSetDelta,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
       await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
@@ -1420,71 +1325,82 @@ describe("Dynamic Validator Set", function () {
   });
   describe("New validator set confirmed on Blade", function () {
     it("Validator set should be updated", async function () {
-      const { bridge, validatorsc, owner, validators, chain1, chain2, validatorSets, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
+      const {
+        bridge,
+        validatorsc,
+        owner,
+        validators,
+        chain1,
+        chain2,
+        newValidatorSetDelta,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
 
-      // current validator set
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
+
+      // current validators
       for (let i = 0; i < validators.length; i++) {
         expect(await validatorsc.isValidator(validators[i].address)).to.equal(true);
       }
 
-      // future validator set
-      for (let i = 0; i < validatorSets[0].validators.length; i++) {
-        expect(await validatorsc.isValidator(validatorSets[0].validators[i].addr)).to.equal(false);
+      // added validator set
+      for (let i = 0; i < newValidatorSetDelta.addedValidators[0].validators.length; i++) {
+        expect(await validatorsc.isValidator(newValidatorSetDelta.addedValidators[0].validators[i].addr)).to.equal(
+          false
+        );
       }
 
       await bridge.validatorSetUpdated();
 
-      // old validator set should be removed
-      for (let i = 0; i < validators.length; i++) {
-        expect(await validatorsc.isValidator(validators[i].address)).to.equal(false);
+      // old validators should be removed
+      for (let i = 0; i < newValidatorSetDelta.removedValidators.length; i++) {
+        expect(await validatorsc.isValidator(newValidatorSetDelta.removedValidators[i])).to.equal(false);
       }
 
-      // new validator set
-      for (let i = 0; i < validatorSets[0].validators.length; i++) {
-        expect(await validatorsc.isValidator(validatorSets[0].validators[i].addr)).to.equal(true);
+      // new validators are added to the set
+      for (let i = 0; i < newValidatorSetDelta.addedValidators[0].validators.length; i++) {
+        expect(await validatorsc.isValidator(newValidatorSetDelta.addedValidators[0].validators[i].addr)).to.equal(
+          true
+        );
       }
 
       const chains = await bridge.getAllRegisteredChains();
-      console.log("KOLIKO IMA CHAINOVA");
-      console.log(chains.length);
 
+      //TODO
       for (let i = 0; i < chains.length; i++) {
         for (let j = 0; j < validatorsc.validatorAddresses.length; j++) {
-          console.log("KOLIKO IMA VALIDATORA");
           const validatorAddress = validatorsc.validatorAddresses(j);
           const chainData = await validatorsc.getValidatorsChainData(chains[i].id);
-          console.log("EVO GA OVDE");
-          console.log(chainData);
         }
       }
     });
 
     it("Data about validaters to be removed should be deleted", async function () {
-      const { bridge, validatorsc, owner, validators, chain1, chain2, validatorSets, validatorAddressChainData } =
+      const { bridge, validatorsc, owner, chain1, chain2, newValidatorSetDelta, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
-      expect((await validatorsc.getValidatorsToBeRemoved()).length).to.equal(5);
+      expect((await validatorsc.getNewValidatorSetDelta()).addedValidators.length).to.equal(2);
+      expect((await validatorsc.getNewValidatorSetDelta()).removedValidators.length).to.equal(2);
       await bridge.validatorSetUpdated();
-      expect((await validatorsc.getValidatorsToBeRemoved()).length).to.equal(0);
+      expect((await validatorsc.getNewValidatorSetDelta()).addedValidators.length).to.equal(0);
+      expect((await validatorsc.getNewValidatorSetDelta()).removedValidators.length).to.equal(0);
     });
 
     it("Bridge should be unlocked", async function () {
-      const { bridge, validatorsc, owner, validators, chain1, chain2, validatorSets, validatorAddressChainData } =
+      const { bridge, validatorsc, owner, chain1, chain2, newValidatorSetDelta, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
       expect(await validatorsc.newValidatorSetPending()).to.equal(true);
       await bridge.validatorSetUpdated();

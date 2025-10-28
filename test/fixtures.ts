@@ -503,6 +503,41 @@ export async function deployBridgeFixture() {
     };
   });
 
+  const newValidatorSetDelta = {
+    addedValidators: validatorSets,
+    removedValidators: [validator4, validator5],
+  };
+
+  const newValidatorSetDelta_ZeroAddress = {
+    addedValidators: validatorSets_ZeroAddress,
+    removedValidators: [validator4, validator5],
+  };
+
+  const newValidatorSetDelta_DoubleAddress = {
+    addedValidators: validatorSets_DoubleAddress,
+    removedValidators: [validator4, validator5],
+  };
+
+  const newValidatorSetDelta_TooManyValidators = {
+    addedValidators: validatorSets_TooManyValidators,
+    removedValidators: [validator4, validator5],
+  };
+
+  const newValidatorSetDelta_NotEnoughValidators = {
+    addedValidators: validatorSets_NotEnoughValidators,
+    removedValidators: [validator4, validator5],
+  };
+
+  const newValidatorSetDelta_TooManyChains = {
+    addedValidators: validatorSets_TooManyChains,
+    removedValidators: [validator4, validator5],
+  };
+
+  const newValidatorSetDelta_notEnoughChains = {
+    addedValidators: validatorSets_notEnoughChains,
+    removedValidators: [validator4, validator5],
+  };
+
   return {
     hre,
     bridge,
@@ -538,6 +573,13 @@ export async function deployBridgeFixture() {
     validatorSets_TooManyValidators,
     validatorSets_ZeroAddress,
     validatorSets_DoubleAddress,
+    newValidatorSetDelta,
+    newValidatorSetDelta_DoubleAddress,
+    newValidatorSetDelta_ZeroAddress,
+    newValidatorSetDelta_TooManyValidators,
+    newValidatorSetDelta_NotEnoughValidators,
+    newValidatorSetDelta_TooManyChains,
+    newValidatorSetDelta_notEnoughChains,
   };
 }
 
