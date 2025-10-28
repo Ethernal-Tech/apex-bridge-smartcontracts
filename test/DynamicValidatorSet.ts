@@ -927,6 +927,181 @@ describe("Dynamic Validator Set", function () {
       }
     });
 
+    it("Validator set should be updated if it is AddOnly", async function () {
+      const {
+        bridge,
+        validatorsc,
+        owner,
+        validators,
+        chain1,
+        chain2,
+        newValidatorSetDelta_AddOnly,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta_AddOnly);
+
+      // current validators
+      for (let i = 0; i < validators.length; i++) {
+        expect(await validatorsc.isValidator(validators[i].address)).to.equal(true);
+      }
+
+      // added validator set
+      for (let i = 0; i < newValidatorSetDelta_AddOnly.addedValidators[0].validators.length; i++) {
+        expect(
+          await validatorsc.isValidator(newValidatorSetDelta_AddOnly.addedValidators[0].validators[i].addr)
+        ).to.equal(false);
+      }
+
+      // old validatorsCount
+      expect(await validatorsc.validatorsCount()).to.equal(validators.length);
+
+      // old number of validators addresses
+      expect((await validatorsc.getValidatorsAddresses()).length).to.equal(validators.length);
+
+      await bridge.connect(systemSigner).validatorSetUpdated();
+
+      // old validators should be removed
+      for (let i = 0; i < newValidatorSetDelta_AddOnly.removedValidators.length; i++) {
+        expect(await validatorsc.isValidator(newValidatorSetDelta_AddOnly.removedValidators[i])).to.equal(false);
+      }
+
+      // new validators are added to the set
+      for (let i = 0; i < newValidatorSetDelta_AddOnly.addedValidators[0].validators.length; i++) {
+        expect(
+          await validatorsc.isValidator(newValidatorSetDelta_AddOnly.addedValidators[0].validators[i].addr)
+        ).to.equal(true);
+      }
+
+      // new validatorsCount
+      expect(await validatorsc.validatorsCount()).to.equal(
+        validators.length +
+          newValidatorSetDelta_AddOnly.addedValidators[0].validators.length -
+          newValidatorSetDelta_AddOnly.removedValidators.length
+      );
+
+      // old number of validators addresses
+      expect((await validatorsc.getValidatorsAddresses()).length).to.equal(
+        validators.length +
+          newValidatorSetDelta_AddOnly.addedValidators[0].validators.length -
+          newValidatorSetDelta_AddOnly.removedValidators.length
+      );
+
+      let newValidatorAddresses = [];
+
+      for (let i = 0; i < validators.length; i++) {
+        newValidatorAddresses.push(validators[i].address);
+      }
+
+      const addressesToRemove = newValidatorSetDelta_AddOnly.removedValidators;
+
+      for (let i = 0; i < addressesToRemove.length; i++) {
+        const index = newValidatorAddresses.indexOf(addressesToRemove[i]);
+        if (index > -1) {
+          newValidatorAddresses.splice(index, 1);
+        }
+      }
+
+      for (let i = 0; i < newValidatorSetDelta_AddOnly.addedValidators[0].validators.length; i++) {
+        newValidatorAddresses.push(newValidatorSetDelta_AddOnly.addedValidators[0].validators[i].addr);
+      }
+
+      // comparing validator addresses
+      expect(await validatorsc.getValidatorsAddresses()).to.deep.equal(newValidatorAddresses);
+
+      // comparing chain data
+      const chains = await bridge.getAllRegisteredChains();
+
+      // to include chainData
+      for (let i = 0; i < chains.length; i++) {
+        const chainData = await validatorsc.getValidatorsChainData(chains[i].id);
+        for (let j = 0; j < newValidatorSetDelta_AddOnly.addedValidators[0].validators.length; j++) {
+          const target = newValidatorSetDelta_AddOnly.addedValidators[0].validators[j].data.key.map(BigInt);
+
+          const found = chainData.some(
+            (entry) =>
+              Array.isArray(entry[0]) &&
+              entry[0].length === target.length &&
+              entry[0].every((val, i) => val === target[i])
+          );
+
+          expect(found).to.be.true;
+        }
+      }
+    });
+
+    it("Validator set should be updated if it is RemoveOnly", async function () {
+      const {
+        bridge,
+        validatorsc,
+        owner,
+        validators,
+        chain1,
+        chain2,
+        newValidatorSetDelta_RemoveOnly,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta_RemoveOnly);
+
+      // current validators
+      for (let i = 0; i < validators.length; i++) {
+        expect(await validatorsc.isValidator(validators[i].address)).to.equal(true);
+      }
+
+      // old validatorsCount
+      expect(await validatorsc.validatorsCount()).to.equal(validators.length);
+
+      // old number of validators addresses
+      expect((await validatorsc.getValidatorsAddresses()).length).to.equal(validators.length);
+
+      await bridge.connect(systemSigner).validatorSetUpdated();
+
+      // old validators should be removed
+      for (let i = 0; i < newValidatorSetDelta_RemoveOnly.removedValidators.length; i++) {
+        expect(await validatorsc.isValidator(newValidatorSetDelta_RemoveOnly.removedValidators[i])).to.equal(false);
+      }
+
+      // new validatorsCount
+      expect(await validatorsc.validatorsCount()).to.equal(
+        validators.length - newValidatorSetDelta_RemoveOnly.removedValidators.length
+      );
+
+      // old number of validators addresses
+      expect((await validatorsc.getValidatorsAddresses()).length).to.equal(
+        validators.length - newValidatorSetDelta_RemoveOnly.removedValidators.length
+      );
+
+      let newValidatorAddresses = [];
+
+      for (let i = 0; i < validators.length; i++) {
+        newValidatorAddresses.push(validators[i].address);
+      }
+
+      const addressesToRemove = newValidatorSetDelta_RemoveOnly.removedValidators;
+
+      for (let i = 0; i < addressesToRemove.length; i++) {
+        const index = newValidatorAddresses.indexOf(addressesToRemove[i]);
+        if (index > -1) {
+          newValidatorAddresses.splice(index, 1);
+        }
+      }
+
+      // comparing validator addresses
+      expect(await validatorsc.getValidatorsAddresses()).to.deep.equal(newValidatorAddresses);
+
+      expect((await bridge.getValidatorsChainData(chain1.id)).length).to.equal(4);
+      expect((await bridge.getValidatorsChainData(chain2.id)).length).to.equal(4);
+    });
+
     it("Data about validaters to be removed should be deleted", async function () {
       const { bridge, validatorsc, owner, chain1, chain2, newValidatorSetDelta, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);

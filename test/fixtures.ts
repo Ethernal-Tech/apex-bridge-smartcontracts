@@ -550,6 +550,16 @@ export async function deployBridgeFixture() {
     removedValidators: [validator4.address, validator5.address],
   };
 
+  const newValidatorSetDelta_AddOnly = {
+    addedValidators: validatorSets,
+    removedValidators: [],
+  };
+
+  const newValidatorSetDelta_RemoveOnly = {
+    addedValidators: [],
+    removedValidators: [validator5.address],
+  };
+
   const newValidatorSetDelta_ZeroAddress = {
     addedValidators: validatorSets_ZeroAddress,
     removedValidators: [validator4.address, validator5.address],
@@ -634,6 +644,8 @@ export async function deployBridgeFixture() {
     validatorSets_ZeroAddress,
     validatorSets_DoubleAddress,
     newValidatorSetDelta,
+    newValidatorSetDelta_AddOnly,
+    newValidatorSetDelta_RemoveOnly,
     newValidatorSetDelta_DoubleAddress,
     newValidatorSetDelta_ZeroAddress,
     newValidatorSetDelta_TooManyValidators,

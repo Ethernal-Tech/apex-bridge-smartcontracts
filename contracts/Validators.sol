@@ -258,15 +258,18 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         // checks that there are as many new validator set as there are registered chains
         // validator set for Blade chain will always be included in the _validatorSet, but Blade
         // is never registered as a chain on bridge, thus +1
-        if (_numberOfChainsInValidatorSets != _numberOfRegisteredChains + 1) {
+        if (_numberOfChainsInValidatorSets != 0 && _numberOfChainsInValidatorSets != _numberOfRegisteredChains + 1) {
             revert InvalidData("WrongNumberOfChains");
         }
 
+        uint256 numberOfNewValidators = _newValidatorSetDelta.addedValidators.length == 0
+            ? 0
+            : _newValidatorSetDelta.addedValidators[0].validators.length;
+
         // the number of validators must bet between 4 and 126
-        uint256 expectedNumberOfValidators = _newValidatorSetDelta.addedValidators[0].validators.length;
 
         uint256 newValidatorSetSize = validatorsCount +
-            expectedNumberOfValidators -
+            numberOfNewValidators -
             _newValidatorSetDelta.removedValidators.length;
 
         if (newValidatorSetSize < 4 || newValidatorSetSize > 126) {
@@ -275,7 +278,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
 
         // all chains must have the same number of validators
         for (uint256 i = 1; i < _numberOfChainsInValidatorSets; i++) {
-            if (_newValidatorSetDelta.addedValidators[i].validators.length != expectedNumberOfValidators) {
+            if (_newValidatorSetDelta.addedValidators[i].validators.length != numberOfNewValidators) {
                 revert InvalidData("WrongNumberOfValidators");
             }
         }
@@ -299,7 +302,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
             }
 
             //check that validator addresses are not zero addresses
-            for (uint256 k; k < expectedNumberOfValidators; k++) {
+            for (uint256 k; k < numberOfNewValidators; k++) {
                 address _validatorAddress = _newValidatorSetDelta.addedValidators[i].validators[k].addr;
 
                 if (_validatorAddress == address(0)) {
@@ -307,7 +310,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
                 }
 
                 //checks for duplicate validator addresses
-                for (uint l = k + 1; l < expectedNumberOfValidators; l++) {
+                for (uint l = k + 1; l < numberOfNewValidators; l++) {
                     if (_validatorAddress == _newValidatorSetDelta.addedValidators[i].validators[l].addr) {
                         revert InvalidData("DuplicatedValidator"); // duplicate found
                     }
@@ -429,6 +432,8 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
                 chainData[chainId].push(newData[k]);
             }
         }
+
+        validatorsCount = uint8(validatorAddresses.length);
     }
 
     /// @notice Adds newly proposed validators to the current validator set across all chains.
@@ -439,28 +444,30 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// - Updates chain-specific validator data (`chainData`) for each chain in the new validator set delta.
     /// - Increments `currentValidatorSetId` to reflect the updated validator set.
     function addNewValidatorsData() external onlyBridge {
-        uint256 _numberOfNewValidators = newValidatorSetDelta.addedValidators[0].validators.length;
-        uint256 _numberOfOldValidators = validatorAddresses.length;
-        validatorsCount = uint8(_numberOfOldValidators + _numberOfNewValidators);
+        if (newValidatorSetDelta.addedValidators.length != 0) {
+            uint256 _numberOfNewValidators = newValidatorSetDelta.addedValidators[0].validators.length;
+            uint256 _numberOfOldValidators = validatorAddresses.length;
+            validatorsCount = uint8(_numberOfOldValidators + _numberOfNewValidators);
 
-        for (uint8 i; i < _numberOfNewValidators; i++) {
-            address _validatorAddress = newValidatorSetDelta.addedValidators[0].validators[i].addr;
-            if (addressValidatorIndex[_validatorAddress] != 0) {
-                revert InvalidData("DuplicatedValidator");
+            for (uint8 i; i < _numberOfNewValidators; i++) {
+                address _validatorAddress = newValidatorSetDelta.addedValidators[0].validators[i].addr;
+                if (addressValidatorIndex[_validatorAddress] != 0) {
+                    revert InvalidData("DuplicatedValidator");
+                }
+                validatorAddresses.push(_validatorAddress);
+                addressValidatorIndex[_validatorAddress] = uint8(_numberOfOldValidators + i + 1);
             }
-            validatorAddresses.push(_validatorAddress);
-            addressValidatorIndex[_validatorAddress] = uint8(_numberOfOldValidators + i + 1);
-        }
 
-        uint256 _numberOfChains = newValidatorSetDelta.addedValidators.length;
-        for (uint8 i; i < _numberOfChains; i++) {
-            if (newValidatorSetDelta.addedValidators[i].chainId == 255) {
-                continue;
-            }
-            ValidatorSet memory _validatorSet = newValidatorSetDelta.addedValidators[i];
+            uint256 _numberOfChains = newValidatorSetDelta.addedValidators.length;
+            for (uint8 i; i < _numberOfChains; i++) {
+                if (newValidatorSetDelta.addedValidators[i].chainId == 255) {
+                    continue;
+                }
+                ValidatorSet memory _validatorSet = newValidatorSetDelta.addedValidators[i];
 
-            for (uint8 k; k < _numberOfNewValidators; k++) {
-                chainData[_validatorSet.chainId].push(_validatorSet.validators[k].data);
+                for (uint8 k; k < _numberOfNewValidators; k++) {
+                    chainData[_validatorSet.chainId].push(_validatorSet.validators[k].data);
+                }
             }
         }
 
