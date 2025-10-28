@@ -67,7 +67,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @param _signedBatchesAddress Address of the SignedBatches contract.
     function setDependencies(
         address _claimsAddress,
-        address _specialClaimsAddres,
+        address _specialClaimsAddress,
         address _signedBatchesAddress,
         address _specialSignedBatchesAddress
     ) external onlyOwner {
@@ -77,7 +77,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
             !_isContract(_specialSignedBatchesAddress)
         ) revert NotContractAddress();
         claimsAddress = _claimsAddress;
-        specialClaimsAddress = _specialClaimsAddres;
+        specialClaimsAddress = _specialClaimsAddress;
         signedBatchesAddress = _signedBatchesAddress;
         specialSignedBatchesAddress = _specialSignedBatchesAddress;
     }
