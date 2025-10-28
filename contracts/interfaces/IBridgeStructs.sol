@@ -150,6 +150,11 @@ interface IBridgeStructs {
         uint256[4] key;
     }
 
+    struct ValidatorSet {
+        Chain chain;
+        ValidatorAddressChainData[] validators;
+    }
+
     /// @notice Summary info for a transaction in a batch.
     struct TxDataInfo {
         bytes32 observedTransactionHash;

@@ -49,6 +49,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev BlockchainId -> nonce -> ConfirmedTransaction
     mapping(uint8 => mapping(uint64 => ConfirmedTransaction)) public confirmedTransactions;
 
+    /// @notice Mapping from chain ID to special confirmed transaction for validators update.
+    /// @dev BlockchainId -> nonce -> ConfirmedTransaction
+    mapping(uint8 => ConfirmedTransaction) public confirmedTransactionsValidatorsUpdate;
+
     /// @notice Mapping from chain ID to nonce of the last confirmed transaction.
     /// @dev chainId -> nonce
     mapping(uint8 => uint64) public lastConfirmedTxNonce;
@@ -126,6 +130,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @param _claims Struct containing all types of validator claims.
     /// @param _caller Address of the validator submitting the claims.
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
+        if (validators.newValidatorSetPending()) {
+            return;
+        }
+
         uint256 bridgingRequestClaimsLength = _claims.bridgingRequestClaims.length;
         uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
         uint256 batchExecutionFailedClaimsLength = _claims.batchExecutionFailedClaims.length;
@@ -273,7 +281,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         // claims for the same batch will not be processed. This is to prevent double processing of the same batch,
         // and also to prevent processing of batches with invalid IDs.
         // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-        if (_confirmedSignedBatch.status != ConstantsLib.IN_PROGRESS) {
+        if (_confirmedSignedBatch.status != ConstantsLib.BATCH_IN_PROGRESS) {
             return;
         }
 
@@ -290,7 +298,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         if (_quorumReached) {
             // current batch block must be reset in any case because otherwise bridge will be blocked
             claimsHelper.resetCurrentBatchBlock(chainId);
-            claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.EXECUTED);
+            claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_EXECUTED);
 
             // do not process included transactions if it is a consolidation
             if (_confirmedSignedBatch.isConsolidation) {
@@ -316,7 +324,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         // claims for the same batch will not be processed. This is to prevent double processing of the same batch,
         // and also to prevent processing of batches with invalid IDs.
         // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-        if (_confirmedSignedBatch.status != ConstantsLib.IN_PROGRESS) {
+        if (_confirmedSignedBatch.status != ConstantsLib.BATCH_IN_PROGRESS) {
             return;
         }
 
@@ -332,7 +340,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         if (_quorumReached) {
             // current batch block must be reset in any case because otherwise bridge will be blocked
             claimsHelper.resetCurrentBatchBlock(chainId);
-            claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.FAILED);
+            claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_FAILED);
 
             // do not process included transactions if it is a consolidation
             if (_confirmedSignedBatch.isConsolidation) {
@@ -522,9 +530,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     }
 
     /// @notice Determines whether a new batch should be created for a specific destination chain.
-    /// @dev This function checks if the destination chain is registered and whether a batch has already been created for it.
-    ///      It then evaluates if the number of transactions in the batch has reached the maximum limit or if the timeout block
-    ///      has passed, signaling that a new batch can be created.
+    /// @dev This function checks if the destination chain is registered, whether a batch has already been created for it and
+    ///      if the validators are not pending a new set. If these conditions are met, it evaluates the number of confirmed
+    ///      transactions has reached the maximum limit or if the timeout block has passed, signaling that a new batch can be created.
     /// @param _destinationChain The ID of the destination chain for which the batch creation is being checked.
     /// @return A boolean value indicating whether a new batch should be created (`true`) or not (`false`).
     /// @dev If the destination chain is not registered or if a batch has already been created, the function returns `false`.
@@ -532,7 +540,11 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     ///      the timeout block has been surpassed, in which case it returns `true`.
     function shouldCreateBatch(uint8 _destinationChain) public view returns (bool) {
         // if not registered chain or batch is already created, return false
-        if (!isChainRegistered[_destinationChain] || claimsHelper.currentBatchBlock(_destinationChain) != int(-1)) {
+        if (
+            !isChainRegistered[_destinationChain] ||
+            claimsHelper.currentBatchBlock(_destinationChain) != int(-1) ||
+            validators.newValidatorSetPending()
+        ) {
             return false;
         }
 
@@ -719,7 +731,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint64 _lastTxNonce = _confirmedSignedBatch.lastTxNonceId;
         uint8 _status = _confirmedSignedBatch.status;
         // if the batch is a consolidation or does not exist, return empty array
-        if (_status == ConstantsLib.NOT_EXISTS || _confirmedSignedBatch.isConsolidation) {
+        if (_status == ConstantsLib.BATCH_DOES_NOT_EXISTS || _confirmedSignedBatch.isConsolidation) {
             return (_status, new TxDataInfo[](0));
         }
 

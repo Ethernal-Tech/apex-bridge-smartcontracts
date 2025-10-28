@@ -32,9 +32,14 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @dev validator address index(+1) in chainData mapping
     mapping(address => uint8) private addressValidatorIndex;
 
+    ValidatorSet[] private newValidatorSet;
+
     /// @notice Total number of registered validators
     /// @dev max possible number of validators is 127
     uint8 public validatorsCount;
+
+    /// @notice Flag for new validator set peding
+    bool public newValidatorSetPending;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
@@ -201,6 +206,18 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
 
             chainData[_chainId][indx - 1] = dt.data;
         }
+    }
+
+    function setNewValidatorsChainData(ValidatorSet[] calldata _validatorSet) external onlyBridge {
+        uint8 _fullValidatorDataLength = uint8(_validatorSet.length);
+
+        delete newValidatorsChainData;
+
+        for (uint8 i; i < _fullValidatorDataLength; i++) {
+            newValidatorsChainData.push(_fullValidatorData[i]);
+        }
+
+        newValidatorSetPending = true;
     }
 
     /// @notice Adds or updates the chain-specific data for a given validator
