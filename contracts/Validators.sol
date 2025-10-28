@@ -443,7 +443,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         return validatorAddresses;
     }
 
-    function getNewValidatorSetPending() external view returns (NewValidatorSetDelta memory) {
+    function getPendingValidatorSetDelta() external view returns (NewValidatorSetDelta memory) {
         return (newValidatorSetDelta);
     }
 
