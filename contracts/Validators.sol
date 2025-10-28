@@ -261,11 +261,13 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         //checkes for duplicate validator addresses
         //checks for empty multisig and fee payer addresses
         for (uint i; i < _numberOfChains; i++) {
+            bool atLeastOneProcessed = false;
             for (uint256 j; j < _numberOfValidators; j++) {
                 if (_chains[i].id != _validatorSet[i].chainId) {
-                    // revert InvalidData("ChainIdMismatch");
                     continue;
                 }
+                atLeastOneProcessed = true; // This validator matches the chain
+
                 address _validatorAddress = _validatorSet[i].validators[j].addr;
 
                 if (_validatorAddress == address(0)) {
@@ -297,6 +299,10 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
                 //     validatorData.keyFeeSignature,
                 //     validatorData.data
                 // );
+            }
+
+            if (!atLeastOneProcessed) {
+                revert InvalidData("ChainIdMismatch");
             }
         }
     }
