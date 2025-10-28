@@ -58,7 +58,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     mapping(uint8 => uint64) public lastBatchedTxNonce;
 
     // @notice Bitmap used to flag that validator set has been confirmed for specific chains.
-    uint8 public newValidatoSetBitmap;
+    uint8 public newValidatorSetBitmap;
 
     /// @notice Maximum number of retries allowed for defund claims.
     uint8 private constant MAX_NUMBER_OF_DEFUND_RETRIES = 3;
@@ -147,7 +147,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 hotWalletIncrementClaimsLength;
 
             if (notUsedClaims != 0) {
-                revert WrongSpecialClaims();
+                revert NewValidatorSetPending();
             }
         }
 
@@ -309,9 +309,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_EXECUTED);
 
             if (_confirmedSignedBatch.batchType == BatchTypesLib.VALIDATORSET_FINAL) {
-                newValidatoSetBitmap |= uint8(1 << chainId);
+                newValidatorSetBitmap |= uint8(1 << chainId);
 
-                if (_countSetBits(newValidatoSetBitmap) == Bridge(bridgeAddress).getAllRegisteredChains().length) {
+                if (_countSetBits(newValidatorSetBitmap) == Bridge(bridgeAddress).getAllRegisteredChains().length) {
                     //TODO call stakeManager
                 }
 
@@ -368,7 +368,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 _confirmedSignedBatch.batchType == BatchTypesLib.VALIDATORSET ||
                 _confirmedSignedBatch.batchType == BatchTypesLib.VALIDATORSET_FINAL
             ) {
-                emit SpecialSignedBatchExecutionFailed(chainId, batchId);
+                emit SignedBatchValidatorSetExecutionFailed(chainId, batchId);
                 return;
             }
 
@@ -580,7 +580,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         uint256 cnt = getBatchingTxsCount(_destinationChain);
 
-        return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
+        return
+            cnt >= maxNumberOfTransactions ||
+            (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]) ||
+            validators.newValidatorSetPending();
     }
 
     /// @notice Retrieves a confirmed transaction by chain ID and nonce.
@@ -798,21 +801,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @param _chainId The ID of the chain on which the batch exists.
     /// @param _batchId The ID of the batch to retrieve transactions for.
     /// @return status A status code indicating the success or failure of the operation.
-    function getSpecialBatchStatus(uint8 _chainId, uint64 _batchId) external view returns (uint8 status) {
-        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getSpecialConfirmedSignedBatchData(
-            _chainId,
-            _batchId
-        );
-
-        return _confirmedSignedBatch.status;
-    }
-
-    /// @notice Retrieves a status for a specific batch on a given chain.
-    /// @param _chainId The ID of the chain on which the batch exists.
-    /// @param _batchId The ID of the batch to retrieve transactions for.
-    /// @return status A status code indicating the success or failure of the operation.
     function getCpecialBatchStatus(uint8 _chainId, uint64 _batchId) external view returns (uint8 status) {
-        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getSpecialConfirmedSignedBatchData(
+        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
             _chainId,
             _batchId
         );
@@ -828,9 +818,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         timeoutBlocksNumber = _timeoutBlocksNumber;
     }
 
-    function _countSetBits(uint256 _newValidatoSetBitmap) internal pure returns (uint256 count) {
-        while (_newValidatoSetBitmap != 0) {
-            _newValidatoSetBitmap &= (_newValidatoSetBitmap - 1);
+    function _countSetBits(uint256 _newValidatorSetBitmap) internal pure returns (uint256 count) {
+        while (_newValidatorSetBitmap != 0) {
+            _newValidatorSetBitmap &= (_newValidatorSetBitmap - 1);
             count++;
         }
     }

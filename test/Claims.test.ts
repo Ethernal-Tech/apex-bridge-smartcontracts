@@ -534,9 +534,40 @@ describe("Claims Contract", function () {
         "InvalidData"
       );
     });
-  });
 
-  describe("Submit new Hot Wallet Increment Claim", function () {
+    it("Should revert if there is new validator set pending", async function () {
+      const {
+        bridge,
+        validators,
+        owner,
+        chain1,
+        chain2,
+        validatorAddressChainData,
+        newValidatorSetDelta,
+        validatorClaimsBRC,
+        validatorClaimsHWIC,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
+      await ethers.provider.send("evm_mine");
+      await ethers.provider.send("evm_mine");
+
+      bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
+
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC)).to.be.revertedWithCustomError(
+        bridge,
+        "NewValidatorSetPending"
+      );
+    });
+
     it("Should skip if Hot Wallet Increment Claim Claim is already confirmed", async function () {
       const hash = hashHotWalletIncrementClaim(validatorClaimsHWIC.hotWalletIncrementClaims[0]);
 
@@ -659,14 +690,14 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatchConsolidation);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatchConsolidation);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatchConsolidation);
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatchConsolidation);
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch_Consolidation);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_Consolidation);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch_Consolidation);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch_Consolidation);
 
       const [status, txs] = await claims.getBatchStatusAndTransactions(
-        signedBatchConsolidation.destinationChainId,
-        signedBatchConsolidation.id
+        signedBatch_Consolidation.destinationChainId,
+        signedBatch_Consolidation.id
       );
       expect(txs).to.deep.equal([]);
       expect(status).to.equal(1);

@@ -173,14 +173,34 @@ describe("Dynamic Validator Set", function () {
     });
   });
 
-  describe("Submit new Special Signed Batch", function () {
+  describe("Submit new Validator Set Signed Batch", function () {
     it("Should revert if there is no new validator set pending", async function () {
-      const { bridge, validators, signedBatch } = await loadFixture(deployBridgeFixture);
-
-      await expect(bridge.connect(validators[0]).submitSpecialSignedBatch(signedBatch)).to.be.revertedWithCustomError(
+      const {
         bridge,
-        "NoNewValidatorSetPending"
-      );
+        owner,
+        chain1,
+        chain2,
+        validators,
+        signedBatch_ValidatorSet,
+        validatorAddressChainData,
+        validatorClaimsBRC,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
+      await ethers.provider.send("evm_mine");
+      await ethers.provider.send("evm_mine");
+
+      await expect(
+        bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSet)
+      ).to.be.revertedWithCustomError(bridge, "NoNewValidatorSetPending");
     });
 
     it("Should revert signedBatch submition if signature is not valid", async function () {
@@ -190,7 +210,7 @@ describe("Dynamic Validator Set", function () {
         chain1,
         chain2,
         validators,
-        specialSignedBatch,
+        signedBatch_ValidatorSet,
         newValidatorSetDelta,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
@@ -202,30 +222,30 @@ describe("Dynamic Validator Set", function () {
 
       await setCode("0x0000000000000000000000000000000000002050", "0x60206000F3"); // should return false for precompile
       await expect(
-        bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch)
+        bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSet)
       ).to.be.revertedWithCustomError(bridge, "InvalidSignature");
     });
 
-    it("SignedBatch submition in SpecialSignedBatches SC should be reverted if not called by Bridge SC", async function () {
-      const { bridge, owner } = await loadFixture(deployBridgeFixture);
+    it("SignedBatch submition in signedBatch_ValidatorSets SC should be reverted if not called by Bridge SC", async function () {
+      const { bridge, signedBatches, owner, signedBatch_ValidatorSet } = await loadFixture(deployBridgeFixture);
 
       await expect(
-        specialSignedBatches.connect(owner).submitSpecialSignedBatch(specialSignedBatch, owner.address)
+        signedBatches.connect(owner).submitSignedBatch(signedBatch_ValidatorSet, owner.address)
       ).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
 
-    it("If SignedBatch submition id is not expected submittion should be skipped", async function () {
-      const { bridge, signedBatches, validators, specialSignedBatch } = await loadFixture(deployBridgeFixture);
+    it("If SignedBatch submission id is not expected submission should be skipped", async function () {
+      const { bridge, signedBatches, validators, signedBatch_ValidatorSet } = await loadFixture(deployBridgeFixture);
 
       const encoded = ethers.solidityPacked(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
+        ["uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
         [
-          specialSignedBatch.id,
-          specialSignedBatch.firstTxNonceId,
-          specialSignedBatch.lastTxNonceId,
-          specialSignedBatch.destinationChainId,
-          specialSignedBatch.rawTransaction,
-          specialSignedBatch.isConsolidation,
+          signedBatch_ValidatorSet.id,
+          signedBatch_ValidatorSet.firstTxNonceId,
+          signedBatch_ValidatorSet.lastTxNonceId,
+          signedBatch_ValidatorSet.destinationChainId,
+          signedBatch_ValidatorSet.rawTransaction,
+          signedBatch_ValidatorSet.batchType,
         ]
       );
 
@@ -233,32 +253,30 @@ describe("Dynamic Validator Set", function () {
 
       const bridgeContract = await impersonateAsContractAndMintFunds(await bridge.getAddress());
 
-      await specialSignedBatches
-        .connect(bridgeContract)
-        .submitSpecialSignedBatch(specialSignedBatch, validators[0].address);
+      await signedBatches.connect(bridgeContract).submitSignedBatch(signedBatch_ValidatorSet, validators[0].address);
 
       expect(await signedBatches.hasVoted(hash, validators[0].address)).to.equal(true);
 
-      const oldId = specialSignedBatch.id;
-      specialSignedBatch.id = 1000; //invalid id
+      const oldId = signedBatch_ValidatorSet.id;
+      signedBatch_ValidatorSet.id = 1000; //invalid id
 
       const encodedFalse = ethers.solidityPacked(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
+        ["uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
         [
-          specialSignedBatch.id,
-          specialSignedBatch.firstTxNonceId,
-          specialSignedBatch.lastTxNonceId,
-          specialSignedBatch.destinationChainId,
-          specialSignedBatch.rawTransaction,
-          specialSignedBatch.isConsolidation,
+          signedBatch_ValidatorSet.id,
+          signedBatch_ValidatorSet.firstTxNonceId,
+          signedBatch_ValidatorSet.lastTxNonceId,
+          signedBatch_ValidatorSet.destinationChainId,
+          signedBatch_ValidatorSet.rawTransaction,
+          signedBatch_ValidatorSet.batchType,
         ]
       );
 
       const hashFalse = ethers.keccak256(encodedFalse);
 
-      await signedBatches.connect(bridgeContract).submitSignedBatch(specialSignedBatch, validators[0].address);
+      await signedBatches.connect(bridgeContract).submitSignedBatch(signedBatch_ValidatorSet, validators[0].address);
 
-      specialSignedBatch.id = oldId;
+      signedBatch_ValidatorSet.id = oldId;
 
       expect(await signedBatches.hasVoted(hashFalse, validators[0].address)).to.equal(false);
     });
@@ -266,13 +284,14 @@ describe("Dynamic Validator Set", function () {
     it("SignedBatch should NOT be added to signedBatches if there are NOT enough votes", async function () {
       const {
         bridge,
+        signedBatches,
         claimsHelper,
         owner,
         chain1,
         chain2,
         validators,
         newValidatorSetDelta,
-        specialSignedBatch,
+        signedBatch_ValidatorSet,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
@@ -281,49 +300,50 @@ describe("Dynamic Validator Set", function () {
 
       await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSet);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSet);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch_ValidatorSet);
 
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch); // resubmit
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSet); // resubmit
 
       const confBatchNothing = await claimsHelper
         .connect(validators[0])
-        .getConfirmedSignedBatchData(specialSignedBatch.destinationChainId, specialSignedBatch.id);
+        .getConfirmedSignedBatchData(signedBatch_ValidatorSet.destinationChainId, signedBatch_ValidatorSet.id);
       expect(confBatchNothing.firstTxNonceId + confBatchNothing.lastTxNonceId).to.equal(0);
 
-      const batchId = await specialSignedBatches.getSpecialConfirmedBatchId(specialSignedBatch.destinationChainId);
+      const batchId = await signedBatches.getConfirmedBatchId(signedBatch_ValidatorSet.destinationChainId);
 
-      const lastConfirmedSignedBatchData = await claimsHelper.specialConfirmedSignedBatches(
-        specialSignedBatch.destinationChainId,
+      const lastConfirmedSignedBatchData = await claimsHelper.confirmedSignedBatches(
+        signedBatch_ValidatorSet.destinationChainId,
         batchId
       );
 
       expect(lastConfirmedSignedBatchData.firstTxNonceId).to.equal(0);
       expect(lastConfirmedSignedBatchData.lastTxNonceId).to.equal(0);
-      expect(lastConfirmedSignedBatchData.isConsolidation).to.equal(false);
+      expect(lastConfirmedSignedBatchData.batchType).to.equal(0);
       expect(lastConfirmedSignedBatchData.status).to.equal(0);
 
-      const confBatch = await specialSignedBatches.getSpecialConfirmedBatch(specialSignedBatch.destinationChainId);
+      const confBatch = await signedBatches.getConfirmedBatch(signedBatch_ValidatorSet.destinationChainId);
 
       expect(confBatch.signatures.length).to.equal(0);
       expect(confBatch.feeSignatures.length).to.equal(0);
       expect(confBatch.bitmap).to.equal(0);
       expect(confBatch.rawTransaction).to.equal("0x");
-      expect(confBatch.isConsolidation).to.equal(false);
+      expect(confBatch.batchType).to.equal(0);
       expect(confBatch.id).to.equal(0);
     });
 
-    it("SignedBatch should be added to signedBatches if there are enough votes", async function () {
+    it("SignedBatch should be added to signedBatches if there are enough votes on ValidatorSet", async function () {
       const {
         bridge,
+        signedBatches,
         claimsHelper,
         owner,
         chain1,
         chain2,
         validators,
         newValidatorSetDelta,
-        specialSignedBatch,
+        signedBatch_ValidatorSet,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
@@ -332,51 +352,43 @@ describe("Dynamic Validator Set", function () {
 
       await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSet);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSet);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch_ValidatorSet);
 
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch); // resubmit
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSet); // resubmit
       const confBatchNothing = await claimsHelper
         .connect(validators[0])
-        .getConfirmedSignedBatchData(specialSignedBatch.destinationChainId, specialSignedBatch.id);
+        .getConfirmedSignedBatchData(signedBatch_ValidatorSet.destinationChainId, signedBatch_ValidatorSet.id);
       expect(confBatchNothing.firstTxNonceId + confBatchNothing.lastTxNonceId).to.equal(0);
 
       // consensus
-      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch_ValidatorSet);
 
-      const batchId = await specialSignedBatches.getSpecialConfirmedBatchId(specialSignedBatch.destinationChainId);
+      const batchId = await signedBatches.getConfirmedBatchId(signedBatch_ValidatorSet.destinationChainId);
 
-      const lastConfirmedSignedBatchData = await claimsHelper.specialConfirmedSignedBatches(
-        specialSignedBatch.destinationChainId,
+      const lastConfirmedSignedBatchData = await claimsHelper.confirmedSignedBatches(
+        signedBatch_ValidatorSet.destinationChainId,
         batchId
       );
 
       expect(lastConfirmedSignedBatchData.firstTxNonceId).to.equal(2n ** 64n - 1n);
       expect(lastConfirmedSignedBatchData.lastTxNonceId).to.equal(2n ** 64n - 1n);
-      expect(lastConfirmedSignedBatchData.isConsolidation).to.equal(false);
+      expect(lastConfirmedSignedBatchData.batchType).to.equal(2);
       expect(lastConfirmedSignedBatchData.status).to.equal(1);
 
-      const confBatch = await specialSignedBatches.getSpecialConfirmedBatch(specialSignedBatch.destinationChainId);
+      const confBatch = await signedBatches.getConfirmedBatch(signedBatch_ValidatorSet.destinationChainId);
 
       expect(confBatch.signatures.length).to.equal(4);
       expect(confBatch.feeSignatures.length).to.equal(4);
       expect(confBatch.bitmap).to.equal(15);
-      expect(confBatch.rawTransaction).to.equal(specialSignedBatch.rawTransaction);
-      expect(confBatch.isConsolidation).to.equal(specialSignedBatch.isConsolidation);
-      expect(confBatch.id).to.equal(specialSignedBatch.id);
+      expect(confBatch.rawTransaction).to.equal(signedBatch_ValidatorSet.rawTransaction);
+      expect(confBatch.batchType).to.equal(signedBatch_ValidatorSet.batchType);
+      expect(confBatch.id).to.equal(signedBatch_ValidatorSet.id);
     });
   });
 
-  describe("Submit new Special Batch Executed Claims", function () {
-    it("Should revert if there is no new validator set pending", async function () {
-      const { bridge, validators, validatorClaimsBEC } = await loadFixture(deployBridgeFixture);
-      await expect(bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEC)).to.be.revertedWithCustomError(
-        bridge,
-        "NoNewValidatorSetPending"
-      );
-    });
-
+  describe("Submit new Validator Set Batch Executed Claims", function () {
     it("Should revert if there are BRCs, RRCs or HWICs in ValidatorClaims", async function () {
       const {
         bridge,
@@ -393,418 +405,30 @@ describe("Dynamic Validator Set", function () {
 
       await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
-      await expect(bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
         bridge,
-        "WrongSpecialClaims"
+        "NewValidatorSetPending"
       );
     });
 
-    it("Should revert if there are more than 32 claims in the array", async function () {
-      const {
-        bridge,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        newValidatorSetDelta,
-        validatorClaimsBEC_bunch33,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
+    it("Should not revert if there is new validator set pending", async function () {
+      const { bridge, owner, chain1, chain2, validators, validatorClaimsBEC, validatorAddressChainData } =
+        await loadFixture(deployBridgeFixture);
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
-
-      await expect(
-        bridge.connect(validators[1]).submitClaims(validatorClaimsBEC_bunch33)
-      ).to.be.revertedWithCustomError(bridge, "TooManyClaims");
-    });
-
-    it("Should skip if there are wrong first and lastTxNonceId", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        newValidatorSetDelta,
-        signedBatch,
-        validatorClaimsBEC,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
-
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(signedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(signedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(signedBatch);
-      await bridge.connect(validators[3]).submitSpecialSignedBatch(signedBatch);
-
-      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEC);
-
-      const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["SBEC"]);
-      const encoded = abiCoder.encode(
-        ["bytes32", "uint64", "uint8"],
-        [
-          validatorClaimsBEC.batchExecutedClaims[0].observedTransactionHash,
-          validatorClaimsBEC.batchExecutedClaims[0].batchNonceId,
-          validatorClaimsBEC.batchExecutedClaims[0].chainId,
-        ]
-      );
-
-      const encoded40 =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encoded.substring(2) +
-        encodedPrefix.substring(66);
-
-      const hash = ethers.keccak256(encoded40);
-
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
-    });
-
-    it("Should skip if Batch Executed Claims is already confirmed", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        validatorClaimsBEC,
-        specialSignedBatch,
-        newValidatorSetDelta,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
-
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
-
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEC);
-      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEC);
-      await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEC);
-      await bridge.connect(validators[3]).submitSpecialClaims(validatorClaimsBEC);
-
-      const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["SBEC"]);
-      const encoded = abiCoder.encode(
-        ["bytes32", "uint64", "uint8"],
-        [
-          validatorClaimsBEC.batchExecutedClaims[0].observedTransactionHash,
-          validatorClaimsBEC.batchExecutedClaims[0].batchNonceId,
-          validatorClaimsBEC.batchExecutedClaims[0].chainId,
-        ]
-      );
-
-      const encoded40 =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encoded.substring(2) +
-        encodedPrefix.substring(66);
-
-      const hash = ethers.keccak256(encoded40);
-
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
-
-      await bridge.connect(validators[4]).submitSpecialClaims(validatorClaimsBEC);
-
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
-    });
-
-    it("Should skip if validator submits the same claim twice", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        validatorClaimsBEC,
-        specialSignedBatch,
-        newValidatorSetDelta,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
-
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
-
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEC);
-
-      const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["SBEC"]);
-      const encoded = abiCoder.encode(
-        ["bytes32", "uint64", "uint8"],
-        [
-          validatorClaimsBEC.batchExecutedClaims[0].observedTransactionHash,
-          validatorClaimsBEC.batchExecutedClaims[0].batchNonceId,
-          validatorClaimsBEC.batchExecutedClaims[0].chainId,
-        ]
-      );
-
-      const encoded40 =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encoded.substring(2) +
-        encodedPrefix.substring(66);
-
-      const hash = ethers.keccak256(encoded40);
-
-      expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
-
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEC);
-
-      expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
-    });
-
-    it("Should skip if there is already a quorum for SBEFC for the same batch", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        validatorClaimsBEC,
-        validatorClaimsBEFC,
-        specialSignedBatch,
-        newValidatorSetDelta,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
-
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
-
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEC);
-      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEC);
-      await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEC);
-
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEFC);
-      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEFC);
-      await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEFC);
-
-      const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["SBEC"]);
-      const encoded = abiCoder.encode(
-        ["bytes32", "uint64", "uint8"],
-        [
-          validatorClaimsBEC.batchExecutedClaims[0].observedTransactionHash,
-          validatorClaimsBEC.batchExecutedClaims[0].batchNonceId,
-          validatorClaimsBEC.batchExecutedClaims[0].chainId,
-        ]
-      );
-
-      const encoded40 =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encoded.substring(2) +
-        encodedPrefix.substring(66);
-
-      const hashBEC = ethers.keccak256(encoded40);
-
-      const encodedPrefixBEFC = abiCoder.encode(["string"], ["SBEFC"]);
-      const encodedBEFC = abiCoder.encode(
-        ["bytes32", "uint64", "uint8"],
-        [
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].observedTransactionHash,
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId,
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId,
-        ]
-      );
-
-      const encoded40BEFC =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encodedBEFC.substring(2) +
-        encodedPrefixBEFC.substring(66);
-      const hashBEFC = ethers.keccak256(encoded40BEFC);
-
-      expect(hashBEC).to.not.equal(hashBEFC);
-
-      // Verify that neither claim has reached quorum yet
-      expect(await claimsHelper.numberOfVotes(hashBEC)).to.equal(3);
-      expect(await claimsHelper.numberOfVotes(hashBEFC)).to.equal(3);
-
-      // Try to reach quorum for first claim
-      await bridge.connect(validators[3]).submitSpecialClaims(validatorClaimsBEFC);
-
-      // First claim should now be confirmed
-      expect(await claimsHelper.numberOfVotes(hashBEFC)).to.equal(4);
-
-      // Try to reach quorum for second claim
-      await bridge.connect(validators[3]).submitSpecialClaims(validatorClaimsBEC);
-
-      // Second claim should now be confirmed
-      expect(await claimsHelper.numberOfVotes(hashBEC)).to.equal(3);
-    });
-
-    it("Should skip if there is already a quorum for another BEC for the same batch", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        specialSignedBatch,
-        validatorClaimsBEC,
-        validatorClaimsBEC_another,
-        newValidatorSetDelta,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
-
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
-
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEC);
-      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEC);
-      await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEC);
-
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEC_another);
-      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEC_another);
-      await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEC_another);
-
-      const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["SBEC"]);
-      const encoded = abiCoder.encode(
-        ["bytes32", "uint64", "uint8"],
-        [
-          validatorClaimsBEC.batchExecutedClaims[0].observedTransactionHash,
-          validatorClaimsBEC.batchExecutedClaims[0].batchNonceId,
-          validatorClaimsBEC.batchExecutedClaims[0].chainId,
-        ]
-      );
-
-      const encoded40 =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encoded.substring(2) +
-        encodedPrefix.substring(66);
-
-      const hashBEC = ethers.keccak256(encoded40);
-
-      // Calculate BEC_another hash
-      const encodedPrefixBEC_another = abiCoder.encode(["string"], ["SBEC"]);
-      const encodedBEC_another = abiCoder.encode(
-        ["bytes32", "uint64", "uint8"],
-        [
-          validatorClaimsBEC_another.batchExecutedClaims[0].observedTransactionHash,
-          validatorClaimsBEC_another.batchExecutedClaims[0].batchNonceId,
-          validatorClaimsBEC_another.batchExecutedClaims[0].chainId,
-        ]
-      );
-      const encoded40BEC_another =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encodedBEC_another.substring(2) +
-        encodedPrefixBEC_another.substring(66);
-      const hashBEC_another = ethers.keccak256(encoded40BEC_another);
-
-      // Verify that the hashes are different
-      expect(hashBEC).to.not.equal(hashBEC_another);
-
-      // Verify that neither claim has reached quorum yet
-      expect(await claimsHelper.numberOfVotes(hashBEC)).to.equal(3);
-      expect(await claimsHelper.numberOfVotes(hashBEC_another)).to.equal(3);
-
-      // Try to reach quorum for first claim
-      await bridge.connect(validators[3]).submitSpecialClaims(validatorClaimsBEC);
-
-      // First claim should now be confirmed
-      expect(await claimsHelper.numberOfVotes(hashBEC)).to.equal(4);
-
-      // Try to reach quorum for second claim
-      await bridge.connect(validators[3]).submitSpecialClaims(validatorClaimsBEC_another);
-
-      // Second claim should not be confirmed
-      expect(await claimsHelper.numberOfVotes(hashBEC_another)).to.equal(3);
-    });
-
-    it("Should set batch executed status if there is quorum on SBEC", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        specialSignedBatch,
-        validatorClaimsBEC,
-        newValidatorSetDelta,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
-
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
-
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEC);
-      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEC);
-      await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEC);
-
-      // before quorum
-      expect(
-        (
-          await claimsHelper.getSpecialConfirmedSignedBatchData(
-            specialSignedBatch.destinationChainId,
-            specialSignedBatch.id
-          )
-        ).status
-      ).to.equal(1);
-
-      await bridge.connect(validators[3]).submitSpecialClaims(validatorClaimsBEC);
-
-      // after quorum
-      expect(
-        (
-          await claimsHelper.getSpecialConfirmedSignedBatchData(
-            specialSignedBatch.destinationChainId,
-            specialSignedBatch.id
-          )
-        ).status
-      ).to.equal(2);
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEC)).not.to.be.reverted;
     });
 
     it("Should NOT set bitmap to +1 if there is quorum on non-final batch in SBEC", async function () {
       const {
         bridge,
+        claims,
         owner,
         validators,
         chain1,
         chain2,
-        specialSignedBatch,
+        signedBatch_ValidatorSet,
         validatorClaimsBEC,
         newValidatorSetDelta,
         validatorAddressChainData,
@@ -815,18 +439,16 @@ describe("Dynamic Validator Set", function () {
 
       await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
-      // specialSignedBatch has isConsolidation set to false
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSet);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSet);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch_ValidatorSet);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch_ValidatorSet);
 
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
 
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEC);
-      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEC);
-      await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEC);
-
-      let bitmap = await specialClaims.bitmap();
+      let bitmap = await claims.newValidatorSetBitmap();
 
       let count = 0;
       while (bitmap !== 0n) {
@@ -836,9 +458,9 @@ describe("Dynamic Validator Set", function () {
 
       expect(count).to.equal(0);
 
-      await bridge.connect(validators[3]).submitSpecialClaims(validatorClaimsBEC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
-      bitmap = await specialClaims.bitmap();
+      bitmap = await claims.newValidatorSetBitmap();
 
       count = 0;
       while (bitmap !== 0n) {
@@ -849,14 +471,15 @@ describe("Dynamic Validator Set", function () {
       expect(count).to.equal(0);
     });
 
-    it("Should set bitmap to +1 if there is quorum on final batch in SBEC", async function () {
+    it("Should set bitmap to +1 if there is quorum on final batch in BEC", async function () {
       const {
         bridge,
+        claims,
         owner,
         validators,
         chain1,
         chain2,
-        specialSignedBatch,
+        signedBatch_ValidatorSetFinal,
         validatorClaimsBEC,
         newValidatorSetDelta,
         validatorAddressChainData,
@@ -867,22 +490,16 @@ describe("Dynamic Validator Set", function () {
 
       await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
-      // sets consolidation to true for this test
-      specialSignedBatch.isConsolidation = true;
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSetFinal);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSetFinal);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch_ValidatorSetFinal);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch_ValidatorSetFinal);
 
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
 
-      // reset
-      specialSignedBatch.isConsolidation = false; // reset
-
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEC);
-      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEC);
-      await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEC);
-
-      let bitmap = await specialClaims.bitmap();
+      let bitmap = await claims.newValidatorSetBitmap();
 
       let count = 0;
       while (bitmap !== 0n) {
@@ -892,11 +509,10 @@ describe("Dynamic Validator Set", function () {
 
       expect(count).to.equal(0);
 
-      await bridge.connect(validators[3]).submitSpecialClaims(validatorClaimsBEC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
-      bitmap = await specialClaims.bitmap();
+      bitmap = await claims.newValidatorSetBitmap();
 
-      count = 0;
       while (bitmap !== 0n) {
         bitmap &= bitmap - 1n; // Clear the lowest set bit
         count++;
@@ -906,341 +522,16 @@ describe("Dynamic Validator Set", function () {
     });
   });
 
-  describe("Submit new Special Batch Execution Failed Claims", function () {
-    it("Should skip if there are wrong first and lastTxNonceId", async function () {
+  describe("Submit new Validator Set Batch Execution Failed Claims", function () {
+    it("Should emit signedBatch_ValidatorSetExecutionFailed if there is quorum on BEFC", async function () {
       const {
         bridge,
-        claimsHelper,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        newValidatorSetDelta,
-        signedBatch,
-        validatorClaimsBEFC,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
-
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(signedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(signedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(signedBatch);
-      await bridge.connect(validators[3]).submitSpecialSignedBatch(signedBatch);
-
-      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEFC);
-
-      const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["SBEFC"]);
-      const encoded = abiCoder.encode(
-        ["bytes32", "uint64", "uint8"],
-        [
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].observedTransactionHash,
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId,
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId,
-        ]
-      );
-
-      const encoded40 =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encoded.substring(2) +
-        encodedPrefix.substring(66);
-
-      const hash = ethers.keccak256(encoded40);
-
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
-    });
-
-    it("Should skip if Batch Executed Claims is already confirmed", async function () {
-      const {
-        bridge,
-        claimsHelper,
+        claims,
         owner,
         validators,
         chain1,
         chain2,
-        validatorClaimsBEFC,
-        specialSignedBatch,
-        newValidatorSetDelta,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
-
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
-
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEFC);
-      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEFC);
-      await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEFC);
-      await bridge.connect(validators[3]).submitSpecialClaims(validatorClaimsBEFC);
-
-      const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["SBEFC"]);
-      const encoded = abiCoder.encode(
-        ["bytes32", "uint64", "uint8"],
-        [
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].observedTransactionHash,
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId,
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId,
-        ]
-      );
-
-      const encoded40 =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encoded.substring(2) +
-        encodedPrefix.substring(66);
-
-      const hash = ethers.keccak256(encoded40);
-
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
-
-      await bridge.connect(validators[4]).submitSpecialClaims(validatorClaimsBEFC);
-
-      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
-    });
-
-    it("Should skip if validator submits the same claim twice", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        validatorClaimsBEFC,
-        specialSignedBatch,
-        newValidatorSetDelta,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
-
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
-
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEFC);
-
-      const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["SBEFC"]);
-      const encoded = abiCoder.encode(
-        ["bytes32", "uint64", "uint8"],
-        [
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].observedTransactionHash,
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId,
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId,
-        ]
-      );
-
-      const encoded40 =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encoded.substring(2) +
-        encodedPrefix.substring(66);
-
-      const hash = ethers.keccak256(encoded40);
-
-      expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
-
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEFC);
-
-      expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
-    });
-
-    it("Should skip if there is already a quorum for SBEC for the same batch", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        validatorClaimsBEC,
-        validatorClaimsBEFC,
-        specialSignedBatch,
-        newValidatorSetDelta,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
-
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
-
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEC);
-      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEC);
-      await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEC);
-
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEFC);
-      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEFC);
-      await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEFC);
-
-      const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["SBEC"]);
-      const encoded = abiCoder.encode(
-        ["bytes32", "uint64", "uint8"],
-        [
-          validatorClaimsBEC.batchExecutedClaims[0].observedTransactionHash,
-          validatorClaimsBEC.batchExecutedClaims[0].batchNonceId,
-          validatorClaimsBEC.batchExecutedClaims[0].chainId,
-        ]
-      );
-
-      const encoded40 =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encoded.substring(2) +
-        encodedPrefix.substring(66);
-
-      const hashBEC = ethers.keccak256(encoded40);
-
-      const encodedPrefixBEFC = abiCoder.encode(["string"], ["SBEFC"]);
-      const encodedBEFC = abiCoder.encode(
-        ["bytes32", "uint64", "uint8"],
-        [
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].observedTransactionHash,
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId,
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId,
-        ]
-      );
-
-      const encoded40BEFC =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encodedBEFC.substring(2) +
-        encodedPrefixBEFC.substring(66);
-      const hashBEFC = ethers.keccak256(encoded40BEFC);
-
-      expect(hashBEC).to.not.equal(hashBEFC);
-
-      // Verify that neither claim has reached quorum yet
-      expect(await claimsHelper.numberOfVotes(hashBEC)).to.equal(3);
-      expect(await claimsHelper.numberOfVotes(hashBEFC)).to.equal(3);
-
-      // Try to reach quorum for first claim
-      await bridge.connect(validators[3]).submitSpecialClaims(validatorClaimsBEC);
-
-      // First claim should now be confirmed
-      expect(await claimsHelper.numberOfVotes(hashBEC)).to.equal(4);
-
-      // Try to reach quorum for second claim
-      await bridge.connect(validators[3]).submitSpecialClaims(validatorClaimsBEFC);
-
-      // Second claim should now be confirmed
-      expect(await claimsHelper.numberOfVotes(hashBEFC)).to.equal(3);
-    });
-
-    it("Should skip if there is already a quorum for another BEFC for the same batch", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        specialSignedBatch,
-        validatorClaimsBEFC,
-        validatorClaimsBEFC_another,
-        newValidatorSetDelta,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
-
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
-
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEFC);
-      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEFC);
-      await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEFC);
-
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEFC_another);
-      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEFC_another);
-      await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEFC_another);
-
-      const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["SBEFC"]);
-      const encoded = abiCoder.encode(
-        ["bytes32", "uint64", "uint8"],
-        [
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].observedTransactionHash,
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId,
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId,
-        ]
-      );
-
-      const encoded40 =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encoded.substring(2) +
-        encodedPrefix.substring(66);
-
-      const hashBEC = ethers.keccak256(encoded40);
-
-      // Calculate BEC_another hash
-      const encodedPrefixBEC_another = abiCoder.encode(["string"], ["SBEFC"]);
-      const encodedBEC_another = abiCoder.encode(
-        ["bytes32", "uint64", "uint8"],
-        [
-          validatorClaimsBEFC_another.batchExecutionFailedClaims[0].observedTransactionHash,
-          validatorClaimsBEFC_another.batchExecutionFailedClaims[0].batchNonceId,
-          validatorClaimsBEFC_another.batchExecutionFailedClaims[0].chainId,
-        ]
-      );
-      const encoded40BEC_another =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encodedBEC_another.substring(2) +
-        encodedPrefixBEC_another.substring(66);
-      const hashBEC_another = ethers.keccak256(encoded40BEC_another);
-
-      // Verify that the hashes are different
-      expect(hashBEC).to.not.equal(hashBEC_another);
-
-      // Verify that neither claim has reached quorum yet
-      expect(await claimsHelper.numberOfVotes(hashBEC)).to.equal(3);
-      expect(await claimsHelper.numberOfVotes(hashBEC_another)).to.equal(3);
-
-      // Try to reach quorum for first claim
-      await bridge.connect(validators[3]).submitSpecialClaims(validatorClaimsBEFC);
-
-      // First claim should now be confirmed
-      expect(await claimsHelper.numberOfVotes(hashBEC)).to.equal(4);
-
-      // Try to reach quorum for second claim
-      await bridge.connect(validators[3]).submitSpecialClaims(validatorClaimsBEFC_another);
-
-      // Second claim should not be confirmed
-      expect(await claimsHelper.numberOfVotes(hashBEC_another)).to.equal(3);
-    });
-
-    it("Should set batch failed status if there is quorum on SBEFC", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        specialSignedBatch,
+        signedBatch_ValidatorSet,
         validatorClaimsBEFC,
         newValidatorSetDelta,
         validatorAddressChainData,
@@ -1251,68 +542,18 @@ describe("Dynamic Validator Set", function () {
 
       await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
 
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSet);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSet);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch_ValidatorSet);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch_ValidatorSet);
 
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEFC);
-      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEFC);
-      await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
 
-      // before quorum
-      expect(
-        (
-          await claimsHelper.getSpecialConfirmedSignedBatchData(
-            specialSignedBatch.destinationChainId,
-            specialSignedBatch.id
-          )
-        ).status
-      ).to.equal(1);
-
-      await bridge.connect(validators[3]).submitSpecialClaims(validatorClaimsBEFC);
-
-      // after quorum
-      expect(
-        (
-          await claimsHelper.getSpecialConfirmedSignedBatchData(
-            specialSignedBatch.destinationChainId,
-            specialSignedBatch.id
-          )
-        ).status
-      ).to.equal(3);
-    });
-
-    it("Should emit SpecialSignedBatchExecutionFailed if there is quorum on SBEFC", async function () {
-      const {
-        bridge,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        specialSignedBatch,
-        validatorClaimsBEFC,
-        newValidatorSetDelta,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
-
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
-      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
-
-      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEFC);
-      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEFC);
-      await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEFC);
-
-      await expect(bridge.connect(validators[3]).submitSpecialClaims(validatorClaimsBEFC)).to.emit(
-        specialClaims,
-        "SpecialSignedBatchExecutionFailed"
+      await expect(bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC)).to.emit(
+        claims,
+        "SignedBatchValidatorSetExecutionFailed"
       );
     });
   });

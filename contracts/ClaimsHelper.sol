@@ -27,10 +27,6 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @dev BlockchainId -> batchId -> SignedBatch
     mapping(uint8 => mapping(uint64 => ConfirmedSignedBatchData)) public confirmedSignedBatches;
 
-    /// @notice Mapping of confirmed signed batches
-    /// @dev BlockchainId -> batchId -> SignedBatch
-    mapping(uint8 => mapping(uint64 => ConfirmedSignedBatchData)) public specialConfirmedSignedBatches;
-
     /// @notice Mapping of current batch block numbers per chain.
     /// @dev BlochchainId -> blockNumber
     mapping(uint8 => int256) public currentBatchBlock;
@@ -62,9 +58,11 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
 
     /// @notice Sets external contract dependencies.
     /// @param _claimsAddress Address of the Claims contract.
-    function setDependencies(address _claimsAddress) external onlyOwner {
-        if (!_isContract(_claimsAddress)) revert NotContractAddress();
+    /// @param _signedBatchesAddress Address of the SignedBatches contract.
+    function setDependencies(address _claimsAddress, address _signedBatchesAddress) external onlyOwner {
+        if (!_isContract(_claimsAddress) || !_isContract(_signedBatchesAddress)) revert NotContractAddress();
         claimsAddress = _claimsAddress;
+        signedBatchesAddress = _signedBatchesAddress;
     }
 
     /// @notice Retrieves confirmed signed batch data.
@@ -76,17 +74,6 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         uint64 _batchId
     ) external view returns (ConfirmedSignedBatchData memory _confirmedSignedBatchData) {
         return confirmedSignedBatches[_chainId][_batchId];
-    }
-
-    /// @notice Retrieves confirmed signed batch data.
-    /// @param _chainId The ID of the destination chain.
-    /// @param _batchId The batch ID.
-    /// @return _confirmedSignedBatchData The batch data.
-    function getSpecialConfirmedSignedBatchData(
-        uint8 _chainId,
-        uint64 _batchId
-    ) external view returns (ConfirmedSignedBatchData memory _confirmedSignedBatchData) {
-        return specialConfirmedSignedBatches[_chainId][_batchId];
     }
 
     /// @notice Resets the current batch block for a given chain.

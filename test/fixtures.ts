@@ -278,7 +278,51 @@ export async function deployBridgeFixture() {
     signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    isConsolidation: false,
+    batchType: 0, // BatchTypesLib.NORMAL
+  };
+
+  const signedBatch_Consolidation = {
+    id: 1,
+    destinationChainId: 2,
+    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
+    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
+    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
+    firstTxNonceId: 0,
+    lastTxNonceId: 0,
+    batchType: 1, // BatchTypesLib.CONSOLIDATION
+  };
+
+  const signedBatch_ValidatorSet = {
+    id: 1,
+    firstTxNonceId: 2n ** 64n - 1n,
+    lastTxNonceId: 2n ** 64n - 1n,
+    destinationChainId: 2,
+    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
+    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
+    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
+    batchType: 2, // BatchTypesLib.VALIDATORSET
+  };
+
+  const signedBatch_ValidatorSetFinal = {
+    id: 1,
+    firstTxNonceId: 2n ** 64n - 1n,
+    lastTxNonceId: 2n ** 64n - 1n,
+    destinationChainId: 2,
+    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
+    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
+    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
+    batchType: 3, // BatchTypesLib.VALIDATORSET_FINAL
+  };
+
+  const signedBatch_Defund = {
+    id: 1,
+    firstTxNonceId: 1,
+    lastTxNonceId: 2,
+    destinationChainId: 2,
+    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
+    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
+    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
+    batchType: 0, // BatchTypesLib.NORMAL
   };
 
   const cardanoBlocks = [
@@ -501,6 +545,10 @@ export async function deployBridgeFixture() {
     validatorClaimsRRC,
     validatorClaimsHWIC,
     signedBatch,
+    signedBatch_ValidatorSet,
+    signedBatch_ValidatorSetFinal,
+    signedBatch_Consolidation,
+    signedBatch_Defund,
     validatorAddressChainData,
     validatorCardanoData,
     validators,

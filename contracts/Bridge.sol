@@ -97,12 +97,19 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             return;
         }
 
-        if (
-            validators.newValidatorSetPending() &&
-            (_signedBatch.batchType != BatchTypesLib.VALIDATORSET ||
-                _signedBatch.batchType != BatchTypesLib.VALIDATORSET_FINAL)
-        ) {
-            revert NewValidatorSetPending();
+        // if there is pending validator set, only validator set batches can be submitted
+        // it there is no pending validator set, any batch can be submitted
+        bool isValidatorSetBatch = _signedBatch.batchType == BatchTypesLib.VALIDATORSET ||
+            _signedBatch.batchType == BatchTypesLib.VALIDATORSET_FINAL;
+
+        bool isPending = validators.newValidatorSetPending();
+
+        if (isPending != isValidatorSetBatch) {
+            if (isPending) {
+                revert NewValidatorSetPending();
+            } else {
+                revert NoNewValidatorSetPending();
+            }
         }
 
         if (
@@ -128,7 +135,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         if (
             validators.newValidatorSetPending() &&
-            (_signedBatch.batchType != BatchTypesLib.VALIDATORSET ||
+            !(_signedBatch.batchType != BatchTypesLib.VALIDATORSET ||
                 _signedBatch.batchType != BatchTypesLib.VALIDATORSET_FINAL)
         ) {
             revert NewValidatorSetPending();
