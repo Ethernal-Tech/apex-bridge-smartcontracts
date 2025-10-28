@@ -157,7 +157,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         //TODO: check if these validators are indeed in the current set???
-        validators.validateValidatorSet(_newValidatorSetDelta.addedValidators, chains);
+        validators.validateValidatorSet(_newValidatorSetDelta, chains);
 
         validators.setNewValidatorSetDelta(_newValidatorSetDelta);
 

@@ -560,7 +560,13 @@ export async function deployBridgeFixture() {
 
   const newValidatorSetDelta_NotEnoughValidators = {
     addedValidators: validatorSets_NotEnoughValidators,
-    removedValidators: [validator4.address, validator5.address],
+    removedValidators: [
+      validator1.address,
+      validator2.address,
+      validator3.address,
+      validator4.address,
+      validator5.address,
+    ],
   };
 
   const newValidatorSetDelta_TooManyChains = {
