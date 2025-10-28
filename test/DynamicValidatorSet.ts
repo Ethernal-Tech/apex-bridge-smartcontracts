@@ -1,7 +1,7 @@
 import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { BatchType, deployBridgeFixture } from "./fixtures";
+import { BatchType, ConstantsLib, deployBridgeFixture } from "./fixtures";
 
 describe("Dynamic Validator Set", function () {
   async function impersonateAsContractAndMintFunds(contractAddress: string) {
@@ -225,6 +225,169 @@ describe("Dynamic Validator Set", function () {
         bridge,
         "newValidatorSetSubmitted"
       );
+    });
+
+    it("Should NOT set bitmap to +1 if there is quorum on submit NOT final validator set batch", async function () {
+      const {
+        bridge,
+        owner,
+        validators,
+        chain1,
+        chain2,
+        signedBatch_ValidatorSet,
+        newValidatorSetDelta,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSet);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSet);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch_ValidatorSet);
+
+      let bitmap = await bridge.newValidatorSetBitmap();
+
+      let count = 0;
+      while (bitmap !== 0n) {
+        bitmap &= bitmap - 1n; // Clear the lowest set bit
+        count++;
+      }
+
+      expect(count).to.equal(0);
+
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch_ValidatorSet);
+
+      bitmap = await bridge.newValidatorSetBitmap();
+
+      while (bitmap !== 0n) {
+        bitmap &= bitmap - 1n; // Clear the lowest set bit
+        count++;
+      }
+
+      expect(count).to.equal(0);
+    });
+
+    it("Should set bitmap to +1 if there is quorum on submit final validator set batch", async function () {
+      const {
+        bridge,
+        owner,
+        validators,
+        chain1,
+        chain2,
+        signedBatch_ValidatorSetFinal,
+        newValidatorSetDelta,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
+
+      let bitmap = await bridge.newValidatorSetBitmap();
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSetFinal);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSetFinal);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch_ValidatorSetFinal);
+
+      let count = 0;
+      while (bitmap !== 0n) {
+        bitmap &= bitmap - 1n; // Clear the lowest set bit
+        count++;
+      }
+
+      expect(count).to.equal(0);
+
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch_ValidatorSetFinal);
+
+      bitmap = await bridge.newValidatorSetBitmap();
+
+      while (bitmap !== 0n) {
+        bitmap &= bitmap - 1n; // Clear the lowest set bit
+        count++;
+      }
+
+      expect(count).to.equal(1);
+    });
+
+    it("Should resetCurrentBatchBlock when there is quorum on submit final validator set batch", async function () {
+      const {
+        bridge,
+        owner,
+        claimsHelper,
+        validators,
+        chain1,
+        chain2,
+        signedBatch_ValidatorSetFinal,
+        newValidatorSetDelta,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSetFinal);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSetFinal);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch_ValidatorSetFinal);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch_ValidatorSetFinal);
+
+      expect(await claimsHelper.currentBatchBlock(signedBatch_ValidatorSetFinal.destinationChainId)).to.equal(-1);
+    });
+
+    it("Should setConfirmedSignedBatchStatus when there is quorum on submit final validator set batch", async function () {
+      const {
+        bridge,
+        owner,
+        claimsHelper,
+        validators,
+        chain1,
+        chain2,
+        signedBatch_ValidatorSetFinal,
+        newValidatorSetDelta,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSetFinal);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSetFinal);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch_ValidatorSetFinal);
+
+      expect(
+        (
+          await claimsHelper.getConfirmedSignedBatchData(
+            signedBatch_ValidatorSetFinal.destinationChainId,
+            signedBatch_ValidatorSetFinal.id
+          )
+        ).status
+      ).to.be.equal(ConstantsLib.NOT_EXIST);
+
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch_ValidatorSetFinal);
+
+      expect(
+        (
+          await claimsHelper.getConfirmedSignedBatchData(
+            signedBatch_ValidatorSetFinal.destinationChainId,
+            signedBatch_ValidatorSetFinal.id
+          )
+        ).status
+      ).to.be.equal(ConstantsLib.EXECUTED);
     });
   });
 
@@ -573,51 +736,6 @@ describe("Dynamic Validator Set", function () {
       }
 
       expect(count).to.equal(0);
-    });
-
-    it("Should set bitmap to +1 if there is quorum on submit final validator set batch", async function () {
-      const {
-        bridge,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        signedBatch_ValidatorSetFinal,
-        newValidatorSetDelta,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
-
-      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
-
-      let bitmap = await bridge.newValidatorSetBitmap();
-
-      let count = 0;
-      while (bitmap !== 0n) {
-        bitmap &= bitmap - 1n; // Clear the lowest set bit
-        count++;
-      }
-
-      expect(count).to.equal(0);
-
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSetFinal);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSetFinal);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatch_ValidatorSetFinal);
-
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatch_ValidatorSetFinal);
-
-      bitmap = await bridge.newValidatorSetBitmap();
-
-      while (bitmap !== 0n) {
-        bitmap &= bitmap - 1n; // Clear the lowest set bit
-        count++;
-      }
-
-      expect(count).to.equal(1);
     });
   });
 

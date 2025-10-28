@@ -15,6 +15,13 @@ export enum TransactionType {
   STAKE_DELEGATION = 3,
 }
 
+export enum ConstantsLib {
+  NOT_EXIST = 0,
+  IN_PROGRESS = 1,
+  EXECUTED = 2,
+  FAILED = 3,
+}
+
 export enum TransactionType {
   NORMAL = 0,
   DEFUND = 1,
