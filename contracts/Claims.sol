@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
 import "./interfaces/ConstantsLib.sol";
+import "./interfaces/TransactionTypesLib.sol";
 import "./Utils.sol";
 import "./Bridge.sol";
 import "./ClaimsHelper.sol";
@@ -15,8 +16,6 @@ import "./Validators.sol";
 /// @notice Handles validator-submitted claims in a cross-chain bridge system.
 /// @dev Inherits from OpenZeppelin upgradeable contracts for upgradability and ownership control.
 contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
-    using ConstantsLib for uint8;
-
     address private upgradeAdmin;
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
@@ -389,9 +388,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
                 ConfirmedTransaction storage _ctx = confirmedTransactions[chainId][i];
                 uint8 _txType = _ctx.transactionType;
-                if (_txType == 0) {
+                if (_txType == TransactionTypesLib.NORMAL) {
                     _currentAmount += _ctx.totalAmount;
-                } else if (_txType == 1) {
+                } else if (_txType == TransactionTypesLib.DEFUND) {
                     if (_ctx.retryCounter < MAX_NUMBER_OF_DEFUND_RETRIES) {
                         uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
                         confirmedTransactions[chainId][nextNonce] = _ctx;
@@ -542,7 +541,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         confirmedTx.sourceChainId = chainId;
         confirmedTx.nonce = nextNonce;
         confirmedTx.retryCounter = _claim.retryCounter;
-        confirmedTx.transactionType = 2;
+        confirmedTx.transactionType = TransactionTypesLib.REFUND;
         confirmedTx.outputIndexes = _claim.outputIndexes;
         confirmedTx.alreadyTriedBatch = _claim.shouldDecrementHotWallet;
 
