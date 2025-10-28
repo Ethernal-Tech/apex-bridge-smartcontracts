@@ -195,8 +195,9 @@ describe("Special Claims Contract", function () {
       expect(await validatorsc.newValidatorSetPending()).to.be.true;
     });
     it("Should emit newValidatorSetSubmitted when new ValidatorSet is submitted", async function () {
-      const { bridge, validatorsc, owner, chain1, chain2, validatorSets, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
+      const { bridge, owner, chain1, chain2, validatorSets, validatorAddressChainData } = await loadFixture(
+        deployBridgeFixture
+      );
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
@@ -208,14 +209,16 @@ describe("Special Claims Contract", function () {
     });
   });
 
-  describe("Submit new Batch Executed Claim", function () {
-    // it("Should revert if chain is not registered", async function () {
-    //   const { bridge, claimsHelper, validators, validatorClaimsBEC } = await loadFixture(deployBridgeFixture);
-    //   await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEC)).to.be.revertedWithCustomError(
-    //     claimsHelper,
-    //     "ChainIsNotRegistered"
-    //   );
-    // });
+  describe("Submit new Signed Batch", function () {
+    it("Should revert getting special confirmed transaction if there is no new set pending", async function () {
+      const { bridge, chain1 } = await loadFixture(deployBridgeFixture);
+
+      await expect(bridge.getSpecialConfirmedTransactions(chain1.id)).to.be.revertedWithCustomError(
+        bridge,
+        "NoNewValidatorSetPending"
+      );
+    });
+
     // it("Should skip if Batch Executed Claims is already confirmed", async function () {
     //   const {
     //     bridge,

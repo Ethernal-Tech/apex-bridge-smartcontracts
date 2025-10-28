@@ -163,7 +163,10 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Submit new validator set data
     /// @param _validatorSet Full validator data for all of the new validators.
     //TODO: will be moved to the governance
-    function submitNewValidatorSet(ValidatorSet[] calldata _validatorSet) external override onlyOwner {
+    function submitNewValidatorSet(
+        ValidatorSet[] calldata _validatorSet,
+        address[] calldata _removedValidators
+    ) external override {
         if (validators.newValidatorSetPending()) {
             revert NewValidatorSetAlreadyPending();
         }
@@ -443,7 +446,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             revert InvalidData("WrongNumberOfValidators");
         }
 
-        //checks that number of validators is the same for all chains
+        //checks that number of validators is the be the same for all chains
         //checkes for duplicate validator addresses
         //checks for empty multisig and fee payer addresses
         //validate signatures for all validators for all chains
