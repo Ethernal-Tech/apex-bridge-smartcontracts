@@ -184,7 +184,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.2";
+        return "1.1.0";
     }
 
     modifier onlySignedBatchesOrClaims() {

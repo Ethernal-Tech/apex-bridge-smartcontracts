@@ -16,7 +16,7 @@ import "./Validators.sol";
 /// @dev Utilizes OpenZeppelin upgradeable contracts and interacts with ClaimsHelper and Validators for consensus logic.
 contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
-    Bridge private bridge;
+    address private bridgeAddress;
     ClaimsHelper private claimsHelper;
     Validators private validators;
 
@@ -65,7 +65,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     ) external onlyOwner {
         if (!_isContract(_bridgeAddress) || !_isContract(_claimsHelperAddress) || !_isContract(_validatorsAddress))
             revert NotContractAddress();
-        bridge = Bridge(_bridgeAddress);
+        bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         validators = Validators(_validatorsAddress);
     }
@@ -135,7 +135,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
 
             if (_signedBatch.batchType == BatchTypesLib.VALIDATORSET_FINAL) {
-                bridge.updateOnStakeManagerIfAllChainsConfirmed(_signedBatch);
+                Bridge(bridgeAddress).updateOnStakeManagerIfAllChainsConfirmed(_signedBatch);
                 claimsHelper.resetCurrentBatchBlock(_destinationChainId);
                 claimsHelper.setConfirmedSignedBatchStatus(_destinationChainId, _sbId, ConstantsLib.EXECUTED);
             }
@@ -173,11 +173,11 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.0";
+        return "1.1.0";
     }
 
     modifier onlyBridge() {
-        if (msg.sender != address(bridge)) revert NotBridge();
+        if (msg.sender != bridgeAddress) revert NotBridge();
         _;
     }
 

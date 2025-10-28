@@ -26,9 +26,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @dev Address of StakeManger contract
     address constant STAKE_MANAGER_ADDRESS = 0x0000000000000000000000000000000000010022;
 
-    /// @notice Bitmap used to flag that validator set has been confirmed for specific chains.
-    uint8 public newValidatorSetBitmap;
-
     /// @notice Array of registered chains.
     Chain[] private chains;
 
@@ -38,10 +35,13 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice system address to limit access to certain functions
     address public constant SYSTEM = 0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE;
 
+    /// @notice Bitmap used to flag that validator set has been confirmed for specific chains.
+    uint8 public newValidatorSetBitmap;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[50] private __gap;
+    uint256[49] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -66,6 +66,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     /// @notice Sets external contract dependencies.
     /// @param _claimsAddress Address of Claims contract.
+    /// @param _signedBatchesAddress Address of SignedBatches contract.
     /// @param _slotsAddress Address of Slots contract.
     /// @param _validatorsAddress Address of Validators contract.
     function setDependencies(
@@ -453,7 +454,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.0";
+        return "1.1.0";
     }
 
     modifier onlyValidator() {

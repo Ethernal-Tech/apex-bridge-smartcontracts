@@ -52,7 +52,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[50] private __gap;
+    uint256[46] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -76,9 +76,17 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
                 revert InvalidData("DuplicatedValidator");
             }
             addressValidatorIndex[_validators[i]] = i + 1;
-            validatorAddresses.push(_validators[i]);
         }
         validatorsCount = uint8(_validators.length);
+    }
+
+    /// @notice Sets the external contract dependencies.
+    /// @dev This function can only be called by the upgrade admin. It verifies that the provided address is a contract.
+    /// @param _validators Current list of validator addresses
+    function setAdditionalDependenciesAndSync(address[] calldata _validators) external onlyUpgradeAdmin {
+        for (uint8 i; i < _validators.length; i++) {
+            validatorAddresses.push(_validators[i]);
+        }
     }
 
     /// @notice Authorizes upgrades. Only the upgrade admin can upgrade the contract.
@@ -488,14 +496,6 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         return newValidatorSetDelta;
     }
 
-    function getValidatorsAddresses() external view returns (address[] memory) {
-        return validatorAddresses;
-    }
-
-    function getPendingValidatorSetDelta() external view returns (NewValidatorSetDelta memory) {
-        return (newValidatorSetDelta);
-    }
-
     /// @dev Converts a bytes32 value to a bytes array.
     /// @param input Input bytes32 value.
     function _bytes32ToBytesAssembly(bytes32 input) internal pure returns (bytes memory output) {
@@ -511,7 +511,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.0";
+        return "1.1.0";
     }
 
     modifier onlyBridge() {
