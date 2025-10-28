@@ -202,6 +202,7 @@ interface IBridgeStructs {
     error NotContractAddress();
     error NewValidatorSetAlreadyPending();
     error NoNewValidatorSetPending();
+    error NewValidatorSetPending();
     error NotSpecialClaimsOrSpecialSignedBatches();
     error NotSpecialSignedBatches();
     error WrongSpecialClaims();

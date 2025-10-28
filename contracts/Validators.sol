@@ -425,6 +425,9 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     }
 
     function getNewValidatorSetDelta() external view returns (NewValidatorSetDelta memory) {
+        if (!newValidatorSetPending) {
+            revert NoNewValidatorSetPending();
+        }
         return newValidatorSetDelta;
     }
 
@@ -438,6 +441,10 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
 
     function getValidatorsAddresses() external view returns (address[] memory) {
         return validatorAddresses;
+    }
+
+    function getNewValidatorSetPending() external view returns (NewValidatorSetDelta memory) {
+        return (newValidatorSetDelta);
     }
 
     /// @dev Converts a bytes32 value to a bytes array.
