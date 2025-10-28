@@ -29,12 +29,14 @@ describe("Dynamic Validator Set", function () {
       );
     });
     it("Should revert if there is already a new validator set pending", async function () {
-      const { bridge, validatorsc, newValidatorSetDelta } = await loadFixture(deployBridgeFixture);
+      const { owner, chain1, chain2, bridge, newValidatorSetDelta, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
 
-      const bridgeContract = await impersonateAsContractAndMintFunds(await bridge.getAddress());
-      await validatorsc.connect(bridgeContract).setNewValidatorSetPending(true);
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
 
       await expect(
         bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta)
@@ -557,7 +559,6 @@ describe("Dynamic Validator Set", function () {
       expect(confBatch.feeSignatures.length).to.equal(0);
       expect(confBatch.bitmap).to.equal(0);
       expect(confBatch.rawTransaction).to.equal("0x");
-      expect(confBatch.isConsolidation).to.equal(false);
       expect(confBatch.batchType).to.equal(BatchType.NORMAL);
       expect(confBatch.id).to.equal(0);
     });
@@ -646,7 +647,6 @@ describe("Dynamic Validator Set", function () {
       expect(confBatch.feeSignatures.length).to.equal(4);
       expect(confBatch.bitmap).to.equal(15);
       expect(confBatch.rawTransaction).to.equal(signedBatch_ValidatorSet.rawTransaction);
-      expect(confBatch.isConsolidation).to.equal(false);
       expect(confBatch.batchType).to.equal(signedBatch_ValidatorSet.batchType);
       expect(confBatch.id).to.equal(signedBatch_ValidatorSet.id);
     });

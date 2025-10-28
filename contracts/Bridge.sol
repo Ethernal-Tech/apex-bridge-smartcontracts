@@ -141,17 +141,19 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
         }
 
-        if (
-            !validators.areSignaturesValid(
+        
+        // Only validate signatures if NOT FINAL, FINAL is a flag with no signatures
+        if (_signedBatch.batchType != BatchTypesLib.VALIDATORSET_FINAL) {
+            bool valid = validators.areSignaturesValid(
                 _signedBatch.destinationChainId,
                 _signedBatch.rawTransaction,
                 _signedBatch.signature,
                 _signedBatch.feeSignature,
                 msg.sender
-            ) && _signedBatch.batchType != BatchTypesLib.VALIDATORSET_FINAL
-        ) {
-            revert InvalidSignature();
+            );
+            if (!valid) revert InvalidSignature();
         }
+
         signedBatches.submitSignedBatch(_signedBatch, msg.sender);
     }
 
@@ -190,12 +192,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             revert NewValidatorSetPending();
         }
 
-        //TODO: check if these validators are indeed in the current set???
-        validators.validateValidatorSet(_newValidatorSetDelta, chains);
-
-        validators.setNewValidatorSetDelta(_newValidatorSetDelta);
-
-        validators.setNewValidatorSetPending(true);
+        validators.submitNewValidatorSet(_newValidatorSetDelta, chains);
 
         emit newValidatorSetSubmitted();
     }
@@ -232,7 +229,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             revert ChainIsNotRegistered(_chainId);
         }
         uint256 _chainsLength = chains.length;
-        for (uint i = 0; i < _chainsLength; i++) {
+        for (uint i; i < _chainsLength; i++) {
             if (chains[i].id == _chainId) {
                 chains[i].addressMultisig = addressMultisig;
                 chains[i].addressFeePayer = addressFeePayer;
@@ -258,7 +255,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         uint8 _chainType = _chain.chainType;
 
-        for (uint i = 0; i < _validatorAddressChainDataLength; i++) {
+        for (uint i; i < _validatorAddressChainDataLength; i++) {
             address _validatorAddress = _validatorData[i].addr;
 
             if (_validatorAddress == address(0)) {
@@ -374,11 +371,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @dev This function is called by the system to update the validator set and make all
     ///      necessary adjustments in the bridge state.
     function validatorSetUpdated() external override onlySystem {
-        validators.removeOldValidatorsData(chains);
-        validators.addNewValidatorsData();
-
-        validators.deleteNewValidatorSetDelta();
-        validators.setNewValidatorSetPending(false);
+        validators.validatorSetUpdated(chains);
     }
 
     /// @notice Get the confirmed batch for the given destination chain.

@@ -34,7 +34,7 @@ interface IBridgeStructs {
         uint256 bitmap;
         bytes rawTransaction;
         uint64 id;
-        bool isConsolidation; // not used
+        bool __isConsolidation; // not used
         uint8 batchType; // BatchTypesLib
     }
 

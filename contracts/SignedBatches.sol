@@ -170,10 +170,6 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         return votes[_hash].bitmap & (1 << (_validatorIdx - 1)) != 0;
     }
 
-    function getVotes(bytes32 _hash) external view returns (SignedBatchVotesInfo memory _votes) {
-        return votes[_hash];
-    }
-
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
