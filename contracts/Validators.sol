@@ -45,6 +45,10 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @notice Flag for new validator set pending
     bool public newValidatorSetPending;
 
+    /// @notice Id of the current validator set
+    /// @dev This is used to track the current validator set version
+    uint256 public currentValidatorSetId;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
@@ -418,6 +422,8 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
                 chainData[_validatorSet.chainId].push(_validatorSet.validators[k].data);
             }
         }
+
+        currentValidatorSetId++;
     }
 
     function setNewValidatorSetDelta(NewValidatorSetDelta calldata _newValidatorSetDelta) external onlyBridge {

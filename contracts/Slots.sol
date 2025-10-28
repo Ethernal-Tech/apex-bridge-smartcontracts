@@ -82,7 +82,9 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
                 continue;
             }
 
-            _chash = keccak256(abi.encodePacked(_chainId, _cblock.blockHash, _cblock.blockSlot));
+            _chash = keccak256(
+                abi.encodePacked(validators.currentValidatorSetId, _chainId, _cblock.blockHash, _cblock.blockSlot)
+            );
             _bitmapValue = bitmap[_chash];
             unchecked {
                 _bitmapNewValue = _bitmapValue | (1 << _validatorIdx);
