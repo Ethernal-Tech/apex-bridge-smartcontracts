@@ -27,6 +27,10 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @dev BlockchainId -> batchId -> SignedBatch
     mapping(uint8 => mapping(uint64 => ConfirmedSignedBatchData)) public confirmedSignedBatches;
 
+    /// @notice Mapping of confirmed special signed batches
+    /// @dev BlockchainId -> batchId -> SignedBatch
+    mapping(uint8 => mapping(uint64 => ConfirmedSignedBatchData)) public confirmedSpecialSignedBatches;
+
     /// @notice Mapping of current batch block numbers per chain.
     /// @dev BlochchainId -> blockNumber
     mapping(uint8 => int256) public currentBatchBlock;
@@ -76,6 +80,17 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         return confirmedSignedBatches[_chainId][_batchId];
     }
 
+    /// @notice Retrieves confirmed signed batch data.
+    /// @param _chainId The ID of the destination chain.
+    /// @param _batchId The batch ID.
+    /// @return _confirmedSignedBatchData The batch data.
+    function getConfirmedSpecialSignedBatchData(
+        uint8 _chainId,
+        uint64 _batchId
+    ) external view returns (ConfirmedSignedBatchData memory _confirmedSignedBatchData) {
+        return confirmedSignedBatches[_chainId][_batchId];
+    }
+
     /// @notice Resets the current batch block for a given chain.
     /// @param _chainId The ID of the chain.
     function resetCurrentBatchBlock(uint8 _chainId) external onlyClaims {
@@ -96,6 +111,21 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
             ConstantsLib.BATCH_IN_PROGRESS // status 1 means "in progress"
         );
         currentBatchBlock[destinationChainId] = int256(block.number);
+    }
+
+    /// @notice Stores a confirmed special signed batch for a specific destination chain and batch ID.
+    /// @dev Updates both `confirmedSignedBatches`
+    /// @param _signedBatch The special signed batch data
+    function setConfirmedSpecialSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
+        uint8 destinationChainId = _signedBatch.destinationChainId;
+        uint64 signedBatchId = _signedBatch.id;
+
+        confirmedSpecialSignedBatches[destinationChainId][signedBatchId] = ConfirmedSignedBatchData(
+            _signedBatch.firstTxNonceId,
+            _signedBatch.lastTxNonceId,
+            _signedBatch.isConsolidation,
+            ConstantsLib.BATCH_IN_PROGRESS // status 1 means "in progress"
+        );
     }
 
     /// @notice Update number of votes for specific hash if needed and returns true if update was executed
@@ -176,6 +206,15 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         }
 
         return _votesNum;
+    }
+
+    /// @notice Sets the specified batch entry to a final status.
+    /// @dev Sets the specified batch entry to a final status.
+    /// @param _chainId The ID of the blockchain where the batch resides.
+    /// @param _batchId The unique identifier of the batch to delete.
+    /// @param _status The new status to set for the batch.
+    function setConfirmedSpecialSignedBatchStatus(uint8 _chainId, uint64 _batchId, uint8 _status) external onlyClaims {
+        confirmedSignedBatches[_chainId][_batchId].status = _status;
     }
 
     /// @notice Returns the current version of the contract

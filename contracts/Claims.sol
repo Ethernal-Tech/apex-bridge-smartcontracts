@@ -49,10 +49,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev BlockchainId -> nonce -> ConfirmedTransaction
     mapping(uint8 => mapping(uint64 => ConfirmedTransaction)) public confirmedTransactions;
 
-    /// @notice Mapping from chain ID to special confirmed transaction for validators update.
-    /// @dev BlockchainId -> nonce -> ConfirmedTransaction
-    mapping(uint8 => ConfirmedTransaction) public specialConfirmedTransaction;
-
     /// @notice Mapping from chain ID to nonce of the last confirmed transaction.
     /// @dev chainId -> nonce
     mapping(uint8 => uint64) public lastConfirmedTxNonce;
@@ -64,7 +60,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Maximum number of retries allowed for defund claims.
     uint8 private constant MAX_NUMBER_OF_DEFUND_RETRIES = 3;
     /// @notice Maximum number of claims allowed per submission.
-    uint8 private constant MAX_NUMBER_OF_CLAIMS = 32;
+    uint8 public constant MAX_NUMBER_OF_CLAIMS = 32;
     /// @notice Maximum number of receivers in a BridgingRequestClaim.
     uint8 private constant MAX_NUMBER_OF_RECEIVERS = 16;
 
@@ -560,15 +556,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         return confirmedTransactions[_destinationChain][_nonce];
     }
 
-    /// @notice Retrieves a special confirmed transaction by chain ID and nonce.
-    /// @param _destinationChain The ID of the destination chain where the transaction was confirmed.
-    /// @return _confirmedTransaction The `ConfirmedTransaction` struct containing transaction details.
-    function getSpecialConfirmedTransaction(
-        uint8 _destinationChain
-    ) public view returns (ConfirmedTransaction memory _confirmedTransaction) {
-        return specialConfirmedTransaction[_destinationChain];
-    }
-
     /// @notice Calculates the number of confirmed transactions ready for batching for a specific chain.
     /// @dev Iterates through confirmed transactions from the last batched nonce up to the batching limit or timeout,
     ///      and counts how many are eligible to be included in the next batch.
@@ -772,35 +759,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     function updateTimeoutBlocksNumber(uint8 _timeoutBlocksNumber) external onlyAdminContract {
         timeoutBlocksNumber = _timeoutBlocksNumber;
-    }
-
-    function createSpecialTransaction(ValidatorSet[] calldata _validatorSet) external onlyBridge {
-        uint256 _validatorSetLength = _validatorSet.length;
-
-        for (uint i; i < _validatorSetLength; i++) {
-            ValidatorSet memory _validator = _validatorSet[i];
-            if (_validator.chain.chainType == 0) {
-                uint256 _pendingAmount = chainTokenQuantity[_validator.chain.id];
-
-                ConfirmedTransaction storage confirmedTx = specialConfirmedTransaction[_validator.chain.id];
-                confirmedTx.totalAmount = _pendingAmount;
-                confirmedTx.blockHeight = 0; // always the same random block height
-                confirmedTx.observedTransactionHash = "0x123"; // always the same random hash
-                confirmedTx.sourceChainId = 0; // always the same source chain id
-                confirmedTx.nonce = 0; // this could be some high number that will always be used
-                confirmedTx.retryCounter = 0;
-                confirmedTx.transactionType = 3;
-
-                Receiver memory receiver = Receiver({
-                    amount: _pendingAmount,
-                    destinationAddress: _validator.chain.addressMultisig
-                });
-
-                confirmedTx.receivers.push(receiver);
-
-                specialConfirmedTransaction[_validator.chain.id] = confirmedTx;
-            }
-        }
     }
 
     /// @notice Returns the current version of the contract

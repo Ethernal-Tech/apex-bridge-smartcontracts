@@ -10,6 +10,10 @@ abstract contract IBridge is IBridgeStructs {
     /// @param _claims The claims submitted by a validator.
     function submitClaims(ValidatorClaims calldata _claims) external virtual;
 
+    /// @notice Submit claims from validators for updating validator set.
+    /// @param _claims The claims submitted by a validator.
+    function submitSpecialClaims(SpecialValidatorClaims calldata _claims) external virtual;
+
     /// @notice Submit a signed transaction batch.
     /// @param _signedBatch The batch of signed transactions.
     function submitSignedBatch(SignedBatch calldata _signedBatch) external virtual;
