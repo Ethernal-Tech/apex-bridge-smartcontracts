@@ -436,6 +436,10 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         delete newValidatorSetDelta;
     }
 
+    function getValidatorsAddresses() external view returns (address[] memory) {
+        return validatorAddresses;
+    }
+
     /// @dev Converts a bytes32 value to a bytes array.
     /// @param input Input bytes32 value.
     function _bytes32ToBytesAssembly(bytes32 input) internal pure returns (bytes memory output) {

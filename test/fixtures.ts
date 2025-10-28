@@ -505,37 +505,37 @@ export async function deployBridgeFixture() {
 
   const newValidatorSetDelta = {
     addedValidators: validatorSets,
-    removedValidators: [validator4, validator5],
+    removedValidators: [validator4.address, validator5.address],
   };
 
   const newValidatorSetDelta_ZeroAddress = {
     addedValidators: validatorSets_ZeroAddress,
-    removedValidators: [validator4, validator5],
+    removedValidators: [validator4.address, validator5.address],
   };
 
   const newValidatorSetDelta_DoubleAddress = {
     addedValidators: validatorSets_DoubleAddress,
-    removedValidators: [validator4, validator5],
+    removedValidators: [validator4.address, validator5.address],
   };
 
   const newValidatorSetDelta_TooManyValidators = {
     addedValidators: validatorSets_TooManyValidators,
-    removedValidators: [validator4, validator5],
+    removedValidators: [validator4.address, validator5.address],
   };
 
   const newValidatorSetDelta_NotEnoughValidators = {
     addedValidators: validatorSets_NotEnoughValidators,
-    removedValidators: [validator4, validator5],
+    removedValidators: [validator4.address, validator5.address],
   };
 
   const newValidatorSetDelta_TooManyChains = {
     addedValidators: validatorSets_TooManyChains,
-    removedValidators: [validator4, validator5],
+    removedValidators: [validator4.address, validator5.address],
   };
 
   const newValidatorSetDelta_notEnoughChains = {
     addedValidators: validatorSets_notEnoughChains,
-    removedValidators: [validator4, validator5],
+    removedValidators: [validator4.address, validator5.address],
   };
 
   return {
