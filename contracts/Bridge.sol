@@ -418,6 +418,10 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         return validators.getValidatorIndex(_validator);
     }
 
+    function getCurrentValidatorSetId() external view override returns (uint256) {
+        return validators.currentValidatorSetId();
+    }
+
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {

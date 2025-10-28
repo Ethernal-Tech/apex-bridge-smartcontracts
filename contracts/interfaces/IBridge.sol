@@ -124,4 +124,8 @@ abstract contract IBridge is IBridgeStructs {
     /// @notice Get the delta of the new validator set.
     /// @return _newValidatorSetDelta The new validator set delta.
     function getNewValidatorSetDelta() external virtual returns (NewValidatorSetDelta calldata _newValidatorSetDelta);
+
+    /// @notice Get id of the current validator set.
+    /// @return _currentValidatorSetId The current validator set id.
+    function getCurrentValidatorSetId() external virtual returns (uint256 _currentValidatorSetId);
 }

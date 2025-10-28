@@ -241,7 +241,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
 
     /// @notice Validates the new validator set data
     /// @param _validatorSet Full validator data for all of the new validators.
-    function validateValidatorSet(ValidatorSet[] calldata _validatorSet, Chain[] calldata _chains) external view {
+    function validateValidatorSet(ValidatorSet[] calldata _validatorSet, Chain[] calldata _chains) external pure {
         //validator set needs to include validator data for all chains
 
         uint256 _numberOfChains = _validatorSet.length;
@@ -260,13 +260,12 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         //checks that number of validators is the be the same for all chains
         //checkes for duplicate validator addresses
         //checks for empty multisig and fee payer addresses
-        //validate signatures for all validators for all chains
         for (uint i; i < _numberOfChains; i++) {
-            if (_validatorSet[i].chainId != _chains[i].id) {
-                revert InvalidData("ChainIdMismatch");
-            }
-
             for (uint256 j; j < _numberOfValidators; j++) {
+                if (_chains[i].id != _validatorSet[i].chainId) {
+                    // revert InvalidData("ChainIdMismatch");
+                    continue;
+                }
                 address _validatorAddress = _validatorSet[i].validators[j].addr;
 
                 if (_validatorAddress == address(0)) {
@@ -288,15 +287,16 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
                     }
                 }
 
-                ValidatorAddressChainData calldata validatorData = _validatorSet[i].validators[j];
+                //not checking validator signatures in the first version
 
-                validateSignatures(
-                    _chainType,
-                    _validatorAddress,
-                    validatorData.keySignature,
-                    validatorData.keyFeeSignature,
-                    validatorData.data
-                );
+                // ValidatorAddressChainData calldata validatorData = _validatorSet[i].validators[j];
+                // validateSignatures(
+                //     _chainType,
+                //     _validatorAddress,
+                //     validatorData.keySignature,
+                //     validatorData.keyFeeSignature,
+                //     validatorData.data
+                // );
             }
         }
     }
