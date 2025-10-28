@@ -244,9 +244,10 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     function validateValidatorSet(ValidatorSet[] calldata _validatorSet, Chain[] calldata _chains) external pure {
         //validator set needs to include validator data for all chains
 
-        uint256 _numberOfChains = _validatorSet.length;
+        uint256 _numberOfChainsInValidatorSets = _validatorSet.length;
+        uint256 _numberOfRegisteredChains = _chains.length;
 
-        if (_numberOfChains != _chains.length) {
+        if (_numberOfChainsInValidatorSets != _numberOfRegisteredChains) {
             revert InvalidData("WrongNumberOfChains");
         }
 
@@ -260,10 +261,10 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         //checks that number of validators is the be the same for all chains
         //checkes for duplicate validator addresses
         //checks for empty multisig and fee payer addresses
-        for (uint i; i < _numberOfChains; i++) {
+        for (uint i; i < _numberOfChainsInValidatorSets; i++) {
             bool atLeastOneProcessed = false;
-            for (uint256 j; j < _numberOfValidators; j++) {
-                if (_chains[i].id != _validatorSet[i].chainId) {
+            for (uint256 j; j < _numberOfRegisteredChains; j++) {
+                if (_validatorSet[i].chainId != _chains[j].id) {
                     continue;
                 }
                 atLeastOneProcessed = true; // This validator matches the chain
@@ -280,10 +281,9 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
                     }
                 }
 
-                uint256 _chainsLength = _chains.length;
                 uint8 _chainType;
 
-                for (uint256 l = 0; l < _chainsLength; l++) {
+                for (uint256 l = 0; l < _numberOfRegisteredChains; l++) {
                     if (_chains[l].id == _validatorSet[i].chainId) {
                         _chainType = _chains[l].chainType;
                     }
