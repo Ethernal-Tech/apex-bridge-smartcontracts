@@ -139,9 +139,7 @@ describe("Admin Functions", function () {
 
       await admin.connect(validators[0]).defund(chain1.id, "address", 1);
 
-      expect((await claims.confirmedTransactions(chain1.id, 1)).observedTransactionHash).to.equal(
-        "0x0000000000000000000000000000000000000000000000000000000000000000"
-      );
+      expect((await claims.confirmedTransactions(chain1.id, 1)).observedTransactionHash).to.equal(ethers.ZeroHash);
       expect((await claims.confirmedTransactions(chain1.id, 1)).sourceChainId).to.equal(chain1.id);
       expect((await claims.confirmedTransactions(chain1.id, 1)).nonce).to.equal(1);
       expect((await claims.confirmedTransactions(chain1.id, 1)).retryCounter).to.equal(0);

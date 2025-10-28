@@ -652,28 +652,6 @@ export function hashBridgeRequestClaim(validatorSet: number, claim: any) {
       ]
     )
   );
-
-  // const abiCoder = new ethers.AbiCoder();
-  // const encodedPrefix = abiCoder.encode(["uint256", "string"], [validatorSet, "BRC"]);
-
-  // const encoded = abiCoder.encode(
-  //   ["bytes32", "tuple(uint256, string)[]", "uint256", "uint256", "uint256", "uint8", "uint8"],
-  //   [
-  //     claim.observedTransactionHash,
-  //     lst,
-  //     claim.totalAmountSrc,
-  //     claim.totalAmountDst,
-  //     claim.retryCounter,
-  //     claim.sourceChainId,
-  //     claim.destinationChainId,
-  //   ]
-  // );
-
-  // return ethers.keccak256(
-  //   "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-  //     encodedPrefix.substring(66) +
-  //     encoded.substring(2)
-  // );
 }
 
 export function hashBatchExecutedClaim(validatorSet: number, claim: any) {
@@ -685,23 +663,9 @@ export function hashBatchExecutedClaim(validatorSet: number, claim: any) {
       [validatorSet, "BEC", [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]]
     )
   );
-  // const abiCoder = new ethers.AbiCoder();
-  // const encodedPrefix = abiCoder.encode(["uint256", "string"], [validatorSet, "BEC"]);
-  // const encoded = abiCoder.encode(
-  //   ["bytes32", "uint64", "uint8"],
-  //   [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]
-  // );
-
-  // return ethers.keccak256(
-  //   "0x0000000000000000000000000000000000000000000000000000000000000080" +
-  //     encoded.substring(2) +
-  //     encodedPrefix.substring(66)
-  // );
 }
 
 export function hashBatchExecutionFailedClaim(validatorSet: number, claim: any) {
-  // const abiCoder = new ethers.AbiCoder();
-
   const abi = new ethers.AbiCoder();
 
   return ethers.keccak256(
@@ -710,17 +674,6 @@ export function hashBatchExecutionFailedClaim(validatorSet: number, claim: any) 
       [validatorSet, "BEFC", [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]]
     )
   );
-  // const encodedPrefix = abiCoder.encode(["uint256", "string"], [validatorSet, "BEFC"]);
-  // const encoded = abiCoder.encode(
-  //   ["bytes32", "uint64", "uint8"],
-  //   [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]
-  // );
-
-  // return ethers.keccak256(
-  //   "0x0000000000000000000000000000000000000000000000000000000000000080" +
-  //     encoded.substring(2) +
-  //     encodedPrefix.substring(66)
-  // );
 }
 
 export function hashRefundRequestClaim(validatorSet: number, claim: any) {
@@ -747,26 +700,6 @@ export function hashRefundRequestClaim(validatorSet: number, claim: any) {
       ]
     )
   );
-
-  // const encodedPrefix = abiCoder.encode(["uint256", "string"], [validatorSet, "RRC"]);
-  // const encoded = abiCoder.encode(
-  //   ["bytes32", "bytes32", "uint256", "bytes", "string", "uint64", "uint8", "bool"],
-  //   [
-  //     claim.originTransactionHash,
-  //     claim.refundTransactionHash,
-  //     claim.originAmount,
-  //     claim.outputIndexes,
-  //     claim.originSenderAddress,
-  //     claim.retryCounter,
-  //     claim.originChainId,
-  //     claim.shouldDecrementHotWallet,
-  //   ]
-  // );
-  // return ethers.keccak256(
-  //   "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-  //     encodedPrefix.substring(66) +
-  //     encoded.substring(2)
-  // );
 }
 
 export function hashHotWalletIncrementClaim(validatorSet: number, claim: any) {
@@ -775,13 +708,4 @@ export function hashHotWalletIncrementClaim(validatorSet: number, claim: any) {
   return ethers.keccak256(
     abi.encode(["uint256", "string", "tuple(uint8,uint256)"], [validatorSet, "HWIC", [claim.chainId, claim.amount]])
   );
-
-  // const abiCoder = new ethers.AbiCoder();
-  // const encodedPrefix = abiCoder.encode(["uint256", "string"], [validatorSet, "HWIC"]);
-  // const encoded = abiCoder.encode(["uint8", "uint256"], [claim.chainId, claim.amount]);
-  // return ethers.keccak256(
-  //   "0x0000000000000000000000000000000000000000000000000000000000000060" +
-  //     encoded.substring(2) +
-  //     encodedPrefix.substring(66)
-  // );
 }
