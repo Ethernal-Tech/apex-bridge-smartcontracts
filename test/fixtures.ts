@@ -144,6 +144,14 @@ export async function deployBridgeFixture() {
 
   await claims.setDependencies(bridge.target, claimsHelper.target, validatorsc.target, admin.target);
 
+  await specialClaims.setDependencies(
+    bridge.target,
+    claims.target,
+    claimsHelper.target,
+    signedBatches.target,
+    validatorsc.target
+  );
+
   await signedBatches.setDependencies(bridge.target, specialClaims.target, claimsHelper.target, validatorsc);
 
   await slots.setDependencies(bridge.target, validatorsc.target);
@@ -334,6 +342,196 @@ export async function deployBridgeFixture() {
 
   const validatorCardanoData = validatorAddressChainData[0].data;
 
+  const validatorSets = Array.from({ length: 2 }, (_, i) => {
+    const chainId = i + 1;
+    return {
+      chain: {
+        id: chainId,
+        chainType: i, // e.g., 0, 1, 2
+        addressMultisig: `0xMultisig${chainId}`,
+        addressFeePayer: `0xFeePayer${chainId}`,
+      },
+      validators: Array.from({ length: 5 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: `0x${addrNum}`,
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_notEnoughChains = Array.from({ length: 1 }, (_, i) => {
+    const chainId = i + 1;
+    return {
+      chain: {
+        id: chainId,
+        chainType: i, // e.g., 0, 1, 2
+        addressMultisig: `0xMultisig${chainId}`,
+        addressFeePayer: `0xFeePayer${chainId}`,
+      },
+      validators: Array.from({ length: 5 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: `0x${addrNum}`,
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_TooManyChains = Array.from({ length: 3 }, (_, i) => {
+    const chainId = i + 1;
+    return {
+      chain: {
+        id: chainId,
+        chainType: i, // e.g., 0, 1, 2
+        addressMultisig: `0xMultisig${chainId}`,
+        addressFeePayer: `0xFeePayer${chainId}`,
+      },
+      validators: Array.from({ length: 5 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: `0x${addrNum}`,
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_NotEnoughValidators = Array.from({ length: 2 }, (_, i) => {
+    const chainId = i + 1;
+    return {
+      chain: {
+        id: chainId,
+        chainType: i, // e.g., 0, 1, 2
+        addressMultisig: `0xMultisig${chainId}`,
+        addressFeePayer: `0xFeePayer${chainId}`,
+      },
+      validators: Array.from({ length: 3 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: `0x${addrNum}`,
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_TooManyValidators = Array.from({ length: 2 }, (_, i) => {
+    const chainId = i + 1;
+    return {
+      chain: {
+        id: chainId,
+        chainType: i,
+        addressMultisig: `0xMultisig${chainId}`,
+        addressFeePayer: `0xFeePayer${chainId}`,
+      },
+      validators: Array.from({ length: 127 }, (_, j) => {
+        const addrNum = (i * 127 + j + 1).toString(16).padStart(40, "0");
+
+        // Generate 4-byte (8 hex digit) valid hex strings
+        const suffix = (j + 1).toString(16).padStart(2, "0"); // e.g., "01"
+        const keySignature = `0x${"abc0" + suffix}`.padEnd(10, "0"); // 10 chars = 0x + 8 hex digits
+        const keyFeeSignature = `0x${"def0" + suffix}`.padEnd(10, "0");
+
+        return {
+          addr: `0x${addrNum}`,
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature,
+          keyFeeSignature,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_ZeroAddress = Array.from({ length: 2 }, (_, i) => {
+    const chainId = i + 1;
+    return {
+      chain: {
+        id: chainId,
+        chainType: i, // e.g., 0, 1, 2
+        addressMultisig: `0xMultisig${chainId}`,
+        addressFeePayer: `0xFeePayer${chainId}`,
+      },
+      validators: Array.from({ length: 5 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: "0x0000000000000000000000000000000000000000",
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_DoubleAddress = Array.from({ length: 2 }, (_, i) => {
+    const chainId = i + 1;
+    return {
+      chain: {
+        id: chainId,
+        chainType: i, // e.g., 0, 1, 2
+        addressMultisig: `0xMultisig${chainId}`,
+        addressFeePayer: `0xFeePayer${chainId}`,
+      },
+      validators: Array.from({ length: 5 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: "0x0000000000000000000000000000000000000001",
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_EmptyAddresses = Array.from({ length: 2 }, (_, i) => {
+    const chainId = i + 1;
+    return {
+      chain: {
+        id: chainId,
+        chainType: i, // e.g., 0, 1, 2
+        addressMultisig: "",
+        addressFeePayer: "",
+      },
+      validators: Array.from({ length: 5 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: "0x0000000000000000000000000000000000000001",
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
   return {
     hre,
     bridge,
@@ -361,6 +559,14 @@ export async function deployBridgeFixture() {
     validators,
     cardanoBlocks,
     cardanoBlocksTooManyBlocks,
+    validatorSets,
+    validatorSets_notEnoughChains,
+    validatorSets_TooManyChains,
+    validatorSets_NotEnoughValidators,
+    validatorSets_TooManyValidators,
+    validatorSets_ZeroAddress,
+    validatorSets_DoubleAddress,
+    validatorSets_EmptyAddresses,
   };
 }
 

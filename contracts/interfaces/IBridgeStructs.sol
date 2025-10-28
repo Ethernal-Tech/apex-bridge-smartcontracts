@@ -143,6 +143,12 @@ interface IBridgeStructs {
         string addressFeePayer;
     }
 
+    /// @notice Full data for new Validator Set.
+    struct ValidatorSet {
+        Chain chain;
+        ValidatorAddressChainData[] validators;
+    }
+
     /// @notice Data for a validator address and its signing keys.
     struct ValidatorAddressChainData {
         address addr;
@@ -154,11 +160,6 @@ interface IBridgeStructs {
     /// @notice Validator public key data for either Cardano or EVM (e.g., BLS).
     struct ValidatorChainData {
         uint256[4] key;
-    }
-
-    struct ValidatorSet {
-        Chain chain;
-        ValidatorAddressChainData[] validators;
     }
 
     /// @notice Summary info for a transaction in a batch.
@@ -201,6 +202,7 @@ interface IBridgeStructs {
     error TooManyClaims(uint256 _claimsCount, uint256 _maxClaimsCount);
     error NotContractAddress();
     error BatchInProgress();
+    error NewValidatorSetAlreadyPending();
     error NoNewValidatorSetPending();
     error NotSpecialClaims();
 

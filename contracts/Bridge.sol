@@ -164,20 +164,11 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @param _validatorSet Full validator data for all of the new validators.
     //TODO: will be moved to the governance
     function submitNewValidatorSet(ValidatorSet[] calldata _validatorSet) external override onlyOwner {
-        uint64 _lastConfirmedBatchId = signedBatches.getConfirmedBatchId(_validatorSet[0].chain.id);
-
-        uint256 _validatorSetLength = _validatorSet.length;
-
-        for (uint256 i = 0; i < _validatorSetLength; i++) {
-            if (
-                claims.getBatchStatus(_validatorSet[i].chain.id, _lastConfirmedBatchId) ==
-                ConstantsLib.BATCH_IN_PROGRESS
-            ) {
-                revert BatchInProgress();
-            }
+        if (validators.newValidatorSetPending()) {
+            revert NewValidatorSetAlreadyPending();
         }
 
-        validateValidatorSet(_validatorSet);
+        _validateValidatorSet(_validatorSet);
 
         validators.storeNewValidatorSet(_validatorSet);
 
@@ -235,7 +226,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     ) public override onlyOwner {
         uint256 _validatorAddressChainDataLength = _validatorData.length;
 
-        if (_validatorAddressChainDataLength < 4) {
+        if (_validatorAddressChainDataLength < 4 || _validatorAddressChainDataLength > 126) {
             revert InvalidData("ValidatorAddressChainData");
         }
 
@@ -438,34 +429,47 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     /// @notice Validates the new validator set data
     /// @param _validatorSet Full validator data for all of the new validators.
-    function validateValidatorSet(ValidatorSet[] calldata _validatorSet) internal view {
+    function _validateValidatorSet(ValidatorSet[] calldata _validatorSet) internal view {
         //set needs to include validator data for all chains
-        uint256 _validatorSetLength = _validatorSet.length;
-        if (_validatorSetLength != chains.length) {
-            revert InvalidData("InvalidValidatorSet");
+        uint256 _numberOfChains = _validatorSet.length;
+        if (_numberOfChains != chains.length) {
+            revert InvalidData("WrongNumberOfChains");
         }
 
         uint256 _numberOfValidators = _validatorSet[0].validators.length;
 
         //number of validators must be between 4 and 126
         if (_numberOfValidators < 4 || _numberOfValidators > 126) {
-            revert InvalidData("ValidatorSetLength");
+            revert InvalidData("WrongNumberOfValidators");
         }
 
-        //number of validators must be the same for all chains
-        for (uint256 i; i < _validatorSetLength; i++) {
+        //checks that number of validators is the same for all chains
+        //checkes for duplicate validator addresses
+        //checks for empty multisig and fee payer addresses
+        //validate signatures for all validators for all chains
+        for (uint i; i < _numberOfChains; i++) {
             if (_validatorSet[i].chain.id != chains[i].id) {
                 revert InvalidData("ChainIdMismatch");
             }
-        }
 
-        //validate signatures for all validators for all chains
-        for (uint j; j < _validatorSetLength; j++) {
-            for (uint256 i; i < _numberOfValidators; i++) {
+            if (
+                bytes(_validatorSet[i].chain.addressMultisig).length == 0 ||
+                bytes(_validatorSet[i].chain.addressFeePayer).length == 0
+            ) {
+                revert InvalidData("EmptyMultisigOrFeePayerAddress");
+            }
+
+            for (uint256 j; j < _numberOfValidators; j++) {
                 address _validatorAddress = _validatorSet[i].validators[j].addr;
 
                 if (_validatorAddress == address(0)) {
                     revert ZeroAddress();
+                }
+
+                for (uint k = j + 1; k < _numberOfValidators; k++) {
+                    if (_validatorAddress == _validatorSet[i].validators[k].addr) {
+                        revert InvalidData("DuplicatedValidator"); // duplicate found
+                    }
                 }
 
                 _validateSignatures(
