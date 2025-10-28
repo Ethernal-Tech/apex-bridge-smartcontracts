@@ -146,14 +146,10 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         return lastConfirmedBatch[_destinationChain].id;
     }
 
-    function getConfirmedBatchTransaction(uint8 _destinationChain) external view returns (bytes memory) {
-        if (
-            lastConfirmedBatch[_destinationChain].batchType == BatchTypesLib.VALIDATORSET ||
-            lastConfirmedBatch[_destinationChain].batchType == BatchTypesLib.VALIDATORSET_FINAL
-        ) {
-            return bytes(""); // no raw transactions
-        }
-        return lastConfirmedBatch[_destinationChain].rawTransaction;
+    function getConfirmedBatchTransactionAndBatchType(
+        uint8 _destinationChain
+    ) external view returns (bytes memory, uint8) {
+        return (lastConfirmedBatch[_destinationChain].rawTransaction, lastConfirmedBatch[_destinationChain].batchType);
     }
 
     function getNumberOfSignatures(bytes32 _hash) external view returns (uint256) {

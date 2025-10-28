@@ -377,8 +377,10 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Get raw transaction data from the most recent batch for a given destination chain.
     /// @param _destinationChain ID of the destination chain.
     /// @return Raw bytes of the transaction data.
-    function getRawTransactionFromLastBatch(uint8 _destinationChain) external view override returns (bytes memory) {
-        return signedBatches.getConfirmedBatchTransaction(_destinationChain);
+    function getRawTransactionAndBatchTypeFromLastBatch(
+        uint8 _destinationChain
+    ) external view override returns (bytes memory, uint8) {
+        return signedBatches.getConfirmedBatchTransactionAndBatchType(_destinationChain);
     }
 
     /// @notice Get transactions included in a specific batch for a given chain.

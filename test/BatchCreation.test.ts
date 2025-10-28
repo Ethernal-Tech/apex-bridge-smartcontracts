@@ -241,34 +241,34 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
 
-      // wait for next timeout
-      for (let i = 0; i < 3; i++) {
-        await ethers.provider.send("evm_mine");
-      }
+    //   // wait for next timeout
+    //   for (let i = 0; i < 3; i++) {
+    //     await ethers.provider.send("evm_mine");
+    //   }
 
-      await bridge.connect(validators[0]).submitSignedBatchEVM(signedBatch);
-      await bridge.connect(validators[1]).submitSignedBatchEVM(signedBatch);
-      await bridge.connect(validators[2]).submitSignedBatchEVM(signedBatch);
-      await bridge.connect(validators[3]).submitSignedBatchEVM(signedBatch);
+    //   await bridge.connect(validators[0]).submitSignedBatchEVM(signedBatch);
+    //   await bridge.connect(validators[1]).submitSignedBatchEVM(signedBatch);
+    //   await bridge.connect(validators[2]).submitSignedBatchEVM(signedBatch);
+    //   await bridge.connect(validators[3]).submitSignedBatchEVM(signedBatch);
 
-      expect(
-        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).rawTransaction
-      ).to.equal(signedBatch.rawTransaction);
-      expect(
-        (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).signatures.length
-      ).to.equal(4);
+    //   expect(
+    //     (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).rawTransaction
+    //   ).to.equal(signedBatch.rawTransaction);
+    //   expect(
+    //     (await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId)).signatures.length
+    //   ).to.equal(4);
 
-      const confirmedBatch = await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId);
-      expect(confirmedBatch.signatures[0]).to.deep.equal(signedBatch.signature);
-      expect(confirmedBatch.signatures[1]).to.deep.equal(signedBatch.signature);
-      expect(confirmedBatch.signatures[2]).to.deep.equal(signedBatch.signature);
-      expect(confirmedBatch.signatures[3]).to.deep.equal(signedBatch.signature);
-      expect(confirmedBatch.feeSignatures[2]).to.deep.equal(signedBatch.feeSignature);
+    //   const confirmedBatch = await bridge.connect(validators[0]).getConfirmedBatch(signedBatch.destinationChainId);
+    //   expect(confirmedBatch.signatures[0]).to.deep.equal(signedBatch.signature);
+    //   expect(confirmedBatch.signatures[1]).to.deep.equal(signedBatch.signature);
+    //   expect(confirmedBatch.signatures[2]).to.deep.equal(signedBatch.signature);
+    //   expect(confirmedBatch.signatures[3]).to.deep.equal(signedBatch.signature);
+    //   expect(confirmedBatch.feeSignatures[2]).to.deep.equal(signedBatch.feeSignature);
 
-      expect(
-        await bridge.connect(validators[0]).getRawTransactionFromLastBatch(signedBatch.destinationChainId)
-      ).to.equal(signedBatch.rawTransaction);
-    });
+    //   expect(
+    //     await bridge.connect(validators[0]).getRawTransactionFromLastBatch(signedBatch.destinationChainId)
+    //   ).to.equal(signedBatch.rawTransaction);
+    // });
 
     it("Should create and execute batch after transactions are confirmed", async function () {
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;

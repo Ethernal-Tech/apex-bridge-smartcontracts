@@ -102,7 +102,9 @@ abstract contract IBridge is IBridgeStructs {
     /// @notice Get raw transaction data from the most recent batch for a given destination chain.
     /// @param _destinationChain ID of the destination chain.
     /// @return Raw bytes of the transaction data.
-    function getRawTransactionFromLastBatch(uint8 _destinationChain) external view virtual returns (bytes memory);
+    function getRawTransactionAndBatchTypeFromLastBatch(
+        uint8 _destinationChain
+    ) external view virtual returns (bytes memory, uint8);
 
     /// @notice Get transactions included in a specific batch for a given chain.
     /// @param _chainId ID of the chain.

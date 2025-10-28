@@ -399,35 +399,6 @@ describe("Dynamic Validator Set", function () {
       expect(confBatch.id).to.equal(0);
     });
 
-    it("getRawTransactions should return emtpy bytes in batch is validator set update", async function () {
-      const {
-        bridge,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        validatorAddressChainData,
-        newValidatorSetDelta,
-        signedBatch_ValidatorSet,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
-
-      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
-
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSet);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSet);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatch_ValidatorSet);
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatch_ValidatorSet);
-
-      expect(
-        await bridge.connect(validators[0]).getRawTransactionFromLastBatch(signedBatch_ValidatorSet.destinationChainId)
-      ).to.equal("0x");
-    });
-
     it("getBatchTransactions should return empty array of txs from batch for validator set update", async function () {
       const {
         bridge,
