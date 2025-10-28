@@ -241,55 +241,80 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
 
     /// @notice Validates the new validator set data
     /// @param _validatorSet Full validator data for all of the new validators.
+    /// @dev checks that there are as many new validator set as there are registered chains
+    /// @dev checks that there is a new validator set for all registered chains
+    /// @dev checks that number of validators is the same for all chains
+    /// @dev checks that number of validators is between 4 and 126 - allowed values
+    /// @dev checks that address of validators is not zero
+    /// @dev checkes for duplicate validator addresses
     function validateValidatorSet(ValidatorSet[] calldata _validatorSet, Chain[] calldata _chains) external pure {
         //validator set needs to include validator data for all chains
 
         uint256 _numberOfChainsInValidatorSets = _validatorSet.length;
         uint256 _numberOfRegisteredChains = _chains.length;
 
+        // checks that there are as many new validator set as there are registered chains
         if (_numberOfChainsInValidatorSets != _numberOfRegisteredChains) {
             revert InvalidData("WrongNumberOfChains");
         }
 
-        uint256 _numberOfValidators = _validatorSet[0].validators.length;
+        //
+        uint256 expectedNumberOfValidators = _validatorSet[0].validators.length;
 
-        // the number of validators must be between 4 and 126
-        if (_numberOfValidators < 4 || _numberOfValidators > 126) {
+        if (expectedNumberOfValidators == 0) {
             revert InvalidData("WrongNumberOfValidators");
         }
 
-        //checks that number of validators is the be the same for all chains
-        //checkes for duplicate validator addresses
-        //checks for empty multisig and fee payer addresses
+        for (uint256 i = 1; i < _numberOfChainsInValidatorSets; i++) {
+            if (_validatorSet[i].validators.length != expectedNumberOfValidators) {
+                revert InvalidData("WrongNumberOfValidators");
+            }
+        }
+
         for (uint i; i < _numberOfChainsInValidatorSets; i++) {
-            bool atLeastOneProcessed = false;
+            bool atLeastOneToProcessed = false;
+            // checks that there is a new validator set for all registered chains
             for (uint256 j; j < _numberOfRegisteredChains; j++) {
                 if (_validatorSet[i].chainId != _chains[j].id) {
                     continue;
                 }
-                atLeastOneProcessed = true; // This validator matches the chain
+                atLeastOneToProcessed = true; // This validator matches the chain
+            }
 
-                address _validatorAddress = _validatorSet[i].validators[j].addr;
+            if (!atLeastOneToProcessed) {
+                revert InvalidData("ChainIdMismatch");
+            }
+
+            uint256 _numberOfValidators = _validatorSet[i].validators.length;
+
+            // checks that number of validators is between 4 and 126 - allowed values
+            if (_numberOfValidators < 4 || _numberOfValidators > 126) {
+                revert InvalidData("WrongNumberOfValidators");
+            }
+
+            for (uint256 k; k < _numberOfValidators; k++) {
+                address _validatorAddress = _validatorSet[i].validators[k].addr;
 
                 if (_validatorAddress == address(0)) {
                     revert ZeroAddress();
                 }
 
-                for (uint k = j + 1; k < _numberOfValidators; k++) {
-                    if (_validatorAddress == _validatorSet[i].validators[k].addr) {
+                for (uint l = k + 1; l < _numberOfValidators; l++) {
+                    if (_validatorAddress == _validatorSet[i].validators[l].addr) {
                         revert InvalidData("DuplicatedValidator"); // duplicate found
                     }
                 }
 
-                uint8 _chainType;
+                // TODO check for empty multisig and fee addresses
+                // not checking validator signatures in the first version
 
-                for (uint256 l = 0; l < _numberOfRegisteredChains; l++) {
-                    if (_chains[l].id == _validatorSet[i].chainId) {
-                        _chainType = _chains[l].chainType;
-                    }
-                }
+                // uint8 _chainType;
 
-                //not checking validator signatures in the first version
+                // for (uint256 n = 0; n < _numberOfRegisteredChains; n++) {
+                //     if (_chains[l].id == _validatorSet[i].chainId) {
+                //         _chainType = _chains[l].chainType;
+                //     }
+                // }
 
                 // ValidatorAddressChainData calldata validatorData = _validatorSet[i].validators[j];
                 // validateSignatures(
@@ -299,10 +324,6 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
                 //     validatorData.keyFeeSignature,
                 //     validatorData.data
                 // );
-            }
-
-            if (!atLeastOneProcessed) {
-                revert InvalidData("ChainIdMismatch");
             }
         }
     }
