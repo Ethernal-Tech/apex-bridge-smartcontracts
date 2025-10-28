@@ -320,8 +320,9 @@ describe("Dynamic Validator Set", function () {
 
       expect(lastConfirmedSignedBatchData.firstTxNonceId).to.equal(0);
       expect(lastConfirmedSignedBatchData.lastTxNonceId).to.equal(0);
-      expect(lastConfirmedSignedBatchData.batchType).to.equal(BatchType.NORMAL);
       expect(lastConfirmedSignedBatchData.status).to.equal(0);
+      expect(lastConfirmedSignedBatchData.isConsolidation).to.equal(false);
+      expect(lastConfirmedSignedBatchData.batchType).to.equal(BatchType.NORMAL);
 
       const confBatch = await signedBatches.getConfirmedBatch(signedBatch_ValidatorSet.destinationChainId);
 
@@ -329,6 +330,7 @@ describe("Dynamic Validator Set", function () {
       expect(confBatch.feeSignatures.length).to.equal(0);
       expect(confBatch.bitmap).to.equal(0);
       expect(confBatch.rawTransaction).to.equal("0x");
+      expect(confBatch.isConsolidation).to.equal(false);
       expect(confBatch.batchType).to.equal(BatchType.NORMAL);
       expect(confBatch.id).to.equal(0);
     });
@@ -374,8 +376,9 @@ describe("Dynamic Validator Set", function () {
 
       expect(lastConfirmedSignedBatchData.firstTxNonceId).to.equal(2n ** 64n - 1n);
       expect(lastConfirmedSignedBatchData.lastTxNonceId).to.equal(2n ** 64n - 1n);
-      expect(lastConfirmedSignedBatchData.batchType).to.equal(BatchType.VALIDATORSET);
+      expect(lastConfirmedSignedBatchData.isConsolidation).to.equal(false);
       expect(lastConfirmedSignedBatchData.status).to.equal(1);
+      expect(lastConfirmedSignedBatchData.batchType).to.equal(BatchType.VALIDATORSET);
 
       const confBatch = await signedBatches.getConfirmedBatch(signedBatch_ValidatorSet.destinationChainId);
 
@@ -383,6 +386,7 @@ describe("Dynamic Validator Set", function () {
       expect(confBatch.feeSignatures.length).to.equal(4);
       expect(confBatch.bitmap).to.equal(15);
       expect(confBatch.rawTransaction).to.equal(signedBatch_ValidatorSet.rawTransaction);
+      expect(confBatch.isConsolidation).to.equal(false);
       expect(confBatch.batchType).to.equal(signedBatch_ValidatorSet.batchType);
       expect(confBatch.id).to.equal(signedBatch_ValidatorSet.id);
     });

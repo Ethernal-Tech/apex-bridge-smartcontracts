@@ -127,6 +127,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
                 _votesInfo.bitmap,
                 _signedBatch.rawTransaction,
                 _sbId,
+                false, // isConsolidation is not used
                 _signedBatch.batchType
             );
 
