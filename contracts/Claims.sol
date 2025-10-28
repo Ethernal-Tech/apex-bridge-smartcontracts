@@ -23,9 +23,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     address private adminContractAddress;
 
-    /// @notice Hash for the "Defund" packed claim type.
-    bytes32 public constant defundHash = 0xc74d0d70be942fd68984df57687b9f453f1321726e8db77762dee952a5c85b24;
-
     /// @notice Mapping to track if a chain is registered.
     /// @dev BlockchainId -> bool
     mapping(uint8 => bool) public isChainRegistered;
@@ -257,7 +254,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
             uint256 _confirmedTxCount = getBatchingTxsCount(_destinationChainId);
 
-            _setConfirmedTransactions(_claim, 0);
+            _setConfirmedTransactions(_claim);
 
             _updateNextTimeoutBlockIfNeeded(_destinationChainId, _confirmedTxCount);
         }
@@ -506,11 +503,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     ///      It also increments the nonce and sets the transaction type.
     /// @param _claim The bridging request claim containing details about the transaction, including the total amount,
     ///               source and destination chain IDs, observed transaction hash, retry counter, and receivers.
-    /// @param _transactionType The type of the transaction (e.g., bridging request, refund, etc.) that is being processed.
     /// @dev The function stores the confirmed transaction details in the `confirmedTransactions` mapping and increments
     ///      the nonce for the destination chain. It also sets the relevant properties for the transaction, including
     ///      its retry counter and list of receivers.
-    function _setConfirmedTransactions(BridgingRequestClaim memory _claim, uint8 _transactionType) internal {
+    function _setConfirmedTransactions(BridgingRequestClaim memory _claim) internal {
         uint8 destinationChainId = _claim.destinationChainId;
         uint64 nextNonce = ++lastConfirmedTxNonce[destinationChainId];
 
@@ -521,7 +517,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         confirmedTx.sourceChainId = _claim.sourceChainId;
         confirmedTx.nonce = nextNonce;
         confirmedTx.retryCounter = _claim.retryCounter;
-        confirmedTx.transactionType = _transactionType;
+        confirmedTx.transactionType = TransactionTypesLib.NORMAL;
 
         uint256 receiversLength = _claim.receivers.length;
         for (uint i; i < receiversLength; i++) {
@@ -684,24 +680,19 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             revert DefundRequestTooHigh(_chainId, _currentAmount, _amount);
         }
 
-        BridgingRequestClaim memory _brc = BridgingRequestClaim({
-            observedTransactionHash: defundHash,
-            receivers: new Receiver[](1),
-            totalAmountSrc: _amount,
-            totalAmountDst: _amount,
-            retryCounter: 0,
-            sourceChainId: _chainId,
-            destinationChainId: _chainId
-        });
-
-        _brc.receivers[0].amount = _amount;
-        _brc.receivers[0].destinationAddress = _defundAddress;
-
-        chainTokenQuantity[_chainId] = _currentAmount - _amount;
-
         uint256 _confirmedTxCount = getBatchingTxsCount(_chainId);
 
-        _setConfirmedTransactions(_brc, 1);
+        uint64 nextNonce = ++lastConfirmedTxNonce[_chainId];
+
+        ConfirmedTransaction storage confirmedTx = confirmedTransactions[_chainId][nextNonce];
+        confirmedTx.transactionType = TransactionTypesLib.DEFUND;
+        confirmedTx.nonce = nextNonce;
+        confirmedTx.sourceChainId = _chainId;
+        confirmedTx.totalAmount = _amount;
+        confirmedTx.receivers.push(Receiver(_amount, _defundAddress));
+        confirmedTx.blockHeight = block.number;
+
+        chainTokenQuantity[_chainId] = _currentAmount - _amount;
 
         _updateNextTimeoutBlockIfNeeded(_chainId, _confirmedTxCount);
     }
