@@ -100,26 +100,22 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     function updateOnStakeManagerIfAllChainsConfirmed(SignedBatch calldata _signedBatch) external onlySignedBatches {
-        if (_signedBatch.batchType == BatchTypesLib.VALIDATORSET_FINAL) {
-            newValidatorSetBitmap |= uint8(1 << _signedBatch.destinationChainId);
+        newValidatorSetBitmap |= uint8(1 << _signedBatch.destinationChainId);
 
-            if (_countSetBits(newValidatorSetBitmap) == chains.length) {
-                (bool success, ) = address(STAKE_MANAGER_ADDRESS).call(
-                    abi.encodeWithSignature(
-                        "updateValidatorSet(((uint8,(address,uint256[4],bytes,bytes)[])[],address[]))",
-                        validators.getNewValidatorSetDelta()
-                    )
-                );
+        if (_countSetBits(newValidatorSetBitmap) == chains.length) {
+            (bool success, ) = address(STAKE_MANAGER_ADDRESS).call(
+                abi.encodeWithSignature(
+                    "updateValidatorSet(((uint8,(address,uint256[4],bytes,bytes)[])[],address[]))",
+                    validators.getNewValidatorSetDelta()
+                )
+            );
 
-                if (!success) {
-                    revert StakeManagerUpdateFailed();
-                }
-
-                // restart new validator set bitmap
-                newValidatorSetBitmap = 0;
+            if (!success) {
+                revert StakeManagerUpdateFailed();
             }
 
-            return;
+            // restart new validator set bitmap
+            newValidatorSetBitmap = 0;
         }
     }
 

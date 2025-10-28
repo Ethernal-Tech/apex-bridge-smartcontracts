@@ -76,7 +76,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
 
     /// @notice Resets the current batch block for a given chain.
     /// @param _chainId The ID of the chain.
-    function resetCurrentBatchBlock(uint8 _chainId) external onlyClaims {
+    function resetCurrentBatchBlock(uint8 _chainId) external onlyClaimsOrSignedBatches {
         currentBatchBlock[_chainId] = int256(-1);
     }
 
@@ -153,7 +153,11 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @param _chainId The ID of the blockchain where the batch resides.
     /// @param _batchId The unique identifier of the batch to delete.
     /// @param _status The new status to set for the batch.
-    function setConfirmedSignedBatchStatus(uint8 _chainId, uint64 _batchId, uint8 _status) external onlyClaims {
+    function setConfirmedSignedBatchStatus(
+        uint8 _chainId,
+        uint64 _batchId,
+        uint8 _status
+    ) external onlyClaimsOrSignedBatches {
         confirmedSignedBatches[_chainId][_batchId].status = _status;
     }
 
@@ -195,6 +199,11 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
 
     modifier onlyClaims() {
         if (msg.sender != claimsAddress) revert NotClaims();
+        _;
+    }
+
+    modifier onlyClaimsOrSignedBatches() {
+        if (msg.sender != claimsAddress && msg.sender != signedBatchesAddress) revert NotClaimsOrSignedBatches();
         _;
     }
 

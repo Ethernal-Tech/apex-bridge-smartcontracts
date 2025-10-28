@@ -607,6 +607,7 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSetFinal);
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSetFinal);
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch_ValidatorSetFinal);
+
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch_ValidatorSetFinal);
 
       bitmap = await bridge.newValidatorSetBitmap();

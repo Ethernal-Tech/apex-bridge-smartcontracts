@@ -209,6 +209,7 @@ interface IBridgeStructs {
     error NotSignedBatchesOrClaims();
     error NotSystem();
     error StakeManagerUpdateFailed();
+    error NotClaimsOrSignedBatches();
 
     // ------------------------------------------------------------------------
     // Events
