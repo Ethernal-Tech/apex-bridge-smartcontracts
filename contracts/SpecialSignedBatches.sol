@@ -88,7 +88,6 @@ contract SpecialSignedBatches is IBridgeStructs, Utils, Initializable, OwnableUp
     /// - If quorum is reached after this vote, the batch is confirmed and stored, and temporary data is cleared.
     function submitSpecialSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
         uint8 _destinationChainId = _signedBatch.destinationChainId;
-
         uint64 _sbId = lastSpecialConfirmedBatch[_destinationChainId].id + 1;
 
         if (_signedBatch.id != _sbId) {
@@ -102,44 +101,46 @@ contract SpecialSignedBatches is IBridgeStructs, Utils, Initializable, OwnableUp
                 _signedBatch.lastTxNonceId,
                 _destinationChainId,
                 _signedBatch.rawTransaction,
-                _signedBatch.isConsolidation
+                _signedBatch.batchType
             )
         );
 
-        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
-        uint256 _bitmapValue = signedBatches.bitmap(_sbHash);
-        uint256 _bitmapNewValue;
-        unchecked {
-            _bitmapNewValue = _bitmapValue | (1 << _validatorIdx);
-        }
+        //TO CHECK AFTER BATCH TYPES LIB IMPLEMENTATION
+        // SignedBatchVotesInfo memory _votesInfo = signedBatches.getVotes(_sbHash);
+        // uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
+        // uint256 _bitmapValue = _votesInfo.bitmap;
+        // uint256 _bitmapNewValue;
+        // unchecked {
+        //     _bitmapNewValue = _bitmapValue | (1 << _validatorIdx);
+        // }
 
-        // check if caller already voted for same hash and skip if he did
-        if (_bitmapValue == _bitmapNewValue) {
-            return;
-        }
+        // // check if caller already voted for same hash and skip if he did
+        // if (_bitmapValue == _bitmapNewValue) {
+        //     return;
+        // }
 
-        uint256 _quorumCount = validators.getQuorumNumberOfValidators();
-        (uint256 _numberOfVotes, ) = signedBatches.getNumberOfSignatures(_sbHash);
+        // uint256 _quorumCount = validators.getQuorumNumberOfValidators();
+        // uint256 _numberOfVotes = _votesInfo.signatures.length;
 
-        signedBatches.addSignature(_sbHash, _signedBatch.signature);
-        signedBatches.addFeeSignature(_sbHash, _signedBatch.feeSignature);
-        signedBatches.setBitmap(_sbHash, _bitmapNewValue);
+        // _votesInfo.signatures.push(_signedBatch.signature);
+        // _votesInfo.feeSignatures.push(_signedBatch.feeSignature);
+        // _votesInfo.bitmap = _bitmapNewValue;
 
-        // check if quorum reached (+1 is last vote)
-        if (_numberOfVotes + 1 >= _quorumCount) {
-            lastSpecialConfirmedBatch[_destinationChainId] = ConfirmedBatch(
-                signedBatches.getSignatures(_sbHash),
-                signedBatches.getFeeSignatures(_sbHash),
-                signedBatches.bitmap(_sbHash),
-                _signedBatch.rawTransaction,
-                _sbId,
-                _signedBatch.isConsolidation
-            );
+        // // check if quorum reached (+1 is last vote)
+        // if (_numberOfVotes + 1 >= _quorumCount) {
+        //     lastSpecialConfirmedBatch[_destinationChainId] = ConfirmedBatch(
+        //         _votesInfo.signatures,
+        //         _votesInfo.feeSignatures,
+        //         _votesInfo.bitmap,
+        //         _signedBatch.rawTransaction,
+        //         _sbId,
+        //         _signedBatch.isConsolidation
+        //     );
 
-            claimsHelper.setSpecialConfirmedSignedBatchData(_signedBatch);
+        //     claimsHelper.setSpecialConfirmedSignedBatchData(_signedBatch);
 
-            signedBatches.deleteSignaturesFeeSignaturesBitmap(_sbHash);
-        }
+        //     signedBatches.deleteVotes(_sbHash);
+        // }
     }
 
     function getSpecialConfirmedBatch(uint8 _destinationChain) external view returns (ConfirmedBatch memory _batch) {

@@ -122,7 +122,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         confirmedSignedBatches[destinationChainId][signedBatchId] = ConfirmedSignedBatchData(
             _signedBatch.firstTxNonceId,
             _signedBatch.lastTxNonceId,
-            _signedBatch.isConsolidation,
+            _signedBatch.batchType,
             ConstantsLib.BATCH_IN_PROGRESS // status 1 means "in progress"
         );
         currentBatchBlock[destinationChainId] = int256(block.number);
@@ -138,7 +138,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         specialConfirmedSignedBatches[destinationChainId][signedBatchId] = ConfirmedSignedBatchData(
             _signedBatch.firstTxNonceId,
             _signedBatch.lastTxNonceId,
-            _signedBatch.isConsolidation,
+            _signedBatch.batchType,
             ConstantsLib.BATCH_IN_PROGRESS // status 1 means "in progress"
         );
     }
@@ -170,7 +170,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         uint8 _validatorIdx,
         bytes32 _hash,
         uint256 _quorumCnt
-    ) external onlySignedBatchesOrClaims returns (bool) {
+    ) external onlySignedBatchesOrClaimsorSpecialClaims returns (bool) {
         uint256 _bitmapValue = bitmap[_hash];
         uint256 _bitmapNewValue = _bitmapValue | (1 << _validatorIdx);
         uint256 _votesNum;

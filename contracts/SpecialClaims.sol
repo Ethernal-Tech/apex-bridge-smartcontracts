@@ -157,8 +157,10 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
         bytes32 claimHash = keccak256(abi.encode("SBEC", _claim));
 
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
-            _caller,
+        uint8 _validatorIdx = validators.getValidatorIndex(msg.sender) - 1;
+
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
+            _validatorIdx,
             claimHash,
             validators.getQuorumNumberOfValidators()
         );
@@ -168,7 +170,7 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
             // isCondolidation flag is here used to signal the last special signed batch for a change
             // since there could be multiple special signed batches needed to transfer all the funds
-            if (_confirmedSignedBatch.isConsolidation) {
+            if (_confirmedSignedBatch.batchType == BatchTypesLib.CONSOLIDATION) {
                 bitmap |= uint8(1 << chainId);
             }
 
@@ -208,8 +210,10 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
         bytes32 claimHash = keccak256(abi.encode("SBEFC", _claim));
 
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
-            _caller,
+        uint8 _validatorIdx = validators.getValidatorIndex(msg.sender) - 1;
+
+        bool _quorumReached = claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
+            _validatorIdx,
             claimHash,
             validators.getQuorumNumberOfValidators()
         );

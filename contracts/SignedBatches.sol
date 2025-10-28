@@ -106,7 +106,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
                 _signedBatch.lastTxNonceId,
                 _destinationChainId,
                 _signedBatch.rawTransaction,
-                _signedBatch.isConsolidation
+                _signedBatch.batchType
             )
         );
 
@@ -138,7 +138,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
                 _votesInfo.bitmap,
                 _signedBatch.rawTransaction,
                 _sbId,
-                _signedBatch.isConsolidation
+                _signedBatch.batchType
             );
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
@@ -171,30 +171,12 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         return votes[_hash].bitmap & (1 << (_validatorIdx - 1)) != 0;
     }
 
-    function addSignature(bytes32 _hash, bytes calldata _signature) external onlySpecialSignedBatches {
-        signatures[_hash].push(_signature);
+    function getVotes(bytes32 _hash) external view returns (SignedBatchVotesInfo memory _votes) {
+        return votes[_hash];
     }
 
-    function addFeeSignature(bytes32 _hash, bytes calldata _signature) external onlySpecialSignedBatches {
-        feeSignatures[_hash].push(_signature);
-    }
-
-    function setBitmap(bytes32 _hash, uint256 _bitmapValue) external onlySpecialSignedBatches {
-        bitmap[_hash] = _bitmapValue;
-    }
-
-    function deleteSignaturesFeeSignaturesBitmap(bytes32 _hash) external onlySpecialClaimsOrSpecialSignedBatches {
-        delete signatures[_hash];
-        delete feeSignatures[_hash];
-        delete bitmap[_hash];
-    }
-
-    function getSignatures(bytes32 _hash) external view returns (bytes[] memory) {
-        return signatures[_hash];
-    }
-
-    function getFeeSignatures(bytes32 _hash) external view returns (bytes[] memory) {
-        return feeSignatures[_hash];
+    function deleteVotes(bytes32 _hash) external onlySpecialSignedBatches {
+        delete votes[_hash];
     }
 
     /// @notice Returns the current version of the contract

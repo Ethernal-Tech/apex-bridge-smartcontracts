@@ -1,26 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import "./BatchTypesLib.sol";
+
 /// @title IBridgeStructs
 /// @notice Data structure definitions, custom errors, and events used by the IBridge interface
 interface IBridgeStructs {
     /// @notice Represents a signed batch to be executed on a destination chain.
     struct SignedBatch {
         uint64 id;
-        uint64 firstTxNonceId; // does not matter if isConsolidation is true
-        uint64 lastTxNonceId; // does not matter if isConsolidation is true
+        uint64 firstTxNonceId; // does not matter in case of Consolidation
+        uint64 lastTxNonceId; // does not matter in case of Consolidation
         uint8 destinationChainId;
         bytes signature;
         bytes feeSignature;
         bytes rawTransaction;
-        bool isConsolidation;
+        uint8 batchType; // BatchTypesLib
     }
 
     /// @notice Metadata for a batch that has been confirmed.
     struct ConfirmedSignedBatchData {
         uint64 firstTxNonceId;
         uint64 lastTxNonceId;
-        bool isConsolidation;
+        uint8 batchType; // BatchTypesLib
         uint8 status; // 0 = deleted, 1 = in progress, 2 = executed, 3 = failed
     }
 
@@ -31,7 +33,7 @@ interface IBridgeStructs {
         uint256 bitmap;
         bytes rawTransaction;
         uint64 id;
-        bool isConsolidation;
+        uint8 batchType; // BatchTypesLib
     }
 
     /// @notice A transaction that has been confirmed and is ready for batching.

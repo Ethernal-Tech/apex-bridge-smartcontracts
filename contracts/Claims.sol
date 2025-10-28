@@ -212,7 +212,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         if (validators.newValidatorSetPending()) {
             revert NewValidatorSetPending();
         }
-        uint256 _receiversSum = _claim.totalAmount;
+        uint256 _receiversSumSrc = _claim.totalAmountSrc;
+        uint256 _receiversSumDst = _claim.totalAmountDst;
         uint8 _destinationChainId = _claim.destinationChainId;
         uint256 _chainTokenQuantityDestination = chainTokenQuantity[_destinationChainId];
 
@@ -295,7 +296,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_EXECUTED);
 
             // do not process included transactions if it is a consolidation
-            if (_confirmedSignedBatch.isConsolidation) {
+            if (_confirmedSignedBatch.batchType == BatchTypesLib.CONSOLIDATION) {
                 return;
             }
 
@@ -338,7 +339,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_FAILED);
 
             // do not process included transactions if it is a consolidation
-            if (_confirmedSignedBatch.isConsolidation) {
+            if (_confirmedSignedBatch.batchType == BatchTypesLib.CONSOLIDATION) {
                 return;
             }
 
@@ -730,7 +731,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint64 _lastTxNonce = _confirmedSignedBatch.lastTxNonceId;
         uint8 _status = _confirmedSignedBatch.status;
         // if the batch is a consolidation or does not exist, return empty array
-        if (_status == ConstantsLib.BATCH_DOES_NOT_EXISTS || _confirmedSignedBatch.isConsolidation) {
+        if (
+            _status == ConstantsLib.BATCH_DOES_NOT_EXISTS ||
+            _confirmedSignedBatch.batchType == BatchTypesLib.CONSOLIDATION
+        ) {
             return (_status, new TxDataInfo[](0));
         }
 
