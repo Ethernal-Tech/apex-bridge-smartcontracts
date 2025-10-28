@@ -90,7 +90,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
         bytes32 _sbHash = keccak256(
             abi.encodePacked(
-                validators.currentValidatorSetId,
+                validators.currentValidatorSetId(),
                 _signedBatch.id,
                 _signedBatch.firstTxNonceId,
                 _signedBatch.lastTxNonceId,

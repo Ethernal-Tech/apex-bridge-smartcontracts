@@ -235,11 +235,16 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("If SignedBatch submission id is not expected submission should be skipped", async function () {
-      const { bridge, signedBatches, validators, signedBatch_ValidatorSet } = await loadFixture(deployBridgeFixture);
+      const { bridge, signedBatches, validatorsc, validators, signedBatch_ValidatorSet } = await loadFixture(
+        deployBridgeFixture
+      );
+
+      const currentValidatorSetId = await validatorsc.currentValidatorSetId();
 
       const encoded = ethers.solidityPacked(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
+        ["uint256", "uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
         [
+          currentValidatorSetId,
           signedBatch_ValidatorSet.id,
           signedBatch_ValidatorSet.firstTxNonceId,
           signedBatch_ValidatorSet.lastTxNonceId,

@@ -276,7 +276,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
 
         bytes32 chainHash = keccak256(
-            abi.encode(validators.currentValidatorSetId, _chainId, _chainType, _tokenQuantity)
+            abi.encode(validators.currentValidatorSetId(), _chainId, _chainType, _tokenQuantity)
         );
 
         if (claims.hasVoted(chainHash, msg.sender)) {

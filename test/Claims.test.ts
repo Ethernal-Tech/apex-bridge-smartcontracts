@@ -136,6 +136,8 @@ describe("Claims Contract", function () {
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
 
+      const currentValidatorSetId = await validatorsc.currentValidatorSetId();
+
       const hash = hashBatchExecutedClaim(validatorClaimsBEC.batchExecutedClaims[0]);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
@@ -328,6 +330,8 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      const currentValidatorSetId = await validatorsc.currentValidatorSetId();
 
       const hash = hashBatchExecutionFailedClaim(validatorClaimsBEFC.batchExecutionFailedClaims[0]);
 
