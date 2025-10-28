@@ -127,7 +127,7 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         uint64 batchId = _claim.batchNonceId;
 
         //TODO first and last check comment
-        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSpecialSignedBatchData(
+        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getSpecialConfirmedSignedBatchData(
             chainId,
             batchId
         );

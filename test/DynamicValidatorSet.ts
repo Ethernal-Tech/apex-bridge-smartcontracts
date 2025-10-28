@@ -279,6 +279,7 @@ describe("Dynamic Validator Set", function () {
     it("SignedBatch should be added to signedBatches if there are enough votes", async function () {
       const {
         bridge,
+        specialSignedBatches,
         claimsHelper,
         owner,
         chain1,
@@ -309,10 +310,17 @@ describe("Dynamic Validator Set", function () {
 
       const confBatch = await claimsHelper
         .connect(validators[0])
-        .getConfirmedSpecialSignedBatchData(signedBatch.destinationChainId, signedBatch.id);
+        .getSpecialConfirmedSignedBatchData(signedBatch.destinationChainId, signedBatch.id);
 
       expect(confBatch.firstTxNonceId).to.equal(0);
       expect(confBatch.lastTxNonceId).to.equal(0);
+
+      const batchId = await specialSignedBatches.getSpecialConfirmedBatchId(signedBatch.destinationChainId);
+
+      const lastConfirmedSignedBatchData = await specialSignedBatches.confirmedSpecialSignedBatches(
+        signedBatch.destinationChainId,
+        batchId
+      );
     });
 
     // it("Should revert with BatchNotFound error if there is already a quorum for BEFC for the same batch", async function () {

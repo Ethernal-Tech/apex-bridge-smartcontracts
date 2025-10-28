@@ -92,6 +92,7 @@ contract SpecialSignedBatches is IBridgeStructs, Utils, Initializable, OwnableUp
     /// - If quorum is reached after this vote, the batch is confirmed and stored, and temporary data is cleared.
     function submitSpecialSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
         uint8 _destinationChainId = _signedBatch.destinationChainId;
+
         uint64 _sbId = lastSpecialConfirmedBatch[_destinationChainId].id + 1;
 
         if (_signedBatch.id != _sbId) {
@@ -122,7 +123,6 @@ contract SpecialSignedBatches is IBridgeStructs, Utils, Initializable, OwnableUp
         }
 
         uint256 _quorumCount = validators.getQuorumNumberOfValidators();
-
         (uint256 _numberOfVotes, ) = signedBatches.getNumberOfSignatures(_sbHash);
 
         signedBatches.addSignature(_sbHash, _signedBatch.signature);
@@ -140,26 +140,18 @@ contract SpecialSignedBatches is IBridgeStructs, Utils, Initializable, OwnableUp
                 _signedBatch.isConsolidation
             );
 
-            claimsHelper.setConfirmedSpecialSignedBatchData(_signedBatch);
+            claimsHelper.setSpecialConfirmedSignedBatchData(_signedBatch);
 
             signedBatches.deleteSignaturesFeeSignaturesBitmap(_sbHash);
         }
     }
 
-    /// @notice Registers a vote for a specific voter and claim hash.
-    /// @param _voter The address of the voter casting the vote.
-    /// @param _hash The hash of the claim or event the voter is voting on.
-    /// @return The updated vote count for the specific claim or event.
-    function setVoted(address _voter, bytes32 _hash) external onlyBridge returns (uint256) {
-        return claimsHelper.setVoted(_voter, _hash);
+    function getSpecialConfirmedBatch(uint8 _destinationChain) external view returns (ConfirmedBatch memory _batch) {
+        return lastSpecialConfirmedBatch[_destinationChain];
     }
 
-    /// @notice Checks whether a specific voter has already voted for a given claim hash.
-    /// @param _hash The hash of the claim being voted on.
-    /// @param _voter The address of the voter to check.
-    /// @return True if the voter has voted for the given claim hash, false otherwise.
-    function hasVoted(bytes32 _hash, address _voter) external view returns (bool) {
-        return claimsHelper.hasVoted(_hash, _voter);
+    function getSpecialConfirmedBatchId(uint8 _destinationChain) external view returns (uint64) {
+        return lastSpecialConfirmedBatch[_destinationChain].id;
     }
 
     /// @notice Retrieves a status for a specific batch on a given chain.
@@ -168,10 +160,6 @@ contract SpecialSignedBatches is IBridgeStructs, Utils, Initializable, OwnableUp
     /// @return status A status code indicating the success or failure of the operation.
     function getSpecialBatchStatus(uint8 _chainId, uint64 _batchId) external view returns (uint8 status) {
         return confirmedSpecialSignedBatches[_chainId][_batchId].status;
-    }
-
-    function getSpecialConfirmedBatchId(uint8 _destinationChain) external view returns (uint64) {
-        return lastSpecialConfirmedBatch[_destinationChain].id;
     }
 
     /// @notice Returns the current version of the contract

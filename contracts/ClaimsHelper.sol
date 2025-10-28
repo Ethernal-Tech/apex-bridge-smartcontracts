@@ -30,7 +30,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
 
     /// @notice Mapping of confirmed special signed batches
     /// @dev BlockchainId -> batchId -> SignedBatch
-    mapping(uint8 => mapping(uint64 => ConfirmedSignedBatchData)) public confirmedSpecialSignedBatches;
+    mapping(uint8 => mapping(uint64 => ConfirmedSignedBatchData)) public specialConfirmedSignedBatches;
 
     /// @notice Mapping of current batch block numbers per chain.
     /// @dev BlochchainId -> blockNumber
@@ -94,7 +94,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @param _chainId The ID of the destination chain.
     /// @param _batchId The batch ID.
     /// @return _confirmedSignedBatchData The batch data.
-    function getConfirmedSpecialSignedBatchData(
+    function getSpecialConfirmedSignedBatchData(
         uint8 _chainId,
         uint64 _batchId
     ) external view returns (ConfirmedSignedBatchData memory _confirmedSignedBatchData) {
@@ -126,11 +126,11 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @notice Stores a confirmed special signed batch for a specific destination chain and batch ID.
     /// @dev Updates both `confirmedSignedBatches`
     /// @param _signedBatch The special signed batch data
-    function setConfirmedSpecialSignedBatchData(SignedBatch calldata _signedBatch) external onlySpecialSignedBatches {
+    function setSpecialConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySpecialSignedBatches {
         uint8 destinationChainId = _signedBatch.destinationChainId;
         uint64 signedBatchId = _signedBatch.id;
 
-        confirmedSpecialSignedBatches[destinationChainId][signedBatchId] = ConfirmedSignedBatchData(
+        specialConfirmedSignedBatches[destinationChainId][signedBatchId] = ConfirmedSignedBatchData(
             _signedBatch.firstTxNonceId,
             _signedBatch.lastTxNonceId,
             _signedBatch.isConsolidation,
