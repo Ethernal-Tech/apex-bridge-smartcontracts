@@ -173,7 +173,7 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
             }
 
             if (_countSetBits(bitmap) == Bridge(bridgeAddress).getAllRegisteredChains().length) {
-                emit ValidatorSetUpdateReady();
+                emit ValidatorSetUpdateReady(validators.getValidatorsToBeRemoved());
             }
         }
     }

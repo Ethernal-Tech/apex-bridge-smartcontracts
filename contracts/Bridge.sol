@@ -403,14 +403,9 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     // TODO: explanation
     function validatorSetUpdated() external override onlySystem {
-        // TODO copy validators data for all chains
-        // TODO unlock the bridge
-        // uint256 _newValidatorSetLength = validators.getNewValidatorSetLength();
-        // for (uint256 i; i < _newValidatorSetLength; i++) {
-        // ValidatorSet memory _validatorSet = _newValidatorSet[i];
-        // validators.setValidatorsChainData(_validatorSet.chain.id, _validatorSet.validators);
-        //TODO update chain data
-        // }
+        validators.updateValidatorSet();
+        validators.deleteValidatorsToBeRemoved();
+        validators.setNewValidatorSetPending(false);
     }
 
     /// @notice Returns the current version of the contract

@@ -230,11 +230,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @param _addr The address of the validator whose data is being set
     /// @param _data The chain-specific validator data (e.g., BLS keys) to associate with the validator
     /// @custom:revert InvalidData if `_addr` is not a registered validator (implicitly via index underflow)
-    function addValidatorChainData(
-        uint8 _chainId,
-        address _addr,
-        ValidatorChainData calldata _data
-    ) external onlyBridge {
+    function addValidatorChainData(uint8 _chainId, address _addr, ValidatorChainData memory _data) public onlyBridge {
         if (chainData[_chainId].length == 0) {
             // recreate array with n elements
             for (uint i; i < validatorsCount; i++) {
@@ -359,9 +355,22 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         newValidatorSetPending = _pending;
     }
 
-    function setRemovedValidators(address[] calldata _removedValidators) external onlyBridge {
-        //TODO delete when everything is done
+    function updateValidatorSet() external onlyBridge {
+        uint256 _newValidatorSetLength = newValidatorSet.length;
+        for (uint256 i; i < _newValidatorSetLength; i++) {
+            ValidatorSet memory _validatorSet = newValidatorSet[i];
+            uint256 _validatorsLength = _validatorSet.validators.length;
+            for (uint256 j; j < _validatorsLength; j++) {
+                addValidatorChainData(
+                    _validatorSet.chainId,
+                    _validatorSet.validators[j].addr,
+                    _validatorSet.validators[j].data
+                );
+            }
+        }
+    }
 
+    function setRemovedValidators(address[] calldata _removedValidators) external onlyBridge {
         uint256 _removedValidatorsLength = _removedValidators.length;
 
         for (uint256 i; i < _removedValidatorsLength; i++) {
@@ -371,6 +380,10 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
 
     function getValidatorsToBeRemoved() external view returns (address[] memory) {
         return validatorsToBeRemoved;
+    }
+
+    function deleteValidatorsToBeRemoved() external onlyBridge {
+        delete validatorsToBeRemoved;
     }
 
     /// @dev Converts a bytes32 value to a bytes array.
