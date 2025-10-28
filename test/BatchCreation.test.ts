@@ -104,7 +104,7 @@ describe("Batch Creation", function () {
 
     it("SignedBatch submition should do nothing if shouldCreateBatch is false", async function () {
       const hash = ethers.solidityPackedKeccak256(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
+        ["uint256", "uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
         [
           currentValidatorSetId,
           signedBatch.id,
@@ -117,8 +117,6 @@ describe("Batch Creation", function () {
       );
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
-
-      const hash = ethers.keccak256(encoded);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.equal(false);
     });
@@ -349,8 +347,6 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
 
-      const currentValidatorSetId = await validatorsc.currentValidatorSetId();
-
       const encoded = ethers.solidityPacked(
         ["uint256", "uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
         [
@@ -381,19 +377,19 @@ describe("Batch Creation", function () {
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
       const signedBatchConsolidation = structuredClone(signedBatch);
+      signedBatchConsolidation.batchType = BatchType.CONSOLIDATION;
       signedBatchConsolidation.firstTxNonceId = 0;
       signedBatchConsolidation.lastTxNonceId = 0;
-      signedBatchConsolidation.isConsolidation = true;
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatch_Consolidation);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_Consolidation);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatch_Consolidation);
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatch_Consolidation);
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatchConsolidation);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatchConsolidation);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatchConsolidation);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatchConsolidation);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
@@ -426,6 +422,7 @@ describe("Batch Creation", function () {
   let claimsHelper: any;
   let claims: any;
   let signedBatches: any;
+  let validatorsc: any;
   let owner: any;
   let chain1: any;
   let chain2: any;
@@ -434,6 +431,7 @@ describe("Batch Creation", function () {
   let signedBatch: any;
   let validatorAddressChainData: any;
   let validators: any;
+  let currentValidatorSetId: any;
 
   beforeEach(async function () {
     // mock isSignatureValid precompile to always return true
@@ -445,6 +443,7 @@ describe("Batch Creation", function () {
     claimsHelper = fixture.claimsHelper;
     claims = fixture.claims;
     signedBatches = fixture.signedBatches;
+    validatorsc = fixture.validatorsc;
     owner = fixture.owner;
     chain1 = fixture.chain1;
     chain2 = fixture.chain2;
@@ -457,5 +456,7 @@ describe("Batch Creation", function () {
     // Register chains
     await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
     await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+    currentValidatorSetId = await validatorsc.currentValidatorSetId();
   });
 });

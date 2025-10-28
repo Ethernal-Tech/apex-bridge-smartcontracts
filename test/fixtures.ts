@@ -8,13 +8,6 @@ export enum BatchType {
   VALIDATORSET_FINAL = 3,
 }
 
-export enum TransactionType {
-  NORMAL = 0,
-  DEFUND = 1,
-  REFUND = 2,
-  STAKE_DELEGATION = 3,
-}
-
 export enum ConstantsLib {
   NOT_EXIST = 0,
   IN_PROGRESS = 1,
@@ -148,6 +141,7 @@ export async function deployBridgeFixture() {
   await slots.setDependencies(bridge.target, validatorsc.target);
 
   await validatorsc.setDependencies(bridge.target);
+  await validatorsc.setAdditionalDependenciesAndSync(validatorsAddresses);
 
   await admin.setDependencies(claims.target);
 
@@ -301,17 +295,6 @@ export async function deployBridgeFixture() {
     batchType: BatchType.NORMAL,
   };
 
-  const signedBatch_Consolidation = {
-    id: 1,
-    destinationChainId: 2,
-    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
-    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
-    firstTxNonceId: 0,
-    lastTxNonceId: 0,
-    batchType: BatchType.CONSOLIDATION,
-  };
-
   const signedBatch_ValidatorSet = {
     id: 1,
     firstTxNonceId: 2n ** 64n - 1n,
@@ -331,18 +314,7 @@ export async function deployBridgeFixture() {
     signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    batchType: 3, // BatchTypesLib.VALIDATORSET_FINAL
-  };
-
-  const signedBatch_Defund = {
-    id: 1,
-    firstTxNonceId: 1,
-    lastTxNonceId: 2,
-    destinationChainId: 2,
-    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
-    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
-    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    batchType: BatchType.NORMAL,
+    batchType: BatchType.VALIDATORSET_FINAL,
   };
 
   const cardanoBlocks = [
@@ -395,7 +367,7 @@ export async function deployBridgeFixture() {
     };
   });
 
-  const validatorSets_notEnoughChains = Array.from({ length: 1 }, (_, i) => {
+  const validatorSets_NotEnoughChains = Array.from({ length: 1 }, (_, i) => {
     const chainId = i + 1;
     return {
       chainId,
@@ -413,7 +385,7 @@ export async function deployBridgeFixture() {
     };
   });
 
-  const validatorSets_TooManyChains = Array.from({ length: 3 }, (_, i) => {
+  const validatorSets_TooManyChains = Array.from({ length: 4 }, (_, i) => {
     const chainId = i + 1;
     return {
       chainId,
@@ -592,7 +564,7 @@ export async function deployBridgeFixture() {
   };
 
   const newValidatorSetDelta_NotEnoughChains = {
-    addedValidators: validatorSets_notEnoughChains,
+    addedValidators: validatorSets_NotEnoughChains,
     removedValidators: [validator4.address, validator5.address],
   };
 
@@ -628,16 +600,13 @@ export async function deployBridgeFixture() {
     validatorClaimsHWIC,
     signedBatch,
     signedBatch_ValidatorSet,
-    signedBatch_ValidatorSetFinal,
-    signedBatch_Consolidation,
-    signedBatch_Defund,
     validatorAddressChainData,
     validatorCardanoData,
     validators,
     cardanoBlocks,
     cardanoBlocksTooManyBlocks,
     validatorSets,
-    validatorSets_notEnoughChains,
+    validatorSets_NotEnoughChains,
     validatorSets_TooManyChains,
     validatorSets_NotEnoughValidators,
     validatorSets_TooManyValidators,
@@ -657,94 +626,162 @@ export async function deployBridgeFixture() {
   };
 }
 
-export function hashBridgeRequestClaim(claim: any) {
-  const abiCoder = new ethers.AbiCoder();
-  const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
+export function hashBridgeRequestClaim(validatorSet: number, claim: any) {
+  const abi = new ethers.AbiCoder();
+
   const lst = [];
   for (let receiver of claim.receivers) {
     lst.push([receiver.amount, receiver.destinationAddress]);
   }
 
-  const encoded = abiCoder.encode(
-    ["bytes32", "tuple(uint256, string)[]", "uint256", "uint256", "uint256", "uint8", "uint8"],
-    [
-      claim.observedTransactionHash,
-      lst,
-      claim.totalAmountSrc,
-      claim.totalAmountDst,
-      claim.retryCounter,
-      claim.sourceChainId,
-      claim.destinationChainId,
-    ]
+  return ethers.keccak256(
+    abi.encode(
+      ["uint256", "string", "tuple(bytes32,tuple(uint256,string)[],uint256,uint256,uint256,uint8,uint8)"],
+      [
+        validatorSet,
+        "BRC",
+        [
+          claim.observedTransactionHash,
+          lst,
+          claim.totalAmountSrc,
+          claim.totalAmountDst,
+          claim.retryCounter,
+          claim.sourceChainId,
+          claim.destinationChainId,
+        ],
+      ]
+    )
   );
 
-  return ethers.keccak256(
-    "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-      encodedPrefix.substring(66) +
-      encoded.substring(2)
-  );
+  // const abiCoder = new ethers.AbiCoder();
+  // const encodedPrefix = abiCoder.encode(["uint256", "string"], [validatorSet, "BRC"]);
+
+  // const encoded = abiCoder.encode(
+  //   ["bytes32", "tuple(uint256, string)[]", "uint256", "uint256", "uint256", "uint8", "uint8"],
+  //   [
+  //     claim.observedTransactionHash,
+  //     lst,
+  //     claim.totalAmountSrc,
+  //     claim.totalAmountDst,
+  //     claim.retryCounter,
+  //     claim.sourceChainId,
+  //     claim.destinationChainId,
+  //   ]
+  // );
+
+  // return ethers.keccak256(
+  //   "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+  //     encodedPrefix.substring(66) +
+  //     encoded.substring(2)
+  // );
 }
 
-export function hashBatchExecutedClaim(claim: any) {
-  const abiCoder = new ethers.AbiCoder();
-  const encodedPrefix = abiCoder.encode(["string"], ["BEC"]);
-  const encoded = abiCoder.encode(
-    ["bytes32", "uint64", "uint8"],
-    [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]
-  );
+export function hashBatchExecutedClaim(validatorSet: number, claim: any) {
+  const abi = new ethers.AbiCoder();
 
   return ethers.keccak256(
-    "0x0000000000000000000000000000000000000000000000000000000000000080" +
-      encoded.substring(2) +
-      encodedPrefix.substring(66)
+    abi.encode(
+      ["uint256", "string", "tuple(bytes32,uint64,uint8)"],
+      [validatorSet, "BEC", [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]]
+    )
   );
+  // const abiCoder = new ethers.AbiCoder();
+  // const encodedPrefix = abiCoder.encode(["uint256", "string"], [validatorSet, "BEC"]);
+  // const encoded = abiCoder.encode(
+  //   ["bytes32", "uint64", "uint8"],
+  //   [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]
+  // );
+
+  // return ethers.keccak256(
+  //   "0x0000000000000000000000000000000000000000000000000000000000000080" +
+  //     encoded.substring(2) +
+  //     encodedPrefix.substring(66)
+  // );
 }
 
-export function hashBatchExecutionFailedClaim(claim: any) {
-  const abiCoder = new ethers.AbiCoder();
-  const encodedPrefix = abiCoder.encode(["string"], ["BEFC"]);
-  const encoded = abiCoder.encode(
-    ["bytes32", "uint64", "uint8"],
-    [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]
-  );
+export function hashBatchExecutionFailedClaim(validatorSet: number, claim: any) {
+  // const abiCoder = new ethers.AbiCoder();
+
+  const abi = new ethers.AbiCoder();
 
   return ethers.keccak256(
-    "0x0000000000000000000000000000000000000000000000000000000000000080" +
-      encoded.substring(2) +
-      encodedPrefix.substring(66)
+    abi.encode(
+      ["uint256", "string", "tuple(bytes32,uint64,uint8)"],
+      [validatorSet, "BEFC", [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]]
+    )
   );
+  // const encodedPrefix = abiCoder.encode(["uint256", "string"], [validatorSet, "BEFC"]);
+  // const encoded = abiCoder.encode(
+  //   ["bytes32", "uint64", "uint8"],
+  //   [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]
+  // );
+
+  // return ethers.keccak256(
+  //   "0x0000000000000000000000000000000000000000000000000000000000000080" +
+  //     encoded.substring(2) +
+  //     encodedPrefix.substring(66)
+  // );
 }
 
-export function hashRefundRequestClaim(claim: any) {
-  const abiCoder = new ethers.AbiCoder();
-  const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
-  const encoded = abiCoder.encode(
-    ["bytes32", "bytes32", "uint256", "bytes", "string", "uint64", "uint8", "bool"],
-    [
-      claim.originTransactionHash,
-      claim.refundTransactionHash,
-      claim.originAmount,
-      claim.outputIndexes,
-      claim.originSenderAddress,
-      claim.retryCounter,
-      claim.originChainId,
-      claim.shouldDecrementHotWallet,
-    ]
-  );
+export function hashRefundRequestClaim(validatorSet: number, claim: any) {
+  // const abiCoder = new ethers.AbiCoder();
+
+  const abi = new ethers.AbiCoder();
+
   return ethers.keccak256(
-    "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-      encodedPrefix.substring(66) +
-      encoded.substring(2)
+    abi.encode(
+      ["uint256", "string", "tuple(bytes32,bytes32,uint256,bytes,string,uint64,uint8,bool)"],
+      [
+        validatorSet,
+        "RRC",
+        [
+          claim.originTransactionHash,
+          claim.refundTransactionHash,
+          claim.originAmount,
+          claim.outputIndexes,
+          claim.originSenderAddress,
+          claim.retryCounter,
+          claim.originChainId,
+          claim.shouldDecrementHotWallet,
+        ],
+      ]
+    )
   );
+
+  // const encodedPrefix = abiCoder.encode(["uint256", "string"], [validatorSet, "RRC"]);
+  // const encoded = abiCoder.encode(
+  //   ["bytes32", "bytes32", "uint256", "bytes", "string", "uint64", "uint8", "bool"],
+  //   [
+  //     claim.originTransactionHash,
+  //     claim.refundTransactionHash,
+  //     claim.originAmount,
+  //     claim.outputIndexes,
+  //     claim.originSenderAddress,
+  //     claim.retryCounter,
+  //     claim.originChainId,
+  //     claim.shouldDecrementHotWallet,
+  //   ]
+  // );
+  // return ethers.keccak256(
+  //   "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+  //     encodedPrefix.substring(66) +
+  //     encoded.substring(2)
+  // );
 }
 
-export function hashHotWalletIncrementClaim(claim: any) {
-  const abiCoder = new ethers.AbiCoder();
-  const encodedPrefix = abiCoder.encode(["string"], ["HWIC"]);
-  const encoded = abiCoder.encode(["uint8", "uint256"], [claim.chainId, claim.amount]);
+export function hashHotWalletIncrementClaim(validatorSet: number, claim: any) {
+  const abi = new ethers.AbiCoder();
+
   return ethers.keccak256(
-    "0x0000000000000000000000000000000000000000000000000000000000000060" +
-      encoded.substring(2) +
-      encodedPrefix.substring(66)
+    abi.encode(["uint256", "string", "tuple(uint8,uint256)"], [validatorSet, "HWIC", [claim.chainId, claim.amount]])
   );
+
+  // const abiCoder = new ethers.AbiCoder();
+  // const encodedPrefix = abiCoder.encode(["uint256", "string"], [validatorSet, "HWIC"]);
+  // const encoded = abiCoder.encode(["uint8", "uint256"], [claim.chainId, claim.amount]);
+  // return ethers.keccak256(
+  //   "0x0000000000000000000000000000000000000000000000000000000000000060" +
+  //     encoded.substring(2) +
+  //     encodedPrefix.substring(66)
+  // );
 }

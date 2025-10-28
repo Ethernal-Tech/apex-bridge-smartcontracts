@@ -147,7 +147,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).retryCounter).to.equal(0);
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(24);
+      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(26);
     });
 
     it("Should set correct confirmedTransaction when defund fails", async function () {
@@ -172,17 +172,17 @@ describe("Admin Functions", function () {
         await ethers.provider.send("evm_mine");
       }
 
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatch_Defund);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_Defund);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatch_Defund);
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatch_Defund);
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatchDefund);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatchDefund);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatchDefund);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatchDefund);
 
       const confBatch = await claimsHelper
         .connect(validators[0])
-        .getConfirmedSignedBatchData(signedBatch_Defund.destinationChainId, signedBatch_Defund.id);
+        .getConfirmedSignedBatchData(signedBatchDefund.destinationChainId, signedBatchDefund.id);
 
-      expect(confBatch.firstTxNonceId).to.equal(signedBatch_Defund.firstTxNonceId);
-      expect(confBatch.lastTxNonceId).to.equal(signedBatch_Defund.lastTxNonceId);
+      expect(confBatch.firstTxNonceId).to.equal(signedBatchDefund.firstTxNonceId);
+      expect(confBatch.lastTxNonceId).to.equal(signedBatchDefund.lastTxNonceId);
 
       expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(2);
 
@@ -198,7 +198,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain2.id, 3)).retryCounter).to.equal(1);
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(29);
+      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(30);
     });
 
     it("Should reject defund after maximum number of retries", async function () {

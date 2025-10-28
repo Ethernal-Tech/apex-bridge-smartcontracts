@@ -80,15 +80,6 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         validatorsCount = uint8(_validators.length);
     }
 
-    /// @notice Sets the external contract dependencies.
-    /// @dev This function can only be called by the upgrade admin. It verifies that the provided address is a contract.
-    /// @param _validators Current list of validator addresses
-    function setAdditionalDependenciesAndSync(address[] calldata _validators) external onlyUpgradeAdmin {
-        for (uint8 i; i < _validators.length; i++) {
-            validatorAddresses.push(_validators[i]);
-        }
-    }
-
     /// @notice Authorizes upgrades. Only the upgrade admin can upgrade the contract.
     /// @param newImplementation Address of the new implementation.
     function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
@@ -100,12 +91,25 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         bridgeAddress = _bridgeAddress;
     }
 
+    /// @notice Sets the external contract dependencies.
+    /// @dev This function can only be called by the upgrade admin. It verifies that the provided address is a contract.
+    /// @param _validators Current list of validator addresses
+    function setAdditionalDependenciesAndSync(address[] calldata _validators) external onlyUpgradeAdmin {
+        for (uint8 i; i < _validators.length; i++) {
+            validatorAddresses.push(_validators[i]);
+        }
+    }
+
     function isValidator(address _addr) public view returns (bool) {
         return addressValidatorIndex[_addr] != 0;
     }
 
     function getValidatorIndex(address _addr) public view returns (uint8) {
         return addressValidatorIndex[_addr];
+    }
+
+    function getValidatorsAddresses() public view returns (address[] memory){
+        return validatorAddresses;
     }
 
     /// @notice Verifies a standard cryptographic signature against the given input data.
@@ -266,6 +270,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         // checks that there are as many new validator set as there are registered chains
         // validator set for Blade chain will always be included in the _validatorSet, but Blade
         // is never registered as a chain on bridge, thus +1
+
         if (_numberOfChainsInValidatorSets != 0 && _numberOfChainsInValidatorSets != _numberOfRegisteredChains + 1) {
             revert InvalidData("WrongNumberOfChains");
         }

@@ -142,7 +142,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             }
         }
 
-        
         // Only validate signatures if NOT FINAL, FINAL is a flag with no signatures
         if (_signedBatch.batchType != BatchTypesLib.VALIDATORSET_FINAL) {
             bool valid = validators.areSignaturesValid(

@@ -22,7 +22,7 @@ interface IBridgeStructs {
     struct ConfirmedSignedBatchData {
         uint64 firstTxNonceId;
         uint64 lastTxNonceId;
-        bool isConsolidation; // not used
+        bool __isConsolidation; // not used
         uint8 status; // 0 = deleted, 1 = in progress, 2 = executed, 3 = failed
         uint8 batchType; // BatchTypesLib
     }

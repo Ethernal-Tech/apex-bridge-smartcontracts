@@ -4,36 +4,14 @@ import { ethers } from "hardhat";
 import { BatchType, ConstantsLib, deployBridgeFixture } from "./fixtures";
 
 describe("Dynamic Validator Set", function () {
-  async function impersonateAsContractAndMintFunds(contractAddress: string) {
-    const hre = require("hardhat");
-    const address = await contractAddress.toLowerCase();
-    // impersonate as an contract on specified address
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [address],
-    });
-
-    const signer = await ethers.getSigner(address);
-    // minting 100000000000000000000 tokens to signer
-    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
-
-    return signer;
-  }
   describe("Submit new validator set", function () {
     it("Should revert if not called by the System", async function () {
-      const { bridge, owner, newValidatorSetDelta } = await loadFixture(deployBridgeFixture);
-
       await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta)).to.be.revertedWithCustomError(
         bridge,
         "NotSystem"
       );
     });
     it("Should revert if there is already a new validator set pending", async function () {
-      const { owner, chain1, chain2, bridge, newValidatorSetDelta, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
@@ -44,12 +22,6 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Should revert if +1 chain is not Blade chainId == 255", async function () {
-      const { bridge, owner, chain1, chain2, newValidatorSetDelta_BladeMissing, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await expect(bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta_BladeMissing))
@@ -58,12 +30,6 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Should revert if there is no new data set for all registered chains", async function () {
-      const { bridge, owner, chain1, chain2, newValidatorSetDelta_NotEnoughChains, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await expect(bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta_NotEnoughChains))
@@ -72,8 +38,6 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Should revert if there is too many data sets compared to registered chains", async function () {
-      const { bridge, newValidatorSetDelta_TooManyChains } = await loadFixture(deployBridgeFixture);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await expect(bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta_TooManyChains))
@@ -82,12 +46,6 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Should revert if there is not enough validators in the new validator set for all registered chains", async function () {
-      const { bridge, owner, chain1, chain2, newValidatorSetDelta_NotEnoughValidators, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await expect(bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta_NotEnoughValidators))
@@ -96,12 +54,6 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Should revert if there is too many validators in the new validator set for all registered chains", async function () {
-      const { bridge, owner, chain1, chain2, newValidatorSetDelta_TooManyValidators, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await expect(bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta_TooManyValidators))
@@ -110,12 +62,6 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Should revert if validator address is zero address", async function () {
-      const { bridge, owner, chain1, chain2, newValidatorSetDelta_ZeroAddress, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await expect(
@@ -124,12 +70,6 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Should revert if validator address is duplicated within a set", async function () {
-      const { bridge, owner, chain1, chain2, newValidatorSetDelta_DoubleAddress, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await expect(bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta_DoubleAddress))
@@ -138,12 +78,6 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Should revert there is no new validator set for registered chain", async function () {
-      const { bridge, owner, chain1, chain2, newValidatorSetDelta_MissingChainIDs, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await expect(bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta_MissingChainIDs))
@@ -152,12 +86,6 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Should store proposed newValidatorSetDelta", async function () {
-      const { bridge, validatorsc, owner, chain1, chain2, newValidatorSetDelta, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
@@ -198,12 +126,6 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Should set newPendingValidatorSet to true when new ValidatorSet is submitted", async function () {
-      const { bridge, validatorsc, owner, chain1, chain2, newValidatorSetDelta, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       expect(await validatorsc.newValidatorSetPending()).to.be.false;
 
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
@@ -214,13 +136,6 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Should emit newValidatorSetSubmitted when new ValidatorSet is submitted", async function () {
-      const { bridge, owner, chain1, chain2, newValidatorSetDelta, validatorAddressChainData } = await loadFixture(
-        deployBridgeFixture
-      );
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await expect(bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta)).to.emit(
@@ -230,20 +145,6 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Should NOT set bitmap to +1 if there is quorum on submit NOT final validator set batch", async function () {
-      const {
-        bridge,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        signedBatch_ValidatorSet,
-        newValidatorSetDelta,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
@@ -275,25 +176,14 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Should set bitmap to +1 if there is quorum on submit final validator set batch", async function () {
-      const {
-        bridge,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        signedBatch_ValidatorSetFinal,
-        newValidatorSetDelta,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
 
       let bitmap = await bridge.newValidatorSetBitmap();
+
+      const signedBatch_ValidatorSetFinal = structuredClone(signedBatch_ValidatorSet);
+      signedBatch_ValidatorSetFinal.batchType = BatchType.VALIDATORSET_FINAL;
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSetFinal);
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSetFinal);
@@ -320,24 +210,12 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Should resetCurrentBatchBlock when there is quorum on submit final validator set batch", async function () {
-      const {
-        bridge,
-        owner,
-        claimsHelper,
-        validators,
-        chain1,
-        chain2,
-        signedBatch_ValidatorSetFinal,
-        newValidatorSetDelta,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
+
+      const signedBatch_ValidatorSetFinal = structuredClone(signedBatch_ValidatorSet);
+      signedBatch_ValidatorSetFinal.batchType = BatchType.VALIDATORSET_FINAL;
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSetFinal);
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSetFinal);
@@ -348,24 +226,12 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Should setConfirmedSignedBatchStatus when there is quorum on submit final validator set batch", async function () {
-      const {
-        bridge,
-        owner,
-        claimsHelper,
-        validators,
-        chain1,
-        chain2,
-        signedBatch_ValidatorSetFinal,
-        newValidatorSetDelta,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
+
+      const signedBatch_ValidatorSetFinal = structuredClone(signedBatch_ValidatorSet);
+      signedBatch_ValidatorSetFinal.batchType = BatchType.VALIDATORSET_FINAL;
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSetFinal);
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSetFinal);
@@ -395,20 +261,6 @@ describe("Dynamic Validator Set", function () {
 
   describe("Submit new Validator Set Signed Batch", function () {
     it("Should revert if there is no new validator set pending", async function () {
-      const {
-        bridge,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        signedBatch_ValidatorSet,
-        validatorAddressChainData,
-        validatorClaimsBRC,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -424,20 +276,6 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Should revert signedBatch submition if signature is not valid", async function () {
-      const {
-        bridge,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        signedBatch_ValidatorSet,
-        newValidatorSetDelta,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
@@ -449,18 +287,12 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("SignedBatch submition in signedBatch_ValidatorSets SC should be reverted if not called by Bridge SC", async function () {
-      const { bridge, signedBatches, owner, signedBatch_ValidatorSet } = await loadFixture(deployBridgeFixture);
-
       await expect(
         signedBatches.connect(owner).submitSignedBatch(signedBatch_ValidatorSet, owner.address)
       ).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
 
     it("If SignedBatch submission id is not expected submission should be skipped", async function () {
-      const { bridge, signedBatches, validatorsc, validators, signedBatch_ValidatorSet } = await loadFixture(
-        deployBridgeFixture
-      );
-
       const currentValidatorSetId = await validatorsc.currentValidatorSetId();
 
       const encoded = ethers.solidityPacked(
@@ -509,22 +341,6 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("SignedBatch should NOT be added to signedBatches if there are NOT enough votes", async function () {
-      const {
-        bridge,
-        signedBatches,
-        claimsHelper,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        newValidatorSetDelta,
-        signedBatch_ValidatorSet,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
@@ -550,7 +366,6 @@ describe("Dynamic Validator Set", function () {
       expect(lastConfirmedSignedBatchData.firstTxNonceId).to.equal(0);
       expect(lastConfirmedSignedBatchData.lastTxNonceId).to.equal(0);
       expect(lastConfirmedSignedBatchData.status).to.equal(0);
-      expect(lastConfirmedSignedBatchData.isConsolidation).to.equal(false);
       expect(lastConfirmedSignedBatchData.batchType).to.equal(BatchType.NORMAL);
 
       const confBatch = await signedBatches.getConfirmedBatch(signedBatch_ValidatorSet.destinationChainId);
@@ -564,18 +379,6 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("getBatchTransactions should return empty array of txs from batch for validator set update", async function () {
-      const {
-        bridge,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        newValidatorSetDelta,
-        signedBatch_ValidatorSet,
-        claims,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
       await bridge.connect(owner).registerChain(chain1, 1000, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 1000, validatorAddressChainData);
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
@@ -595,22 +398,6 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("SignedBatch should be added to signedBatches if there are enough votes on ValidatorSet", async function () {
-      const {
-        bridge,
-        signedBatches,
-        claimsHelper,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        newValidatorSetDelta,
-        signedBatch_ValidatorSet,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
@@ -637,7 +424,6 @@ describe("Dynamic Validator Set", function () {
 
       expect(lastConfirmedSignedBatchData.firstTxNonceId).to.equal(2n ** 64n - 1n);
       expect(lastConfirmedSignedBatchData.lastTxNonceId).to.equal(2n ** 64n - 1n);
-      expect(lastConfirmedSignedBatchData.isConsolidation).to.equal(false);
       expect(lastConfirmedSignedBatchData.status).to.equal(1);
       expect(lastConfirmedSignedBatchData.batchType).to.equal(BatchType.VALIDATORSET);
 
@@ -654,19 +440,6 @@ describe("Dynamic Validator Set", function () {
 
   describe("Submit new Validator Set Batch Executed Claims", function () {
     it("Should revert if there are BRCs, RRCs or HWICs in ValidatorClaims", async function () {
-      const {
-        bridge,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        newValidatorSetDelta,
-        validatorClaimsBRC,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
@@ -678,30 +451,10 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Should not revert if there is new validator set pending", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorClaimsBEC, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEC)).not.to.be.reverted;
     });
 
     it("Should NOT set bitmap to +1 if there is quorum on non-final batch in SBEC", async function () {
-      const {
-        bridge,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        signedBatch_ValidatorSet,
-        validatorClaimsBEC,
-        newValidatorSetDelta,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
@@ -741,22 +494,6 @@ describe("Dynamic Validator Set", function () {
 
   describe("Submit new Validator Set Batch Execution Failed Claims", function () {
     it("Should emit signedBatch_ValidatorSetExecutionFailed if there is quorum on BEFC", async function () {
-      const {
-        bridge,
-        claims,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        signedBatch_ValidatorSet,
-        validatorClaimsBEFC,
-        newValidatorSetDelta,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
@@ -778,12 +515,6 @@ describe("Dynamic Validator Set", function () {
   });
   describe("New validator set confirmed on Blade", function () {
     it("Should revert if validatorSetUpdated is not called by the System", async function () {
-      const { bridge, owner, chain1, chain2, newValidatorSetDelta, validatorAddressChainData } = await loadFixture(
-        deployBridgeFixture
-      );
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
@@ -791,19 +522,6 @@ describe("Dynamic Validator Set", function () {
       await expect(bridge.connect(owner).validatorSetUpdated()).to.be.revertedWithCustomError(bridge, "NotSystem");
     });
     it("Validator set should be updated", async function () {
-      const {
-        bridge,
-        validatorsc,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        newValidatorSetDelta,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
@@ -890,7 +608,7 @@ describe("Dynamic Validator Set", function () {
           const targetFifth = fifthKey.map(BigInt);
 
           const foundFourth = chainData.some(
-            (entry) =>
+            (entry: any) =>
               Array.isArray(entry[0]) &&
               entry[0].length === targetFourth.length &&
               entry[0].every((val, i) => val === targetFourth[i])
@@ -899,7 +617,7 @@ describe("Dynamic Validator Set", function () {
           expect(foundFourth).to.be.false;
 
           const foundFifth = chainData.some(
-            (entry) =>
+            (entry: any) =>
               Array.isArray(entry[0]) &&
               entry[0].length === targetFifth.length &&
               entry[0].every((val, i) => val === targetFifth[i])
@@ -916,7 +634,7 @@ describe("Dynamic Validator Set", function () {
           const target = newValidatorSetDelta.addedValidators[0].validators[j].data.key.map(BigInt);
 
           const found = chainData.some(
-            (entry) =>
+            (entry: any) =>
               Array.isArray(entry[0]) &&
               entry[0].length === target.length &&
               entry[0].every((val, i) => val === target[i])
@@ -928,19 +646,6 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Validator set should be updated if it is AddOnly", async function () {
-      const {
-        bridge,
-        validatorsc,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        newValidatorSetDelta_AddOnly,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta_AddOnly);
@@ -1023,7 +728,7 @@ describe("Dynamic Validator Set", function () {
           const target = newValidatorSetDelta_AddOnly.addedValidators[0].validators[j].data.key.map(BigInt);
 
           const found = chainData.some(
-            (entry) =>
+            (entry: any) =>
               Array.isArray(entry[0]) &&
               entry[0].length === target.length &&
               entry[0].every((val, i) => val === target[i])
@@ -1035,19 +740,6 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Validator set should be updated if it is RemoveOnly", async function () {
-      const {
-        bridge,
-        validatorsc,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        newValidatorSetDelta_RemoveOnly,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta_RemoveOnly);
@@ -1103,12 +795,6 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Data about validaters to be removed should be deleted", async function () {
-      const { bridge, validatorsc, owner, chain1, chain2, newValidatorSetDelta, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
@@ -1124,12 +810,6 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Bridge should be unlocked", async function () {
-      const { bridge, validatorsc, owner, chain1, chain2, newValidatorSetDelta, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
@@ -1138,5 +818,83 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(systemSigner).validatorSetUpdated();
       expect(await validatorsc.newValidatorSetPending()).to.equal(false);
     });
+  });
+  async function impersonateAsContractAndMintFunds(contractAddress: string) {
+    const hre = require("hardhat");
+    const address = await contractAddress.toLowerCase();
+    // impersonate as an contract on specified address
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [address],
+    });
+
+    const signer = await ethers.getSigner(address);
+    // minting 100000000000000000000 tokens to signer
+    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+
+    return signer;
+  }
+
+  let bridge: any;
+  let claimsHelper: any;
+  let claims: any;
+  let signedBatches: any;
+  let validatorsc: any;
+  let owner: any;
+  let chain1: any;
+  let chain2: any;
+  let newValidatorSetDelta: any;
+  let newValidatorSetDelta_AddOnly: any;
+  let newValidatorSetDelta_BladeMissing: any;
+  let newValidatorSetDelta_DoubleAddress: any;
+  let newValidatorSetDelta_MissingChainIDs: any;
+  let newValidatorSetDelta_NotEnoughChains: any;
+  let newValidatorSetDelta_NotEnoughValidators: any;
+  let newValidatorSetDelta_RemoveOnly: any;
+  let newValidatorSetDelta_TooManyChains: any;
+  let newValidatorSetDelta_TooManyValidators: any;
+  let newValidatorSetDelta_ZeroAddress: any;
+  let signedBatch_ValidatorSet: any;
+  let validatorClaimsBRC: any;
+  let validatorClaimsBEC: any;
+  let validatorClaimsBEFC: any;
+  let validatorAddressChainData: any;
+  let validators: any;
+
+  beforeEach(async function () {
+    // mock isSignatureValid precompile to always return true
+    await setCode("0x0000000000000000000000000000000000002050", "0x600160005260206000F3");
+    await setCode("0x0000000000000000000000000000000000002060", "0x600160005260206000F3");
+    const fixture = await loadFixture(deployBridgeFixture);
+
+    bridge = fixture.bridge;
+    claimsHelper = fixture.claimsHelper;
+    claims = fixture.claims;
+    signedBatches = fixture.signedBatches;
+    validatorsc = fixture.validatorsc;
+    owner = fixture.owner;
+    chain1 = fixture.chain1;
+    chain2 = fixture.chain2;
+    newValidatorSetDelta = fixture.newValidatorSetDelta;
+    newValidatorSetDelta_AddOnly = fixture.newValidatorSetDelta_AddOnly;
+    newValidatorSetDelta_BladeMissing = fixture.newValidatorSetDelta_BladeMissing;
+    newValidatorSetDelta_DoubleAddress = fixture.newValidatorSetDelta_DoubleAddress;
+    newValidatorSetDelta_MissingChainIDs = fixture.newValidatorSetDelta_MissingChainIDs;
+    newValidatorSetDelta_NotEnoughChains = fixture.newValidatorSetDelta_NotEnoughChains;
+    newValidatorSetDelta_NotEnoughValidators = fixture.newValidatorSetDelta_NotEnoughValidators;
+    newValidatorSetDelta_RemoveOnly = fixture.newValidatorSetDelta_RemoveOnly;
+    newValidatorSetDelta_TooManyChains = fixture.newValidatorSetDelta_TooManyChains;
+    newValidatorSetDelta_TooManyValidators = fixture.newValidatorSetDelta_TooManyValidators;
+    newValidatorSetDelta_ZeroAddress = fixture.newValidatorSetDelta_ZeroAddress;
+    signedBatch_ValidatorSet = fixture.signedBatch_ValidatorSet;
+    validatorClaimsBRC = fixture.validatorClaimsBRC;
+    validatorClaimsBEC = fixture.validatorClaimsBEC;
+    validatorClaimsBEFC = fixture.validatorClaimsBEFC;
+    validatorAddressChainData = fixture.validatorAddressChainData;
+    validators = fixture.validators;
+
+    // Register chains
+    await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+    await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
   });
 });
