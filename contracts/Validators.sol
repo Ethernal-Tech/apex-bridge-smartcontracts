@@ -251,12 +251,10 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         NewValidatorSetDelta calldata _newValidatorSetDelta,
         Chain[] memory _chains
     ) external view {
-        console.log("ENTERED validateValidatorSet");
         //validator set needs to include validator data for all chains
         uint256 _numberOfChainsInValidatorSets = _newValidatorSetDelta.addedValidators.length;
         uint256 _numberOfRegisteredChains = _chains.length;
 
-        console.log("ERROR VVS: PUC 1");
         // checks that there are as many new validator set as there are registered chains
         // validator set for Blade chain will always be included in the _validatorSet, but Blade
         // is never registered as a chain on bridge, thus +1
@@ -264,7 +262,6 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
             revert InvalidData("WrongNumberOfChains");
         }
 
-        console.log("ERROR VVS: PUC 2");
         // the number of validators must bet between 4 and 126
         uint256 expectedNumberOfValidators = _newValidatorSetDelta.addedValidators[0].validators.length;
 
@@ -276,8 +273,6 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
             revert InvalidData("WrongNumberOfValidators");
         }
 
-        console.log("ERROR VVS: PUC 3");
-
         // all chains must have the same number of validators
         for (uint256 i = 1; i < _numberOfChainsInValidatorSets; i++) {
             if (_newValidatorSetDelta.addedValidators[i].validators.length != expectedNumberOfValidators) {
@@ -285,10 +280,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
             }
         }
 
-        console.log("ERROR VVS: PUC 4");
-
         for (uint i; i < _numberOfChainsInValidatorSets; i++) {
-            console.log("ERROR VVS: PUC 41");
             bool atLeastOneProcessed = false;
             // checks that there is a new validator set for all registered chains
             // and for Blade -> chainId == 255
@@ -302,25 +294,17 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
                 atLeastOneProcessed = true; // This validator matches the chain
             }
 
-            console.log("ERROR VVS: PUC 42");
-
             if (!atLeastOneProcessed) {
                 revert InvalidData("ChainIdMismatch");
             }
-
-            console.log("ERROR VVS: PUC 43");
 
             //check that validator addresses are not zero addresses
             for (uint256 k; k < expectedNumberOfValidators; k++) {
                 address _validatorAddress = _newValidatorSetDelta.addedValidators[i].validators[k].addr;
 
-                console.log("ERROR VVS: PUC 44");
-
                 if (_validatorAddress == address(0)) {
                     revert ZeroAddress();
                 }
-
-                console.log("ERROR VVS: PUC 45");
 
                 //checks for duplicate validator addresses
                 for (uint l = k + 1; l < expectedNumberOfValidators; l++) {
@@ -328,8 +312,6 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
                         revert InvalidData("DuplicatedValidator"); // duplicate found
                     }
                 }
-
-                console.log("ERROR VVS: PUC 46");
 
                 // TODO check for empty multisig and fee addresses
                 // not checking validator signatures in the first version
@@ -484,9 +466,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     }
 
     function setNewValidatorSetDelta(NewValidatorSetDelta calldata _newValidatorSetDelta) external onlyBridge {
-        console.log("ENTERED setNewValidatorSetDelta");
         newValidatorSetDelta = _newValidatorSetDelta;
-        console.log("ERROR SNVSD: PUC 1");
     }
 
     function getNewValidatorSetDelta() external view returns (NewValidatorSetDelta memory) {
@@ -497,9 +477,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     }
 
     function setNewValidatorSetPending(bool _pending) external onlyBridge {
-        console.log("ENTERED setNewValidatorSetPending");
         newValidatorSetPending = _pending;
-        console.log("ERROR SNVSP: PUC 1");
     }
 
     function deleteNewValidatorSetDelta() external onlyBridge {
