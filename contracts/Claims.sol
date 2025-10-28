@@ -758,6 +758,19 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @param _chainId The ID of the chain on which the batch exists.
     /// @param _batchId The ID of the batch to retrieve transactions for.
     /// @return status A status code indicating the success or failure of the operation.
+    function getSpecialBatchStatus(uint8 _chainId, uint64 _batchId) external view returns (uint8 status) {
+        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getSpecialConfirmedSignedBatchData(
+            _chainId,
+            _batchId
+        );
+
+        return _confirmedSignedBatch.status;
+    }
+
+    /// @notice Retrieves a status for a specific batch on a given chain.
+    /// @param _chainId The ID of the chain on which the batch exists.
+    /// @param _batchId The ID of the batch to retrieve transactions for.
+    /// @return status A status code indicating the success or failure of the operation.
     function getCpecialBatchStatus(uint8 _chainId, uint64 _batchId) external view returns (uint8 status) {
         ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getSpecialConfirmedSignedBatchData(
             _chainId,

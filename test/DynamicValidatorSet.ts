@@ -1,3 +1,4 @@
+import { SpecialSignedBatches } from "./../typechain-types/contracts/SpecialSignedBatches";
 import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
@@ -204,8 +205,16 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Should revert signedBatch submition if signature is not valid", async function () {
-      const { bridge, owner, chain1, chain2, validators, signedBatch, validatorSets, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
+      const {
+        bridge,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        specialSignedBatch,
+        validatorSets,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
@@ -213,34 +222,33 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
 
       await setCode("0x0000000000000000000000000000000000002050", "0x60206000F3"); // should return false for precompile
-      await expect(bridge.connect(validators[0]).submitSpecialSignedBatch(signedBatch)).to.be.revertedWithCustomError(
-        bridge,
-        "InvalidSignature"
-      );
+      await expect(
+        bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch)
+      ).to.be.revertedWithCustomError(bridge, "InvalidSignature");
     });
 
     it("SignedBatch submition in SpecialSignedBatches SC should be reverted if not called by Bridge SC", async function () {
-      const { bridge, specialSignedBatches, owner, signedBatch } = await loadFixture(deployBridgeFixture);
+      const { bridge, specialSignedBatches, owner, specialSignedBatch } = await loadFixture(deployBridgeFixture);
 
       await expect(
-        specialSignedBatches.connect(owner).submitSpecialSignedBatch(signedBatch, owner.address)
+        specialSignedBatches.connect(owner).submitSpecialSignedBatch(specialSignedBatch, owner.address)
       ).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
 
     it("If SignedBatch submition id is not expected submittion should be skipped", async function () {
-      const { bridge, signedBatches, specialSignedBatches, validators, signedBatch } = await loadFixture(
+      const { bridge, signedBatches, specialSignedBatches, validators, specialSignedBatch } = await loadFixture(
         deployBridgeFixture
       );
 
       const encoded = ethers.solidityPacked(
         ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
         [
-          signedBatch.id,
-          signedBatch.firstTxNonceId,
-          signedBatch.lastTxNonceId,
-          signedBatch.destinationChainId,
-          signedBatch.rawTransaction,
-          false,
+          specialSignedBatch.id,
+          specialSignedBatch.firstTxNonceId,
+          specialSignedBatch.lastTxNonceId,
+          specialSignedBatch.destinationChainId,
+          specialSignedBatch.rawTransaction,
+          specialSignedBatch.isConsolidation,
         ]
       );
 
@@ -248,30 +256,32 @@ describe("Dynamic Validator Set", function () {
 
       const bridgeContract = await impersonateAsContractAndMintFunds(await bridge.getAddress());
 
-      await specialSignedBatches.connect(bridgeContract).submitSpecialSignedBatch(signedBatch, validators[0].address);
+      await specialSignedBatches
+        .connect(bridgeContract)
+        .submitSpecialSignedBatch(specialSignedBatch, validators[0].address);
 
       expect(await signedBatches.hasVoted(hash, validators[0].address)).to.equal(true);
 
-      const oldId = signedBatch.id;
-      signedBatch.id = 1000; //invalid id
+      const oldId = specialSignedBatch.id;
+      specialSignedBatch.id = 1000; //invalid id
 
       const encodedFalse = ethers.solidityPacked(
         ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
         [
-          signedBatch.id,
-          signedBatch.firstTxNonceId,
-          signedBatch.lastTxNonceId,
-          signedBatch.destinationChainId,
-          signedBatch.rawTransaction,
-          false,
+          specialSignedBatch.id,
+          specialSignedBatch.firstTxNonceId,
+          specialSignedBatch.lastTxNonceId,
+          specialSignedBatch.destinationChainId,
+          specialSignedBatch.rawTransaction,
+          specialSignedBatch.isConsolidation,
         ]
       );
 
       const hashFalse = ethers.keccak256(encodedFalse);
 
-      await signedBatches.connect(bridgeContract).submitSignedBatch(signedBatch, validators[0].address);
+      await signedBatches.connect(bridgeContract).submitSignedBatch(specialSignedBatch, validators[0].address);
 
-      signedBatch.id = oldId;
+      specialSignedBatch.id = oldId;
 
       expect(await signedBatches.hasVoted(hashFalse, validators[0].address)).to.equal(false);
     });
@@ -286,7 +296,7 @@ describe("Dynamic Validator Set", function () {
         chain2,
         validators,
         validatorSets,
-        signedBatch,
+        specialSignedBatch,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
 
@@ -295,32 +305,39 @@ describe("Dynamic Validator Set", function () {
 
       await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
 
-      await bridge.connect(validators[0]).submitSpecialSignedBatch(signedBatch);
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(signedBatch);
-      await bridge.connect(validators[2]).submitSpecialSignedBatch(signedBatch);
+      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
 
-      await bridge.connect(validators[1]).submitSpecialSignedBatch(signedBatch); // resubmit
+      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch); // resubmit
       const confBatchNothing = await claimsHelper
         .connect(validators[0])
-        .getConfirmedSignedBatchData(signedBatch.destinationChainId, signedBatch.id);
+        .getConfirmedSignedBatchData(specialSignedBatch.destinationChainId, specialSignedBatch.id);
       expect(confBatchNothing.firstTxNonceId + confBatchNothing.lastTxNonceId).to.equal(0);
 
       // consensus
-      await bridge.connect(validators[3]).submitSpecialSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
 
-      const confBatch = await claimsHelper
-        .connect(validators[0])
-        .getSpecialConfirmedSignedBatchData(signedBatch.destinationChainId, signedBatch.id);
+      const batchId = await specialSignedBatches.getSpecialConfirmedBatchId(specialSignedBatch.destinationChainId);
 
-      expect(confBatch.firstTxNonceId).to.equal(0);
-      expect(confBatch.lastTxNonceId).to.equal(0);
-
-      const batchId = await specialSignedBatches.getSpecialConfirmedBatchId(signedBatch.destinationChainId);
-
-      const lastConfirmedSignedBatchData = await specialSignedBatches.confirmedSpecialSignedBatches(
-        signedBatch.destinationChainId,
+      const lastConfirmedSignedBatchData = await claimsHelper.confirmedSpecialSignedBatches(
+        specialSignedBatch.destinationChainId,
         batchId
       );
+
+      expect(lastConfirmedSignedBatchData.firstTxNonceId).to.equal(12345);
+      expect(lastConfirmedSignedBatchData.lastTxNonceId).to.equal(12345);
+      expect(lastConfirmedSignedBatchData.isConsolidation).to.equal(false);
+      expect(lastConfirmedSignedBatchData.status).to.equal(1);
+
+      const confBatch = await specialSignedBatches.getSpecialConfirmedBatch(specialSignedBatch.destinationChainId);
+
+      expect(confBatch.signatures.length).to.equal(4);
+      expect(confBatch.feeSignatures.length).to.equal(4);
+      expect(confBatch.bitmap).to.equal(15);
+      expect(confBatch.rawTransaction).to.equal(specialSignedBatch.rawTransaction);
+      expect(confBatch.isConsolidation).to.equal(specialSignedBatch.isConsolidation);
+      expect(confBatch.id).to.equal(specialSignedBatch.id);
     });
 
     // it("Should revert with BatchNotFound error if there is already a quorum for BEFC for the same batch", async function () {
