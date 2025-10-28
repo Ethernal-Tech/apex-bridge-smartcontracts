@@ -31,7 +31,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
 
     /// @notice Mapping of confirmed signed batches
     /// @dev BlockchainId -> batchId -> SignedBatch
-    mapping(uint8 => mapping(uint64 => ConfirmedSignedBatchData)) public confirmedSpecialSignedBatches;
+    mapping(uint8 => mapping(uint64 => ConfirmedSignedBatchData)) public specialConfirmedSignedBatches;
 
     /// @notice Mapping of current batch block numbers per chain.
     /// @dev BlochchainId -> blockNumber
@@ -101,7 +101,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         uint8 _chainId,
         uint64 _batchId
     ) external view returns (ConfirmedSignedBatchData memory _confirmedSignedBatchData) {
-        return confirmedSpecialSignedBatches[_chainId][_batchId];
+        return specialConfirmedSignedBatches[_chainId][_batchId];
     }
 
     /// @notice Resets the current batch block for a given chain.
@@ -135,7 +135,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         uint8 destinationChainId = _signedBatch.destinationChainId;
         uint64 signedBatchId = _signedBatch.id;
 
-        confirmedSpecialSignedBatches[destinationChainId][signedBatchId] = ConfirmedSignedBatchData(
+        specialConfirmedSignedBatches[destinationChainId][signedBatchId] = ConfirmedSignedBatchData(
             _signedBatch.firstTxNonceId,
             _signedBatch.lastTxNonceId,
             _signedBatch.isConsolidation,
@@ -233,7 +233,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         uint64 _batchId,
         uint8 _status
     ) external onlySpecialClaims {
-        confirmedSignedBatches[_chainId][_batchId].status = _status;
+        specialConfirmedSignedBatches[_chainId][_batchId].status = _status;
     }
 
     /// @notice Returns the current version of the contract

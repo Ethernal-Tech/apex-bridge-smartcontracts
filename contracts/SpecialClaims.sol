@@ -161,13 +161,11 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
         bytes32 claimHash = keccak256(abi.encode("SBEC", _claim));
 
-        console.log("OVDE BI TREBALO DA DODJE");
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
             claimHash,
             validators.getQuorumNumberOfValidators()
         );
-        console.log("OVDE NE BI TREBALO DA DODJE");
 
         if (_quorumReached) {
             claimsHelper.setConfirmedSpecialSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_EXECUTED);
@@ -179,7 +177,6 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
             }
 
             if (_countSetBits(bitmap) == Bridge(bridgeAddress).getAllRegisteredChains().length - 1) {
-                console.log("IMA KVORUM");
                 //TODO notify Blades
             }
         }
@@ -190,10 +187,18 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         uint8 chainId = _claim.chainId;
         uint64 batchId = _claim.batchNonceId;
 
-        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
+        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getSpecialConfirmedSignedBatchData(
             chainId,
             batchId
         );
+
+        if (
+            _confirmedSignedBatch.firstTxNonceId != (2 ** 64 - 1) &&
+            _confirmedSignedBatch.lastTxNonceId != (2 ** 64 - 1)
+        ) {
+            // special batch must have first and last transaction nonces set to 2^64 - 1
+            return;
+        }
 
         // Once a quorum has been reached on either BEC or BEFC for a batch, the first and last transaction
         // nonces for that batch are deleted, thus signaling that the batch has been processed. Any further BEC or BEFC
@@ -214,6 +219,10 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
         if (_quorumReached) {
             claimsHelper.setConfirmedSpecialSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_FAILED);
+            ConfirmedSignedBatchData memory _confirmedSignedBatch2 = claimsHelper.getSpecialConfirmedSignedBatchData(
+                chainId,
+                batchId
+            );
 
             //TODO probably nothing, maybe event
         }
