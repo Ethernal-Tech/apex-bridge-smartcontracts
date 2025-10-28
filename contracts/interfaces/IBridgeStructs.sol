@@ -42,7 +42,7 @@ interface IBridgeStructs {
         bytes32 observedTransactionHash;
         uint64 nonce;
         uint8 sourceChainId;
-        uint8 transactionType; // 0 = normal, 1 = defund, 2 = refund
+        uint8 transactionType; // 0 = normal, 1 = defund, 2 = refund, 3 = special
         bool alreadyTriedBatch;
         Receiver[] receivers;
         bytes outputIndexes;
@@ -207,4 +207,5 @@ interface IBridgeStructs {
     event DefundFailedAfterMultipleRetries();
     event UpdatedMaxNumberOfTransactions(uint256 _maxNumberOfTransactions);
     event UpdatedTimeoutBlocksNumber(uint256 _timeoutBlocksNumber);
+    event newValidatorSetSubmitted();
 }

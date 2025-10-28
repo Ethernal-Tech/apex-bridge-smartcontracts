@@ -127,51 +127,13 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Submit new validator set data
     /// @param _validatorSet Full validator data for all of the new validators.
     function submitNewValidatorSet(ValidatorSet[] calldata _validatorSet) external override onlyOwner {
-        //set needs to include validator data for all chains
-        uint256 _validatorSetLength = _validatorSet.length;
-        if (_validatorSetLength != chains.length) {
-            revert InvalidData("InvalidValidatorSet");
-        }
+        validateValidatorSet(_validatorSet);
 
-        uint256 _numberOfValidators = _validatorSet[0].validators[0].length;
+        validators.setNewValidatorSet(_validatorSet);
 
-        //number of validators must be between 4 and 126
-        if (_fullValidatorDataLength < 4 || _fullValidatorDataLength > 126) {
-            revert InvalidData("ValidatorSetLength");
-        }
+        claims.createSpecialTransaction(_validatorSet);
 
-        //number of validators must be the same for all chains
-        for (uint i; i < _validatorSetLength; i++) {
-            if (_validatorSet[i].validators.length != _numberOfValidators) {
-                revert InvalidData("ValidatorSetLength");
-            }
-        }
-
-        uint256 _chaintype;
-        uint256 chainsLength = chains.length;
-        for (uint i; i < chainsLength; i++) {
-            if (_validatorSet[i].chainId != chains[i].id) {
-                revert InvalidData("ValidatorSetChainId");
-            }
-        }
-
-        for (uint i = 0; i < _validatorSetLength; i++) {
-            address _validatorAddress = _validatorSetLength[i].validators[i].addr;
-
-            if (_validatorAddress == address(0)) {
-                revert ZeroAddress();
-            }
-
-            _validateSignatures(
-                , // Chain type 0 for cardano
-                _validatorAddress,
-                _fullValidatorData[i].cardanoKeySignature,
-                _fullValidatorData[i].cardanoKeyFeeSignature,
-                _fullValidatorData[i].cardanoData
-            );
-        }
-
-        validators.setNewValidatorsChainData(_fullValidatorData);
+        emit newValidatorSetSubmitted();
     }
 
     /// @notice Submit the last observed Cardano blocks from validators for synchronization purposes.
@@ -408,6 +370,49 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint64 _batchId
     ) external view override returns (uint8 status, TxDataInfo[] memory txs) {
         return claims.getBatchStatusAndTransactions(_chainId, _batchId);
+    }
+
+    /// @notice Validates the new validator set data
+    /// @param _validatorSet Full validator data for all of the new validators.
+    function validateValidatorSet(ValidatorSet[] calldata _validatorSet) internal view {
+        //set needs to include validator data for all chains
+        uint256 _validatorSetLength = _validatorSet.length;
+        if (_validatorSetLength != chains.length) {
+            revert InvalidData("InvalidValidatorSet");
+        }
+
+        uint256 _numberOfValidators = _validatorSet[0].validators.length;
+
+        //number of validators must be between 4 and 126
+        if (_numberOfValidators < 4 || _numberOfValidators > 126) {
+            revert InvalidData("ValidatorSetLength");
+        }
+
+        //number of validators must be the same for all chains
+        for (uint256 i; i < _validatorSetLength; i++) {
+            if (_validatorSet[i].chain.id != chains[i].id) {
+                revert InvalidData("ChainIdMismatch");
+            }
+        }
+
+        //validate signatures for all validators for all chains
+        for (uint j; j < _validatorSetLength; j++) {
+            for (uint256 i; i < _numberOfValidators; i++) {
+                address _validatorAddress = _validatorSet[i].validators[j].addr;
+
+                if (_validatorAddress == address(0)) {
+                    revert ZeroAddress();
+                }
+
+                _validateSignatures(
+                    _validatorSet[i].chain.chainType, // Chain type 0 for cardano
+                    _validatorAddress,
+                    _validatorSet[i].validators[j].keySignature,
+                    _validatorSet[i].validators[j].keyFeeSignature,
+                    _validatorSet[i].validators[j].data
+                );
+            }
+        }
     }
 
     /// @dev Converts a bytes32 value to a bytes array.

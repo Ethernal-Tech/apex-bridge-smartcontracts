@@ -51,7 +51,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     /// @notice Mapping from chain ID to special confirmed transaction for validators update.
     /// @dev BlockchainId -> nonce -> ConfirmedTransaction
-    mapping(uint8 => ConfirmedTransaction) public confirmedTransactionsValidatorsUpdate;
+    mapping(uint8 => ConfirmedTransaction) public specialConfirmedTransaction;
 
     /// @notice Mapping from chain ID to nonce of the last confirmed transaction.
     /// @dev chainId -> nonce
@@ -754,6 +754,31 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     function updateTimeoutBlocksNumber(uint8 _timeoutBlocksNumber) external onlyAdminContract {
         timeoutBlocksNumber = _timeoutBlocksNumber;
+    }
+
+    function createSpecialTransaction(ValidatorSet[] calldata _validatorSet) external onlyBridge {
+        uint256 _validatorSetLength = _validatorSet.length;
+
+        for (uint i; i < _validatorSetLength; i++) {
+            ValidatorSet memory _validator = _validatorSet[i];
+            if (_validator.chain.chainType == 0) {
+                ConfirmedTransaction storage confirmedTx = specialConfirmedTransaction[_validator.chain.id];
+                confirmedTx.totalAmount = 0; // TODO calculate amount
+                confirmedTx.blockHeight = 0; // always the same random block height
+                confirmedTx.observedTransactionHash = "0x123"; // always the same random hash
+                confirmedTx.sourceChainId = 0; // always the same source chain id
+                confirmedTx.nonce = 0; // this could be some high number that will always be used
+                confirmedTx.retryCounter = 0;
+                confirmedTx.transactionType = 3;
+
+                Receiver memory receiver = Receiver({
+                    amount: 0, //TODO calculate amount
+                    destinationAddress: _validator.chain.addressMultisig
+                });
+
+                confirmedTx.receivers.push(receiver);
+            }
+        }
     }
 
     /// @notice Returns the current version of the contract
