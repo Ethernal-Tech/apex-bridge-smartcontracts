@@ -134,6 +134,8 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
 
+            bridge.updateOnStakeManagerIfAllChainsConfirmed(_signedBatch);
+
             delete votes[_sbHash];
         }
     }

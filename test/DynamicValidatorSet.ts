@@ -526,7 +526,6 @@ describe("Dynamic Validator Set", function () {
     it("Should NOT set bitmap to +1 if there is quorum on non-final batch in SBEC", async function () {
       const {
         bridge,
-        claims,
         owner,
         validators,
         chain1,
@@ -553,7 +552,7 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
 
-      let bitmap = await claims.newValidatorSetBitmap();
+      let bitmap = await bridge.newValidatorSetBitmap();
 
       let count = 0;
       while (bitmap !== 0n) {
@@ -565,7 +564,7 @@ describe("Dynamic Validator Set", function () {
 
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
-      bitmap = await claims.newValidatorSetBitmap();
+      bitmap = await bridge.newValidatorSetBitmap();
 
       count = 0;
       while (bitmap !== 0n) {
@@ -576,16 +575,14 @@ describe("Dynamic Validator Set", function () {
       expect(count).to.equal(0);
     });
 
-    it("Should set bitmap to +1 if there is quorum on final batch in BEC", async function () {
+    it("Should set bitmap to +1 if there is quorum on submit final validator set batch", async function () {
       const {
         bridge,
-        claims,
         owner,
         validators,
         chain1,
         chain2,
         signedBatch_ValidatorSetFinal,
-        validatorClaimsBEC,
         newValidatorSetDelta,
         validatorAddressChainData,
       } = await loadFixture(deployBridgeFixture);
@@ -597,16 +594,7 @@ describe("Dynamic Validator Set", function () {
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
 
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSetFinal);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSetFinal);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatch_ValidatorSetFinal);
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatch_ValidatorSetFinal);
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
-
-      let bitmap = await claims.newValidatorSetBitmap();
+      let bitmap = await bridge.newValidatorSetBitmap();
 
       let count = 0;
       while (bitmap !== 0n) {
@@ -616,9 +604,12 @@ describe("Dynamic Validator Set", function () {
 
       expect(count).to.equal(0);
 
-      await bridge.connect(validators[3]).submitClaims(validatorClaimsBEC);
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSetFinal);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSetFinal);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch_ValidatorSetFinal);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch_ValidatorSetFinal);
 
-      bitmap = await claims.newValidatorSetBitmap();
+      bitmap = await bridge.newValidatorSetBitmap();
 
       while (bitmap !== 0n) {
         bitmap &= bitmap - 1n; // Clear the lowest set bit

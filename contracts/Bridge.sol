@@ -13,7 +13,7 @@ import "./Slots.sol";
 import "./Validators.sol";
 
 /// @title Bridge
-/// @notice Cross-chain bridge for validator claim submission, 
+/// @notice Cross-chain bridge for validator claim submission,
 /// batch transaction signing, and governance-based chain registration.
 /// @dev UUPS upgradeable and modular via dependency contracts (Claims, Validators, Slots, SignedBatches).
 contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
@@ -99,7 +99,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         }
     }
 
-    function _updateOnStakeManagerIfAllChainsConfirmed(SignedBatch calldata _signedBatch) internal {
+    function updateOnStakeManagerIfAllChainsConfirmed(SignedBatch calldata _signedBatch) external onlySignedBatches {
         if (_signedBatch.batchType == BatchTypesLib.VALIDATORSET_FINAL) {
             newValidatorSetBitmap |= uint8(1 << _signedBatch.destinationChainId);
 
@@ -157,8 +157,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             revert InvalidSignature();
         }
         signedBatches.submitSignedBatch(_signedBatch, msg.sender);
-
-        _updateOnStakeManagerIfAllChainsConfirmed(_signedBatch);
     }
 
     /// @notice Submit a signed transaction batch for an EVM-compatible chain.
@@ -187,8 +185,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             revert InvalidSignature();
         }
         signedBatches.submitSignedBatch(_signedBatch, msg.sender);
-
-        _updateOnStakeManagerIfAllChainsConfirmed(_signedBatch);
     }
 
     /// @notice Submit new validator set data
@@ -478,6 +474,11 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     modifier onlyClaims() {
         if (msg.sender != address(claims)) revert NotClaims();
+        _;
+    }
+
+    modifier onlySignedBatches() {
+        if (msg.sender != address(signedBatches)) revert NotSignedBatches();
         _;
     }
 
