@@ -286,6 +286,58 @@ describe("Dynamic Validator Set", function () {
       expect(await signedBatches.hasVoted(hashFalse, validators[0].address)).to.equal(false);
     });
 
+    it("SignedBatch should NOT be added to signedBatches if there are NOT enough votes", async function () {
+      const {
+        bridge,
+        specialSignedBatches,
+        claimsHelper,
+        owner,
+        chain1,
+        chain2,
+        validators,
+        validatorSets,
+        specialSignedBatch,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+
+      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
+
+      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch); // resubmit
+
+      const confBatchNothing = await claimsHelper
+        .connect(validators[0])
+        .getConfirmedSignedBatchData(specialSignedBatch.destinationChainId, specialSignedBatch.id);
+      expect(confBatchNothing.firstTxNonceId + confBatchNothing.lastTxNonceId).to.equal(0);
+
+      const batchId = await specialSignedBatches.getSpecialConfirmedBatchId(specialSignedBatch.destinationChainId);
+
+      const lastConfirmedSignedBatchData = await claimsHelper.confirmedSpecialSignedBatches(
+        specialSignedBatch.destinationChainId,
+        batchId
+      );
+
+      expect(lastConfirmedSignedBatchData.firstTxNonceId).to.equal(0);
+      expect(lastConfirmedSignedBatchData.lastTxNonceId).to.equal(0);
+      expect(lastConfirmedSignedBatchData.isConsolidation).to.equal(false);
+      expect(lastConfirmedSignedBatchData.status).to.equal(0);
+
+      const confBatch = await specialSignedBatches.getSpecialConfirmedBatch(specialSignedBatch.destinationChainId);
+
+      expect(confBatch.signatures.length).to.equal(0);
+      expect(confBatch.feeSignatures.length).to.equal(0);
+      expect(confBatch.bitmap).to.equal(0);
+      expect(confBatch.rawTransaction).to.equal("0x");
+      expect(confBatch.isConsolidation).to.equal(false);
+      expect(confBatch.id).to.equal(0);
+    });
+
     it("SignedBatch should be added to signedBatches if there are enough votes", async function () {
       const {
         bridge,
