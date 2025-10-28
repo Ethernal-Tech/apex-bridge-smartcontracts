@@ -797,8 +797,12 @@ describe("Dynamic Validator Set", function () {
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
 
-      expect((await validatorsc.getNewValidatorSetDelta()).addedValidators.length).to.equal(2);
-      expect((await validatorsc.getNewValidatorSetDelta()).removedValidators.length).to.equal(2);
+      expect((await validatorsc.getNewValidatorSetDelta()).addedValidators.length).to.equal(
+        newValidatorSetDelta.addedValidators.length
+      );
+      expect((await validatorsc.getNewValidatorSetDelta()).removedValidators.length).to.equal(
+        newValidatorSetDelta.removedValidators.length
+      );
       await bridge.connect(systemSigner).validatorSetUpdated();
       await expect(bridge.getNewValidatorSetDelta()).to.be.revertedWithCustomError(bridge, "NoNewValidatorSetPending");
     });
