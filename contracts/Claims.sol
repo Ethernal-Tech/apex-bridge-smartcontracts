@@ -574,11 +574,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     ///      the timeout block has been surpassed, in which case it returns `true`.
     function shouldCreateBatch(uint8 _destinationChain) public view returns (bool) {
         // if not registered chain or batch is already created, return false
-        if (
-            !isChainRegistered[_destinationChain] ||
-            claimsHelper.currentBatchBlock(_destinationChain) != int(-1) ||
-            validators.newValidatorSetPending()
-        ) {
+        if (!isChainRegistered[_destinationChain] || claimsHelper.currentBatchBlock(_destinationChain) != int(-1)) {
             return false;
         }
 
