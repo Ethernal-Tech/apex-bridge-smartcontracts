@@ -32,6 +32,9 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// @dev BlockchainId -> ConfirmedBatch
     mapping(uint8 => ConfirmedBatch) private lastSpecialConfirmedBatch;
 
+    // @notice Bitmap used to flag changes for which special task has been executed
+    uint8 bitmap;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
@@ -116,7 +119,7 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
                 revert ChainIsNotRegistered(_claim.chainId);
             }
 
-            // _submitSpecialClaimsBEFC(_claim, _caller);
+            _submitSpecialClaimsBEFC(_claim, _caller);
         }
     }
 
@@ -158,18 +161,27 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
         bytes32 claimHash = keccak256(abi.encode("SBEC", _claim));
 
+        console.log("OVDE BI TREBALO DA DODJE");
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeeded(
             _caller,
             claimHash,
             validators.getQuorumNumberOfValidators()
         );
+        console.log("OVDE NE BI TREBALO DA DODJE");
 
         if (_quorumReached) {
             claimsHelper.setConfirmedSpecialSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_EXECUTED);
 
-            //TODO register that this chain is done
+            // isCondolidation flag is here used to signal the last special signed batch for a change
+            // since there could be multiple special signed batches needed to transfer all the funds
+            if (_confirmedSignedBatch.isConsolidation) {
+                bitmap |= uint8(1 << chainId);
+            }
 
-            //TODO check if all are done if done, notify Blade
+            if (_countSetBits(bitmap) == Bridge(bridgeAddress).getAllRegisteredChains().length - 1) {
+                console.log("IMA KVORUM");
+                //TODO notify Blades
+            }
         }
     }
 
@@ -183,7 +195,6 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
             batchId
         );
 
-        //TODO first and last check comment
         // Once a quorum has been reached on either BEC or BEFC for a batch, the first and last transaction
         // nonces for that batch are deleted, thus signaling that the batch has been processed. Any further BEC or BEFC
         // claims for the same batch will not be processed. This is to prevent double processing of the same batch,
@@ -205,6 +216,13 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
             claimsHelper.setConfirmedSpecialSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_FAILED);
 
             //TODO probably nothing, maybe event
+        }
+    }
+
+    function _countSetBits(uint256 _bitmap) internal pure returns (uint256 count) {
+        while (_bitmap != 0) {
+            _bitmap &= (_bitmap - 1);
+            count++;
         }
     }
 

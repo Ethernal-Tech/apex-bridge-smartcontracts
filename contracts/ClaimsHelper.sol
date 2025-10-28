@@ -16,6 +16,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
 
     address private upgradeAdmin;
     address private claimsAddress;
+    address private specialClaimsAddress;
     address private signedBatchesAddress;
     address private specialSignedBatchesAddress;
 
@@ -66,6 +67,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @param _signedBatchesAddress Address of the SignedBatches contract.
     function setDependencies(
         address _claimsAddress,
+        address _specialClaimsAddres,
         address _signedBatchesAddress,
         address _specialSignedBatchesAddress
     ) external onlyOwner {
@@ -75,6 +77,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
             !_isContract(_specialSignedBatchesAddress)
         ) revert NotContractAddress();
         claimsAddress = _claimsAddress;
+        specialClaimsAddress = _specialClaimsAddres;
         signedBatchesAddress = _signedBatchesAddress;
         specialSignedBatchesAddress = _specialSignedBatchesAddress;
     }
@@ -110,7 +113,9 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @notice Stores a confirmed signed batch for a specific destination chain and batch ID.
     /// @dev Updates both `confirmedSignedBatches` and `currentBatchBlock` mappings.
     /// @param _signedBatch The signed batch data containing metadata and transaction nonce range.
-    function setConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
+    function setConfirmedSignedBatchData(
+        SignedBatch calldata _signedBatch
+    ) external onlySignedBatchesOrClaimsorSpecialClaims {
         uint8 destinationChainId = _signedBatch.destinationChainId;
         uint64 signedBatchId = _signedBatch.id;
 
@@ -223,7 +228,11 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @param _chainId The ID of the blockchain where the batch resides.
     /// @param _batchId The unique identifier of the batch to delete.
     /// @param _status The new status to set for the batch.
-    function setConfirmedSpecialSignedBatchStatus(uint8 _chainId, uint64 _batchId, uint8 _status) external onlyClaims {
+    function setConfirmedSpecialSignedBatchStatus(
+        uint8 _chainId,
+        uint64 _batchId,
+        uint8 _status
+    ) external onlySpecialClaims {
         confirmedSignedBatches[_chainId][_batchId].status = _status;
     }
 
@@ -233,8 +242,9 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         return "1.0.2";
     }
 
-    modifier onlySignedBatchesOrClaims() {
-        if (msg.sender != signedBatchesAddress && msg.sender != claimsAddress) revert NotSignedBatchesOrClaims();
+    modifier onlySignedBatchesOrClaimsorSpecialClaims() {
+        if (msg.sender != signedBatchesAddress && msg.sender != claimsAddress && msg.sender != specialClaimsAddress)
+            revert NotSignedBatchesOrClaimsorSpecialClaims();
         _;
     }
 
@@ -250,6 +260,11 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
 
     modifier onlyClaims() {
         if (msg.sender != claimsAddress) revert NotClaims();
+        _;
+    }
+
+    modifier onlySpecialClaims() {
+        if (msg.sender != specialClaimsAddress) revert NotSpecialClaims();
         _;
     }
 

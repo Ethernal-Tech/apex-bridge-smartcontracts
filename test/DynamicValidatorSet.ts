@@ -490,6 +490,109 @@ describe("Dynamic Validator Set", function () {
 
       expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
     });
+    it("Should skip if Batch Executed Claims is already confirmed", async function () {
+      const {
+        bridge,
+        claimsHelper,
+        owner,
+        validators,
+        chain1,
+        chain2,
+        validatorClaimsBEC,
+        specialSignedBatch,
+        validatorSets,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+
+      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
+
+      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEC);
+      await bridge.connect(validators[1]).submitSpecialClaims(validatorClaimsBEC);
+      await bridge.connect(validators[2]).submitSpecialClaims(validatorClaimsBEC);
+      await bridge.connect(validators[3]).submitSpecialClaims(validatorClaimsBEC);
+
+      const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["SBEC"]);
+      const encoded = abiCoder.encode(
+        ["bytes32", "uint64", "uint8"],
+        [
+          validatorClaimsBEC.batchExecutedClaims[0].observedTransactionHash,
+          validatorClaimsBEC.batchExecutedClaims[0].batchNonceId,
+          validatorClaimsBEC.batchExecutedClaims[0].chainId,
+        ]
+      );
+
+      const encoded40 =
+        "0x0000000000000000000000000000000000000000000000000000000000000080" +
+        encoded.substring(2) +
+        encodedPrefix.substring(66);
+
+      const hash = ethers.keccak256(encoded40);
+
+      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+
+      await bridge.connect(validators[4]).submitSpecialClaims(validatorClaimsBEC);
+
+      expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
+    });
+    it("Should skip if validator submits the same claim twice", async function () {
+      const {
+        bridge,
+        claimsHelper,
+        owner,
+        validators,
+        chain1,
+        chain2,
+        validatorClaimsBEC,
+        specialSignedBatch,
+        validatorSets,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+
+      await bridge.connect(validators[0]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[1]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[2]).submitSpecialSignedBatch(specialSignedBatch);
+      await bridge.connect(validators[3]).submitSpecialSignedBatch(specialSignedBatch);
+
+      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEC);
+
+      const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["SBEC"]);
+      const encoded = abiCoder.encode(
+        ["bytes32", "uint64", "uint8"],
+        [
+          validatorClaimsBEC.batchExecutedClaims[0].observedTransactionHash,
+          validatorClaimsBEC.batchExecutedClaims[0].batchNonceId,
+          validatorClaimsBEC.batchExecutedClaims[0].chainId,
+        ]
+      );
+
+      const encoded40 =
+        "0x0000000000000000000000000000000000000000000000000000000000000080" +
+        encoded.substring(2) +
+        encodedPrefix.substring(66);
+
+      const hash = ethers.keccak256(encoded40);
+
+      expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
+
+      await bridge.connect(validators[0]).submitSpecialClaims(validatorClaimsBEC);
+
+      expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
+    });
     // it("Should skip if same validator submits the same Batch Execution Failed Claim twice", async function () {
     //   const {
     //     bridge,
