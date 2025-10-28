@@ -194,6 +194,8 @@ interface IBridgeStructs {
     error TooManyBlocks(uint256 _blocksCount, uint256 _maxBlocksCount);
     error TooManyClaims(uint256 _claimsCount, uint256 _maxClaimsCount);
     error NotContractAddress();
+    error BatchInProgress();
+    error NoNewValidatorSetPending();
 
     // ------------------------------------------------------------------------
     // Events

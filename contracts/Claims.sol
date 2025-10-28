@@ -130,10 +130,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @param _claims Struct containing all types of validator claims.
     /// @param _caller Address of the validator submitting the claims.
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
-        if (validators.newValidatorSetPending()) {
-            return;
-        }
-
         uint256 bridgingRequestClaimsLength = _claims.bridgingRequestClaims.length;
         uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
         uint256 batchExecutionFailedClaimsLength = _claims.batchExecutionFailedClaims.length;
@@ -564,6 +560,15 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         return confirmedTransactions[_destinationChain][_nonce];
     }
 
+    /// @notice Retrieves a special confirmed transaction by chain ID and nonce.
+    /// @param _destinationChain The ID of the destination chain where the transaction was confirmed.
+    /// @return _confirmedTransaction The `ConfirmedTransaction` struct containing transaction details.
+    function getSpecialConfirmedTransaction(
+        uint8 _destinationChain
+    ) public view returns (ConfirmedTransaction memory _confirmedTransaction) {
+        return specialConfirmedTransaction[_destinationChain];
+    }
+
     /// @notice Calculates the number of confirmed transactions ready for batching for a specific chain.
     /// @dev Iterates through confirmed transactions from the last batched nonce up to the batching limit or timeout,
     ///      and counts how many are eligible to be included in the next batch.
@@ -748,6 +753,19 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         return (_status, _txHashes);
     }
 
+    /// @notice Retrieves a status for a specific batch on a given chain.
+    /// @param _chainId The ID of the chain on which the batch exists.
+    /// @param _batchId The ID of the batch to retrieve transactions for.
+    /// @return status A status code indicating the success or failure of the operation.
+    function getBatchStatus(uint8 _chainId, uint64 _batchId) external view returns (uint8 status) {
+        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
+            _chainId,
+            _batchId
+        );
+
+        return _confirmedSignedBatch.status;
+    }
+
     function updateMaxNumberOfTransactions(uint16 _maxNumberOfTransactions) external onlyAdminContract {
         maxNumberOfTransactions = _maxNumberOfTransactions;
     }
@@ -762,8 +780,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         for (uint i; i < _validatorSetLength; i++) {
             ValidatorSet memory _validator = _validatorSet[i];
             if (_validator.chain.chainType == 0) {
+                uint256 _pendingAmount = chainTokenQuantity[_validator.chain.id];
+
                 ConfirmedTransaction storage confirmedTx = specialConfirmedTransaction[_validator.chain.id];
-                confirmedTx.totalAmount = 0; // TODO calculate amount
+                confirmedTx.totalAmount = _pendingAmount;
                 confirmedTx.blockHeight = 0; // always the same random block height
                 confirmedTx.observedTransactionHash = "0x123"; // always the same random hash
                 confirmedTx.sourceChainId = 0; // always the same source chain id
@@ -772,11 +792,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 confirmedTx.transactionType = 3;
 
                 Receiver memory receiver = Receiver({
-                    amount: 0, //TODO calculate amount
+                    amount: _pendingAmount,
                     destinationAddress: _validator.chain.addressMultisig
                 });
 
                 confirmedTx.receivers.push(receiver);
+
+                specialConfirmedTransaction[_validator.chain.id] = confirmedTx;
             }
         }
     }

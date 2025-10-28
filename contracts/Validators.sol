@@ -208,7 +208,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         }
     }
 
-    function setNewValidatorSet(ValidatorSet[] calldata _validatorSet) external onlyBridge {
+    function storeNewValidatorSet(ValidatorSet[] calldata _validatorSet) external onlyBridge {
         delete newValidatorSet;
 
         uint8 _validatorSetlenght = uint8(_validatorSet.length);
@@ -216,8 +216,6 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         for (uint256 i; i < _validatorSetlenght; i++) {
             newValidatorSet.push(_validatorSet[i]);
         }
-
-        newValidatorSetPending = true;
     }
 
     /// @notice Adds or updates the chain-specific data for a given validator
@@ -255,6 +253,10 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         unchecked {
             return (validatorsCount * 2) / 3 + 1;
         }
+    }
+
+    function setNewValidatorSetPending(bool _pending) external onlyBridge {
+        newValidatorSetPending = _pending;
     }
 
     /// @notice Returns the current version of the contract
