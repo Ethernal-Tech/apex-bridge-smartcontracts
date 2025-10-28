@@ -85,9 +85,6 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     }
 
     function submitSpecialClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
-        //TODO temp unused
-        if (address(_caller) == address(0)) revert ZeroAddress();
-
         uint256 notUsedClaims = _claims.bridgingRequestClaims.length +
             _claims.refundRequestClaims.length +
             _claims.hotWalletIncrementClaims.length;
@@ -136,7 +133,6 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         uint8 chainId = _claim.chainId;
         uint64 batchId = _claim.batchNonceId;
 
-        //TODO first and last check comment
         ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getSpecialConfirmedSignedBatchData(
             chainId,
             batchId
@@ -219,10 +215,6 @@ contract SpecialClaims is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
         if (_quorumReached) {
             claimsHelper.setConfirmedSpecialSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_FAILED);
-            ConfirmedSignedBatchData memory _confirmedSignedBatch2 = claimsHelper.getSpecialConfirmedSignedBatchData(
-                chainId,
-                batchId
-            );
 
             //TODO probably nothing, maybe event
         }

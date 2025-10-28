@@ -227,10 +227,6 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      // Create our claims with same batch ID but different purposes
-      const batchId = validatorClaimsBEC.batchExecutedClaims[0].batchNonceId;
-      validatorClaimsBEC.batchExecutedClaims[0].batchNonceId = batchId;
-
       // Group of validators submit original claim
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
@@ -428,10 +424,6 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
-
-      // Create our claims with same batch ID but different purposes
-      const batchId = validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId;
-      validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId = batchId;
 
       // Group of validators submit original claim
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
