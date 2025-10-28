@@ -9,6 +9,7 @@ import "./interfaces/IBridge.sol";
 import "./Utils.sol";
 import "./Claims.sol";
 import "./SpecialClaims.sol";
+import "./SpecialSignedBatches.sol";
 import "./SignedBatches.sol";
 import "./Slots.sol";
 import "./Validators.sol";
@@ -20,6 +21,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     address private upgradeAdmin;
     Claims private claims;
     SpecialClaims private specialClaims;
+    SpecialSignedBatches private specialSignedBatches;
     SignedBatches private signedBatches;
     Slots private slots;
     Validators private validators;
@@ -33,7 +35,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    // uint256[50] private __gap;
+    uint256[50] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -67,17 +69,20 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         address _specialClaimsAddress,
         address _signedBatchesAddress,
         address _slotsAddress,
-        address _validatorsAddress
+        address _validatorsAddress,
+        address _specialSignedBatchesAddress
     ) external onlyOwner {
         if (
             !_isContract(_claimsAddress) ||
             !_isContract(_specialClaimsAddress) ||
+            !_isContract(_specialSignedBatchesAddress) ||
             !_isContract(_signedBatchesAddress) ||
             !_isContract(_slotsAddress) ||
             !_isContract(_validatorsAddress)
         ) revert NotContractAddress();
         claims = Claims(_claimsAddress);
         specialClaims = SpecialClaims(_specialClaimsAddress);
+        specialSignedBatches = SpecialSignedBatches(_specialSignedBatchesAddress);
         signedBatches = SignedBatches(_signedBatchesAddress);
         slots = Slots(_slotsAddress);
         validators = Validators(_validatorsAddress);
@@ -91,7 +96,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     /// @notice Submit claims from validators for updating the validator set.
     /// @param _claims The claims submitted by a validator.
-    function submitSpecialClaims(SpecialValidatorClaims calldata _claims) external view override onlyValidator {
+    function submitSpecialClaims(SpecialValidatorClaims calldata _claims) external override onlyValidator {
         if (!validators.newValidatorSetPending()) {
             revert NoNewValidatorSetPending();
         }
@@ -137,7 +142,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         ) {
             revert InvalidSignature();
         }
-        specialClaims.submitSpecialSignedBatch(_signedBatch, msg.sender);
+        specialSignedBatches.submitSpecialSignedBatch(_signedBatch, msg.sender);
     }
 
     /// @notice Submit a signed transaction batch for an EVM-compatible chain.
@@ -162,6 +167,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     /// @notice Submit new validator set data
     /// @param _validatorSet Full validator data for all of the new validators.
+    /// @param _removedValidators List of addresses of validators that are removed from the set.
     //TODO: add modifier
     function submitNewValidatorSet(
         ValidatorSet[] calldata _validatorSet,
@@ -170,9 +176,9 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         if (validators.newValidatorSetPending()) {
             revert NewValidatorSetAlreadyPending();
         }
-        //TODO: store removed validators
-        uint256 _removedValidatorsLength = _removedValidators.length;
-        _removedValidatorsLength++; // to avoid unused variable warning
+
+        //TODO: check if these validators are indeed in the current set???
+        validators.setRemovedValidators(_removedValidators);
 
         validators.validateValidatorSet(_validatorSet, chains);
 
@@ -392,8 +398,17 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         return claims.getBatchStatusAndTransactions(_chainId, _batchId);
     }
 
+    // TODO: explanation
+    // TODO: modifier
     function validatorSetUpdated() external override {
-        //TODO implementation and add modifier
+        // TODO copy validators data for all chains
+        // TODO unlock the bridge
+        // uint256 _newValidatorSetLength = validators.getNewValidatorSetLength();
+        // for (uint256 i; i < _newValidatorSetLength; i++) {
+        // ValidatorSet memory _validatorSet = _newValidatorSet[i];
+        // validators.setValidatorsChainData(_validatorSet.chain.id, _validatorSet.validators);
+        //TODO update chain data
+        // }
     }
 
     /// @notice Returns the current version of the contract

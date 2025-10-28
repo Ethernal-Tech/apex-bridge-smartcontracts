@@ -41,6 +41,9 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @notice Flag for new validator set peding
     bool public newValidatorSetPending;
 
+    /// @notice Flag for new validator set peding
+    address[] public validatorsToBeRemoved;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
@@ -271,14 +274,6 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
                 revert InvalidData("ChainIdMismatch");
             }
 
-            //TODO discuss removing multisig and feepayer addresses from chain struct
-            // if (
-            //     bytes(_validatorSet[i].chain.addressMultisig).length == 0 ||
-            //     bytes(_validatorSet[i].chain.addressFeePayer).length == 0
-            // ) {
-            //     revert InvalidData("EmptyMultisigOrFeePayerAddress");
-            // }
-
             for (uint256 j; j < _numberOfValidators; j++) {
                 address _validatorAddress = _validatorSet[i].validators[j].addr;
 
@@ -356,8 +351,26 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         return newValidatorSet;
     }
 
+    function getNewValidatorSetLength() external view returns (uint256) {
+        return newValidatorSet.length;
+    }
+
     function setNewValidatorSetPending(bool _pending) external onlyBridge {
         newValidatorSetPending = _pending;
+    }
+
+    function setRemovedValidators(address[] calldata _removedValidators) external onlyBridge {
+        //TODO delete when everything is done
+
+        uint256 _removedValidatorsLength = _removedValidators.length;
+
+        for (uint256 i; i < _removedValidatorsLength; i++) {
+            validatorsToBeRemoved.push(_removedValidators[i]);
+        }
+    }
+
+    function getValidatorsToBeRemoved() external view returns (address[] memory) {
+        return validatorsToBeRemoved;
     }
 
     /// @dev Converts a bytes32 value to a bytes array.
