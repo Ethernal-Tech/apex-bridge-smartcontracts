@@ -131,4 +131,7 @@ abstract contract IBridge is IBridgeStructs {
         uint8 _chainId,
         uint64 _batchId
     ) external virtual returns (uint8 status, TxDataInfo[] memory txs);
+
+    //TODO
+    function validatorSetUpdated() external virtual;
 }
