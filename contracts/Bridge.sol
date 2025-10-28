@@ -8,8 +8,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridge.sol";
 import "./Utils.sol";
 import "./Claims.sol";
-import "./SpecialClaims.sol";
-import "./SpecialSignedBatches.sol";
 import "./SignedBatches.sol";
 import "./Slots.sol";
 import "./Validators.sol";
@@ -20,8 +18,6 @@ import "./Validators.sol";
 contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
     Claims private claims;
-    SpecialClaims private specialClaims;
-    SpecialSignedBatches private specialSignedBatches;
     SignedBatches private signedBatches;
     Slots private slots;
     Validators private validators;
@@ -65,14 +61,10 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     /// @notice Sets external contract dependencies.
     /// @param _claimsAddress Address of Claims contract.
-    /// @param _specialClaimsAddress Address of SpecialClaims contract.
-    /// @param _signedBatchesAddress Address of SignedBatches contract.
     /// @param _slotsAddress Address of Slots contract.
     /// @param _validatorsAddress Address of Validators contract.
     function setDependencies(
         address _claimsAddress,
-        address _specialClaimsAddress,
-        address _specialSignedBatchesAddress,
         address _signedBatchesAddress,
         address _slotsAddress,
         address _validatorsAddress,
@@ -80,16 +72,12 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     ) external onlyOwner {
         if (
             !_isContract(_claimsAddress) ||
-            !_isContract(_specialClaimsAddress) ||
-            !_isContract(_specialSignedBatchesAddress) ||
             !_isContract(_signedBatchesAddress) ||
             !_isContract(_slotsAddress) ||
             !_isContract(_validatorsAddress) ||
             !_isContract(_bladeStakeManagerAddress)
         ) revert NotContractAddress();
         claims = Claims(_claimsAddress);
-        specialClaims = SpecialClaims(_specialClaimsAddress);
-        specialSignedBatches = SpecialSignedBatches(_specialSignedBatchesAddress);
         signedBatches = SignedBatches(_signedBatchesAddress);
         slots = Slots(_slotsAddress);
         validators = Validators(_validatorsAddress);
@@ -100,15 +88,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @param _claims The claims submitted by a validator.
     function submitClaims(ValidatorClaims calldata _claims) external override onlyValidator {
         claims.submitClaims(_claims, msg.sender);
-    }
-
-    /// @notice Submit claims from validators for updating the validator set.
-    /// @param _claims The claims submitted by a validator.
-    function submitSpecialClaims(ValidatorClaims calldata _claims) external override onlyValidator {
-        if (!validators.newValidatorSetPending()) {
-            revert NoNewValidatorSetPending();
-        }
-        specialClaims.submitSpecialClaims(_claims, msg.sender);
     }
 
     /// @notice Submit a signed transaction batch for the Cardano chain.
@@ -130,27 +109,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             revert InvalidSignature();
         }
         signedBatches.submitSignedBatch(_signedBatch, msg.sender);
-    }
-
-    /// @notice Submit a special signed transaction batch for updating validator set.
-    /// @param _signedBatch The batch of signed transactions.
-    function submitSpecialSignedBatch(SignedBatch calldata _signedBatch) external override onlyValidator {
-        if (!validators.newValidatorSetPending()) {
-            revert NoNewValidatorSetPending();
-        }
-
-        if (
-            !validators.areSignaturesValid(
-                _signedBatch.destinationChainId,
-                _signedBatch.rawTransaction,
-                _signedBatch.signature,
-                _signedBatch.feeSignature,
-                msg.sender
-            )
-        ) {
-            revert InvalidSignature();
-        }
-        specialSignedBatches.submitSpecialSignedBatch(_signedBatch, msg.sender);
     }
 
     /// @notice Submit a signed transaction batch for an EVM-compatible chain.

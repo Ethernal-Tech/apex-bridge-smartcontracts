@@ -57,6 +57,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev chainId -> nonce
     mapping(uint8 => uint64) public lastBatchedTxNonce;
 
+    // @notice Bitmap used to flag that validator set has been confirmed for specific chains.
+    uint8 public bitmap;
+
     /// @notice Maximum number of retries allowed for defund claims.
     uint8 private constant MAX_NUMBER_OF_DEFUND_RETRIES = 3;
     /// @notice Maximum number of claims allowed per submission.
@@ -127,9 +130,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @param _caller Address of the validator submitting the claims.
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
         uint256 bridgingRequestClaimsLength = _claims.bridgingRequestClaims.length;
+        uint256 refundRequestClaimsLength = _claims.refundRequestClaims.length;
         uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
         uint256 batchExecutionFailedClaimsLength = _claims.batchExecutionFailedClaims.length;
-        uint256 refundRequestClaimsLength = _claims.refundRequestClaims.length;
         uint256 hotWalletIncrementClaimsLength = _claims.hotWalletIncrementClaims.length;
 
         uint256 claimsLength = bridgingRequestClaimsLength +
@@ -137,6 +140,16 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             batchExecutionFailedClaimsLength +
             refundRequestClaimsLength +
             hotWalletIncrementClaimsLength;
+
+        if (validators.newValidatorSetPending()) {
+            uint256 notUsedClaims = bridgingRequestClaimsLength +
+                refundRequestClaimsLength +
+                hotWalletIncrementClaimsLength;
+
+            if (notUsedClaims != 0) {
+                revert WrongSpecialClaims();
+            }
+        }
 
         if (claimsLength > MAX_NUMBER_OF_CLAIMS) {
             revert TooManyClaims(claimsLength, MAX_NUMBER_OF_CLAIMS);
@@ -295,8 +308,21 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             claimsHelper.resetCurrentBatchBlock(chainId);
             claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_EXECUTED);
 
-            // do not process included transactions if it is a consolidation
-            if (_confirmedSignedBatch.batchType == BatchTypesLib.CONSOLIDATION) {
+            if (_confirmedSignedBatch.batchType == BatchTypesLib.VALIDATORSET_FINAL) {
+                bitmap |= uint8(1 << chainId);
+
+                if (_countSetBits(bitmap) == Bridge(bridgeAddress).getAllRegisteredChains().length) {
+                    //TODO call stakeManager
+                }
+
+                return;
+            }
+
+            // do not process included transactions if it is a consolidation or validator set update
+            if (
+                _confirmedSignedBatch.batchType == BatchTypesLib.CONSOLIDATION ||
+                _confirmedSignedBatch.batchType == BatchTypesLib.VALIDATORSET
+            ) {
                 return;
             }
 
@@ -337,6 +363,14 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             // current batch block must be reset in any case because otherwise bridge will be blocked
             claimsHelper.resetCurrentBatchBlock(chainId);
             claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.BATCH_FAILED);
+
+            if (
+                _confirmedSignedBatch.batchType == BatchTypesLib.VALIDATORSET ||
+                _confirmedSignedBatch.batchType == BatchTypesLib.VALIDATORSET_FINAL
+            ) {
+                emit SpecialSignedBatchExecutionFailed(chainId, batchId);
+                return;
+            }
 
             // do not process included transactions if it is a consolidation
             if (_confirmedSignedBatch.batchType == BatchTypesLib.CONSOLIDATION) {
@@ -796,6 +830,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     function updateTimeoutBlocksNumber(uint8 _timeoutBlocksNumber) external onlyAdminContract {
         timeoutBlocksNumber = _timeoutBlocksNumber;
+    }
+
+    function _countSetBits(uint256 _bitmap) internal pure returns (uint256 count) {
+        while (_bitmap != 0) {
+            _bitmap &= (_bitmap - 1);
+            count++;
+        }
     }
 
     /// @notice Returns the current version of the contract

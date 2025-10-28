@@ -16,9 +16,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
 
     address private upgradeAdmin;
     address private claimsAddress;
-    address private specialClaimsAddress;
     address private signedBatchesAddress;
-    address private specialSignedBatchesAddress;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
@@ -64,22 +62,9 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
 
     /// @notice Sets external contract dependencies.
     /// @param _claimsAddress Address of the Claims contract.
-    /// @param _signedBatchesAddress Address of the SignedBatches contract.
-    function setDependencies(
-        address _claimsAddress,
-        address _specialClaimsAddress,
-        address _signedBatchesAddress,
-        address _specialSignedBatchesAddress
-    ) external onlyOwner {
-        if (
-            !_isContract(_claimsAddress) ||
-            !_isContract(_signedBatchesAddress) ||
-            !_isContract(_specialSignedBatchesAddress)
-        ) revert NotContractAddress();
+    function setDependencies(address _claimsAddress) external onlyOwner {
+        if (!_isContract(_claimsAddress)) revert NotContractAddress();
         claimsAddress = _claimsAddress;
-        specialClaimsAddress = _specialClaimsAddress;
-        signedBatchesAddress = _signedBatchesAddress;
-        specialSignedBatchesAddress = _specialSignedBatchesAddress;
     }
 
     /// @notice Retrieves confirmed signed batch data.
@@ -113,9 +98,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @notice Stores a confirmed signed batch for a specific destination chain and batch ID.
     /// @dev Updates both `confirmedSignedBatches` and `currentBatchBlock` mappings.
     /// @param _signedBatch The signed batch data containing metadata and transaction nonce range.
-    function setConfirmedSignedBatchData(
-        SignedBatch calldata _signedBatch
-    ) external onlySignedBatchesOrClaimsorSpecialClaims {
+    function setConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
         uint8 destinationChainId = _signedBatch.destinationChainId;
         uint64 signedBatchId = _signedBatch.id;
 
@@ -126,21 +109,6 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
             ConstantsLib.BATCH_IN_PROGRESS // status 1 means "in progress"
         );
         currentBatchBlock[destinationChainId] = int256(block.number);
-    }
-
-    /// @notice Stores a confirmed special signed batch for a specific destination chain and batch ID.
-    /// @dev Updates both `confirmedSignedBatches`
-    /// @param _signedBatch The special signed batch data
-    function setSpecialConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySpecialSignedBatches {
-        uint8 destinationChainId = _signedBatch.destinationChainId;
-        uint64 signedBatchId = _signedBatch.id;
-
-        specialConfirmedSignedBatches[destinationChainId][signedBatchId] = ConfirmedSignedBatchData(
-            _signedBatch.firstTxNonceId,
-            _signedBatch.lastTxNonceId,
-            _signedBatch.batchType,
-            ConstantsLib.BATCH_IN_PROGRESS // status 1 means "in progress"
-        );
     }
 
     /// @notice Update number of votes for specific hash if needed and returns true if update was executed
@@ -170,7 +138,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         uint8 _validatorIdx,
         bytes32 _hash,
         uint256 _quorumCnt
-    ) external onlySignedBatchesOrClaimsorSpecialClaims returns (bool) {
+    ) external onlySignedBatchesOrClaims returns (bool) {
         uint256 _bitmapValue = bitmap[_hash];
         uint256 _bitmapNewValue = _bitmapValue | (1 << _validatorIdx);
         uint256 _votesNum;
@@ -223,28 +191,14 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         return _votesNum;
     }
 
-    /// @notice Sets the specified batch entry to a final status.
-    /// @dev Sets the specified batch entry to a final status.
-    /// @param _chainId The ID of the blockchain where the batch resides.
-    /// @param _batchId The unique identifier of the batch to delete.
-    /// @param _status The new status to set for the batch.
-    function setSpecialConfirmedSignedBatchStatus(
-        uint8 _chainId,
-        uint64 _batchId,
-        uint8 _status
-    ) external onlySpecialClaims {
-        specialConfirmedSignedBatches[_chainId][_batchId].status = _status;
-    }
-
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
         return "1.0.2";
     }
 
-    modifier onlySignedBatchesOrClaimsorSpecialClaims() {
-        if (msg.sender != signedBatchesAddress && msg.sender != claimsAddress && msg.sender != specialClaimsAddress)
-            revert NotSignedBatchesOrClaimsorSpecialClaims();
+    modifier onlySignedBatchesOrClaims() {
+        if (msg.sender != signedBatchesAddress && msg.sender != claimsAddress) revert NotSignedBatchesOrClaims();
         _;
     }
 
@@ -253,18 +207,8 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         _;
     }
 
-    modifier onlySpecialSignedBatches() {
-        if (msg.sender != specialSignedBatchesAddress) revert NotSpecialSignedBatches();
-        _;
-    }
-
     modifier onlyClaims() {
         if (msg.sender != claimsAddress) revert NotClaims();
-        _;
-    }
-
-    modifier onlySpecialClaims() {
-        if (msg.sender != specialClaimsAddress) revert NotSpecialClaims();
         _;
     }
 

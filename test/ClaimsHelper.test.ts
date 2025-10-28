@@ -14,7 +14,7 @@ describe("ClaimsHelper Contract", function () {
     it("Should revert if ClaimsHelper SC resetCurrentBatchBlock is not called by SignedBatches SC or Claims SC", async function () {
       await expect(claimsHelper.connect(owner).setConfirmedSignedBatchData(signedBatch)).to.be.revertedWithCustomError(
         bridge,
-        "NotSignedBatchesOrClaimsorSpecialClaims"
+        "NotSignedBatchesOrClaims"
       );
     });
 

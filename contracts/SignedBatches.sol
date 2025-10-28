@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
+import "./interfaces/BatchTypesLib.sol";
 import "./Utils.sol";
 import "./Bridge.sol";
 import "./ClaimsHelper.sol";
@@ -15,8 +16,6 @@ import "./Validators.sol";
 /// @dev Utilizes OpenZeppelin upgradeable contracts and interacts with ClaimsHelper and Validators for consensus logic.
 contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
-    address private specialClaimsAddress;
-    address private specialSignedBatchesAddress;
     Bridge private bridge;
     ClaimsHelper private claimsHelper;
     Validators private validators;
@@ -57,26 +56,16 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
     /// @notice Sets external contract dependencies.
     /// @param _bridgeAddress Address of the bridge contract.
-    /// @param _specialClaimsAddress Address of the SpecialClaims contract.
     /// @param _claimsHelperAddress Address of the ClaimsHelper contract.
     /// @param _validatorsAddress Address of the Validators contract.
     function setDependencies(
         address _bridgeAddress,
-        address _specialClaimsAddress,
-        address _specialSignedBatchesAddress,
         address _claimsHelperAddress,
         address _validatorsAddress
     ) external onlyOwner {
-        if (
-            !_isContract(_bridgeAddress) ||
-            !_isContract(_specialClaimsAddress) ||
-            !_isContract(_specialSignedBatchesAddress) ||
-            !_isContract(_claimsHelperAddress) ||
-            !_isContract(_validatorsAddress)
-        ) revert NotContractAddress();
+        if (!_isContract(_bridgeAddress) || !_isContract(_claimsHelperAddress) || !_isContract(_validatorsAddress))
+            revert NotContractAddress();
         bridge = Bridge(_bridgeAddress);
-        specialClaimsAddress = _specialClaimsAddress;
-        specialSignedBatchesAddress = _specialSignedBatchesAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         validators = Validators(_validatorsAddress);
     }
@@ -91,6 +80,14 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// - The caller must not have already voted on this batch hash.
     /// - If quorum is reached after this vote, the batch is confirmed and stored, and temporary data is cleared.
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
+        if (
+            validators.newValidatorSetPending() &&
+            (_signedBatch.batchType != BatchTypesLib.VALIDATORSET ||
+                _signedBatch.batchType != BatchTypesLib.VALIDATORSET_FINAL)
+        ) {
+            revert NewValidatorSetPending();
+        }
+
         uint8 _destinationChainId = _signedBatch.destinationChainId;
 
         uint64 _sbId = lastConfirmedBatch[_destinationChainId].id + 1;
@@ -175,10 +172,6 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         return votes[_hash];
     }
 
-    function deleteVotes(bytes32 _hash) external onlySpecialSignedBatches {
-        delete votes[_hash];
-    }
-
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
@@ -187,17 +180,6 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
     modifier onlyBridge() {
         if (msg.sender != address(bridge)) revert NotBridge();
-        _;
-    }
-
-    modifier onlySpecialClaimsOrSpecialSignedBatches() {
-        if (msg.sender != specialClaimsAddress && msg.sender != specialSignedBatchesAddress)
-            revert NotSpecialClaimsOrSpecialSignedBatches();
-        _;
-    }
-
-    modifier onlySpecialSignedBatches() {
-        if (msg.sender != specialSignedBatchesAddress) revert NotSpecialSignedBatches();
         _;
     }
 

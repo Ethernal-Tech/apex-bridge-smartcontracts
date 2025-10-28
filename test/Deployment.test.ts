@@ -81,11 +81,8 @@ describe("Deployment", function () {
 
   it("setDependency should fail if any required argument is not smart contract address", async function () {
     const {
-      admin,
       bridge,
       claims,
-      specialClaims,
-      specialSignedBatches,
       claimsHelper,
       signedBatches,
       slots,
@@ -102,8 +99,6 @@ describe("Deployment", function () {
     await expect(
       bridge.connect(owner).setDependencies(
         validators[0].address,
-        specialClaims.getAddress(),
-        specialSignedBatches.getAddress(),
         signedBatches.getAddress(),
         slots.getAddress(),
         validatorsc.getAddress(),
@@ -122,9 +117,7 @@ describe("Deployment", function () {
         .connect(owner)
         .setDependencies(
           validators[2].address,
-          specialClaims.getAddress(),
           signedBatches.getAddress(),
-          specialSignedBatches.getAddress()
         )
     ).to.be.revertedWithCustomError(claimsHelper, "NotContractAddress");
 
@@ -134,8 +127,6 @@ describe("Deployment", function () {
         .setDependencies(
           validators[3].address,
           claims.getAddress(),
-          specialClaims.getAddress(),
-          specialSignedBatches.getAddress(),
           validatorsc.getAddress()
         )
     ).to.be.revertedWithCustomError(signedBatches, "NotContractAddress");
