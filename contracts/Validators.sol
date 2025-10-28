@@ -30,7 +30,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
 
     /// @notice Mapping of validator address to index
     /// @dev validator address index(+1) in chainData mapping
-    mapping(address => uint8) private addressValidatorIndex;
+    mapping(address => uint8) public addressValidatorIndex;
 
     /// @notice Total number of registered validators
     /// @dev max possible number of validators is 127
