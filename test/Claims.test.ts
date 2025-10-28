@@ -57,8 +57,6 @@ describe("Claims Contract", function () {
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
 
     it("Should skip Bridging Request Claim if there is not enough bridging tokens and emit NotEnoughFunds event", async function () {

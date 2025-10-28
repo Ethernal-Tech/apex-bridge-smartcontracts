@@ -223,7 +223,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint8 _destinationChainId = _claim.destinationChainId;
         uint256 _chainTokenQuantityDestination = chainTokenQuantity[_destinationChainId];
 
-        bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
+        bytes32 _claimHash = keccak256(abi.encode(validators.currentValidatorSetId(), "BRC", _claim));
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
         uint8 _quorumCount = validators.getQuorumNumberOfValidators();
         uint256 _votesCount = claimsHelper.numberOfVotes(_claimHash);
@@ -300,7 +300,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             // current batch block must be reset in any case because otherwise bridge will be blocked
             claimsHelper.resetCurrentBatchBlock(chainId);
             claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.EXECUTED);
-
 
             // do not process included transactions if it is a consolidation or validator set update
             if (_confirmedSignedBatch.batchType != BatchTypesLib.NORMAL) {
@@ -439,7 +438,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         uint8 originChainId = _claim.originChainId;
 
-        bytes32 _claimHash = keccak256(abi.encode("RRC", _claim));
+        bytes32 _claimHash = keccak256(abi.encode(validators.currentValidatorSetId(), "RRC", _claim));
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
         uint8 _quorumCount = validators.getQuorumNumberOfValidators();
         uint256 _votesCount = claimsHelper.numberOfVotes(_claimHash);
@@ -460,18 +459,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         bool _isNewVote = claimsHelper.updateVote(_claimHash, _validatorIdx);
         // check if quorum is reached for the first time
         if (_isNewVote && _votesCount + 1 == _quorumCount) {
-
-        bytes32 claimHash = keccak256(abi.encode(validators.currentValidatorSetId(), "RRC", _claim));
-
-        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
-
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
-            _validatorIdx,
-            claimHash,
-            validators.getQuorumNumberOfValidators()
-        );
-
-        if (_quorumReached) {
             uint256 _confirmedTxCount = getBatchingTxsCount(originChainId);
 
             if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
