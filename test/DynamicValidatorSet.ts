@@ -1,7 +1,7 @@
 import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { deployBridgeFixture } from "./fixtures";
+import { BatchType, deployBridgeFixture } from "./fixtures";
 
 describe("Dynamic Validator Set", function () {
   async function impersonateAsContractAndMintFunds(contractAddress: string) {
@@ -320,7 +320,7 @@ describe("Dynamic Validator Set", function () {
 
       expect(lastConfirmedSignedBatchData.firstTxNonceId).to.equal(0);
       expect(lastConfirmedSignedBatchData.lastTxNonceId).to.equal(0);
-      expect(lastConfirmedSignedBatchData.batchType).to.equal(0);
+      expect(lastConfirmedSignedBatchData.batchType).to.equal(BatchType.NORMAL);
       expect(lastConfirmedSignedBatchData.status).to.equal(0);
 
       const confBatch = await signedBatches.getConfirmedBatch(signedBatch_ValidatorSet.destinationChainId);
@@ -329,7 +329,7 @@ describe("Dynamic Validator Set", function () {
       expect(confBatch.feeSignatures.length).to.equal(0);
       expect(confBatch.bitmap).to.equal(0);
       expect(confBatch.rawTransaction).to.equal("0x");
-      expect(confBatch.batchType).to.equal(0);
+      expect(confBatch.batchType).to.equal(BatchType.NORMAL);
       expect(confBatch.id).to.equal(0);
     });
 
@@ -374,7 +374,7 @@ describe("Dynamic Validator Set", function () {
 
       expect(lastConfirmedSignedBatchData.firstTxNonceId).to.equal(2n ** 64n - 1n);
       expect(lastConfirmedSignedBatchData.lastTxNonceId).to.equal(2n ** 64n - 1n);
-      expect(lastConfirmedSignedBatchData.batchType).to.equal(2);
+      expect(lastConfirmedSignedBatchData.batchType).to.equal(BatchType.VALIDATORSET);
       expect(lastConfirmedSignedBatchData.status).to.equal(1);
 
       const confBatch = await signedBatches.getConfirmedBatch(signedBatch_ValidatorSet.destinationChainId);

@@ -392,10 +392,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                     _currentAmount += _ctx.totalAmount;
                 } else if (_txType == TransactionTypesLib.DEFUND) {
                     if (_ctx.retryCounter < MAX_NUMBER_OF_RETRIES) {
-                        uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
-                        confirmedTransactions[chainId][nextNonce] = _ctx;
-                        confirmedTransactions[chainId][nextNonce].nonce = nextNonce;
-                        confirmedTransactions[chainId][nextNonce].retryCounter++;
+                        _retryTx(chainId, _ctx);
                     } else {
                         _currentAmount += _ctx.totalAmount;
                         emit DefundFailedAfterMultipleRetries();
@@ -407,6 +404,17 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             lastBatchedTxNonce[chainId] = _lastTxNonce;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
         }
+    }
+
+    /// @notice Retries a previously confirmed transaction by assigning it a new nonce.
+    /// @dev Increments the chain's last confirmed transaction nonce and stores the retried transaction with an updated retry counter.
+    /// @param chainId The ID of the chain for which the transaction is being retried.
+    /// @param _ctx The confirmed transaction to retry.
+    function _retryTx(uint8 chainId, ConfirmedTransaction storage _ctx) internal {
+        uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
+        confirmedTransactions[chainId][nextNonce] = _ctx;
+        confirmedTransactions[chainId][nextNonce].nonce = nextNonce;
+        confirmedTransactions[chainId][nextNonce].retryCounter++;
     }
 
     /// @notice Submits a Batch Execution Failed Claim (BEFC) for processing.

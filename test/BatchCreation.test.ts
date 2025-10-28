@@ -1,7 +1,7 @@
 import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { deployBridgeFixture } from "./fixtures";
+import { BatchType, deployBridgeFixture } from "./fixtures";
 
 describe("Batch Creation", function () {
   describe("Batch creation", function () {
@@ -57,14 +57,14 @@ describe("Batch Creation", function () {
 
     it("If SignedBatch submition id is not expected submittion should be skipped", async function () {
       const encoded = ethers.solidityPacked(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
+        ["uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
         [
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
-          false,
+          BatchType.NORMAL,
         ]
       );
 
@@ -80,14 +80,14 @@ describe("Batch Creation", function () {
       signedBatch.id = 1000; //invalid id
 
       const encodedFalse = ethers.solidityPacked(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
+        ["uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
         [
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
-          false,
+          BatchType.NORMAL,
         ]
       );
 
@@ -102,14 +102,14 @@ describe("Batch Creation", function () {
 
     it("SignedBatch submition should do nothing if shouldCreateBatch is false", async function () {
       const hash = ethers.solidityPackedKeccak256(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
+        ["uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
         [
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
-          false,
+          BatchType.NORMAL,
         ]
       );
 
@@ -342,14 +342,14 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
 
       const encoded = ethers.solidityPacked(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
+        ["uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
         [
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
-          false,
+          BatchType.NORMAL,
         ]
       );
 
