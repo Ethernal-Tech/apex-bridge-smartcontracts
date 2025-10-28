@@ -80,8 +80,19 @@ describe("Deployment", function () {
 //   });
 
   it("setDependency should fail if any required argument is not smart contract address", async function () {
-    const { admin, bridge, claims, specialClaims, claimsHelper, signedBatches, slots, validatorsc, owner, validators } =
-      await loadFixture(deployBridgeFixture);
+    const {
+      admin,
+      bridge,
+      claims,
+      specialClaims,
+      specialSignedBatches,
+      claimsHelper,
+      signedBatches,
+      slots,
+      validatorsc,
+      owner,
+      validators,
+    } = await loadFixture(deployBridgeFixture);
 
 //     await expect(admin.connect(owner).setDependencies(ZeroAddress)).to.be.revertedWithCustomError(
 //       admin,
@@ -94,6 +105,7 @@ describe("Deployment", function () {
         .setDependencies(
           validators[0].address,
           specialClaims.getAddress(),
+          specialSignedBatches.getAddress(),
           signedBatches.getAddress(),
           slots.getAddress(),
           validatorsc.getAddress()

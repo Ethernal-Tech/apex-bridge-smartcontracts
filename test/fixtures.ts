@@ -3,6 +3,7 @@ import {
   Bridge,
   Claims,
   SpecialClaims,
+  SpecialSignedBatches,
   ClaimsHelper,
   SignedBatches,
   Slots,
@@ -37,6 +38,9 @@ export async function deployBridgeFixture() {
   const SpecialClaims = await ethers.getContractFactory("SpecialClaims");
   const specialClaimsLogic = await SpecialClaims.deploy();
 
+  const SpecialSignedBatches = await ethers.getContractFactory("SpecialSignedBatches");
+  const specialSignedBatchesLogic = await SpecialSignedBatches.deploy();
+
   const SignedBatches = await ethers.getContractFactory("SignedBatches");
   const signedBatchesLogic = await SignedBatches.deploy();
 
@@ -54,6 +58,7 @@ export async function deployBridgeFixture() {
   const ClaimsHelperProxy = await ethers.getContractFactory("ERC1967Proxy");
   const ClaimsProxy = await ethers.getContractFactory("ERC1967Proxy");
   const SpecialClaimsProxy = await ethers.getContractFactory("ERC1967Proxy");
+  const SpecialSignedBatchesProxy = await ethers.getContractFactory("ERC1967Proxy");
   const SignedBatchesProxy = await ethers.getContractFactory("ERC1967Proxy");
   const SlotsProxy = await ethers.getContractFactory("ERC1967Proxy");
   const ValidatorscProxy = await ethers.getContractFactory("ERC1967Proxy");
@@ -72,6 +77,11 @@ export async function deployBridgeFixture() {
   const specialClaimsProxy = await SpecialClaimsProxy.deploy(
     await specialClaimsLogic.getAddress(),
     SpecialClaims.interface.encodeFunctionData("initialize", [owner.address, owner.address])
+  );
+
+  const specialSignedBatchesProxy = await SpecialSignedBatchesProxy.deploy(
+    await specialSignedBatchesLogic.getAddress(),
+    SpecialSignedBatches.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
   const claimsHelperProxy = await ClaimsHelperProxy.deploy(
@@ -117,6 +127,11 @@ export async function deployBridgeFixture() {
   const SpecialClaimsDeployed = await ethers.getContractFactory("SpecialClaims");
   const specialClaims = SpecialClaimsDeployed.attach(specialClaimsProxy.target) as SpecialClaims;
 
+  const SpecialSignedBatchesDeployed = await ethers.getContractFactory("SpecialSignedBatches");
+  const specialSignedBatches = SpecialSignedBatchesDeployed.attach(
+    specialSignedBatchesProxy.target
+  ) as SpecialSignedBatches;
+
   const ClaimsHelperDeployed = await ethers.getContractFactory("ClaimsHelper");
   const claimsHelper = ClaimsHelperDeployed.attach(claimsHelperProxy.target) as ClaimsHelper;
 
@@ -135,6 +150,7 @@ export async function deployBridgeFixture() {
   await bridge.setDependencies(
     claimsProxy.target,
     specialClaimsProxy.target,
+    specialSignedBatchesProxy.target,
     signedBatchesProxy.target,
     slotsProxy.target,
     validatorsProxy.target
@@ -144,13 +160,9 @@ export async function deployBridgeFixture() {
 
   await claims.setDependencies(bridge.target, claimsHelper.target, validatorsc.target, admin.target);
 
-  await specialClaims.setDependencies(
-    bridge.target,
-    claims.target,
-    claimsHelper.target,
-    signedBatches.target,
-    validatorsc.target
-  );
+  await specialClaims.setDependencies(bridge.target, claims.target, claimsHelper.target, validatorsc.target);
+
+  await specialClaims.setDependencies(bridge.target, signedBatches.target, claimsHelper.target, validatorsc.target);
 
   await signedBatches.setDependencies(bridge.target, specialClaims.target, claimsHelper.target, validatorsc);
 
@@ -480,6 +492,7 @@ export async function deployBridgeFixture() {
     claimsHelper,
     claims,
     specialClaims,
+    specialSignedBatches,
     signedBatches,
     slots,
     admin,
