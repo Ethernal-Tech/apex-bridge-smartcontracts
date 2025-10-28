@@ -33,13 +33,13 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Should revert if there is no new data set for all registered chains", async function () {
-      const { bridge, owner, chain1, chain2, newValidatorSetDelta_notEnoughChains, validatorAddressChainData } =
+      const { bridge, owner, chain1, chain2, newValidatorSetDelta_NotEnoughChains, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta_notEnoughChains))
+      await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta_NotEnoughChains))
         .to.be.revertedWithCustomError(bridge, "InvalidData")
         .withArgs("WrongNumberOfChains");
     });
@@ -98,6 +98,25 @@ describe("Dynamic Validator Set", function () {
       await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta_DoubleAddress))
         .to.be.revertedWithCustomError(bridge, "InvalidData")
         .withArgs("DuplicatedValidator");
+    });
+
+    it("Should revert there is no new validator set for registered chain", async function () {
+      const {
+        bridge,
+        validatorsc,
+        owner,
+        chain1,
+        chain2,
+        newValidatorSetDelta_MissingChainIDs,
+        validatorAddressChainData,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta_MissingChainIDs))
+        .to.be.revertedWithCustomError(bridge, "InvalidData")
+        .withArgs("ChainIdMismatch");
     });
 
     it("Should store proposed newValidatorSetDelta", async function () {

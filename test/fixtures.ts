@@ -502,6 +502,24 @@ export async function deployBridgeFixture() {
     };
   });
 
+  const validatorSets_MissingChainIDs = Array.from({ length: 2 }, (_, i) => {
+    const chainId = i + 100;
+    return {
+      chainId,
+      validators: Array.from({ length: 5 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: `0x${addrNum}`,
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
   const newValidatorSetDelta = {
     addedValidators: validatorSets,
     removedValidators: [validator4.address, validator5.address],
@@ -532,8 +550,13 @@ export async function deployBridgeFixture() {
     removedValidators: [validator4.address, validator5.address],
   };
 
-  const newValidatorSetDelta_notEnoughChains = {
+  const newValidatorSetDelta_NotEnoughChains = {
     addedValidators: validatorSets_notEnoughChains,
+    removedValidators: [validator4.address, validator5.address],
+  };
+
+  const newValidatorSetDelta_MissingChainIDs = {
+    addedValidators: validatorSets_MissingChainIDs,
     removedValidators: [validator4.address, validator5.address],
   };
 
@@ -580,7 +603,8 @@ export async function deployBridgeFixture() {
     newValidatorSetDelta_TooManyValidators,
     newValidatorSetDelta_NotEnoughValidators,
     newValidatorSetDelta_TooManyChains,
-    newValidatorSetDelta_notEnoughChains,
+    newValidatorSetDelta_NotEnoughChains,
+    newValidatorSetDelta_MissingChainIDs,
   };
 }
 
