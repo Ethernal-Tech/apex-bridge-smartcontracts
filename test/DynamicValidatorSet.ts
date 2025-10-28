@@ -20,16 +20,25 @@ describe("Dynamic Validator Set", function () {
     return signer;
   }
   describe("Submit new validator set", function () {
+    it("Should revert if not called by the System", async function () {
+      const { bridge, owner, newValidatorSetDelta } = await loadFixture(deployBridgeFixture);
+
+      await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta)).to.be.revertedWithCustomError(
+        bridge,
+        "NotSystem"
+      );
+    });
     it("Should revert if there is already a new validator set pending", async function () {
-      const { bridge, owner, validatorsc, newValidatorSetDelta } = await loadFixture(deployBridgeFixture);
+      const { bridge, validatorsc, newValidatorSetDelta } = await loadFixture(deployBridgeFixture);
 
       const bridgeContract = await impersonateAsContractAndMintFunds(await bridge.getAddress());
       await validatorsc.connect(bridgeContract).setNewValidatorSetPending(true);
 
-      await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta)).to.be.revertedWithCustomError(
-        bridge,
-        "NewValidatorSetPending"
-      );
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await expect(
+        bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta)
+      ).to.be.revertedWithCustomError(bridge, "NewValidatorSetPending");
     });
 
     it("Should revert if there is no new data set for all registered chains", async function () {
@@ -39,15 +48,19 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta_NotEnoughChains))
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await expect(bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta_NotEnoughChains))
         .to.be.revertedWithCustomError(bridge, "InvalidData")
         .withArgs("WrongNumberOfChains");
     });
 
     it("Should revert if there is too many data sets compared to registered chains", async function () {
-      const { bridge, owner, newValidatorSetDelta_TooManyChains } = await loadFixture(deployBridgeFixture);
+      const { bridge, newValidatorSetDelta_TooManyChains } = await loadFixture(deployBridgeFixture);
 
-      await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta_TooManyChains))
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await expect(bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta_TooManyChains))
         .to.be.revertedWithCustomError(bridge, "InvalidData")
         .withArgs("WrongNumberOfChains");
     });
@@ -59,7 +72,9 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta_NotEnoughValidators))
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await expect(bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta_NotEnoughValidators))
         .to.be.revertedWithCustomError(bridge, "InvalidData")
         .withArgs("WrongNumberOfValidators");
     });
@@ -71,7 +86,9 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta_TooManyValidators))
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await expect(bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta_TooManyValidators))
         .to.be.revertedWithCustomError(bridge, "InvalidData")
         .withArgs("WrongNumberOfValidators");
     });
@@ -83,8 +100,10 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
       await expect(
-        bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta_ZeroAddress)
+        bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta_ZeroAddress)
       ).to.be.revertedWithCustomError(bridge, "ZeroAddress");
     });
 
@@ -95,26 +114,23 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta_DoubleAddress))
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await expect(bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta_DoubleAddress))
         .to.be.revertedWithCustomError(bridge, "InvalidData")
         .withArgs("DuplicatedValidator");
     });
 
     it("Should revert there is no new validator set for registered chain", async function () {
-      const {
-        bridge,
-        validatorsc,
-        owner,
-        chain1,
-        chain2,
-        newValidatorSetDelta_MissingChainIDs,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
+      const { bridge, owner, chain1, chain2, newValidatorSetDelta_MissingChainIDs, validatorAddressChainData } =
+        await loadFixture(deployBridgeFixture);
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta_MissingChainIDs))
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await expect(bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta_MissingChainIDs))
         .to.be.revertedWithCustomError(bridge, "InvalidData")
         .withArgs("ChainIdMismatch");
     });
@@ -126,7 +142,9 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
 
       expect((await validatorsc.getNewValidatorSetDelta()).addedValidators.length).to.be.equal(
         newValidatorSetDelta.addedValidators.length
@@ -172,7 +190,9 @@ describe("Dynamic Validator Set", function () {
 
       expect(await validatorsc.newValidatorSetPending()).to.be.false;
 
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
 
       expect(await validatorsc.newValidatorSetPending()).to.be.true;
     });
@@ -185,7 +205,9 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await expect(bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta)).to.emit(
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await expect(bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta)).to.emit(
         bridge,
         "newValidatorSetSubmitted"
       );
@@ -237,7 +259,9 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
 
       await setCode("0x0000000000000000000000000000000000002050", "0x60206000F3"); // should return false for precompile
       await expect(
@@ -322,7 +346,9 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSet);
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSet);
@@ -376,7 +402,9 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSet);
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSet);
@@ -431,7 +459,9 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
 
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
         bridge,
@@ -465,7 +495,9 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSet);
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSet);
@@ -516,7 +548,9 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSetFinal);
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSetFinal);
@@ -568,7 +602,9 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSet);
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSet);
@@ -586,6 +622,19 @@ describe("Dynamic Validator Set", function () {
     });
   });
   describe("New validator set confirmed on Blade", function () {
+    it("Should revert if validatorSetUpdated is not called by the System", async function () {
+      const { bridge, owner, chain1, chain2, newValidatorSetDelta, validatorAddressChainData } = await loadFixture(
+        deployBridgeFixture
+      );
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
+
+      await expect(bridge.connect(owner).validatorSetUpdated()).to.be.revertedWithCustomError(bridge, "NotSystem");
+    });
     it("Validator set should be updated", async function () {
       const {
         bridge,
@@ -600,7 +649,9 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
 
       // current validators
       for (let i = 0; i < validators.length; i++) {
@@ -620,7 +671,7 @@ describe("Dynamic Validator Set", function () {
       // old number of validators addresses
       expect((await validatorsc.getValidatorsAddresses()).length).to.equal(validators.length);
 
-      await bridge.validatorSetUpdated();
+      await bridge.connect(systemSigner).validatorSetUpdated();
 
       // old validators should be removed
       for (let i = 0; i < newValidatorSetDelta.removedValidators.length; i++) {
@@ -728,11 +779,13 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
 
       expect((await validatorsc.getNewValidatorSetDelta()).addedValidators.length).to.equal(2);
       expect((await validatorsc.getNewValidatorSetDelta()).removedValidators.length).to.equal(2);
-      await bridge.validatorSetUpdated();
+      await bridge.connect(systemSigner).validatorSetUpdated();
       await expect(bridge.getNewValidatorSetDelta()).to.be.revertedWithCustomError(bridge, "NoNewValidatorSetPending");
     });
 
@@ -743,10 +796,12 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
-      await bridge.connect(owner).submitNewValidatorSet(newValidatorSetDelta);
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
 
       expect(await validatorsc.newValidatorSetPending()).to.equal(true);
-      await bridge.validatorSetUpdated();
+      await bridge.connect(systemSigner).validatorSetUpdated();
       expect(await validatorsc.newValidatorSetPending()).to.equal(false);
     });
   });

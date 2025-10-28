@@ -159,7 +159,6 @@ describe("Deployment", function () {
     initData = Bridge.interface.encodeFunctionData("initialize", [
       ZERO_ADDRESS, // owner address
       ZERO_ADDRESS, // upgrade admin address
-      true,
     ]);
     // Deploy proxy with initialization
     await expect(BridgeProxy.deploy(await BridgeLogic.getAddress(), initData)).to.be.revertedWithCustomError(

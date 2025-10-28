@@ -28,9 +28,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Max number of blocks that can be submitted at once.
     uint8 constant MAX_NUMBER_OF_BLOCKS = 40;
 
-    /// @notice Flaging contracts for test mode
-    bool private testMode;
-
     /// @notice system address to limit access to certain functions
     address public constant SYSTEM = 0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE;
 
@@ -47,14 +44,13 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Initializes the contract.
     /// @param _owner Owner of the contract.
     /// @param _upgradeAdmin Admin address authorized to upgrade the contract.
-    function initialize(address _owner, address _upgradeAdmin, bool _testMode) public initializer {
+    function initialize(address _owner, address _upgradeAdmin) public initializer {
         __Ownable_init();
         __UUPSUpgradeable_init();
         _transferOwnership(_owner);
         if (_owner == address(0)) revert ZeroAddress();
         if (_upgradeAdmin == address(0)) revert ZeroAddress();
         upgradeAdmin = _upgradeAdmin;
-        testMode = _testMode;
     }
 
     /// @notice Authorizes a new implementation for upgrade
@@ -447,9 +443,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     }
 
     modifier onlySystem() {
-        if (!testMode) {
-            if (msg.sender != SYSTEM) revert NotSystem();
-        }
+        if (msg.sender != SYSTEM) revert NotSystem();
         _;
     }
 }

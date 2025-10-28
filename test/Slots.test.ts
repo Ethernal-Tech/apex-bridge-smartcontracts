@@ -1,9 +1,57 @@
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { deployBridgeFixture } from "./fixtures";
+import { ethers, network } from "hardhat";
 
 describe("Slots Contract", function () {
+  async function impersonateAsContractAndMintFunds(contractAddress: string) {
+    const hre = require("hardhat");
+    const address = await contractAddress.toLowerCase();
+    // impersonate as an contract on specified address
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [address],
+    });
+
+    const signer = await ethers.getSigner(address);
+    // minting 100000000000000000000 tokens to signer
+    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+
+    return signer;
+  }
   describe("Slot management", function () {
+    it("Should revert if chain is not registered", async function () {
+      const { bridge, validators, cardanoBlocks } = await loadFixture(deployBridgeFixture);
+
+      await expect(
+        bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks)
+      ).to.be.revertedWithCustomError(bridge, "ChainIsNotRegistered");
+    });
+
+    it("Should revert if there is new validator set pending", async function () {
+      const {
+        bridge,
+        validators,
+        cardanoBlocks,
+        owner,
+        chain1,
+        chain2,
+        validatorAddressChainData,
+        newValidatorSetDelta,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
+
+      await expect(
+        bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks)
+      ).to.be.revertedWithCustomError(bridge, "NewValidatorSetPending");
+    });
+
     it("Should revert if there are too many blocks", async function () {
       const cardanoBlocksTooManyBlocks = Array.from({ length: 41 }, (_, i) => ({
         blockSlot: i + 1,
