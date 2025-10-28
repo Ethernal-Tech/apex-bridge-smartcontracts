@@ -121,6 +121,7 @@ describe("Admin Functions", function () {
         .to.emit(admin, "ChainDefunded")
         .withArgs(1, 1);
     });
+
     it("Should add confirmedTransactioin when defund is exdcuted", async function () {
       await admin.setFundAdmin(validators[0].address);
 
@@ -132,6 +133,7 @@ describe("Admin Functions", function () {
 
       expect(await claims.lastConfirmedTxNonce(chain1.id)).to.equal(2);
     });
+
     it("Should set correct confirmedTransaction when defund is excuted", async function () {
       await admin.setFundAdmin(validators[0].address);
 
@@ -147,6 +149,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(30);
     });
+
     it("Should set correct confirmedTransaction when defund fails", async function () {
       const signedBatchDefund = structuredClone(signedBatch);
       signedBatchDefund.lastTxNonceId = 2;
@@ -197,6 +200,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(35);
     });
+
     it("Should reject defund after maximum number of retries", async function () {
       await admin.setFundAdmin(validators[0].address);
 
@@ -254,27 +258,32 @@ describe("Admin Functions", function () {
         "Ownable: caller is not the owner"
       );
     });
+
     it("Calling updateMaxNumberOfTransactions should update maxNumberOfTransactions", async function () {
       await admin.connect(owner).updateMaxNumberOfTransactions(4);
 
       expect(await claims.maxNumberOfTransactions()).to.equal(4);
     });
+
     it("Calling updateMaxNumberOfTransactions should triger UpdatedMaxNumberOfTransactions event", async function () {
       await expect(admin.connect(owner).updateMaxNumberOfTransactions(4)).to.emit(
         admin,
         "UpdatedMaxNumberOfTransactions"
       );
     });
+
     it("Calling timeoutBlocksNumber should revert if not called by owner", async function () {
       await expect(admin.connect(validators[0]).updateTimeoutBlocksNumber(1)).to.be.revertedWith(
         "Ownable: caller is not the owner"
       );
     });
+
     it("Calling timeoutBlocksNumber should update timeoutBlocksNumber", async function () {
       await admin.connect(owner).updateTimeoutBlocksNumber(4);
 
       expect(await claims.timeoutBlocksNumber()).to.equal(4);
     });
+
     it("Calling timeoutBlocksNumber should triger UpdatgedTimeoutBlocksNumber event", async function () {
       await expect(admin.connect(owner).updateTimeoutBlocksNumber(4)).to.emit(admin, "UpdatedTimeoutBlocksNumber");
     });

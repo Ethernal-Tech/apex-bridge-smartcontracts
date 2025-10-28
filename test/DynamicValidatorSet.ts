@@ -179,6 +179,7 @@ describe("Dynamic Validator Set", function () {
 
       expect(await validatorsc.newValidatorSetPending()).to.be.true;
     });
+
     it("Should emit newValidatorSetSubmitted when new ValidatorSet is submitted", async function () {
       const { bridge, owner, validators, chain1, chain2, validatorSets, validatorAddressChainData } = await loadFixture(
         deployBridgeFixture
@@ -423,6 +424,7 @@ describe("Dynamic Validator Set", function () {
         "WrongSpecialClaims"
       );
     });
+
     it("Should revert if there are more than 32 claims in the array", async function () {
       const {
         bridge,
@@ -444,6 +446,7 @@ describe("Dynamic Validator Set", function () {
         bridge.connect(validators[1]).submitClaims(validatorClaimsBEC_bunch33)
       ).to.be.revertedWithCustomError(bridge, "TooManyClaims");
     });
+
     it("Should skip if there are wrong first and lastTxNonceId", async function () {
       const {
         bridge,
@@ -490,6 +493,7 @@ describe("Dynamic Validator Set", function () {
 
       expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
     });
+
     it("Should skip if Batch Executed Claims is already confirmed", async function () {
       const {
         bridge,
@@ -543,6 +547,7 @@ describe("Dynamic Validator Set", function () {
 
       expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
     });
+
     it("Should skip if validator submits the same claim twice", async function () {
       const {
         bridge,
@@ -593,6 +598,7 @@ describe("Dynamic Validator Set", function () {
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
+
     it("Should skip if there is already a quorum for SBEFC for the same batch", async function () {
       const {
         bridge,
@@ -678,6 +684,7 @@ describe("Dynamic Validator Set", function () {
       // Second claim should now be confirmed
       expect(await claimsHelper.numberOfVotes(hashBEC)).to.equal(3);
     });
+
     it("Should skip if there is already a quorum for another BEC for the same batch", async function () {
       const {
         bridge,
@@ -815,6 +822,7 @@ describe("Dynamic Validator Set", function () {
         ).status
       ).to.equal(2);
     });
+
     it("Should emit ValidatorSetUpdateReady if there is quorum on final batch in SBEC for all registered chains", async function () {
       const {
         bridge,
@@ -887,6 +895,7 @@ describe("Dynamic Validator Set", function () {
         "ValidatorSetUpdateReady"
       );
     });
+
     it("Should NOT set bitmap to +1 if there is quorum on non-final batch in SBEC", async function () {
       const {
         bridge,
@@ -939,6 +948,7 @@ describe("Dynamic Validator Set", function () {
 
       expect(count).to.equal(0);
     });
+
     it("Should set bitmap to +1 if there is quorum on final batch in SBEC", async function () {
       const {
         bridge,
@@ -1044,6 +1054,7 @@ describe("Dynamic Validator Set", function () {
 
       expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
     });
+
     it("Should skip if Batch Executed Claims is already confirmed", async function () {
       const {
         bridge,
@@ -1097,6 +1108,7 @@ describe("Dynamic Validator Set", function () {
 
       expect(await claimsHelper.hasVoted(hash, validators[4].address)).to.be.false;
     });
+
     it("Should skip if validator submits the same claim twice", async function () {
       const {
         bridge,
@@ -1147,6 +1159,7 @@ describe("Dynamic Validator Set", function () {
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
+
     it("Should skip if there is already a quorum for SBEC for the same batch", async function () {
       const {
         bridge,
@@ -1232,6 +1245,7 @@ describe("Dynamic Validator Set", function () {
       // Second claim should now be confirmed
       expect(await claimsHelper.numberOfVotes(hashBEFC)).to.equal(3);
     });
+
     it("Should skip if there is already a quorum for another BEFC for the same batch", async function () {
       const {
         bridge,
@@ -1369,6 +1383,7 @@ describe("Dynamic Validator Set", function () {
         ).status
       ).to.equal(3);
     });
+
     it("Should emit SpecialSignedBatchExecutionFailed if there is quorum on SBEFC", async function () {
       const {
         bridge,
@@ -1401,6 +1416,56 @@ describe("Dynamic Validator Set", function () {
         specialClaims,
         "SpecialSignedBatchExecutionFailed"
       );
+    });
+  });
+  describe("New validator set confirmed on Blade", function () {
+    it("Validator set should be updated", async function () {
+      // const { bridge, validatorsc, owner, validators, chain1, chain2, validatorSets, validatorAddressChainData } =
+      //   await loadFixture(deployBridgeFixture);
+      // await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      // await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+      // await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+      // expect((await validatorsc.getValidatorsToBeRemoved()).length).to.equal(5);
+      // await bridge.validatorSetUpdated();
+      // expect((await validatorsc.getValidatorsToBeRemoved()).length).to.equal(0);
+    });
+
+    it("Data about validaters to be removed should be deleted", async function () {
+      const { bridge, validatorsc, owner, validators, chain1, chain2, validatorSets, validatorAddressChainData } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+
+      expect((await validatorsc.getValidatorsToBeRemoved()).length).to.equal(5);
+      await bridge.validatorSetUpdated();
+      expect((await validatorsc.getValidatorsToBeRemoved()).length).to.equal(0);
+    });
+
+    it("Bridge should be unlocked", async function () {
+      const {
+        bridge,
+        validatorsc,
+        owner,
+        validators,
+        chain1,
+        chain2,
+        validatorSets,
+        validatorAddressChainData,
+        validatorClaimsBRC,
+      } = await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      await bridge.connect(owner).submitNewValidatorSet(validatorSets, validators);
+
+      expect(await validatorsc.newValidatorSetPending()).to.equal(true);
+      await bridge.validatorSetUpdated();
+      expect(await validatorsc.newValidatorSetPending()).to.equal(false);
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
     });
   });
 });

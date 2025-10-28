@@ -36,6 +36,7 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
       expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
     });
+
     it("Should skip if same validator submits the same Bridging Request Claim twice", async function () {
       const hash = hashBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
 
@@ -44,6 +45,7 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
+
     it("Should skip Bridging Request Claim if there is not enough bridging tokens and emit NotEnoughFunds event", async function () {
       const tokensAvailable = await claims.chainTokenQuantity(chain2.id);
       const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
@@ -566,6 +568,7 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
+
     it("Should NOT increment totalQuantity if there is still no consensus on Hot Wallet Increment Claim", async function () {
       expect(await claims.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(100);
 
@@ -575,6 +578,7 @@ describe("Claims Contract", function () {
 
       expect(await claims.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(100);
     });
+
     it("Should increment totalQuantity if there is consensus on Hot Wallet Increment Claim", async function () {
       expect(await claims.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(100);
 
@@ -592,9 +596,11 @@ describe("Claims Contract", function () {
     it("Should revert if Claims SC resetCurrentBatchBlock is not called by Bridge SC", async function () {
       await expect(claims.connect(owner).resetCurrentBatchBlock(1)).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
+
     it("Should revert if Claims SC setChainRegistered is not called by Bridge SC", async function () {
       await expect(claims.connect(owner).setChainRegistered(1, 100)).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
+
     it("Should revert if Claims SC setNextTimeoutBlock is not called by Bridge SC", async function () {
       await expect(claims.connect(owner).setNextTimeoutBlock(1, 100)).to.be.revertedWithCustomError(
         bridge,
@@ -612,12 +618,14 @@ describe("Claims Contract", function () {
           )
       ).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
+
     it("Should revert claim submition in Claims SC if not called by bridge SC", async function () {
       await expect(claims.connect(owner).submitClaims(validatorClaimsBRC, owner.address)).to.be.revertedWithCustomError(
         bridge,
         "NotBridge"
       );
     });
+
     it("getBatchTransactions should return txs from batch", async function () {
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
