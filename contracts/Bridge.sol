@@ -13,7 +13,8 @@ import "./Slots.sol";
 import "./Validators.sol";
 
 /// @title Bridge
-/// @notice Cross-chain bridge for validator claim submission, batch transaction signing, and governance-based chain registration.
+/// @notice Cross-chain bridge for validator claim submission, 
+/// batch transaction signing, and governance-based chain registration.
 /// @dev UUPS upgradeable and modular via dependency contracts (Claims, Validators, Slots, SignedBatches).
 contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
@@ -21,6 +22,12 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     SignedBatches private signedBatches;
     Slots private slots;
     Validators private validators;
+
+    /// @dev Address of StakeManger contract
+    address constant STAKE_MANAGER_ADDRESS = 0x0000000000000000000000000000000000010022;
+
+    /// @notice Bitmap used to flag that validator set has been confirmed for specific chains.
+    uint8 public newValidatorSetBitmap;
 
     /// @notice Array of registered chains.
     Chain[] private chains;
@@ -85,6 +92,37 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         claims.submitClaims(_claims, msg.sender);
     }
 
+    function _countSetBits(uint256 _newValidatorSetBitmap) internal pure returns (uint256 count) {
+        while (_newValidatorSetBitmap != 0) {
+            _newValidatorSetBitmap &= (_newValidatorSetBitmap - 1);
+            count++;
+        }
+    }
+
+    function _updateOnStakeManagerIfAllChainsConfirmed(SignedBatch calldata _signedBatch) internal {
+        if (_signedBatch.batchType == BatchTypesLib.VALIDATORSET_FINAL) {
+            newValidatorSetBitmap |= uint8(1 << _signedBatch.destinationChainId);
+
+            if (_countSetBits(newValidatorSetBitmap) == chains.length) {
+                (bool success, ) = address(STAKE_MANAGER_ADDRESS).call(
+                    abi.encodeWithSignature(
+                        "updateValidatorSet(((uint8,(address,uint256[4],bytes,bytes)[])[],address[]))",
+                        validators.getNewValidatorSetDelta()
+                    )
+                );
+
+                if (!success) {
+                    revert StakeManagerUpdateFailed();
+                }
+
+                // restart new validator set bitmap
+                newValidatorSetBitmap = 0;
+            }
+
+            return;
+        }
+    }
+
     /// @notice Submit a signed transaction batch for the Cardano chain.
     /// @param _signedBatch The batch of signed transactions.
     function submitSignedBatch(SignedBatch calldata _signedBatch) external override onlyValidator {
@@ -114,11 +152,13 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
                 _signedBatch.signature,
                 _signedBatch.feeSignature,
                 msg.sender
-            )
+            ) && _signedBatch.batchType != BatchTypesLib.VALIDATORSET_FINAL
         ) {
             revert InvalidSignature();
         }
         signedBatches.submitSignedBatch(_signedBatch, msg.sender);
+
+        _updateOnStakeManagerIfAllChainsConfirmed(_signedBatch);
     }
 
     /// @notice Submit a signed transaction batch for an EVM-compatible chain.
@@ -147,6 +187,8 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             revert InvalidSignature();
         }
         signedBatches.submitSignedBatch(_signedBatch, msg.sender);
+
+        _updateOnStakeManagerIfAllChainsConfirmed(_signedBatch);
     }
 
     /// @notice Submit new validator set data

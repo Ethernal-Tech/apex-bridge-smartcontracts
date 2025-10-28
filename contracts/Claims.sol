@@ -53,17 +53,12 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev chainId -> nonce
     mapping(uint8 => uint64) public lastBatchedTxNonce;
 
-    // @notice Bitmap used to flag that validator set has been confirmed for specific chains.
-    uint8 public newValidatorSetBitmap;
-
     /// @notice Maximum number of retries allowed for defund claims.
     uint8 private constant MAX_NUMBER_OF_RETRIES = 3;
     /// @notice Maximum number of claims allowed per submission.
     uint8 public constant MAX_NUMBER_OF_CLAIMS = 32;
     /// @notice Maximum number of receivers in a BridgingRequestClaim.
     uint8 private constant MAX_NUMBER_OF_RECEIVERS = 16;
-    /// @dev Address of StakeManger contract
-    address constant STAKE_MANAGER_ADDRESS = 0x0000000000000000000000000000000000010022;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
@@ -306,30 +301,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             claimsHelper.resetCurrentBatchBlock(chainId);
             claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.EXECUTED);
 
-            if (_confirmedSignedBatch.batchType == BatchTypesLib.VALIDATORSET_FINAL) {
-                newValidatorSetBitmap |= uint8(1 << chainId);
-
-                if (_countSetBits(newValidatorSetBitmap) == Bridge(bridgeAddress).getAllRegisteredChains().length) {
-                    (bool success, ) = address(STAKE_MANAGER_ADDRESS).call(
-                        abi.encodeWithSignature(
-                            "updateValidatorSet(((uint8,(address,uint256[4],bytes,bytes)[])[],address[]))",
-                            validators.getNewValidatorSetDelta()
-                        )
-                    );
-
-                    if (!success) {
-                        revert StakeManagerUpdateFailed();
-                    }
-                }
-
-                return;
-            }
 
             // do not process included transactions if it is a consolidation or validator set update
-            if (
-                _confirmedSignedBatch.batchType == BatchTypesLib.CONSOLIDATION ||
-                _confirmedSignedBatch.batchType == BatchTypesLib.VALIDATORSET
-            ) {
+            if (_confirmedSignedBatch.batchType != BatchTypesLib.NORMAL) {
                 return;
             }
 
@@ -852,13 +826,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     function updateTimeoutBlocksNumber(uint8 _timeoutBlocksNumber) external onlyAdminContract {
         timeoutBlocksNumber = _timeoutBlocksNumber;
-    }
-
-    function _countSetBits(uint256 _newValidatorSetBitmap) internal pure returns (uint256 count) {
-        while (_newValidatorSetBitmap != 0) {
-            _newValidatorSetBitmap &= (_newValidatorSetBitmap - 1);
-            count++;
-        }
     }
 
     /// @notice Returns the current version of the contract
