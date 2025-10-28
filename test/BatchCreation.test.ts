@@ -1,3 +1,4 @@
+import { NewValidatorSetDeltaStruct } from "./../typechain-types/contracts/Validators";
 import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";

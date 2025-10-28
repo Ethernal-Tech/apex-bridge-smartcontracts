@@ -147,6 +147,12 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     }
 
     function getConfirmedBatchTransaction(uint8 _destinationChain) external view returns (bytes memory) {
+        if (
+            lastConfirmedBatch[_destinationChain].batchType == BatchTypesLib.VALIDATORSET ||
+            lastConfirmedBatch[_destinationChain].batchType == BatchTypesLib.VALIDATORSET_FINAL
+        ) {
+            return bytes(""); // no raw transactions
+        }
         return lastConfirmedBatch[_destinationChain].rawTransaction;
     }
 

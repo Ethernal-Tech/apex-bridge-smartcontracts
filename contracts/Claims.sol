@@ -803,7 +803,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint64 _lastTxNonce = _confirmedSignedBatch.lastTxNonceId;
         uint8 _status = _confirmedSignedBatch.status;
         // if the batch is a consolidation or does not exist, return empty array
-        if (_status == ConstantsLib.NOT_EXIST || _confirmedSignedBatch.batchType == BatchTypesLib.CONSOLIDATION) {
+        if (_status == ConstantsLib.NOT_EXIST || _confirmedSignedBatch.batchType != BatchTypesLib.NORMAL) {
             return (_status, new TxDataInfo[](0));
         }
 
