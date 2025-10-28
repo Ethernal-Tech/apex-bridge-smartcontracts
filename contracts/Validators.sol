@@ -242,29 +242,31 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @notice Validates the new validator set data
     /// @param _validatorSet Full validator data for all of the new validators.
     /// @dev checks that there are as many new validator set as there are registered chains
-    /// @dev checks that there is a new validator set for all registered chains
-    /// @dev checks that number of validators is the same for all chains
     /// @dev checks that number of validators is between 4 and 126 - allowed values
+    /// @dev checks that number of validators is the same for all chains
+    /// @dev checks that there is a new validator set for all registered chains and for Blade chain
     /// @dev checks that address of validators is not zero
     /// @dev checkes for duplicate validator addresses
-    function validateValidatorSet(ValidatorSet[] calldata _validatorSet, Chain[] calldata _chains) external pure {
+    function validateValidatorSet(ValidatorSet[] calldata _validatorSet, Chain[] memory _chains) external pure {
         //validator set needs to include validator data for all chains
-
         uint256 _numberOfChainsInValidatorSets = _validatorSet.length;
         uint256 _numberOfRegisteredChains = _chains.length;
 
         // checks that there are as many new validator set as there are registered chains
-        if (_numberOfChainsInValidatorSets != _numberOfRegisteredChains) {
+        // validator set for Blade chain will always be included in the _validatorSet, but Blade
+        // is never registered as a chain on bridge, thus +1
+        if (_numberOfChainsInValidatorSets != _numberOfRegisteredChains + 1) {
             revert InvalidData("WrongNumberOfChains");
         }
 
-        //
+        // the number of validators must bet between 4 and 126
         uint256 expectedNumberOfValidators = _validatorSet[0].validators.length;
 
-        if (expectedNumberOfValidators == 0) {
+        if (expectedNumberOfValidators < 4 || expectedNumberOfValidators > 126) {
             revert InvalidData("WrongNumberOfValidators");
         }
 
+        // all chains must have the same number of validators
         for (uint256 i = 1; i < _numberOfChainsInValidatorSets; i++) {
             if (_validatorSet[i].validators.length != expectedNumberOfValidators) {
                 revert InvalidData("WrongNumberOfValidators");
@@ -272,34 +274,30 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         }
 
         for (uint i; i < _numberOfChainsInValidatorSets; i++) {
-            bool atLeastOneToProcessed = false;
+            bool atLeastOneProcessed = false;
             // checks that there is a new validator set for all registered chains
+            // and for Blade -> chainId == 255
             for (uint256 j; j < _numberOfRegisteredChains; j++) {
-                if (_validatorSet[i].chainId != _chains[j].id) {
+                if (_validatorSet[i].chainId != _chains[j].id && _validatorSet[i].chainId != 255) {
                     continue;
                 }
-                atLeastOneToProcessed = true; // This validator matches the chain
+                atLeastOneProcessed = true; // This validator matches the chain
             }
 
-            if (!atLeastOneToProcessed) {
+            if (!atLeastOneProcessed) {
                 revert InvalidData("ChainIdMismatch");
             }
 
-            uint256 _numberOfValidators = _validatorSet[i].validators.length;
-
-            // checks that number of validators is between 4 and 126 - allowed values
-            if (_numberOfValidators < 4 || _numberOfValidators > 126) {
-                revert InvalidData("WrongNumberOfValidators");
-            }
-
-            for (uint256 k; k < _numberOfValidators; k++) {
+            //check that validator addresses are not zero addresses
+            for (uint256 k; k < expectedNumberOfValidators; k++) {
                 address _validatorAddress = _validatorSet[i].validators[k].addr;
 
                 if (_validatorAddress == address(0)) {
                     revert ZeroAddress();
                 }
 
-                for (uint l = k + 1; l < _numberOfValidators; l++) {
+                //checks for duplicate validator addresses
+                for (uint l = k + 1; l < expectedNumberOfValidators; l++) {
                     if (_validatorAddress == _validatorSet[i].validators[l].addr) {
                         revert InvalidData("DuplicatedValidator"); // duplicate found
                     }

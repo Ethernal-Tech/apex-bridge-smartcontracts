@@ -370,8 +370,8 @@ export async function deployBridgeFixture() {
 
   const validatorCardanoData = validatorAddressChainData[0].data;
 
-  const validatorSets = Array.from({ length: 2 }, (_, i) => {
-    const chainId = i + 1;
+  const validatorSets = Array.from({ length: 3 }, (_, i) => {
+    const chainId = i < 2 ? i + 1 : 255; // for i=0,1 → 1,2; for i=2 → 255
     return {
       chainId,
       validators: Array.from({ length: 5 }, (_, j) => {
@@ -424,8 +424,8 @@ export async function deployBridgeFixture() {
     };
   });
 
-  const validatorSets_NotEnoughValidators = Array.from({ length: 2 }, (_, i) => {
-    const chainId = i + 1;
+  const validatorSets_NotEnoughValidators = Array.from({ length: 3 }, (_, i) => {
+    const chainId = i < 2 ? i + 1 : 255; // for i=0,1 → 1,2; for i=2 → 255
     return {
       chainId,
       validators: Array.from({ length: 3 }, (_, j) => {
@@ -442,8 +442,8 @@ export async function deployBridgeFixture() {
     };
   });
 
-  const validatorSets_TooManyValidators = Array.from({ length: 2 }, (_, i) => {
-    const chainId = i + 1;
+  const validatorSets_TooManyValidators = Array.from({ length: 3 }, (_, i) => {
+    const chainId = i < 2 ? i + 1 : 255; // for i=0,1 → 1,2; for i=2 → 255
     return {
       chainId,
       validators: Array.from({ length: 127 }, (_, j) => {
@@ -466,8 +466,8 @@ export async function deployBridgeFixture() {
     };
   });
 
-  const validatorSets_ZeroAddress = Array.from({ length: 2 }, (_, i) => {
-    const chainId = i + 1;
+  const validatorSets_ZeroAddress = Array.from({ length: 3 }, (_, i) => {
+    const chainId = i < 2 ? i + 1 : 255; // for i=0,1 → 1,2; for i=2 → 255
     return {
       chainId,
       validators: Array.from({ length: 5 }, (_, j) => {
@@ -484,8 +484,8 @@ export async function deployBridgeFixture() {
     };
   });
 
-  const validatorSets_DoubleAddress = Array.from({ length: 2 }, (_, i) => {
-    const chainId = i + 1;
+  const validatorSets_DoubleAddress = Array.from({ length: 3 }, (_, i) => {
+    const chainId = i < 2 ? i + 1 : 255; // for i=0,1 → 1,2; for i=2 → 255
     return {
       chainId,
       validators: Array.from({ length: 5 }, (_, j) => {
@@ -502,8 +502,8 @@ export async function deployBridgeFixture() {
     };
   });
 
-  const validatorSets_MissingChainIDs = Array.from({ length: 2 }, (_, i) => {
-    const chainId = i + 100;
+  const validatorSets_MissingChainIDs = Array.from({ length: 3 }, (_, i) => {
+    const chainId = i < 2 ? i + 100 : 255; // for i=0,1 → 1,2; for i=2 → 255
     return {
       chainId,
       validators: Array.from({ length: 5 }, (_, j) => {
