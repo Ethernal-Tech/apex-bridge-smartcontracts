@@ -41,6 +41,20 @@ describe("Dynamic Validator Set", function () {
       ).to.be.revertedWithCustomError(bridge, "NewValidatorSetPending");
     });
 
+    it("Should revert if +1 chain is not Blade chainId == 255", async function () {
+      const { bridge, owner, chain1, chain2, newValidatorSetDelta_BladeMissing, validatorAddressChainData } =
+        await loadFixture(deployBridgeFixture);
+
+      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
+      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
+
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await expect(bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta_BladeMissing))
+        .to.be.revertedWithCustomError(bridge, "InvalidData")
+        .withArgs("ChainIdMismatch");
+    });
+
     it("Should revert if there is no new data set for all registered chains", async function () {
       const { bridge, owner, chain1, chain2, newValidatorSetDelta_NotEnoughChains, validatorAddressChainData } =
         await loadFixture(deployBridgeFixture);
