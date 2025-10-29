@@ -306,7 +306,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         claims.registerColoredCoin(_coloredCoin);
 
-        emit newColoredCoinRegistered(_coloredCoin.coloredCoinId);
+        emit newColoredCoinRegistered(_coloredCoin.chainId, _coloredCoin.coloredCoinId);
     }
 
     /// @notice Register a new Colored Coin using governance.
@@ -333,9 +333,9 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         if (_isNewVote && _votesCount + 1 == _quorumCount) {
             claims.registerColoredCoin(_coloredCoin);
-            emit newColoredCoinRegistered(_coloredCoin.coloredCoinId);
+            emit newColoredCoinRegistered(_coloredCoin.chainId, _coloredCoin.coloredCoinId);
         } else {
-            emit newColoredCoinProposal(_coloredCoin.coloredCoinId);
+            emit newColoredCoinProposal(_coloredCoin.chainId, _coloredCoin.coloredCoinId);
         }
     }
 

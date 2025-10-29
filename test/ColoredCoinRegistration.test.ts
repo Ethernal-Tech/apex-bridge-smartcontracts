@@ -1,3 +1,4 @@
+import { Chain } from "./../node_modules/fp-ts/es6/Chain.d";
 import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { deployBridgeFixture } from "./fixtures";
@@ -41,8 +42,8 @@ describe("Colored Coins", function () {
 
     it("Should emit newColoredCoinRegistered when coloredCoin is registered", async function () {
       expect(await bridge.connect(owner).registerColoredCoin(coloredCoin))
-        .to.emit(bridge, "newoloredCoinRegistered")
-        .withArgs(coloredCoin.coloredCoinId);
+        .to.emit(bridge, "newColoredCoinRegistered")
+        .withArgs(coloredCoin.chainId, coloredCoin.coloredCoinId);
     });
   });
   describe("Register colored coin by governance", function () {
@@ -56,7 +57,7 @@ describe("Colored Coins", function () {
     it("Should emit newColoredCoinProposed when coloredCoin is proposed", async function () {
       expect(await bridge.connect(validators[0]).registerColoredCoinGovernance(coloredCoin))
         .to.emit(bridge, "newColoredCoinProposed")
-        .withArgs(coloredCoin.coloredCoinId);
+        .withArgs(coloredCoin.chainId, coloredCoin.coloredCoinId);
     });
 
     it("Should revert if same validator votes twice for the same coloredCoin", async function () {
@@ -85,7 +86,7 @@ describe("Colored Coins", function () {
       await bridge.connect(validators[2]).registerColoredCoinGovernance(coloredCoin);
       expect(await bridge.connect(validators[3]).registerColoredCoinGovernance(coloredCoin))
         .to.emit(bridge, "newColoredCoinRegistered")
-        .withArgs(coloredCoin.coloredCoinId);
+        .withArgs(coloredCoin.chainId, coloredCoin.coloredCoinId);
     });
   });
 
