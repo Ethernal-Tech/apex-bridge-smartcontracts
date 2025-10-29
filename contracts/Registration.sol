@@ -11,8 +11,8 @@ import "./BridgingAddresses.sol";
 import "./ChainTokens.sol";
 import "./Claims.sol";
 import "./ClaimsHelper.sol";
-import "./Validators.sol";
 import "./Utils.sol";
+import "./Validators.sol";
 
 /// @title Registration
 /// @notice Registration of chains and colored tokens.

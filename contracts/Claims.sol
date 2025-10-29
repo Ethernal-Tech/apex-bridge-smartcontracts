@@ -9,13 +9,12 @@ import "./interfaces/IBridgeStructs.sol";
 import "./interfaces/BatchTypesLib.sol";
 import "./interfaces/ConstantsLib.sol";
 import "./interfaces/TransactionTypesLib.sol";
-import "./Bridge.sol";
 import "./BridgingAddresses.sol";
 import "./ChainTokens.sol";
 import "./ClaimsHelper.sol";
 import "./ClaimsProcessor.sol";
-import "./Validators.sol";
 import "./Utils.sol";
+import "./Validators.sol";
 
 /// @title Claims
 /// @notice Handles validator-submitted claims in a cross-chain bridge system.
@@ -73,8 +72,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     BridgingAddresses private bridgingAddresses;
     ChainTokens private chainTokens;
-    address private registrationAddress;
     ClaimsProcessor private claimsProcessor;
+    address private registrationAddress;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).

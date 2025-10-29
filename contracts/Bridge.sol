@@ -33,8 +33,8 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     BridgingAddresses public bridgingAddresses;
     ChainTokens private chainTokens;
-    Registration private registration;
     ClaimsHelper private claimsHelper;
+    Registration private registration;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).

@@ -7,8 +7,8 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
 import "./interfaces/BatchTypesLib.sol";
 import "./ClaimsHelper.sol";
-import "./Validators.sol";
 import "./Utils.sol";
+import "./Validators.sol";
 
 // @title SignedBatches
 /// @notice Handles submission and confirmation of signed transaction batches for a cross-chain bridge.
