@@ -28,7 +28,7 @@ describe("Colored Coins", function () {
     });
 
     it("Should revert if registerColoredCoin in claims is not called by Bridge SC", async function () {
-      await expect(claims.connect(owner).registerColoredCoin(coloredCoin)).to.be.revertedWithCustomError(
+      await expect(chainTokens.connect(owner).registerColoredCoin(coloredCoin)).to.be.revertedWithCustomError(
         claims,
         "NotBridge"
       );
@@ -37,7 +37,7 @@ describe("Colored Coins", function () {
     it("Should set isRegistered if registerColoredCoin is successfull", async function () {
       await bridge.connect(owner).registerColoredCoin(coloredCoin);
 
-      expect(await claims.coloredCoinToChain(coloredCoin.coloredCoinId)).to.be.equal(coloredCoin.chainId);
+      expect(await chainTokens.coloredCoinToChain(coloredCoin.coloredCoinId)).to.be.equal(coloredCoin.chainId);
     });
 
     it("Should emit newColoredCoinRegistered when coloredCoin is registered", async function () {
@@ -73,11 +73,11 @@ describe("Colored Coins", function () {
       await bridge.connect(validators[1]).registerColoredCoinGovernance(coloredCoin);
       await bridge.connect(validators[2]).registerColoredCoinGovernance(coloredCoin);
 
-      expect(await claims.coloredCoinToChain(coloredCoin.coloredCoinId)).not.to.be.equal(coloredCoin.chainId);
+      expect(await chainTokens.coloredCoinToChain(coloredCoin.coloredCoinId)).not.to.be.equal(coloredCoin.chainId);
 
       await bridge.connect(validators[3]).registerColoredCoinGovernance(coloredCoin);
 
-      expect(await claims.coloredCoinToChain(coloredCoin.coloredCoinId)).to.be.equal(coloredCoin.chainId);
+      expect(await chainTokens.coloredCoinToChain(coloredCoin.coloredCoinId)).to.be.equal(coloredCoin.chainId);
     });
 
     it("Should emit newColoredCoinRegistered when coloredCoin is registered", async function () {
@@ -93,6 +93,7 @@ describe("Colored Coins", function () {
   let bridge: any;
   let claimsHelper: any;
   let claims: any;
+  let chainTokens: any;
   let owner: any;
   let chain1: any;
   let chain2: any;
@@ -112,6 +113,7 @@ describe("Colored Coins", function () {
     bridge = fixture.bridge;
     claimsHelper = fixture.claimsHelper;
     claims = fixture.claims;
+    chainTokens = fixture.chainTokens;
     owner = fixture.owner;
     chain1 = fixture.chain1;
     chain2 = fixture.chain2;

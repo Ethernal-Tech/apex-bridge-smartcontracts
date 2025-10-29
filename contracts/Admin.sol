@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./Utils.sol";
 import "./Claims.sol";
+import "./ChainTokens.sol";
 
 /// @title Admin Contract
 /// @notice Manages configuration and privileged updates for the bridge system
@@ -15,11 +16,12 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     address public fundAdmin;
     Claims private claims;
     BridgingAddresses public bridgingAddresses;
+    ChainTokens private chainTokens;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[49] private __gap;
+    uint256[48] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -56,6 +58,11 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     function setBridgingAddrsDependency(address _bridgingAddresses) external onlyUpgradeAdmin {
         if (!_isContract(_bridgingAddresses)) revert NotContractAddress();
         bridgingAddresses = BridgingAddresses(_bridgingAddresses);
+    }
+
+    function setChainTokensDependency(address _chainTokens) external onlyUpgradeAdmin {
+        if (!_isContract(_chainTokens)) revert NotContractAddress();
+        chainTokens = ChainTokens(_chainTokens);
     }
 
     /// @notice Updates token quantity for a specific chain
@@ -95,16 +102,16 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         uint256 _chainColoredCointQuantity,
         uint8 _coloredCoinId
     ) external onlyFundAdmin {
-        claims.updateChainColoredCoinQuantity(_chainId, _isIncrease, _chainColoredCointQuantity, _coloredCoinId);
+        chainTokens.updateChainColoredCoinQuantity(_chainId, _isIncrease, _chainColoredCointQuantity, _coloredCoinId);
         emit UpdatedChainColoredCoinQuantity(_chainId, _isIncrease, _chainColoredCointQuantity, _coloredCoinId);
     }
 
     function getChainTokenQuantity(uint8 _chainId) external view returns (uint256) {
-        return claims.chainTokenQuantity(_chainId);
+        return chainTokens.chainTokenQuantity(_chainId);
     }
 
     function getChainWrappedTokenQuantity(uint8 _chainId) external view returns (uint256) {
-        return claims.chainWrappedTokenQuantity(_chainId);
+        return chainTokens.chainWrappedTokenQuantity(_chainId);
     }
 
     function defund(

@@ -8,6 +8,7 @@ import {
   Validators,
   Admin,
   BridgingAddresses,
+  ChainTokens,
 } from "../typechain-types";
 import { setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 
@@ -48,6 +49,9 @@ export async function deployBridgeFixture() {
   const BridgingAddresses = await ethers.getContractFactory("BridgingAddresses");
   const bridgingAddressesLogic = await BridgingAddresses.deploy();
 
+  const ChainTokens = await ethers.getContractFactory("ChainTokens");
+  const chainTokensLogic = await ChainTokens.deploy();
+
   const ClaimsHelper = await ethers.getContractFactory("ClaimsHelper");
   const claimsHelperLogic = await ClaimsHelper.deploy();
 
@@ -69,6 +73,7 @@ export async function deployBridgeFixture() {
   // deployment of contract proxy
   const BridgeProxy = await ethers.getContractFactory("ERC1967Proxy");
   const BridgingAddressesProxy = await ethers.getContractFactory("ERC1967Proxy");
+  const ChainTokensProxy = await ethers.getContractFactory("ERC1967Proxy");
   const ClaimsHelperProxy = await ethers.getContractFactory("ERC1967Proxy");
   const ClaimsProxy = await ethers.getContractFactory("ERC1967Proxy");
   const SignedBatchesProxy = await ethers.getContractFactory("ERC1967Proxy");
@@ -84,6 +89,11 @@ export async function deployBridgeFixture() {
   const bridgingAddressesProxy = await BridgingAddressesProxy.deploy(
     await bridgingAddressesLogic.getAddress(),
     BridgingAddresses.interface.encodeFunctionData("initialize", [owner.address, owner.address])
+  );
+
+  const chainTokensProxy = await ChainTokensProxy.deploy(
+    await chainTokensLogic.getAddress(),
+    ChainTokens.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
   const claimsHelperProxy = await ClaimsHelperProxy.deploy(
@@ -131,6 +141,9 @@ export async function deployBridgeFixture() {
   const BridgingAddressesDeployed = await ethers.getContractFactory("BridgingAddresses");
   const bridgingAddresses = BridgingAddressesDeployed.attach(bridgingAddressesProxy.target) as BridgingAddresses;
 
+  const ChainTokensDeployed = await ethers.getContractFactory("ChainTokens");
+  const chainTokens = ChainTokensDeployed.attach(chainTokensProxy.target) as ChainTokens;
+
   const ClaimsHelperDeployed = await ethers.getContractFactory("ClaimsHelper");
   const claimsHelper = ClaimsHelperDeployed.attach(claimsHelperProxy.target) as ClaimsHelper;
 
@@ -160,11 +173,17 @@ export async function deployBridgeFixture() {
 
   await bridge.setBridgingAddrsDependencyAndSync(bridgingAddressesProxy.target);
 
+  await bridge.setChainTokensDependency(chainTokensProxy.target);
+
+  await chainTokens.setDependencies(bridge.target, claims.target, admin.target);
+
   await claimsHelper.setDependencies(claims.target, signedBatches.target);
 
   await claims.setDependencies(bridge.target, claimsHelper.target, validatorsc.target, admin.target);
 
   await claims.setBridgingAddrsDependencyAndSync(bridgingAddressesProxy.target);
+
+  await claims.setChainTokensDependencyAndSync(chainTokensProxy.target);
 
   await signedBatches.setDependencies(bridge.target, claimsHelper.target, validatorsc);
 
@@ -175,6 +194,8 @@ export async function deployBridgeFixture() {
   await admin.setDependencies(claims.target);
 
   await admin.setBridgingAddrsDependency(bridgingAddressesProxy.target);
+
+  await admin.setChainTokensDependency(chainTokensProxy.target);
 
   const chain1 = {
     id: 1,
@@ -385,6 +406,7 @@ export async function deployBridgeFixture() {
     admin,
     bridge,
     bridgingAddresses,
+    chainTokens,
     claims,
     claimsHelper,
     signedBatches,
@@ -449,8 +471,8 @@ export function hashBridgeRequestClaim(claim: any) {
 
   return ethers.keccak256(
     "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-      encodedPrefix.substring(66) +
-      encoded.substring(2)
+    encodedPrefix.substring(66) +
+    encoded.substring(2)
   );
 }
 
@@ -464,8 +486,8 @@ export function hashBatchExecutedClaim(claim: any) {
 
   return ethers.keccak256(
     "0x0000000000000000000000000000000000000000000000000000000000000080" +
-      encoded.substring(2) +
-      encodedPrefix.substring(66)
+    encoded.substring(2) +
+    encodedPrefix.substring(66)
   );
 }
 
@@ -479,8 +501,8 @@ export function hashBatchExecutionFailedClaim(claim: any) {
 
   return ethers.keccak256(
     "0x0000000000000000000000000000000000000000000000000000000000000080" +
-      encoded.substring(2) +
-      encodedPrefix.substring(66)
+    encoded.substring(2) +
+    encodedPrefix.substring(66)
   );
 }
 
@@ -519,8 +541,8 @@ export function hashRefundRequestClaim(claim: any) {
   );
   return ethers.keccak256(
     "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-      encodedPrefix.substring(66) +
-      encoded.substring(2)
+    encodedPrefix.substring(66) +
+    encoded.substring(2)
   );
 }
 
@@ -534,7 +556,7 @@ export function hashHotWalletIncrementClaim(claim: any) {
 
   return ethers.keccak256(
     "0x00000000000000000000000000000000000000000000000000000000000000a0" +
-      encoded.substring(2) +
-      encodedPrefix.substring(66)
+    encoded.substring(2) +
+    encodedPrefix.substring(66)
   );
 }

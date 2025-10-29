@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { deployBridgeFixture, TransactionSubType, TransactionType } from "./fixtures";
 
-describe("Redistribute tokens", function () {
+describe("Stake Operations", function () {
   describe("Stake Registration", function () {
     const stakePoolId = "pool1y0uxkqyplyx6ld25e976t0s35va3ysqcscatwvy2sd2cwcareq7";
 

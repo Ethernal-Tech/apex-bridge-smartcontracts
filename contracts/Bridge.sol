@@ -12,6 +12,7 @@ import "./SignedBatches.sol";
 import "./Slots.sol";
 import "./Validators.sol";
 import "./BridgingAddresses.sol";
+import "./ChainTokens.sol";
 import "./interfaces/TransactionTypesLib.sol";
 
 /// @title Bridge
@@ -31,11 +32,12 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     uint8 constant MAX_NUMBER_OF_BLOCKS = 40;
 
     BridgingAddresses public bridgingAddresses;
+    ChainTokens private chainTokens;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[49] private __gap;
+    uint256[48] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -89,6 +91,11 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         if (!_isContract(_bridgingAddresses)) revert NotContractAddress();
         bridgingAddresses = BridgingAddresses(_bridgingAddresses);
         bridgingAddresses.initRegisteredChains(chains);
+    }
+
+    function setChainTokensDependency(address _chainTokens) external onlyUpgradeAdmin {
+        if (!_isContract(_chainTokens)) revert NotContractAddress();
+        chainTokens = ChainTokens(_chainTokens);
     }
 
     /// @notice Submit claims from validators for reaching consensus.
@@ -304,7 +311,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     function registerColoredCoin(ColoredCoin calldata _coloredCoin) public override onlyOwner {
         _validateColoredCoin(_coloredCoin);
 
-        claims.registerColoredCoin(_coloredCoin);
+        chainTokens.registerColoredCoin(_coloredCoin);
 
         emit newColoredCoinRegistered(_coloredCoin.chainId, _coloredCoin.coloredCoinId);
     }
@@ -333,7 +340,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         claims.updateVote(coloredCoinHash, _validatorIdx);
 
         if (_votesCount + 1 == _quorumCount) {
-            claims.registerColoredCoin(_coloredCoin);
+            chainTokens.registerColoredCoin(_coloredCoin);
             emit newColoredCoinRegistered(_coloredCoin.chainId, _coloredCoin.coloredCoinId);
         } else {
             emit newColoredCoinProposal(_coloredCoin.chainId, _coloredCoin.coloredCoinId);
@@ -352,7 +359,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         if (_coloredCoinId == 0) {
             revert InvalidData("coloredCoinId is zero");
-        } else if (claims.coloredCoinToChain(_coloredCoinId) != 0) {
+        } else if (chainTokens.coloredCoinToChain(_coloredCoinId) != 0) {
             revert InvalidData("coloredCoinId is already registered");
         }
     }
