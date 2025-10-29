@@ -93,6 +93,34 @@ describe("Unregistered Chains Contract", function () {
     );
   });
 
+  it("Should revert if same validator votes twice for the same chain", async function () {
+    await bridge
+      .connect(validators[0])
+      .registerChainGovernance(
+        chain1.id,
+        chain1.chainType,
+        100,
+        100,
+        validatorAddressChainData[0].data,
+        "0x7465737400000000000000000000000000000000000000000000000000000000",
+        "0x7465737400000000000000000000000000000000000000000000000000000000"
+      );
+
+    await expect(
+      bridge
+        .connect(validators[0])
+        .registerChainGovernance(
+          chain1.id,
+          chain1.chainType,
+          100,
+          100,
+          validatorAddressChainData[0].data,
+          "0x7465737400000000000000000000000000000000000000000000000000000000",
+          "0x7465737400000000000000000000000000000000000000000000000000000000"
+        )
+    ).to.be.revertedWithCustomError(claimsHelper, "AlreadyProposed");
+  });
+
   it("Performance for registerChain", async function () {
     const { bridge, chain1, owner, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
 

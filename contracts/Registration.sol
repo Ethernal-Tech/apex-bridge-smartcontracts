@@ -185,6 +185,10 @@ contract Registration is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
 
         bytes32 chainHash = keccak256(abi.encode(_chainId, _chainType, _tokenQuantity));
 
+        if (claimsHelper.hasVoted(chainHash, validators.getValidatorIndex(_caller) - 1)) {
+            revert AlreadyProposed(_chainId);
+        }
+
         _validateSignatures(_chainType, _caller, _keySignature, _keyFeeSignature, _validatorChainData);
 
         validators.addValidatorChainData(_chainId, _caller, _validatorChainData);

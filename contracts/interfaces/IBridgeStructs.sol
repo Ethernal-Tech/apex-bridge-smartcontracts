@@ -139,7 +139,7 @@ interface IBridgeStructs {
         uint8 destinationChainId;
         // index of bridging address
         uint8 bridgeAddrIndex;
-        // ID of coloredCoinId
+        // ID of colored coin
         uint8 coloredCoinId;
     }
 
@@ -229,6 +229,7 @@ interface IBridgeStructs {
     error NotClaimsProcessor();
     error NotClaimsOrClaimsProcessor();
     error NotClaimsProcessorOrRegistration();
+    error AlreadyProposed(uint8 _chainId);
 
     // ------------------------------------------------------------------------
     // Events

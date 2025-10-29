@@ -146,6 +146,11 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         return _votesNum == _quorumCnt; // true if quorum is reached
     }
 
+    function hasVoted(bytes32 _hash, uint8 _validatorIndex) external view returns (bool) {
+        uint256 _bitmapValue = bitmap[_hash];
+        return (_bitmapValue & (1 << _validatorIndex)) != 0;
+    }
+
     /// @notice Sets the specified batch entry to a final status.
     /// @dev Sets the specified batch entry to a final status.
     /// @param _chainId The ID of the blockchain where the batch resides.
