@@ -171,7 +171,7 @@ export async function deployBridgeFixture() {
 
   await bridgingAddresses.setDependencies(bridge.target, claims.target, admin.target);
 
-  await bridge.setAdditionalDependenciesAndSync(bridgingAddressesProxy.target, chainTokensProxy.target);
+  await bridge.setAdditionalDependenciesAndSync(bridgingAddressesProxy.target, chainTokensProxy.target, true);
 
   await chainTokens.setDependencies(bridge.target, claims.target, admin.target);
 
@@ -179,7 +179,7 @@ export async function deployBridgeFixture() {
 
   await claims.setDependencies(bridge.target, claimsHelper.target, validatorsc.target, admin.target);
 
-  await claims.setAdditionalDependenciesAndSync(bridgingAddressesProxy.target, chainTokensProxy.target);
+  await claims.setAdditionalDependenciesAndSync(bridgingAddressesProxy.target, chainTokensProxy.target, true);
 
   await signedBatches.setDependencies(bridge.target, claimsHelper.target, validatorsc);
 
@@ -189,9 +189,7 @@ export async function deployBridgeFixture() {
 
   await admin.setDependencies(claims.target);
 
-  await admin.setBridgingAddrsDependency(bridgingAddressesProxy.target);
-
-  await admin.setChainTokensDependency(chainTokensProxy.target);
+  await admin.setAdditionalDependenciesAndSync(bridgingAddressesProxy.target, chainTokensProxy.target, true);
 
   const chain1 = {
     id: 1,
@@ -467,8 +465,8 @@ export function hashBridgeRequestClaim(claim: any) {
 
   return ethers.keccak256(
     "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-      encodedPrefix.substring(66) +
-      encoded.substring(2)
+    encodedPrefix.substring(66) +
+    encoded.substring(2)
   );
 }
 
@@ -482,8 +480,8 @@ export function hashBatchExecutedClaim(claim: any) {
 
   return ethers.keccak256(
     "0x0000000000000000000000000000000000000000000000000000000000000080" +
-      encoded.substring(2) +
-      encodedPrefix.substring(66)
+    encoded.substring(2) +
+    encodedPrefix.substring(66)
   );
 }
 
@@ -497,8 +495,8 @@ export function hashBatchExecutionFailedClaim(claim: any) {
 
   return ethers.keccak256(
     "0x0000000000000000000000000000000000000000000000000000000000000080" +
-      encoded.substring(2) +
-      encodedPrefix.substring(66)
+    encoded.substring(2) +
+    encodedPrefix.substring(66)
   );
 }
 
@@ -537,8 +535,8 @@ export function hashRefundRequestClaim(claim: any) {
   );
   return ethers.keccak256(
     "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-      encodedPrefix.substring(66) +
-      encoded.substring(2)
+    encodedPrefix.substring(66) +
+    encoded.substring(2)
   );
 }
 
@@ -552,7 +550,7 @@ export function hashHotWalletIncrementClaim(claim: any) {
 
   return ethers.keccak256(
     "0x00000000000000000000000000000000000000000000000000000000000000a0" +
-      encoded.substring(2) +
-      encodedPrefix.substring(66)
+    encoded.substring(2) +
+    encodedPrefix.substring(66)
   );
 }

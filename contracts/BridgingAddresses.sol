@@ -67,23 +67,10 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
         claims = Claims(_claimsAddress);
     }
 
-    /// @notice Initializes the mapping of registered chains and their bridge address counts.
-    /// @dev Can only be called by the authorized bridge contract.
-    /// @param registeredChains An array of chain configuration structs.
-    function initRegisteredChains(Chain[] calldata registeredChains) external onlyBridge {
-        for (uint8 i; i < registeredChains.length; i++) {
-            _initRegisteredChain(registeredChains[i].id);
-        }
-    }
-
     /// @notice Initializes a single registered chain’s bridging address count.
     /// @dev Can only be called by the bridge. Fails if already initialized.
     /// @param _chainId registered chain id
     function initRegisteredChain(uint8 _chainId) external onlyBridge {
-        _initRegisteredChain(_chainId);
-    }
-
-    function _initRegisteredChain(uint8 _chainId) internal {
         // Initialize the count to 1 if not already set (acts as default value)
         if (bridgingAddressesCount[_chainId] != 0) {
             revert BridgingAddrCountAlreadyInit(_chainId);
