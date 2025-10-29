@@ -73,10 +73,10 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
             !_isContract(_claimsProcessorAddress) ||
             !_isContract(_registrationAddress)
         ) revert NotContractAddress();
+        adminContractAddress = _adminContractAddress;
         bridgeAddress = _bridgeAddress;
         claimsAddress = _claimsAddress;
         claimsProcessorAddress = _claimsProcessorAddress;
-        adminContractAddress = _adminContractAddress;
         registrationAddress = _registrationAddress;
     }
 

@@ -4,18 +4,18 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "./interfaces/IBridgeStructs.sol";
-import "./interfaces/ConstantsLib.sol";
-import "./interfaces/BatchTypesLib.sol";
-import "./interfaces/TransactionTypesLib.sol";
 import "./interfaces/IBridge.sol";
-import "./Utils.sol";
+import "./interfaces/IBridgeStructs.sol";
+import "./interfaces/BatchTypesLib.sol";
+import "./interfaces/ConstantsLib.sol";
+import "./interfaces/TransactionTypesLib.sol";
 import "./Bridge.sol";
+import "./BridgingAddresses.sol";
+import "./ChainTokens.sol";
 import "./ClaimsHelper.sol";
 import "./ClaimsProcessor.sol";
 import "./Validators.sol";
-import "./ChainTokens.sol";
-import "./BridgingAddresses.sol";
+import "./Utils.sol";
 
 /// @title Claims
 /// @notice Handles validator-submitted claims in a cross-chain bridge system.
@@ -123,15 +123,15 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         address _adminContractAddress
     ) external onlyOwner {
         if (
+            !_isContract(_adminContractAddress) ||
             !_isContract(_bridgeAddress) ||
             !_isContract(_claimsHelperAddress) ||
-            !_isContract(_validatorsAddress) ||
-            !_isContract(_adminContractAddress)
+            !_isContract(_validatorsAddress)
         ) revert NotContractAddress();
+        adminContractAddress = _adminContractAddress;
         bridgeAddress = _bridgeAddress;
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         validators = Validators(_validatorsAddress);
-        adminContractAddress = _adminContractAddress;
     }
 
     /// @notice Sets the external contracts dependencies and syncs it with the registered chains.
@@ -557,6 +557,14 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         return _confirmedTransactions;
     }
 
+    /// @notice Initializes and stores the core fields of a new confirmed transaction
+    /// @dev Increments nonce for the given chain and creates a new ConfirmedTransaction in storage
+    /// @param chainId ID of the chain for which this transaction is being confirmed
+    /// @param transactionType Encoded transaction type (see TransactionTypesLib)
+    /// @param bridgeAddrIndex Index of the bridge address used during this transaction
+    /// @param retryCounter Number of retry attempts made prior to this confirmation
+    /// @param chainIdRoleFlag Bitmask role indicator (source or destination chain)
+    /// @return confirmedTx Storage pointer to the newly created ConfirmedTransaction
     function _createConfirmedTxCore(
         uint8 chainId,
         uint8 transactionType,

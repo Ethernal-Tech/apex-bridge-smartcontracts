@@ -4,9 +4,9 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "./interfaces/IBridge.sol";
 import "./interfaces/IBridgeStructs.sol";
 import "./interfaces/TransactionTypesLib.sol";
-import "./interfaces/IBridge.sol";
 import "./Claims.sol";
 import "./Utils.sol";
 
@@ -62,14 +62,17 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
         address _claimsAddress,
         address _adminContractAddress
     ) external onlyOwner {
-        if (!_isContract(_bridgeAddress)) revert NotContractAddress();
-        if (!_isContract(_adminContractAddress)) revert NotContractAddress();
-        if (!_isContract(_claimsAddress)) revert NotContractAddress();
+        if (!_isContract(_bridgeAddress) || !_isContract(_adminContractAddress) || !_isContract(_claimsAddress))
+            revert NotContractAddress();
         bridgeAddress = _bridgeAddress;
         adminContractAddress = _adminContractAddress;
         claims = Claims(_claimsAddress);
     }
 
+    /// @notice Sets the external contract dependencies.
+    /// @dev This function can only be called by the upgrade admin. It verifies that the provided address is a contract.
+    /// @param _claimsProcessorAddress The address of the deployed ClaimsProcessor contract.
+    /// @param _registrationAddress The address of the deployed Registration contract.
     function setAdditionalDependenciesAndSync(
         address _claimsProcessorAddress,
         address _registrationAddress

@@ -5,15 +5,16 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
-import "./interfaces/ConstantsLib.sol";
 import "./interfaces/BatchTypesLib.sol";
+import "./interfaces/ConstantsLib.sol";
 import "./interfaces/TransactionTypesLib.sol";
+import "./BridgingAddresses.sol";
+import "./ChainTokens.sol";
+import "./Claims.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
-import "./ChainTokens.sol";
-import "./BridgingAddresses.sol";
 
-/// @title Claims
+/// @title ClaimsProcessor
 /// @notice Handles validator-submitted claims in a cross-chain bridge system.
 /// @dev Inherits from OpenZeppelin upgradeable contracts for upgradability and ownership control.
 contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
