@@ -140,7 +140,7 @@ describe("Submit Claims", function () {
 
       const currentBlock1 = await ethers.provider.getBlockNumber();
 
-      expect(currentBlock1).to.equal(43);
+      expect(currentBlock1).to.equal(41);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -153,7 +153,7 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       currentBlock = await ethers.provider.getBlockNumber();
-      expect(currentBlock).to.equal(47);
+      expect(currentBlock).to.equal(45);
 
       expect(await claims.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
         currentBlock + Number(timeoutBlocksNumber)
