@@ -853,22 +853,23 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             revert ChainIsNotRegistered(_chainId);
         }
 
+        if (_coloredCoinId != 0 && coloredCoinToChain[_coloredCoinId] != _chainId) {
+            revert ColoredCoinNotNotRegisteredOnChain(_coloredCoinId, _chainId);
+        }
+
         uint256 _currentAmount = chainTokenQuantity[_chainId];
         uint256 _currentWrappedAmount = chainWrappedTokenQuantity[_chainId];
+        uint256 _currentColoredTokenAmount = chainColoredCoinQuantity[_chainId][_coloredCoinId];
+        console.log(_currentColoredTokenAmount);
 
         if (_coloredCoinId == 0 && _currentAmount < _amount) {
             revert DefundRequestTooHigh("Currency", _chainId, _currentAmount, _amount);
+        } else if (_coloredCoinId != 0 && _currentColoredTokenAmount < _amount) {
+            revert DefundRequestTooHigh("ColoredCoin", _chainId, _currentColoredTokenAmount, _amount);
         }
 
         if (_currentWrappedAmount < _amountWrapped) {
             revert DefundRequestTooHigh("Wrapped", _chainId, _currentWrappedAmount, _amountWrapped);
-        }
-
-        if (isColoredCoinRegisteredOnChain(_coloredCoinId, _chainId)) {
-            uint256 _currentColoredCoinAmount = chainColoredCoinQuantity[_chainId][_coloredCoinId];
-            if (_currentColoredCoinAmount < _amount) {
-                revert DefundRequestTooHigh("ColoredCoin", _chainId, _currentColoredCoinAmount, _amount);
-            }
         }
 
         uint256 _confirmedTxCount = getBatchingTxsCount(_chainId);
@@ -887,13 +888,11 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         if (_coloredCoinId == 0) {
             chainTokenQuantity[_chainId] -= _amount;
+        } else {
+            chainColoredCoinQuantity[_chainId][_coloredCoinId] -= _amount;
         }
 
         chainWrappedTokenQuantity[_chainId] = _currentWrappedAmount - _amountWrapped;
-
-        if (isColoredCoinRegisteredOnChain(_coloredCoinId, _chainId)) {
-            chainColoredCoinQuantity[_chainId][_coloredCoinId] -= _amount;
-        }
 
         _updateNextTimeoutBlockIfNeeded(_chainId, _confirmedTxCount);
     }
