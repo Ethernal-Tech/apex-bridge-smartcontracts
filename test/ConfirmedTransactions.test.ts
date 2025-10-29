@@ -19,12 +19,9 @@ describe("Confirmed Transactions", function () {
 
       var signer = await impersonateAsContractAndMintFunds(bridgeAddress);
 
-      await claims
-        .connect(signer)
-        .setNextTimeoutBlock(
-          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
-          Number(firstTimestampBlockNumber)
-        );
+      for (let i = 0; i < 10; i++) {
+        await ethers.provider.send("evm_mine");
+      }
 
       await hre.network.provider.request({
         method: "hardhat_stopImpersonatingAccount",
@@ -64,12 +61,12 @@ describe("Confirmed Transactions", function () {
 
       var signer = await impersonateAsContractAndMintFunds(bridgeAddress);
 
-      await claims
-        .connect(signer)
-        .setNextTimeoutBlock(
-          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
-          Number(firstTimestampBlockNumber + 100)
-        );
+      // await claims
+      //   .connect(signer)
+      //   .setNextTimeoutBlock(
+      //     validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
+      //     Number(firstTimestampBlockNumber + 100)
+      //   );
 
       await hre.network.provider.request({
         method: "hardhat_stopImpersonatingAccount",
@@ -148,12 +145,12 @@ describe("Confirmed Transactions", function () {
 
       var signer = await impersonateAsContractAndMintFunds(bridgeContratAddress);
 
-      await claims
-        .connect(signer)
-        .setNextTimeoutBlock(
-          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
-          Number(firstTimestampBlockNumber + 100)
-        );
+      // await claims
+      //   .connect(signer)
+      //   .setNextTimeoutBlock(
+      //     validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
+      //     Number(firstTimestampBlockNumber + 100)
+      //   );
 
       await hre.network.provider.request({
         method: "hardhat_stopImpersonatingAccount",

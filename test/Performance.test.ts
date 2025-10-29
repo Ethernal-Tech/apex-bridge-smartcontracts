@@ -19,7 +19,7 @@ describe("Performance", function () {
     await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
 
     // wait for next timeout
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 8; i++) {
       await ethers.provider.send("evm_mine");
     }
 
@@ -38,7 +38,7 @@ describe("Performance", function () {
     await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
 
     // wait for next timeout
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 8; i++) {
       await ethers.provider.send("evm_mine");
     }
 
@@ -47,7 +47,7 @@ describe("Performance", function () {
     }
 
     // wait for next timeout
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 8; i++) {
       await ethers.provider.send("evm_mine");
     }
 

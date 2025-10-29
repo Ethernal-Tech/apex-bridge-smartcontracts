@@ -749,14 +749,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         claimsHelper.resetCurrentBatchBlock(_chainId);
     }
 
-    /// @notice Updates the timeout block for a specific chain.
-    /// @dev Only callable by the Bridge contract. Sets the next timeout block to the provided block number plus the predefined timeout period.
-    /// @param _chainId The ID of the chain for which the timeout block is being set.
-    /// @param _blockNumber The reference block number used to calculate the next timeout block.
-    function setNextTimeoutBlock(uint8 _chainId, uint256 _blockNumber) external onlyBridge {
-        nextTimeoutBlock[_chainId] = _blockNumber + timeoutBlocksNumber;
-    }
-
     /// @notice Checks whether a specific voter has already voted for a given claim hash.
     /// @param _hash The hash of the claim being voted on.
     /// @param _voter The address of the voter to check.

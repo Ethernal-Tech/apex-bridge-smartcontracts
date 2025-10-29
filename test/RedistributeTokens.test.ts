@@ -44,7 +44,7 @@ describe("Redistribute Tokens", function () {
     );
 
     // wait for next timeout
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 9; i++) {
       await ethers.provider.send("evm_mine");
     }
 
@@ -67,7 +67,7 @@ describe("Redistribute Tokens", function () {
     await admin.connect(owner).redistributeBridgingAddrsTokens(chain1.id);
 
     // wait for next timeout
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 10; i++) {
       await ethers.provider.send("evm_mine");
     }
     expect(await claims.shouldCreateBatch(chain1.id)).to.be.true;

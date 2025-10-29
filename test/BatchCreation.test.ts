@@ -11,7 +11,7 @@ describe("Batch creation", function () {
     await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
 
     // wait for next timeout
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 8; i++) {
       await ethers.provider.send("evm_mine");
     }
 
@@ -42,6 +42,10 @@ describe("Batch creation", function () {
     await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
     await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
     await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+    for (let i = 0; i < 5; i++) {
+      await ethers.provider.send("evm_mine");
+    }
 
     await setCode("0x0000000000000000000000000000000000002050", "0x60206000F3"); // should return false for precompile
     await expect(bridge.connect(validators[0]).submitSignedBatch(signedBatch)).to.be.revertedWithCustomError(
@@ -153,6 +157,10 @@ describe("Batch creation", function () {
     await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC2);
     await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC2);
 
+    for (let i = 0; i < 5; i++) {
+      await ethers.provider.send("evm_mine");
+    }
+
     expect(await bridge.getNextBatchId(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(1);
   });
 
@@ -163,8 +171,9 @@ describe("Batch creation", function () {
     await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
     // wait for timeout
-    await ethers.provider.send("evm_mine");
-    await ethers.provider.send("evm_mine");
+    for (let i = 0; i < 7; i++) {
+      await ethers.provider.send("evm_mine");
+    }
 
     expect(await bridge.getNextBatchId(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(1);
   });
@@ -176,7 +185,7 @@ describe("Batch creation", function () {
     await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
 
     // wait for next timeout
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 8; i++) {
       await ethers.provider.send("evm_mine");
     }
 
@@ -207,7 +216,7 @@ describe("Batch creation", function () {
     await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
 
     // wait for next timeout
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 8; i++) {
       await ethers.provider.send("evm_mine");
     }
 
@@ -224,7 +233,7 @@ describe("Batch creation", function () {
     await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
 
     // wait for next timeout
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 8; i++) {
       await ethers.provider.send("evm_mine");
     }
 
@@ -241,7 +250,7 @@ describe("Batch creation", function () {
     await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
 
     // wait for next timeout
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 8; i++) {
       await ethers.provider.send("evm_mine");
     }
 
@@ -282,8 +291,9 @@ describe("Batch creation", function () {
     await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
     //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
-    await ethers.provider.send("evm_mine");
-    await ethers.provider.send("evm_mine");
+    for (let i = 0; i < 7; i++) {
+      await ethers.provider.send("evm_mine");
+    }
 
     const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(_destinationChain);
     expect(confirmedTxs.length).to.equal(1);
@@ -312,7 +322,7 @@ describe("Batch creation", function () {
     await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
 
     // wait for next timeout
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 8; i++) {
       await ethers.provider.send("evm_mine");
     }
 
@@ -342,7 +352,7 @@ describe("Batch creation", function () {
     await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
 
     // wait for next timeout
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 8; i++) {
       await ethers.provider.send("evm_mine");
     }
 
