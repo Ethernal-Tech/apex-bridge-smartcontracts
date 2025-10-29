@@ -7,4 +7,5 @@ library BatchTypesLib {
     uint8 internal constant CONSOLIDATION = 1;
     uint8 internal constant VALIDATORSET = 2;
     uint8 internal constant VALIDATORSET_FINAL = 3;
+    uint8 internal constant COLORED_COIN = 4;
 }
