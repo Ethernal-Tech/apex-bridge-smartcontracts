@@ -1,4 +1,3 @@
-import { BridgingAddresses } from "./../artifacts/contracts/BridgingAddresses.sol/artifacts.d";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
@@ -7,7 +6,10 @@ import {
   BatchType,
   TransactionType,
   TransactionSubType,
+  encodeBridgeRequestClaim,
+  encodeBatchExecutedClaim,
   encodeRefundRequestClaim,
+  encodeBatchExecutionFailedClaim,
 } from "./fixtures";
 
 describe("Submit Claims", function () {
@@ -106,47 +108,8 @@ describe("Submit Claims", function () {
     });
 
     it("Should set voted on Bridging Request Claim", async function () {
-      const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
-      const encoded = abiCoder.encode(
-        [
-          "bytes32",
-          "tuple(uint64, uint64, string)[]",
-          "uint256",
-          "uint256",
-          "uint256",
-          "uint256",
-          "uint256",
-          "uint8",
-          "uint8",
-          "uint8",
-        ],
-        [
-          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
-          [
-            [
-              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount,
-              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amountWrapped,
-              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
-            ],
-          ],
-          validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource,
-          validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountSource,
-          validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination,
-          validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountDestination,
-          validatorClaimsBRC.bridgingRequestClaims[0].retryCounter,
-          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
-          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
-          validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId,
-        ]
-      );
-
-      const encoded40 =
-        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-        encodedPrefix.substring(66) +
-        encoded.substring(2);
-
-      const hash = ethers.keccak256(encoded40);
+      const encoded = encodeBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
+      const hash = ethers.keccak256(encoded);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
       expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
@@ -517,23 +480,8 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["BEC"]);
-      const encoded = abiCoder.encode(
-        ["bytes32", "uint64", "uint8"],
-        [
-          validatorClaimsBEC.batchExecutedClaims[0].observedTransactionHash,
-          validatorClaimsBEC.batchExecutedClaims[0].batchNonceId,
-          validatorClaimsBEC.batchExecutedClaims[0].chainId,
-        ]
-      );
-
-      const encoded40 =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encoded.substring(2) +
-        encodedPrefix.substring(66);
-
-      const hash = ethers.keccak256(encoded40);
+      const encoded = encodeBatchExecutedClaim(validatorClaimsBEC.batchExecutedClaims[0]);
+      const hash = ethers.keccak256(encoded);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
       expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
@@ -777,23 +725,8 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
 
-      const abiCoder = new ethers.AbiCoder();
-      const encodedPrefix = abiCoder.encode(["string"], ["BEFC"]);
-      const encoded = abiCoder.encode(
-        ["bytes32", "uint64", "uint8"],
-        [
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].observedTransactionHash,
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId,
-          validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId,
-        ]
-      );
-
-      const encoded40 =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
-        encoded.substring(2) +
-        encodedPrefix.substring(66);
-
-      const hash = ethers.keccak256(encoded40);
+      const encoded = encodeBatchExecutionFailedClaim(validatorClaimsBEFC.batchExecutionFailedClaims[0]);
+      const hash = ethers.keccak256(encoded);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
       expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
