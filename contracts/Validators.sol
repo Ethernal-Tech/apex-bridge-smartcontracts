@@ -108,7 +108,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         return addressValidatorIndex[_addr];
     }
 
-    function getValidatorsAddresses() public view returns (address[] memory){
+    function getValidatorsAddresses() public view returns (address[] memory) {
         return validatorAddresses;
     }
 
@@ -297,7 +297,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         }
 
         for (uint i; i < _numberOfChainsInValidatorSets; i++) {
-            bool atLeastOneProcessed = false;
+            bool chainMatched = false;
             // checks that there is a new validator set for all registered chains
             // and for Blade -> chainId == 255
             for (uint256 j; j < _numberOfRegisteredChains; j++) {
@@ -307,10 +307,10 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
                 ) {
                     continue;
                 }
-                atLeastOneProcessed = true; // This validator matches the chain
+                chainMatched = true; // This validator matches the chain
             }
 
-            if (!atLeastOneProcessed) {
+            if (!chainMatched) {
                 revert InvalidData("ChainIdMismatch");
             }
 
@@ -440,7 +440,10 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         validatorsCount = uint8(validatorAddresses.length);
     }
 
-    function submitNewValidatorSet(NewValidatorSetDelta calldata _newValidatorSetDelta, Chain[] calldata chains) external onlyBridge {
+    function submitNewValidatorSet(
+        NewValidatorSetDelta calldata _newValidatorSetDelta,
+        Chain[] calldata chains
+    ) external onlyBridge {
         //TODO: check if these validators are indeed in the current set???
         _validateValidatorSet(_newValidatorSetDelta, chains);
 
@@ -455,7 +458,6 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         delete newValidatorSetDelta;
         newValidatorSetPending = false;
         currentValidatorSetId++;
-
     }
 
     /// @notice Adds newly proposed validators to the current validator set across all chains.
