@@ -5,49 +5,48 @@ import { deployBridgeFixture, encodeBridgeRequestClaim, encodeRefundRequestClaim
 
 describe("Claims Contract", function () {
   describe("Submit new Bridging Request Claim", function () {
-    it("Should revert if either source and destination chains are not registered", async function () {
-      const { bridge, owner, validators, chain1, validatorAddressChainData, validatorClaimsBRC } = await loadFixture(
-        deployBridgeFixture
-      );
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
-        bridge,
-        "ChainIsNotRegistered"
-      );
-      await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
-        bridge,
-        "ChainIsNotRegistered"
-      );
-    });
-
     it("Should revert if there are too many receivers in BRC", async function () {
-      const {
-        bridge,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        validatorAddressChainData,
-        validatorClaimsBRC_tooManyReceivers,
-      } = await loadFixture(deployBridgeFixture);
+      const validatorClaimsBRC_tooManyReceivers = structuredClone(validatorClaimsBRC);
 
-      await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 10000, 10000, validatorAddressChainData);
-
+      validatorClaimsBRC_tooManyReceivers.bridgingRequestClaims[0].receivers = [
+        ...Array.from({ length: 17 }, (_, i) => ({
+          amount: 99 + i,
+          amountWrapped: 100 + i,
+          destinationAddress: `0x123...${(i + 1).toString().padStart(8, "0")}`,
+        })),
+      ];
       await expect(
         bridge.connect(validators[0]).submitClaims(validatorClaimsBRC_tooManyReceivers)
       ).to.be.revertedWithCustomError(bridge, "TooManyReceivers");
     });
 
     it("Should skip if Bridging Request Claim is already confirmed", async function () {
-      const { bridge, claims, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-      await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 10000, 10000, validatorAddressChainData);
-
-      const encoded = encodeBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
-      const hash = ethers.keccak256(encoded);
-
+  
+      const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
+      const encoded = abiCoder.encode(
+        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint256", "uint256", "uint256", "uint8", "uint8"],
+        [
+          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
+          [
+            [
+              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount,
+              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
+            ],
+          ],
+          validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource,
+          validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountSource,
+          validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination,
+          validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountDestination,
+          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
+          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
+        ]
+      );
+      const encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
+      const hash = ethers.keccak256(encoded40);
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -56,74 +55,166 @@ describe("Claims Contract", function () {
       await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
       expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
     });
+
     it("Should skip if same validator submits the same Bridging Request Claim twice", async function () {
-      const { bridge, claimsHelper, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-      await bridge.connect(owner).registerChain(chain1, 10000, 10000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 10000, 10000, validatorAddressChainData);
-
-      const encoded = encodeBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
-      const hash = ethers.keccak256(encoded);
-
+      
+      const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
+      const encoded = abiCoder.encode(
+        [
+          "bytes32",
+          "tuple(uint256, uint256, string)[]",
+          "uint256",
+          "uint256",
+          "uint256",
+          "uint256",
+          "uint256",
+          "uint8",
+          "uint8",
+        ],
+        [
+          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
+          [
+            [
+              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount,
+              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amountWrapped,
+              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
+            ],
+          ],
+          validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource,
+          validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountSource,
+          validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination,
+          validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountDestination,
+          validatorClaimsBRC.bridgingRequestClaims[0].retryCounter,
+          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
+          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
+        ]
+      );
+      const encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
+      const hash = ethers.keccak256(encoded40);
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
+
     it("Should skip Bridging Request Claim if there is not enough bridging tokens and emit NotEnoughFunds event", async function () {
-      const { bridge, claims, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
+      
+      const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
+      const encoded = abiCoder.encode(
+        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint256", "uint256", "uint256", "uint8", "uint8"],
+        [
+          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
+          [
+            [
+              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount,
+              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
+            ],
+          ],
+          validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource,
+          validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountSource,
+          validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination,
+          validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountDestination,
+          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
+          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
+        ]
+      );
 
-      await bridge.connect(owner).registerChain(chain1, 1, 1000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1, 1000, validatorAddressChainData);
+      const encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
 
-      const encoded = encodeBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const hash = ethers.keccak256(encoded40);
 
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC))
+      await expect(bridge.connect(validators[0]).submitClaims(BRC_notEnoughFunds))
         .to.emit(claims, "NotEnoughFunds")
-        .withArgs("BRC - Currency", 0, 1);
+        .withArgs("BRC - Currency", 0, tokensAvailable);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
     });
     it("Should skip Bridging Request Claim if there is not enough wrapped tokens and emit NotEnoughFunds event", async function () {
-      const { bridge, claims, owner, chain1, chain2, validators, validatorClaimsBRC, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
+      
+      const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
+      const encoded = abiCoder.encode(
+        ["bytes32", "tuple(uint64, string)[]", "uint256", "uint256", "uint256", "uint256", "uint8", "uint8"],
+        [
+          validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
+          [
+            [
+              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount,
+              validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress,
+            ],
+          ],
+          validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource,
+          validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountSource,
+          validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination,
+          validatorClaimsBRC.bridgingRequestClaims[0].wrappedTokenAmountDestination,
+          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
+          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
+        ]
+      );
 
-      await bridge.connect(owner).registerChain(chain1, 1000, 1, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, 1, validatorAddressChainData);
+      const encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
 
-      const encoded = encodeBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const hash = ethers.keccak256(encoded40);
 
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC))
+      await expect(bridge.connect(validators[0]).submitClaims(BRC_notEnoughFunds))
         .to.emit(claims, "NotEnoughFunds")
-        .withArgs("BRC - Native Token", 0, 1);
+        .withArgs("BRC - Native Token", 0, tokensAvailable);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
     });
+
     it("Should revert Bridging Request Claims if there are more than 32 in the array", async function () {
-      const {
-        bridge,
-        claims,
-        claimsHelper,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        validatorClaimsBRC_bunch32,
-        validatorClaimsBRC_bunch33,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 1000, 1, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, 1, validatorAddressChainData);
-
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC_bunch32);
 
       for (let i = 0; i < validatorClaimsBRC_bunch32.bridgingRequestClaims.length; i++) {
-        const encoded = encodeBridgeRequestClaim(validatorClaimsBRC_bunch32.bridgingRequestClaims[i]);
-        const hash = ethers.keccak256(encoded);
+        const encoded = abiCoder.encode(
+          [
+            "bytes32",
+            "tuple(uint256, uint256, string)[]",
+            "uint256",
+            "uint256",
+            "uint256",
+            "uint256",
+            "uint256",
+            "uint8",
+            "uint8",
+          ],
+          [
+            validatorClaimsBRC_bunch32.bridgingRequestClaims[0].observedTransactionHash,
+            [
+              [
+                validatorClaimsBRC_bunch32.bridgingRequestClaims[0].receivers[0].amount,
+                validatorClaimsBRC_bunch32.bridgingRequestClaims[0].receivers[0].amountWrapped,
+                validatorClaimsBRC_bunch32.bridgingRequestClaims[0].receivers[0].destinationAddress,
+              ],
+            ],
+            validatorClaimsBRC_bunch32.bridgingRequestClaims[0].nativeCurrencyAmountSource,
+            validatorClaimsBRC_bunch32.bridgingRequestClaims[0].wrappedTokenAmountSource,
+            validatorClaimsBRC_bunch32.bridgingRequestClaims[0].nativeCurrencyAmountDestination,
+            validatorClaimsBRC_bunch32.bridgingRequestClaims[0].wrappedTokenAmountDestination,
+            validatorClaimsBRC_bunch32.bridgingRequestClaims[0].retryCounter,
+            validatorClaimsBRC_bunch32.bridgingRequestClaims[0].sourceChainId,
+            validatorClaimsBRC_bunch32.bridgingRequestClaims[0].destinationChainId,
+          ]
+        );
+        const encoded40 =
+          "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+          encodedPrefix.substring(66) +
+          encoded.substring(2);
+
+        hashes.push(ethers.keccak256(encoded40));
+      }
 
         expect(await claims.hasVoted(hash, validators[0].address)).to.be.true;
         expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
@@ -137,12 +228,6 @@ describe("Claims Contract", function () {
 
   describe("Submit new Batch Executed Claim", function () {
     it("Should revert if signature is not valid", async function () {
-      const { bridge, owner, chain1, chain2, validators, validatorClaimsBRC, signedBatch, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorAddressChainData);
-
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -154,31 +239,8 @@ describe("Claims Contract", function () {
         "InvalidSignature"
       );
     });
-    it("Should revert if chain is not registered", async function () {
-      const { bridge, claimsHelper, validators, validatorClaimsBEC } = await loadFixture(deployBridgeFixture);
-
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEC)).to.be.revertedWithCustomError(
-        claimsHelper,
-        "ChainIsNotRegistered"
-      );
-    });
 
     it("Should skip if Batch Executed Claims is already confirmed", async function () {
-      const {
-        bridge,
-        claims,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        validatorClaimsBRC,
-        validatorClaimsBEC,
-        signedBatch,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
@@ -231,22 +293,6 @@ describe("Claims Contract", function () {
     });
 
     it("Should skip if same validator submits the same Batch Executed Claim twice", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        validatorClaimsBRC,
-        signedBatch,
-        validatorClaimsBEC,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      // Register the chain
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
@@ -296,25 +342,8 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
-    it("Should revert with BatchNotFound error if there is already a quorum for BEFC for the same batch", async function () {
-      const {
-        bridge,
-        claims,
-        claimsHelper,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        validatorClaimsBRC,
-        validatorClaimsBEC,
-        validatorClaimsBEFC,
-        signedBatch,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
 
-      // Register the chain
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
+    it("Should revert with BatchNotFound error if there is already a quorum for BEFC for the same batch", async function () {
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
@@ -403,26 +432,13 @@ describe("Claims Contract", function () {
       // Second claim should now be confirmed
       expect(await claimsHelper.numberOfVotes(hashBEC)).to.equal(3);
     });
-    it("Should revert with BatchNotFound error if there is already a quorum for another BEC for the same batch", async function () {
-      const {
-        bridge,
-        claims,
-        claimsHelper,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        validatorClaimsBRC,
-        validatorClaimsBEC,
-        validatorClaimsBEC_another,
-        signedBatch,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
 
-      // Register the chain
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
+    it("Should revert with BatchNotFound error if there is already a quorum for another BEC for the same batch", async function () {
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
+
+      const validatorClaimsBEC_another = structuredClone(validatorClaimsBEC);
+      validatorClaimsBEC_another.batchExecutedClaims[0].observedTransactionHash =
+        "0x7465737500000000000000000000000000000000000000000000000000000001";
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -512,31 +528,7 @@ describe("Claims Contract", function () {
   });
 
   describe("Submit new Batch Execution Failed Claims", function () {
-    it("Should revert if chain is not registered", async function () {
-      const { bridge, validators, validatorClaimsBEFC } = await loadFixture(deployBridgeFixture);
-
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC)).to.be.revertedWithCustomError(
-        bridge,
-        "ChainIsNotRegistered"
-      );
-    });
-
     it("Should skip if Batch Execution Failed Claims is already confirmed", async function () {
-      const {
-        bridge,
-        claims,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        validatorClaimsBRC,
-        validatorClaimsBEFC,
-        signedBatch,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
@@ -589,22 +581,6 @@ describe("Claims Contract", function () {
     });
 
     it("Should skip if same validator submits the same Batch Execution Failed Claim twice", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        validatorClaimsBRC,
-        signedBatch,
-        validatorClaimsBEFC,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      // Register the chain
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
@@ -654,23 +630,6 @@ describe("Claims Contract", function () {
     });
 
     it("Should skip if there is already a quorum for BRC for the same batch", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        validatorClaimsBRC,
-        validatorClaimsBEC,
-        validatorClaimsBEFC,
-        signedBatch,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      // Register the chain
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
@@ -759,25 +718,13 @@ describe("Claims Contract", function () {
       // Second claim should not be confirmed
       expect(await claimsHelper.numberOfVotes(hashBEFC)).to.equal(3);
     });
-    it("Should revert with BatchNotFound error if there is already a quorum for another BEFC for the same batch", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        validators,
-        chain1,
-        chain2,
-        validatorClaimsBRC,
-        validatorClaimsBEFC,
-        validatorClaimsBEFC_another,
-        signedBatch,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
 
-      // Register the chain
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
+    it("Should revert with BatchNotFound error if there is already a quorum for another BEFC for the same batch", async function () {
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
+
+      const validatorClaimsBEFC_another = structuredClone(validatorClaimsBEFC);
+      validatorClaimsBEFC_another.batchExecutionFailedClaims[0].observedTransactionHash =
+        "0x7465737400000000000000000000000000000000000000000000000000000001";
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -866,22 +813,31 @@ describe("Claims Contract", function () {
   });
 
   describe("Submit new Refund Request Claims", function () {
-    it("Should revert if chain is not registered", async function () {
-      const { bridge, validators, validatorClaimsRRC } = await loadFixture(deployBridgeFixture);
-
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsRRC)).to.be.revertedWithCustomError(
-        bridge,
-        "ChainIsNotRegistered"
-      );
-    });
-
     it("Should skip if Refund Request Claims is already confirmed", async function () {
-      const { bridge, claims, owner, validators, chain2, validatorClaimsRRC, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
+      
+      const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
+      const encoded = abiCoder.encode(
+        ["bytes32", "bytes32", "uint256", "uint256", "bytes", "string", "uint64", "uint8", "bool"],
+        [
+          validatorClaimsRRC.refundRequestClaims[0].originTransactionHash,
+          validatorClaimsRRC.refundRequestClaims[0].refundTransactionHash,
+          validatorClaimsRRC.refundRequestClaims[0].originAmount,
+          validatorClaimsRRC.refundRequestClaims[0].originWrappedAmount,
+          validatorClaimsRRC.refundRequestClaims[0].outputIndexes,
+          validatorClaimsRRC.refundRequestClaims[0].originSenderAddress,
+          validatorClaimsRRC.refundRequestClaims[0].retryCounter,
+          validatorClaimsRRC.refundRequestClaims[0].originChainId,
+          validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet,
+        ]
+      );
 
-      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
-      const encoded = encodeRefundRequestClaim(validatorClaimsRRC.refundRequestClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
+
+      const hash = ethers.keccak256(encoded40);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
@@ -896,12 +852,31 @@ describe("Claims Contract", function () {
     });
 
     it("Should skip if same validator submits the same Refund Request Claims twice", async function () {
-      const { bridge, claimsHelper, owner, validators, chain2, validatorClaimsRRC, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
+      
+      const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
+      const encoded = abiCoder.encode(
+        ["bytes32", "bytes32", "uint256", "uint256", "bytes", "string", "uint64", "uint8", "bool", "uint8"],
+        [
+          validatorClaimsRRC.refundRequestClaims[0].originTransactionHash,
+          validatorClaimsRRC.refundRequestClaims[0].refundTransactionHash,
+          validatorClaimsRRC.refundRequestClaims[0].originAmount,
+          validatorClaimsRRC.refundRequestClaims[0].originWrappedAmount,
+          validatorClaimsRRC.refundRequestClaims[0].outputIndexes,
+          validatorClaimsRRC.refundRequestClaims[0].originSenderAddress,
+          validatorClaimsRRC.refundRequestClaims[0].retryCounter,
+          validatorClaimsRRC.refundRequestClaims[0].originChainId,
+          validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet,
+          validatorClaimsRRC.refundRequestClaims[0].destinationChainId,
+        ]
+      );
 
-      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
-      const encoded = encodeRefundRequestClaim(validatorClaimsRRC.refundRequestClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      const encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
+
+      const hash = ethers.keccak256(encoded40);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
 
@@ -913,17 +888,18 @@ describe("Claims Contract", function () {
     });
 
     it("Should emit NotEnoughFunds and skip Refund Request Claim for failed BRC on destination if there is not enough funds", async function () {
-      const { bridge, claims, owner, chain2, validators, validatorAddressChainData, validatorClaimsRRC } =
-        await loadFixture(deployBridgeFixture);
+      const RRC_notEnoughFunds = structuredClone(validatorClaimsRRC);
 
-      await bridge.connect(owner).registerChain(chain2, 1, 1, validatorAddressChainData);
-      validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = true;
+      const tokensAvailable = await claims.chainTokenQuantity(chain2.id);
 
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsRRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsRRC);
+      RRC_notEnoughFunds.refundRequestClaims[0].originAmount = tokensAvailable + 1n;
+      RRC_notEnoughFunds.refundRequestClaims[0].shouldDecrementHotWallet = true;
 
-      const tx = await bridge.connect(validators[3]).submitClaims(validatorClaimsRRC);
+      await bridge.connect(validators[0]).submitClaims(RRC_notEnoughFunds);
+      await bridge.connect(validators[1]).submitClaims(RRC_notEnoughFunds);
+      await bridge.connect(validators[2]).submitClaims(RRC_notEnoughFunds);
+
+      const tx = await bridge.connect(validators[3]).submitClaims(RRC_notEnoughFunds);
       const receipt = await tx.wait();
 
       const iface = new ethers.Interface([
@@ -931,121 +907,168 @@ describe("Claims Contract", function () {
       ]);
 
       const event = receipt.logs
-        .map((log) => {
+        .map((log: any) => {
           try {
             return iface.parseLog(log);
           } catch {
             return null;
           }
         })
-        .filter((log) => log !== null)
-        .find((log) => log.name === "NotEnoughFunds");
+        .filter((log: any) => log !== null)
+        .find((log: any) => log.name === "NotEnoughFunds");
 
       expect(event).to.not.be.undefined;
       expect(event.fragment.name).to.equal("NotEnoughFunds");
-
-      validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = false;
     });
+
     it("Should skip Refund Request Claim if there is not enough bridging tokens and emit NotEnoughFunds event", async function () {
-      const {
-        bridge,
-        claims,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        validatorClaimsRRC_shouldDecrement,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
+      const RRC_notEnoughFunds = structuredClone(validatorClaimsRRC);
 
-      await bridge.connect(owner).registerChain(chain1, 1, 1, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1, 1, validatorAddressChainData);
+      const tokensAvailable = await claims.chainTokenQuantity(chain1.id);
 
-      const encoded = encodeRefundRequestClaim(validatorClaimsRRC_shouldDecrement.refundRequestClaims[0]);
-      const hash = ethers.keccak256(encoded);
+      RRC_notEnoughFunds.refundRequestClaims[0].originAmount = tokensAvailable + 1n;
+      RRC_notEnoughFunds.refundRequestClaims[0].shouldDecrementHotWallet = true;
 
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsRRC_shouldDecrement))
+      const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
+      const encoded = abiCoder.encode(
+        ["bytes32", "bytes32", "uint256", "uint256", "bytes", "string", "uint64", "uint8", "bool"],
+        [
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].originTransactionHash,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].refundTransactionHash,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].originAmount,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].originWrappedAmount,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].outputIndexes,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].originSenderAddress,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].retryCounter,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].originChainId,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].shouldDecrementHotWallet,
+        ]
+      );
+
+      const encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
+
+      const hash = ethers.keccak256(encoded40);
+
+      await expect(bridge.connect(validators[0]).submitClaims(RRC_notEnoughFunds))
         .to.emit(claims, "NotEnoughFunds")
-        .withArgs("RRC - Currency", 0, 1);
+        .withArgs("RRC - Currency", 0, tokensAvailable);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
     });
+
     it("Should skip Refund Request Claim if there is not enough bridging wrapped tokens and emit NotEnoughFunds event", async function () {
-      const {
-        bridge,
-        claims,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        validatorClaimsRRC_shouldDecrement,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
+      const RRC_notEnoughFunds = structuredClone(validatorClaimsRRC);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, 1, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, 1, validatorAddressChainData);
+      const tokensAvailable = await claims.chainTokenQuantity(chain1.id);
 
-      const encoded = encodeRefundRequestClaim(validatorClaimsRRC_shouldDecrement.refundRequestClaims[0])
-      const hash = ethers.keccak256(encoded);
+      RRC_notEnoughFunds.refundRequestClaims[0].originWrappedAmount = tokensAvailable + 1n;
+      RRC_notEnoughFunds.refundRequestClaims[0].shouldDecrementHotWallet = true;
 
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsRRC_shouldDecrement))
+      const abiCoder = new ethers.AbiCoder();
+      const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
+      const encoded = abiCoder.encode(
+        ["bytes32", "bytes32", "uint256", "uint256", "bytes", "string", "uint64", "uint8", "bool"],
+        [
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].originTransactionHash,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].refundTransactionHash,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].originAmount,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].originWrappedAmount,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].outputIndexes,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].originSenderAddress,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].retryCounter,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].originChainId,
+          validatorClaimsRRC_shouldDecrement.refundRequestClaims[0].shouldDecrementHotWallet,
+        ]
+      );
+
+      const encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
+
+      const hash = ethers.keccak256(encoded40);
+
+      await expect(bridge.connect(validators[0]).submitClaims(RRC_notEnoughFunds))
         .to.emit(claims, "NotEnoughFunds")
-        .withArgs("RRC - Native Token", 0, 1);
+        .withArgs("RRC - Native Token", 0, tokensAvailable);
 
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
     });
+
     it("Should revert if refundTransactionHash is not empty in Refund Request Claims", async function () {
-      const {
-        bridge,
-        claimsHelper,
-        owner,
-        validators,
-        chain2,
-        validatorClaimsRRC,
-        validatorClaimsRRC_wrongHash,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
+      
+      let abiCoder = new ethers.AbiCoder();
+      let encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
+      let encoded = abiCoder.encode(
+        ["bytes32", "bytes32", "uint256", "uint256", "bytes", "string", "uint64", "uint8", "bool", "uint8"],
+        [
+          validatorClaimsRRC.refundRequestClaims[0].originTransactionHash,
+          validatorClaimsRRC.refundRequestClaims[0].refundTransactionHash,
+          validatorClaimsRRC.refundRequestClaims[0].originAmount,
+          validatorClaimsRRC.refundRequestClaims[0].originWrappedAmount,
+          validatorClaimsRRC.refundRequestClaims[0].outputIndexes,
+          validatorClaimsRRC.refundRequestClaims[0].originSenderAddress,
+          validatorClaimsRRC.refundRequestClaims[0].retryCounter,
+          validatorClaimsRRC.refundRequestClaims[0].originChainId,
+          validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet,
+          validatorClaimsRRC.refundRequestClaims[0].destinationChainId,
+        ]
+      );
 
-      await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
+      let encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
 
-      let encoded = encodeRefundRequestClaim(validatorClaimsRRC.refundRequestClaims[0]);
-      let hash = ethers.keccak256(encoded);
+      let hash = ethers.keccak256(encoded40);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsRRC);
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
 
-      encoded = encodeRefundRequestClaim(validatorClaimsRRC_wrongHash.refundRequestClaims[0]);
-      hash = ethers.keccak256(encoded);
+      encoded = abiCoder.encode( 
+        ["bytes32", "bytes32", "uint256", "bytes", "string", "uint64", "uint8", "bool", "uint8"],
+        [
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].originTransactionHash,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].refundTransactionHash,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].originAmount,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].outputIndexes,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].originSenderAddress,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].retryCounter,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].originChainId,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].shouldDecrementHotWallet,
+          validatorClaimsRRC_wrongHash.refundRequestClaims[0].destinationChainId,
+        ]
+      );
 
-      await expect(
-        bridge.connect(validators[0]).submitClaims(validatorClaimsRRC_wrongHash)
-      ).to.be.revertedWithCustomError(bridge, "InvalidData");
+      encoded40 =
+        "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+        encodedPrefix.substring(66) +
+        encoded.substring(2);
+
+      hash = ethers.keccak256(encoded40);
+
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsRRC_wrongHash))
+        .to.be.revertedWithCustomError(bridge, "InvalidData")
+        .withArgs("refundTransactionHash");
     });
   });
 
   describe("Submit new Hot Wallet Increment Claim", function () {
-    it("Should revert if chain is not registered", async function () {
-      const { bridge, validators, validatorClaimsHWIC } = await loadFixture(deployBridgeFixture);
-
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC)).to.be.revertedWithCustomError(
-        bridge,
-        "ChainIsNotRegistered"
-      );
-    });
-
     it("Should skip if Hot Wallet Increment Claim Claim is already confirmed", async function () {
-      const { bridge, claims, owner, validators, chain1, validatorClaimsHWIC, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["HWIC"]);
       const encoded = abiCoder.encode(
-        ["uint8", "uint256"],
+        ["uint8", "uint256", "uint256", "uint8"],
         [
           validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId,
           validatorClaimsHWIC.hotWalletIncrementClaims[0].amount,
+          validatorClaimsHWIC.hotWalletIncrementClaims[0].amountWrapped,
+          validatorClaimsHWIC.hotWalletIncrementClaims[0].coloredCoinId,
         ]
       );
 
@@ -1074,23 +1097,20 @@ describe("Claims Contract", function () {
     });
 
     it("Should skip if same validator submits the same Hot Wallet Increment Claim twice", async function () {
-      const { bridge, claimsHelper, owner, validators, chain1, validatorClaimsHWIC, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
       const abiCoder = new ethers.AbiCoder();
       const encodedPrefix = abiCoder.encode(["string"], ["HWIC"]);
       const encoded = abiCoder.encode(
-        ["uint8", "uint256", "uint256"],
+        ["uint8", "uint256", "uint256", "uint8"],
         [
           validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId,
           validatorClaimsHWIC.hotWalletIncrementClaims[0].amount,
           validatorClaimsHWIC.hotWalletIncrementClaims[0].amountWrapped,
+          validatorClaimsHWIC.hotWalletIncrementClaims[0].coloredCoinId,
         ]
       );
 
       const encoded40 =
-        "0x0000000000000000000000000000000000000000000000000000000000000080" +
+        "0x00000000000000000000000000000000000000000000000000000000000000a0" +
         encoded.substring(2) +
         encodedPrefix.substring(66);
 
@@ -1104,11 +1124,8 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
-    it("Should NOT increment totalQuantity if there is still no consensus on Hot Wallet Increment Claim", async function () {
-      const { bridge, claims, owner, validators, chain1, validatorClaimsHWIC, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
+    it("Should NOT increment totalQuantity if there is still no consensus on Hot Wallet Increment Claim", async function () {
       expect(await claims.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(100);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC);
@@ -1117,11 +1134,8 @@ describe("Claims Contract", function () {
 
       expect(await claims.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(100);
     });
-    it("Should increment totalQuantity if there is consensus on Hot Wallet Increment Claim", async function () {
-      const { bridge, claims, owner, validators, chain1, validatorClaimsHWIC, validatorAddressChainData } =
-        await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
+    it("Should increment totalQuantity if there is consensus on Hot Wallet Increment Claim", async function () {
       expect(await claims.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(100);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC);
@@ -1134,27 +1148,27 @@ describe("Claims Contract", function () {
       );
     });
   });
+
   describe("Claims getters/setters", function () {
     it("Should revert if Claims SC resetCurrentBatchBlock is not called by Bridge SC", async function () {
-      const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
       await expect(claims.connect(owner).resetCurrentBatchBlock(1)).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
+
     it("Should revert if Claims SC setChainRegistered is not called by Bridge SC", async function () {
-      const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
       await expect(claims.connect(owner).setChainRegistered(1, 100, 100)).to.be.revertedWithCustomError(
         bridge,
         "NotBridge"
       );
     });
+
     it("Should revert if Claims SC setNextTimeoutBlock is not called by Bridge SC", async function () {
-      const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
       await expect(claims.connect(owner).setNextTimeoutBlock(1, 100)).to.be.revertedWithCustomError(
         bridge,
         "NotBridge"
       );
     });
+
     it("Claims SC setVotedOnlyIfNeededReturnQuorumReached should revert if not called by Bridge SC", async function () {
-      const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
       await expect(
         claims
           .connect(owner)
@@ -1165,28 +1179,15 @@ describe("Claims Contract", function () {
           )
       ).to.be.revertedWithCustomError(bridge, "NotBridge");
     });
+
     it("Should revert claim submition in Claims SC if not called by bridge SC", async function () {
-      const { bridge, claims, owner, validatorClaimsBRC } = await loadFixture(deployBridgeFixture);
       await expect(claims.connect(owner).submitClaims(validatorClaimsBRC, owner.address)).to.be.revertedWithCustomError(
         bridge,
         "NotBridge"
       );
     });
-    it("getBatchTransactions should return txs from batch", async function () {
-      const {
-        bridge,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        validatorClaimsBRC,
-        signedBatch,
-        claims,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
 
-      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorAddressChainData);
+    it("getBatchTransactions should return txs from batch", async function () {
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -1209,20 +1210,6 @@ describe("Claims Contract", function () {
     });
 
     it("getBatchTransactions should return empty tx if it is a consolidation batch", async function () {
-      const {
-        bridge,
-        owner,
-        chain1,
-        chain2,
-        validators,
-        validatorClaimsBRC,
-        signedBatchConsolidation,
-        claims,
-        validatorAddressChainData,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorAddressChainData);
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
@@ -1239,62 +1226,6 @@ describe("Claims Contract", function () {
       );
       expect(txs).to.deep.equal([]);
       expect(status).to.equal(1);
-    });
-  });
-
-  describe("setBridgingAddrsDependency", function () {
-    it("Should revert if not called by upgrade admin", async function () {
-      const { bridge, claims, validators, bridgingAddresses } = await loadFixture(deployBridgeFixture);
-
-      await expect(
-        claims.connect(validators[0]).setBridgingAddrsDependencyAndSync(bridgingAddresses.target)
-      ).to.be.revertedWithCustomError(bridge, "NotOwner");
-    });
-
-    it("Should revert if provided address is not a contract", async function () {
-      const { bridge, claims, owner } = await loadFixture(deployBridgeFixture);
-
-      const nonContractAddress = "0x1234567890123456789012345678901234567890";
-
-      await expect(
-        claims.connect(owner).setBridgingAddrsDependencyAndSync(nonContractAddress)
-      ).to.be.revertedWithCustomError(bridge, "NotContractAddress");
-    });
-
-    it("Should successfully set bridging addresses dependency when called by upgrade admin", async function () {
-      const { bridge, claims, owner, bridgingAddresses, chain1, chain2, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 1000, 1000, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 1000, 1000, validatorAddressChainData);
-
-      // Set the bridging addresses dependency
-      await expect(
-        claims.connect(owner).setBridgingAddrsDependencyAndSync(bridgingAddresses.target)
-      ).to.not.be.reverted;
-    });
-
-    it("Should allow setting the same bridging addresses address again", async function () {
-      const { claims, owner, bridgingAddresses } = await loadFixture(deployBridgeFixture);
-
-      // Set the bridging addresses dependency
-      await claims.connect(owner).setBridgingAddrsDependencyAndSync(bridgingAddresses.target);
-
-      // Set it again with the same address
-      await expect(
-        claims.connect(owner).setBridgingAddrsDependencyAndSync(bridgingAddresses.target)
-      ).to.not.be.reverted;
-    });
-
-    it("Should work with a different valid contract address", async function () {
-      const { claims, owner } = await loadFixture(deployBridgeFixture);
-
-      // Deploy a new BridgingAddresses contract for testing
-      const BridgingAddresses = await ethers.getContractFactory("BridgingAddresses");
-      const newBridgingAddresses = await BridgingAddresses.deploy();
-
-      await expect(
-        claims.connect(owner).setBridgingAddrsDependencyAndSync(await newBridgingAddresses.getAddress())
-      ).to.not.be.reverted;
     });
   });
 });

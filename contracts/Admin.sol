@@ -84,6 +84,21 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         emit UpdatedChainWrappedTokenQuantity(_chainId, _isIncrease, _chainWrappedTokenQuantity);
     }
 
+    /// @notice Updates coloredCoin quantity for a specific chain
+    /// @param _chainId ID of the chain to update
+    /// @param _isIncrease Whether to increase (true) or decrease (false) the quantity
+    /// @param _chainColoredCointQuantity Amount of tokens to add or subtract
+    /// @param _coloredCoinId ID of the colored coin to update
+    function updateChainColoredCoinQuantity(
+        uint8 _chainId,
+        bool _isIncrease,
+        uint256 _chainColoredCointQuantity,
+        uint8 _coloredCoinId
+    ) external onlyFundAdmin {
+        claims.updateChainColoredCoinQuantity(_chainId, _isIncrease, _chainColoredCointQuantity, _coloredCoinId);
+        emit UpdatedChainColoredCoinQuantity(_chainId, _isIncrease, _chainColoredCointQuantity, _coloredCoinId);
+    }
+
     function getChainTokenQuantity(uint8 _chainId) external view returns (uint256) {
         return claims.chainTokenQuantity(_chainId);
     }
@@ -96,10 +111,11 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         uint8 _chainId,
         uint256 _amount,
         uint256 _amountWrapped,
+        uint8 _coloredCoinId,
         string calldata _defundAddress
     ) external onlyFundAdmin {
-        claims.defund(_chainId, _amount, _amountWrapped, _defundAddress);
-        emit ChainDefunded(_chainId, _amount);
+        claims.defund(_chainId, _amount, _amountWrapped, _coloredCoinId, _defundAddress);
+        emit ChainDefunded(_chainId, _amount, _amountWrapped, _coloredCoinId, _defundAddress);
     }
 
     /// @notice Sets a new fund admin
