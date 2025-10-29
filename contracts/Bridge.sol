@@ -329,17 +329,18 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         _validateColoredCoin(_coloredCoin);
 
         uint8 _quorumCount = validators.getQuorumNumberOfValidators();
-        uint256 _votesCount = claims.numberOfVotes(coloredCoinHash);
         // if quorum already reached -> exit
-        if (_votesCount == _quorumCount) {
+        if (claims.numberOfVotes(coloredCoinHash) == _quorumCount) {
             return;
         }
 
-        uint8 _validatorIdx = validators.getValidatorIndex(msg.sender) - 1;
-
-        claims.updateVote(coloredCoinHash, _validatorIdx);
-
-        if (_votesCount + 1 == _quorumCount) {
+        if (
+            claims.setVotedOnlyIfNeededReturnQuorumReached(
+                validators.getValidatorIndex(msg.sender) - 1,
+                coloredCoinHash,
+                _quorumCount
+            )
+        ) {
             chainTokens.registerColoredCoin(_coloredCoin);
             emit newColoredCoinRegistered(_coloredCoin.chainId, _coloredCoin.coloredCoinId);
         } else {

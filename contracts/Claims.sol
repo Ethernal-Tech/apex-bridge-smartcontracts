@@ -184,7 +184,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     ) external onlyBridgingAddresses {
         uint256 _confirmedTxCount = getBatchingTxsCount(chainId);
 
-        ConfirmedTransaction storage confirmedTx = createConfirmedTxCore(
+        ConfirmedTransaction storage confirmedTx = _createConfirmedTxCore(
             chainId,
             TransactionTypesLib.STAKE,
             bridgeAddrIndex,
@@ -203,7 +203,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     function createRedistributeTokensTx(uint8 chainId) external onlyAdminContract {
         uint256 _confirmedTxCount = getBatchingTxsCount(chainId);
 
-        createConfirmedTxCore(chainId, TransactionTypesLib.REDISTRIBUTION, 0, 0, ConstantsLib.CHAIN_ID_AS_DESTINATION);
+        _createConfirmedTxCore(chainId, TransactionTypesLib.REDISTRIBUTION, 0, 0, ConstantsLib.CHAIN_ID_AS_DESTINATION);
 
         _updateNextTimeoutBlockIfNeeded(chainId, _confirmedTxCount);
     }
@@ -305,27 +305,28 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev After quorum is reached, the destination chain's token quantity is reduced, and the source chain's token quantity is increased if it's the first retry.
     /// @dev The function also updates the next timeout block if necessary and sets the confirmed transaction details.
     function _submitClaimsBRC(BridgingRequestClaim calldata _claim, uint256 i, address _caller) internal {
-        uint8 _destinationChainId = _claim.destinationChainId;
-
         bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
-        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
+
         uint8 _quorumCount = validators.getQuorumNumberOfValidators();
-        uint256 _votesCount = claimsHelper.numberOfVotes(_claimHash);
-        // if quorum already reached -> exit
-        if (_votesCount == _quorumCount) {
+
+        if (claimsHelper.numberOfVotes(_claimHash) == _quorumCount) {
             return;
         }
 
         if (!chainTokens.validateBRC(_claim, i)) {
-            // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
             return;
         }
 
-        // update votes count with current validator
-        bool _isNewVote = claimsHelper.updateVote(_claimHash, _validatorIdx);
-        // check if quorum is reached for the first time
-        if (_isNewVote && _votesCount + 1 == _quorumCount) {
+        if (
+            claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
+                validators.getValidatorIndex(_caller) - 1,
+                _claimHash,
+                _quorumCount
+            )
+        ) {
             chainTokens.updateTokensBRC(_claim);
+
+            uint8 _destinationChainId = _claim.destinationChainId;
 
             uint256 _confirmedTxCount = getBatchingTxsCount(_destinationChainId);
 
@@ -366,15 +367,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         bytes32 claimHash = keccak256(abi.encode("BEC", _claim));
 
-        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
-
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
-            _validatorIdx,
-            claimHash,
-            validators.getQuorumNumberOfValidators()
-        );
-
-        if (_quorumReached) {
+        if (
+            claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
+                validators.getValidatorIndex(_caller) - 1,
+                claimHash,
+                validators.getQuorumNumberOfValidators()
+            )
+        ) {
             // current batch block must be reset in any case because otherwise bridge will be blocked
             claimsHelper.resetCurrentBatchBlock(chainId);
             claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.EXECUTED);
@@ -413,14 +412,14 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
 
         bytes32 claimHash = keccak256(abi.encode("BEFC", _claim));
-        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
 
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
-            _validatorIdx,
-            claimHash,
-            validators.getQuorumNumberOfValidators()
-        );
-        if (_quorumReached) {
+        if (
+            claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
+                validators.getValidatorIndex(_caller) - 1,
+                claimHash,
+                validators.getQuorumNumberOfValidators()
+            )
+        ) {
             // current batch block must be reset in any case because otherwise bridge will be blocked
             claimsHelper.resetCurrentBatchBlock(chainId);
             claimsHelper.setConfirmedSignedBatchStatus(chainId, _claim.batchNonceId, ConstantsLib.FAILED);
@@ -526,16 +525,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
 
         bytes32 _claimHash = keccak256(abi.encode("RRC", _claim));
-        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
         uint8 _quorumCount = validators.getQuorumNumberOfValidators();
-        uint256 _votesCount = claimsHelper.numberOfVotes(_claimHash);
+        // uint256 _votesCount = claimsHelper.numberOfVotes(_claimHash);
 
         // if quorum already reached -> exit
-        if (_votesCount == _quorumCount) {
+        if (claimsHelper.numberOfVotes(_claimHash) == _quorumCount) {
             return;
         }
-
-        uint8 originChainId = _claim.originChainId;
 
         // check token quantity on source if needed
         if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
@@ -560,10 +556,15 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             }
         }
 
-        // update votes count with current validator
-        bool _isNewVote = claimsHelper.updateVote(_claimHash, _validatorIdx);
-        // check if quorum is reached for the first time
-        if (_isNewVote && _votesCount + 1 == _quorumCount) {
+        if (
+            claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
+                validators.getValidatorIndex(_caller) - 1,
+                _claimHash,
+                _quorumCount
+            )
+        ) {
+            uint8 originChainId = _claim.originChainId;
+
             uint256 _confirmedTxCount = getBatchingTxsCount(originChainId);
 
             if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
@@ -587,15 +588,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     function _submitClaimHWIC(HotWalletIncrementClaim calldata _claim, address _caller) internal {
         bytes32 claimHash = keccak256(abi.encode("HWIC", _claim));
 
-        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
-
-        bool _quorumReached = claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
-            _validatorIdx,
-            claimHash,
-            validators.getQuorumNumberOfValidators()
-        );
-
-        if (_quorumReached) {
+        if (
+            claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
+                validators.getValidatorIndex(_caller) - 1,
+                claimHash,
+                validators.getQuorumNumberOfValidators()
+            )
+        ) {
             chainTokens.updateTokensHWIC(_claim);
         }
     }
@@ -612,7 +611,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     function _setConfirmedTransaction(BridgingRequestClaim memory _claim) internal {
         uint8 destinationChainId = _claim.destinationChainId;
 
-        ConfirmedTransaction storage confirmedTx = createConfirmedTxCore(
+        ConfirmedTransaction storage confirmedTx = _createConfirmedTxCore(
             destinationChainId,
             TransactionTypesLib.NORMAL,
             _claim.bridgeAddrIndex,
@@ -642,10 +641,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     ///      nonce for the specified chain, and sets the relevant properties for the transaction, including the retry counter,
     ///      transaction type, output indexes, and receivers.
     function _setConfirmedTransactionsRRC(RefundRequestClaim memory _claim) internal {
-        uint8 chainId = _claim.originChainId;
-
-        ConfirmedTransaction storage confirmedTx = createConfirmedTxCore(
-            chainId,
+        ConfirmedTransaction storage confirmedTx = _createConfirmedTxCore(
+            _claim.originChainId,
             TransactionTypesLib.REFUND,
             _claim.bridgeAddrIndex,
             _claim.retryCounter,
@@ -771,8 +768,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @param _voter The address of the voter to check.
     /// @return True if the voter has voted for the given claim hash, false otherwise.
     function hasVoted(bytes32 _hash, address _voter) external view returns (bool) {
-        uint8 _validatorIdx = validators.getValidatorIndex(_voter) - 1;
-        return claimsHelper.hasVoted(_hash, _validatorIdx);
+        return claimsHelper.hasVoted(_hash, validators.getValidatorIndex(_voter) - 1);
     }
 
     /// @notice Initiates a defunding operation by creating a BridgingRequestClaim for a specific chain.
@@ -797,7 +793,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         uint256 _confirmedTxCount = getBatchingTxsCount(_chainId);
 
-        ConfirmedTransaction storage confirmedTx = createConfirmedTxCore(
+        ConfirmedTransaction storage confirmedTx = _createConfirmedTxCore(
             _chainId,
             TransactionTypesLib.DEFUND,
             0,
@@ -911,7 +907,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         timeoutBlocksNumber = _timeoutBlocksNumber;
     }
 
-    function createConfirmedTxCore(
+    function _createConfirmedTxCore(
         uint8 chainId,
         uint8 transactionType,
         uint8 bridgeAddrIndex,
@@ -938,10 +934,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     function numberOfVotes(bytes32 _hash) external view returns (uint256) {
         return claimsHelper.numberOfVotes(_hash);
-    }
-
-    function updateVote(bytes32 _hash, uint8 _validatorIdx) external onlyBridge returns (bool) {
-        return claimsHelper.updateVote(_hash, _validatorIdx);
     }
 
     /// @notice Returns the current version of the contract
