@@ -260,8 +260,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         for (uint i; i < refundRequestClaimsLength; i++) {
             RefundRequestClaim calldata _claim = _claims.refundRequestClaims[i];
-            if (!isChainRegistered[_claim.originChainId]) {
-                revert ChainIsNotRegistered(_claim.originChainId);
+            uint8 originChainId = _claim.originChainId;
+            if (!isChainRegistered[originChainId]) {
+                revert ChainIsNotRegistered(originChainId);
+            }
+
+            if (_claim.coloredCoinId != 0 && coloredCoinToChain[_claim.coloredCoinId] != originChainId) {
+                revert ColoredCoinNotNotRegisteredOnChain(_claim.coloredCoinId, originChainId);
             }
 
             _submitClaimsRRC(_claim, i, _caller);
@@ -291,31 +296,12 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint8 _sourceChainId = _claim.sourceChainId;
         uint8 _coloredCoinId = _claim.coloredCoinId;
 
+        // currencyAmount will be used to represent colored coins if coloredCoinIs != 0
         uint256 _nativeCurrencyAmountDestination = _claim.nativeCurrencyAmountDestination;
         uint256 _wrappedTokenAmountDestination = _claim.wrappedTokenAmountDestination;
-        // currencyAmount will be used to represent colored coins if coloredCoinIs != 0
 
         uint256 _chainTokenQuantityDestination = chainTokenQuantity[_destinationChainId];
         uint256 _chainWrappedTokenQuantityDestination = chainWrappedTokenQuantity[_destinationChainId];
-
-        // flag for bridging direction for colored coins -> true for source to destination, false for destination to source
-        bool coloredCoinRegisteredOnSource;
-        bool coloredCoinRegisteredOnDestination;
-
-        if (_claim.coloredCoinId != 0) {
-            if (coloredCoinToChain[_coloredCoinId] == _destinationChainId) {
-                coloredCoinRegisteredOnDestination = true;
-                // colored coin is "returning" to source chain, so it is burned on destination and unlocked on source
-                uint256 _coloredCoinAmount = _nativeCurrencyAmountDestination;
-
-                if (chainColoredCoinQuantity[_destinationChainId][_coloredCoinId] < _coloredCoinAmount) {
-                    emit NotEnoughFunds("BRC - Colored Coin", i, _coloredCoinAmount);
-                    return; // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-                }
-            } else if (coloredCoinToChain[_coloredCoinId] == _sourceChainId) {
-                coloredCoinRegisteredOnSource = true;
-            }
-        }
 
         bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
@@ -326,9 +312,17 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             return;
         }
         // check token quantity on destination
-        if (_claim.coloredCoinId == 0 && _chainTokenQuantityDestination < _nativeCurrencyAmountDestination) {
+        if (_coloredCoinId == 0 && _chainTokenQuantityDestination < _nativeCurrencyAmountDestination) {
             emit NotEnoughFunds("BRC - Currency", i, _chainTokenQuantityDestination);
             return; // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
+        } else if (coloredCoinToChain[_coloredCoinId] == _destinationChainId) {
+            // colored coin is "returning" to source chain, so it is burned on destination and unlocked on source
+            uint256 _coloredCoinAmount = _nativeCurrencyAmountDestination;
+
+            if (chainColoredCoinQuantity[_destinationChainId][_coloredCoinId] < _coloredCoinAmount) {
+                emit NotEnoughFunds("BRC - Colored Coin", i, _coloredCoinAmount);
+                return; // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
+            }
         }
 
         if (_chainWrappedTokenQuantityDestination < _wrappedTokenAmountDestination) {
@@ -343,7 +337,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             if (_coloredCoinId == 0) {
                 // if coloredCoinId == 0, it is currency transfer
                 chainTokenQuantity[_destinationChainId] -= _nativeCurrencyAmountDestination;
-            } else if (coloredCoinRegisteredOnDestination) {
+            } else if (coloredCoinToChain[_coloredCoinId] == _destinationChainId) {
                 chainColoredCoinQuantity[_destinationChainId][_coloredCoinId] -= _nativeCurrencyAmountDestination;
             }
 
@@ -352,15 +346,14 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             // if it is the first occurance of Bridging Request Claim, add the amount to the source chain
             // otherwise, it is a retry and we do not add the amount to the source chain, since it has already been done
             if (_claim.retryCounter == 0) {
-                if (_claim.coloredCoinId == 0) {
+                if (_coloredCoinId == 0) {
                     // if coloredCoinId == 0, it is currency transfer
                     chainTokenQuantity[_claim.sourceChainId] += _claim.nativeCurrencyAmountSource;
-                }
-                chainWrappedTokenQuantity[_claim.sourceChainId] += _claim.wrappedTokenAmountSource;
-
-                if (coloredCoinRegisteredOnSource) {
+                } else if (coloredCoinToChain[_coloredCoinId] == _sourceChainId) {
                     chainColoredCoinQuantity[_sourceChainId][_coloredCoinId] += _claim.nativeCurrencyAmountSource;
                 }
+
+                chainWrappedTokenQuantity[_claim.sourceChainId] += _claim.wrappedTokenAmountSource;
             }
 
             uint256 _confirmedTxCount = getBatchingTxsCount(_destinationChainId);
@@ -479,13 +472,14 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             // emits an event and makes changes to the hot wallet balance
             for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
                 ConfirmedTransaction storage _ctx = confirmedTransactions[chainId][i];
+                uint8 coloredCoinId = _ctx.coloredCoinId;
                 uint8 _txType = _ctx.transactionType;
                 if (_txType == TransactionTypesLib.NORMAL) {
-                    if (_ctx.coloredCoinId == 0) {
+                    if (coloredCoinId == 0) {
                         // if coloredCoinId == 0, it is currency transfer
                         _currentAmount += _ctx.totalAmount;
-                    } else if (coloredCoinToChain[_ctx.coloredCoinId] == chainId) {
-                        chainColoredCoinQuantity[chainId][_ctx.coloredCoinId] += _ctx.totalAmount;
+                    } else {
+                        chainColoredCoinQuantity[chainId][coloredCoinId] += _ctx.totalAmount;
                     }
 
                     _currentWrappedAmount += _ctx.totalWrappedAmount;
@@ -493,11 +487,11 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                     if (_ctx.retryCounter < MAX_NUMBER_OF_RETRIES) {
                         _retryTx(chainId, _ctx);
                     } else {
-                        if (_ctx.coloredCoinId == 0) {
+                        if (coloredCoinId == 0) {
                             // if coloredCoinId == 0, it is currency transfer
                             _currentAmount += _ctx.totalAmount;
-                        } else if (coloredCoinToChain[_ctx.coloredCoinId] == chainId) {
-                            chainColoredCoinQuantity[chainId][_ctx.coloredCoinId] += _ctx.totalAmount;
+                        } else {
+                            chainColoredCoinQuantity[chainId][coloredCoinId] += _ctx.totalAmount;
                         }
 
                         _currentWrappedAmount += _ctx.totalWrappedAmount;
@@ -570,6 +564,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
 
         uint8 originChainId = _claim.originChainId;
+        uint8 coloredCoinId = _claim.coloredCoinId;
 
         bytes32 _claimHash = keccak256(abi.encode("RRC", _claim));
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
@@ -585,25 +580,22 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
             uint256 _chainTokenQuantityOrigin = chainTokenQuantity[originChainId];
             uint256 _chainWrappedTokenQuantityOrigin = chainWrappedTokenQuantity[originChainId];
-            if (_claim.coloredCoinId == 0 && _chainTokenQuantityOrigin < _claim.originAmount) {
+            if (coloredCoinId == 0 && _chainTokenQuantityOrigin < _claim.originAmount) {
                 emit NotEnoughFunds("RRC - Currency", i, _chainTokenQuantityOrigin);
                 // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
                 return;
+            } else {
+                if (_chainTokenQuantityOrigin < _claim.originAmount) {
+                    emit NotEnoughFunds("RRC - Colored Coin", 0, _chainTokenQuantityOrigin);
+                    // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
+                    return;
+                }
             }
 
             if (_chainWrappedTokenQuantityOrigin < _claim.originWrappedAmount) {
                 emit NotEnoughFunds("RRC - Native Token", i, _chainWrappedTokenQuantityOrigin);
                 // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
                 return;
-            }
-
-            if (isColoredCoinRegisteredOnChain(_claim.coloredCoinId, originChainId)) {
-                uint256 _chainColoredCoinQuantityOrigin = chainColoredCoinQuantity[originChainId][_claim.coloredCoinId];
-                if (_chainColoredCoinQuantityOrigin < _chainTokenQuantityOrigin) {
-                    emit NotEnoughFunds("RRC - Colored Coin", 0, _chainColoredCoinQuantityOrigin);
-                    // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-                    return;
-                }
             }
         }
 
@@ -615,16 +607,14 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
             if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
                 // refund after failing on destination chain, return funds to hot wallet
-                if (_claim.coloredCoinId == 0) {
+                if (coloredCoinId == 0) {
                     // if coloredCoinId == 0 it is currency transfer
                     chainTokenQuantity[originChainId] -= _claim.originAmount;
+                } else {
+                    chainColoredCoinQuantity[originChainId][coloredCoinId] -= _claim.originAmount;
                 }
 
                 chainWrappedTokenQuantity[originChainId] -= _claim.originWrappedAmount;
-
-                if (isColoredCoinRegisteredOnChain(_claim.coloredCoinId, originChainId)) {
-                    chainColoredCoinQuantity[originChainId][_claim.coloredCoinId] -= _claim.originAmount;
-                }
             }
 
             _setConfirmedTransactionsRRC(_claim);
@@ -654,7 +644,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         if (_quorumReached) {
             uint8 chainId = _claim.chainId;
             uint8 coloredCoinId = _claim.coloredCoinId;
-            if (_claim.coloredCoinId == 0) {
+            if (coloredCoinId == 0) {
                 // if coloredCoinId == 0, it is currency transfer
                 chainTokenQuantity[chainId] += _claim.amount;
             } else if (coloredCoinToChain[coloredCoinId] == chainId) {
@@ -887,7 +877,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         );
         confirmedTx.totalAmount = _amount;
         confirmedTx.totalWrappedAmount = _amountWrapped;
-        confirmedTx.transactionType = TransactionTypesLib.DEFUND;
         confirmedTx.receivers.push(Receiver(_amount, _amountWrapped, _defundAddress));
         confirmedTx.coloredCoinId = _coloredCoinId;
 
