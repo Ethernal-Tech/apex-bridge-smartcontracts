@@ -9,9 +9,11 @@ import "./Utils.sol";
 
 contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;
+    address private adminContractAddress;
     address private bridgeAddress;
     address private claimsAddress;
-    address private adminContractAddress;
+    address private claimsProcessorAddress;
+    address private registrationAddress;
 
     /// @notice Mapping from chain ID to token quantity.
     /// @dev BlockchainId -> TokenQuantity
@@ -54,18 +56,28 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
 
     /// @notice Sets external contract dependencies.
     /// @param _bridgeAddress Address of the Bridge contract.
-    /// @param _claimsAddress Address of the Claims contract.
+    /// @param _claimsProcessorAddress Address of the Claims contract.
+    /// @param _claimsProcessorAddress Address of the ClaimsProcessor contract.
     /// @param _adminContractAddress Address of the Admin contract.
     function setDependencies(
+        address _adminContractAddress,
         address _bridgeAddress,
         address _claimsAddress,
-        address _adminContractAddress
+        address _claimsProcessorAddress,
+        address _registrationAddress
     ) external onlyOwner {
-        if (!_isContract(_bridgeAddress) || !_isContract(_claimsAddress) || !_isContract(_adminContractAddress))
-            revert NotContractAddress();
+        if (
+            !_isContract(_adminContractAddress) ||
+            !_isContract(_bridgeAddress) ||
+            !_isContract(_claimsAddress) ||
+            !_isContract(_claimsProcessorAddress) ||
+            !_isContract(_registrationAddress)
+        ) revert NotContractAddress();
         bridgeAddress = _bridgeAddress;
         claimsAddress = _claimsAddress;
+        claimsProcessorAddress = _claimsProcessorAddress;
         adminContractAddress = _adminContractAddress;
+        registrationAddress = _registrationAddress;
     }
 
     /// @notice Validates a Bridging Request Claim (BRC) by ensuring sufficient balances exist
@@ -74,7 +86,10 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     /// @param _claim The BridgingRequestClaim struct containing claim details such as amounts and chain IDs.
     /// @param _index The index of the claim in the batch, used for event emission.
     /// @return bool Returns true if all required balances are sufficient, otherwise false.
-    function validateBRC(BridgingRequestClaim calldata _claim, uint256 _index) external onlyClaims returns (bool) {
+    function validateBRC(
+        BridgingRequestClaim calldata _claim,
+        uint256 _index
+    ) external onlyClaimsProcessor returns (bool) {
         return
             _validateBalanceCheck(
                 _claim.destinationChainId,
@@ -94,7 +109,10 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     /// @param _claim The RefundRequestClaim struct containing refund details such as chain ID, token amounts, and coin ID.
     /// @param _index The index of the claim in the batch, used for event emission.
     /// @return bool Returns true if all required balances are sufficient, otherwise false.
-    function validateRRC(RefundRequestClaim calldata _claim, uint256 _index) external onlyClaims returns (bool) {
+    function validateRRC(
+        RefundRequestClaim calldata _claim,
+        uint256 _index
+    ) external onlyClaimsProcessor returns (bool) {
         return
             _validateBalanceCheck(
                 _claim.originChainId,
@@ -146,7 +164,7 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     /// - Retries do not increase source balances again to avoid double-counting.
     /// @param _claim The Bridging Request Claim containing source/destination chain IDs,
     ///        colored coin ID, token amounts, and retry counter.
-    function updateTokensBRC(BridgingRequestClaim calldata _claim) external onlyClaims {
+    function updateTokensBRC(BridgingRequestClaim calldata _claim) external onlyClaimsProcessor {
         // decrease destination
         _updateChainBalances(
             _claim.destinationChainId,
@@ -181,7 +199,7 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         uint8 coloredCoinId,
         uint256 totalAmount,
         uint256 totalWrappedAmount
-    ) external onlyClaims {
+    ) external onlyClaimsProcessor {
         _updateChainBalances(chainId, coloredCoinId, totalAmount, totalWrappedAmount, true);
     }
 
@@ -190,7 +208,7 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     ///      being returned as part of a refund operation.
     /// @param _claim The Refund Request Claim containing origin chain ID, colored coin ID,
     ///        and token/ wrapped token amounts.
-    function updateTokensRRC(RefundRequestClaim calldata _claim) external onlyClaims {
+    function updateTokensRRC(RefundRequestClaim calldata _claim) external onlyClaimsProcessor {
         _updateChainBalances(
             _claim.originChainId,
             _claim.coloredCoinId,
@@ -204,7 +222,7 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     /// @dev Increases chain balances to reflect funds being added to the hot wallet.
     /// @param _claim The Hot Wallet Increment Claim containing chain ID, colored coin ID,
     ///        and token/ wrapped token amounts to add.
-    function updateTokensHWIC(HotWalletIncrementClaim calldata _claim) external onlyClaims {
+    function updateTokensHWIC(HotWalletIncrementClaim calldata _claim) external onlyClaimsProcessor {
         _updateChainBalances(_claim.chainId, _claim.coloredCoinId, _claim.amount, _claim.amountWrapped, true);
     }
 
@@ -290,7 +308,7 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     ///      This function can only be called by the Bridge contract.
     /// @param _coloredCoin The colored coin data structure containing the colored coin ID
     ///        and the chain ID it belongs to.
-    function registerColoredCoin(ColoredCoin calldata _coloredCoin) external onlyBridge {
+    function registerColoredCoin(ColoredCoin calldata _coloredCoin) external onlyRegistration {
         coloredCoinToChain[_coloredCoin.coloredCoinId] = _coloredCoin.chainId;
     }
 
@@ -408,8 +426,13 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         return "1.0.0";
     }
 
-    modifier onlyBridge() {
-        if (msg.sender != bridgeAddress) revert NotBridge();
+    modifier onlyUpgradeAdmin() {
+        if (msg.sender != upgradeAdmin) revert NotUpgradeAdmin();
+        _;
+    }
+
+    modifier onlyAdminContract() {
+        if (msg.sender != adminContractAddress) revert NotAdminContract();
         _;
     }
 
@@ -418,13 +441,13 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         _;
     }
 
-    modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
+    modifier onlyClaimsProcessor() {
+        if (msg.sender != claimsProcessorAddress) revert NotClaimsProcessor();
         _;
     }
 
-    modifier onlyAdminContract() {
-        if (msg.sender != adminContractAddress) revert NotAdminContract();
+    modifier onlyRegistration() {
+        if (msg.sender != registrationAddress) revert NotRegistration();
         _;
     }
 }

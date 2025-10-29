@@ -7,14 +7,14 @@ describe("ClaimsHelper Contract", function () {
     it("Should revert if ClaimsHelper SC resetCurrentBatchBlock is not called by Claims SC", async function () {
       await expect(claimsHelper.connect(owner).resetCurrentBatchBlock(1)).to.be.revertedWithCustomError(
         bridge,
-        "NotClaims"
+        "NotClaimsOrClaimsProcessor"
       );
     });
 
     it("Should revert if ClaimsHelper SC setConfirmedSignedBatchData is not called by SignedBatches SC or Claims SC", async function () {
       await expect(claimsHelper.connect(owner).setConfirmedSignedBatchData(signedBatch)).to.be.revertedWithCustomError(
         bridge,
-        "NotSignedBatchesOrClaims"
+        "NotSignedBatches"
       );
     });
 
@@ -27,7 +27,7 @@ describe("ClaimsHelper Contract", function () {
             "0x7465737600000000000000000000000000000000000000000000000000000000",
             1
           )
-      ).to.be.revertedWithCustomError(bridge, "NotSignedBatchesOrClaims");
+      ).to.be.revertedWithCustomError(bridge, "NotClaimsProcessorOrRegistration");
     });
   });
 

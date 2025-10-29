@@ -5,8 +5,16 @@ import { deployBridgeFixture } from "./fixtures";
 describe("Bridging Addresses", function () {
   it("Should revert if init bridging addresses is not sent by upgrade admin", async function () {
     await expect(
-      bridge.connect(validators[0]).setAdditionalDependenciesAndSync(bridgingAddresses.target, chainTokens.target, true)
-    ).to.be.revertedWithCustomError(bridge, "NotOwner");
+      bridge
+        .connect(validators[0])
+        .setAdditionalDependenciesAndSync(
+          bridgingAddresses.target,
+          chainTokens.target,
+          claimsHelper.target,
+          registration.target,
+          true
+        )
+    ).to.be.revertedWithCustomError(bridge, "NotUpgradeAdmin");
   });
 
   it("Should revert if set bridging addresses count is not sent by owner", async function () {
@@ -120,6 +128,8 @@ describe("Bridging Addresses", function () {
   let bridge: any;
   let bridgingAddresses: any;
   let chainTokens: any;
+  let claimsHelper: any;
+  let registration: any;
   let owner: any;
   let chain1: any;
   let chain2: any;
@@ -133,6 +143,8 @@ describe("Bridging Addresses", function () {
     bridge = fixture.bridge;
     bridgingAddresses = fixture.bridgingAddresses;
     chainTokens = fixture.chainTokens;
+    claimsHelper = fixture.claimsHelper;
+    registration = fixture.registration;
     owner = fixture.owner;
     chain1 = fixture.chain1;
     chain2 = fixture.chain2;

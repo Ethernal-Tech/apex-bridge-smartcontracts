@@ -6,13 +6,13 @@ describe("Validators Contract", function () {
   it("addValidatorChainData from Validators SC should revert if not called by Bridge SC", async function () {
     await expect(
       validatorsc.connect(owner).addValidatorChainData(1, owner.address, validatorCardanoData)
-    ).to.be.revertedWithCustomError(bridge, "NotBridge");
+    ).to.be.revertedWithCustomError(bridge, "NotRegistration");
   });
 
   it("setValidatorsChainData from Validators SC should revert if not called by Bridge SC", async function () {
     await expect(
       validatorsc.connect(owner).setValidatorsChainData(1, validatorAddressChainData)
-    ).to.be.revertedWithCustomError(bridge, "NotBridge");
+    ).to.be.revertedWithCustomError(bridge, "NotRegistration");
   });
 
   let bridge: any;

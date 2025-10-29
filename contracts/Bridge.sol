@@ -6,13 +6,15 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridge.sol";
-import "./Utils.sol";
+import "./BridgingAddresses.sol";
+import "./ChainTokens.sol";
 import "./Claims.sol";
+import "./ClaimsHelper.sol";
+import "./Registration.sol";
 import "./SignedBatches.sol";
 import "./Slots.sol";
 import "./Validators.sol";
-import "./BridgingAddresses.sol";
-import "./ChainTokens.sol";
+import "./Utils.sol";
 import "./interfaces/TransactionTypesLib.sol";
 
 /// @title Bridge
@@ -25,19 +27,19 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     Slots private slots;
     Validators private validators;
 
-    /// @notice Array of registered chains.
-    Chain[] private chains;
-
-    /// @notice Max number of blocks that can be submitted at once.
-    uint8 constant MAX_NUMBER_OF_BLOCKS = 40;
+    /// @notice Depricated: Array of registered chains.
+    ///      Use registration.chains instead.
+    Chain[] private __chains;
 
     BridgingAddresses public bridgingAddresses;
     ChainTokens private chainTokens;
+    Registration private registration;
+    ClaimsHelper private claimsHelper;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[48] private __gap;
+    uint256[46] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -87,11 +89,15 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @dev This function can only be called by the upgrade admin.
     ///      It verifies that the provided address is a contract before using it.
     /// @param _bridgingAddresses The address of the deployed BridgingAddresses contract.
-    /// @param _chainTokens The address of the deployed ChainTokens contract.
+    /// @param _chainTokensAddress The address of the deployed ChainTokens contract.
+    /// @param _registrationAddress The address of the deployed Registration contract.
+    /// @param _claimsHelperAddress The address of the deployed ClaimsHelper contract.
     /// @param isInitialDeployment Indicates whether this call occurs during the initial deployment of the contract. Set to false for upgrades.
     function setAdditionalDependenciesAndSync(
         address _bridgingAddresses,
-        address _chainTokens,
+        address _chainTokensAddress,
+        address _claimsHelperAddress,
+        address _registrationAddress,
         bool isInitialDeployment
     ) external onlyUpgradeAdmin {
         if (isInitialDeployment) {
@@ -99,8 +105,14 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             bridgingAddresses = BridgingAddresses(_bridgingAddresses);
         }
 
-        if (!_isContract(_chainTokens)) revert NotContractAddress();
-        chainTokens = ChainTokens(_chainTokens);
+        if (
+            !_isContract(_chainTokensAddress) ||
+            !_isContract(_claimsHelperAddress) ||
+            !_isContract(_registrationAddress)
+        ) revert NotContractAddress();
+        chainTokens = ChainTokens(_chainTokensAddress);
+        claimsHelper = ClaimsHelper(_claimsHelperAddress);
+        registration = Registration(_registrationAddress);
     }
 
     /// @notice Submit claims from validators for reaching consensus.
@@ -137,9 +149,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             revert ChainIsNotRegistered(_chainId);
         }
 
-        if (_blocks.length > MAX_NUMBER_OF_BLOCKS) {
-            revert TooManyBlocks(_blocks.length, MAX_NUMBER_OF_BLOCKS);
-        }
         slots.updateBlocks(_chainId, _blocks, msg.sender);
     }
 
@@ -152,17 +161,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         string calldata addressMultisig,
         string calldata addressFeePayer
     ) external override onlyOwner {
-        if (!claims.isChainRegistered(_chainId)) {
-            revert ChainIsNotRegistered(_chainId);
-        }
-        uint256 _chainsLength = chains.length;
-        for (uint i = 0; i < _chainsLength; i++) {
-            if (chains[i].id == _chainId) {
-                chains[i].addressMultisig = addressMultisig;
-                chains[i].addressFeePayer = addressFeePayer;
-                break;
-            }
-        }
+        registration.setChainAdditionalData(_chainId, addressMultisig, addressFeePayer);
     }
 
     /// @notice Register a new chain and its validator data.
@@ -175,44 +174,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint256 _wrappedTokenQuantity,
         ValidatorAddressChainData[] calldata _validatorData
     ) public override onlyOwner {
-        if (_chain.id == 0) {
-            revert InvalidData("InvalidChainId");
-        }
-
-        uint256 _validatorAddressChainDataLength = _validatorData.length;
-
-        if (_validatorAddressChainDataLength < 4) {
-            revert InvalidData("ValidatorAddressChainData");
-        }
-
-        uint8 _chainType = _chain.chainType;
-
-        for (uint i = 0; i < _validatorAddressChainDataLength; i++) {
-            address _validatorAddress = _validatorData[i].addr;
-
-            if (_validatorAddress == address(0)) {
-                revert ZeroAddress();
-            }
-
-            _validateSignatures(
-                _chainType,
-                _validatorAddress,
-                _validatorData[i].keySignature,
-                _validatorData[i].keyFeeSignature,
-                _validatorData[i].data
-            );
-        }
-
-        uint8 _chainId = _chain.id;
-
-        validators.setValidatorsChainData(_chainId, _validatorData);
-
-        if (!claims.isChainRegistered(_chainId)) {
-            chains.push(_chain);
-            claims.setChainRegistered(_chainId, _tokenQuantity, _wrappedTokenQuantity);
-            bridgingAddresses.initRegisteredChain(_chainId);
-            emit newChainRegistered(_chainId);
-        }
+        registration.registerChain(_chain, _tokenQuantity, _wrappedTokenQuantity, _validatorData);
     }
 
     /// @notice Register a new chain using governance.
@@ -231,121 +193,28 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         bytes calldata _keySignature,
         bytes calldata _keyFeeSignature
     ) external override onlyValidator {
-        if (_chainId == 0) {
-            revert InvalidData("InvalidChainId");
-        }
-
-        if (claims.isChainRegistered(_chainId)) {
-            revert ChainAlreadyRegistered(_chainId);
-        }
-
-        bytes32 chainHash = keccak256(abi.encode(_chainId, _chainType, _tokenQuantity));
-
-        if (claims.hasVoted(chainHash, msg.sender)) {
-            revert AlreadyProposed(_chainId);
-        }
-
-        _validateSignatures(_chainType, msg.sender, _keySignature, _keyFeeSignature, _validatorChainData);
-
-        validators.addValidatorChainData(_chainId, msg.sender, _validatorChainData);
-
-        uint8 _validatorIdx = validators.getValidatorIndex(msg.sender) - 1;
-
-        if (claims.setVotedOnlyIfNeededReturnQuorumReached(_validatorIdx, chainHash, validators.validatorsCount())) {
-            chains.push(Chain(_chainId, _chainType, "", ""));
-
-            claims.setChainRegistered(_chainId, _tokenQuantity, _wrappedTokenQuantity);
-            bridgingAddresses.initRegisteredChain(_chainId);
-            emit newChainRegistered(_chainId);
-        } else {
-            emit newChainProposal(_chainId, msg.sender);
-        }
-    }
-
-    /// @dev Validates key and fee signatures based on chain type.
-    function _validateSignatures(
-        uint8 _chainType,
-        address _sender,
-        bytes calldata _keySignature,
-        bytes calldata _keyFeeSignature,
-        ValidatorChainData calldata _validatorChainData
-    ) internal view {
-        bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", _sender));
-
-        if (_chainType == 0) {
-            bytes memory messageHashBytes = _bytes32ToBytesAssembly(messageHashBytes32);
-            if (
-                !validators.isSignatureValid(messageHashBytes, _keySignature, _validatorChainData.key[0], false) ||
-                !validators.isSignatureValid(messageHashBytes, _keyFeeSignature, _validatorChainData.key[1], false)
-            ) {
-                revert InvalidSignature();
-            }
-        } else if (_chainType == 1) {
-            if (!validators.isBlsSignatureValid(messageHashBytes32, _keySignature, _validatorChainData.key)) {
-                revert InvalidSignature();
-            }
-        } else {
-            revert InvalidData("chainType");
-        }
+        registration.registerChainGovernance(
+            _chainId,
+            _chainType,
+            _tokenQuantity,
+            _wrappedTokenQuantity,
+            _validatorChainData,
+            _keySignature,
+            _keyFeeSignature,
+            msg.sender
+        );
     }
 
     /// @notice Register a new chain and its validator data.
     /// @param _coloredCoin Colored Coin metadata.
     function registerColoredCoin(ColoredCoin calldata _coloredCoin) public override onlyOwner {
-        _validateColoredCoin(_coloredCoin);
-
-        chainTokens.registerColoredCoin(_coloredCoin);
-
-        emit newColoredCoinRegistered(_coloredCoin.chainId, _coloredCoin.coloredCoinId);
+        registration.registerColoredCoin(_coloredCoin);
     }
 
     /// @notice Register a new Colored Coin using governance.
     /// @param _coloredCoin The Colored Coin metadata.
     function registerColoredCoinGovernance(ColoredCoin calldata _coloredCoin) external override onlyValidator {
-        //TODO: add validatorSet version when implemented
-        bytes32 coloredCoinHash = keccak256(abi.encode("ColoredCoin", _coloredCoin));
-
-        if (claims.hasVoted(coloredCoinHash, msg.sender)) {
-            revert AlreadyProposed(_coloredCoin.coloredCoinId);
-        }
-
-        _validateColoredCoin(_coloredCoin);
-
-        uint8 _quorumCount = validators.getQuorumNumberOfValidators();
-        // if quorum already reached -> exit
-        if (claims.numberOfVotes(coloredCoinHash) == _quorumCount) {
-            return;
-        }
-
-        if (
-            claims.setVotedOnlyIfNeededReturnQuorumReached(
-                validators.getValidatorIndex(msg.sender) - 1,
-                coloredCoinHash,
-                _quorumCount
-            )
-        ) {
-            chainTokens.registerColoredCoin(_coloredCoin);
-            emit newColoredCoinRegistered(_coloredCoin.chainId, _coloredCoin.coloredCoinId);
-        } else {
-            emit newColoredCoinProposal(_coloredCoin.chainId, _coloredCoin.coloredCoinId);
-        }
-    }
-
-    /// @notice Checks validity of colored coin metadata submited for registration
-    /// @param _coloredCoin Colored Coin metadata.
-    function _validateColoredCoin(ColoredCoin calldata _coloredCoin) internal view {
-        uint8 _chainId = _coloredCoin.chainId;
-        uint8 _coloredCoinId = _coloredCoin.coloredCoinId;
-
-        if (!claims.isChainRegistered(_chainId)) {
-            revert InvalidData("chainId is not registered");
-        }
-
-        if (_coloredCoinId == 0) {
-            revert InvalidData("coloredCoinId is zero");
-        } else if (chainTokens.coloredCoinToChain(_coloredCoinId) != 0) {
-            revert InvalidData("coloredCoinId is already registered");
-        }
+        registration.registerColoredCoinGovernance(_coloredCoin, msg.sender);
     }
 
     /// @notice Check if a regular or stake delegation batch should be created for the destination chain.
@@ -363,9 +232,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             return 0;
         }
 
-        uint64 batchId = signedBatches.getConfirmedBatchId(_destinationChain);
-
-        return batchId + 1;
+        return signedBatches.getConfirmedBatchId(_destinationChain) + 1;
     }
 
     /// @notice Get confirmed transactions ready for batching for a specific destination chain.
@@ -374,20 +241,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     function getConfirmedTransactions(
         uint8 _destinationChain
     ) external view override returns (ConfirmedTransaction[] memory _confirmedTransactions) {
-        if (!claims.shouldCreateBatch(_destinationChain)) {
-            revert CanNotCreateBatchYet(_destinationChain);
-        }
-
-        uint64 firstTxNonce = claims.lastBatchedTxNonce(_destinationChain) + 1;
-
-        uint64 counterConfirmedTransactions = claims.getBatchingTxsCount(_destinationChain);
-        _confirmedTransactions = new ConfirmedTransaction[](counterConfirmedTransactions);
-
-        for (uint64 i; i < counterConfirmedTransactions; i++) {
-            _confirmedTransactions[i] = claims.getConfirmedTransaction(_destinationChain, firstTxNonce + i);
-        }
-
-        return _confirmedTransactions;
+        return claims.getConfirmedTransactions(_destinationChain);
     }
 
     /// @notice Returns the number of bridging addresses for a given chain.
@@ -422,7 +276,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Return a list of all chains currently registered with the bridge.
     /// @return _chains Array of registered chain data.
     function getAllRegisteredChains() external view override returns (Chain[] memory _chains) {
-        return chains;
+        return registration.getAllRegisteredChains();
     }
 
     /// @notice Get raw transaction data from the most recent batch for a given destination chain.
@@ -467,13 +321,8 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         _;
     }
 
-    modifier onlyClaims() {
-        if (msg.sender != address(claims)) revert NotClaims();
-        _;
-    }
-
     modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
+        if (msg.sender != upgradeAdmin) revert NotUpgradeAdmin();
         _;
     }
 }

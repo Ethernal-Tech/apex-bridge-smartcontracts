@@ -233,6 +233,10 @@ interface IBridgeStructs {
     error AddrNotRegistered(uint8 _chainId, uint8 _bridgeAddrIndex);
     error InvalidStakeTransactionSubType(uint8 _transactionSubType);
     error ColoredCoinNotNotRegisteredOnChain(uint8 _coloredCoinId, uint8 _chainId);
+    error NotRegistration();
+    error NotClaimsProcessor();
+    error NotClaimsOrClaimsProcessor();
+    error NotClaimsProcessorOrRegistration();
 
     // ------------------------------------------------------------------------
     // Events
