@@ -192,90 +192,6 @@ describe("Submit Claims", function () {
       ).to.equal(200);
     });
 
-    it("Should NOT add requred amount of coloredCoins on source chain when Bridging Request Claim for coloredCoins originating on source is confirmed and it is NOT a retry and coloredCoin is NOT registered", async function () {
-      const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination = 0;
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource = 0;
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount = 0;
-
-      expect(
-        await chainTokens.chainColoredCoinQuantity(
-          temp_validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
-          temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId
-        )
-      ).to.equal(0);
-
-      await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[3]).submitClaims(temp_validatorClaimsBRC);
-
-      expect(
-        await chainTokens.chainColoredCoinQuantity(
-          temp_validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
-          temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId
-        )
-      ).to.equal(0);
-    });
-
-    it("Should NOT add wrappedAmount of tokens on source chain when Bridging Request Claim for coloredCoins originating on destination is confirmed and it is NOT a retry", async function () {
-      const temp_coloredCoin = structuredClone(coloredCoin);
-      temp_coloredCoin.chainId = 2;
-      await bridge.connect(owner).registerColoredCoin(temp_coloredCoin);
-
-      const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination = 0;
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource = 0;
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount = 0;
-
-      expect(
-        await chainTokens.chainColoredCoinQuantity(
-          temp_validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
-          temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId
-        )
-      ).to.equal(0);
-
-      await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[3]).submitClaims(temp_validatorClaimsBRC);
-
-      expect(
-        await chainTokens.chainColoredCoinQuantity(
-          temp_validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
-          temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId
-        )
-      ).to.equal(0);
-    });
-
-    it("Should add requred amount of coloredCoins on source chain when Bridging Request Claim for coloredCoins originating on source is confirmed and it is NOT a retry", async function () {
-      await bridge.connect(owner).registerColoredCoin(coloredCoin);
-      const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount = 0;
-
-      expect(
-        await chainTokens.chainColoredCoinQuantity(
-          temp_validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
-          temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId
-        )
-      ).to.equal(0);
-
-      await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[3]).submitClaims(temp_validatorClaimsBRC);
-
-      expect(
-        await chainTokens.chainColoredCoinQuantity(
-          temp_validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
-          temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId
-        )
-      ).to.equal(100);
-    });
-
     it("Should remove requred amount of tokens from destination chain when Bridging Request Claim is confirmed and it is NOT a retry", async function () {
       expect(await chainTokens.chainTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)).to.equal(
         100
@@ -324,42 +240,6 @@ describe("Submit Claims", function () {
       ).to.equal(100);
     });
 
-    it("Should remove requred amount of coloredCoins from destination chain when Bridging Request Claim is confirmed and coloredCoin is registerd on destination and it is NOT a retry", async function () {
-      await bridge.connect(owner).registerColoredCoin(coloredCoin);
-
-      const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
-
-      await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[3]).submitClaims(temp_validatorClaimsBRC);
-
-      expect(
-        await chainTokens.chainColoredCoinQuantity(
-          temp_validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
-          temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId
-        )
-      ).to.equal(100);
-
-      const temp_validatorClaimsBRC2 = structuredClone(validatorClaimsBRC);
-      temp_validatorClaimsBRC2.bridgingRequestClaims[0].coloredCoinId = 1;
-      temp_validatorClaimsBRC2.bridgingRequestClaims[0].sourceChainId = 2;
-      temp_validatorClaimsBRC2.bridgingRequestClaims[0].destinationChainId = 1;
-
-      await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC2);
-      await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsBRC2);
-      await bridge.connect(validators[2]).submitClaims(temp_validatorClaimsBRC2);
-      await bridge.connect(validators[3]).submitClaims(temp_validatorClaimsBRC2);
-
-      expect(
-        await chainTokens.chainColoredCoinQuantity(
-          temp_validatorClaimsBRC2.bridgingRequestClaims[0].destinationChainId,
-          temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId
-        )
-      ).to.equal(0);
-    });
-
     it("Should NOT add requred amount of tokens on source chain when Bridging Request Claim is confirmed and it is a retry", async function () {
       const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
       temp_validatorClaimsBRC.bridgingRequestClaims[0].retryCounter = 1;
@@ -393,40 +273,6 @@ describe("Submit Claims", function () {
 
       expect(
         await chainTokens.chainWrappedTokenQuantity(temp_validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId)
-      ).to.equal(100);
-    });
-
-    it("Should NOT add requred amount of coloredCoins on source chain when Bridging Request Claim is confirmed and it is a retry", async function () {
-      await bridge.connect(owner).registerColoredCoin(coloredCoin);
-      const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
-
-      await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[3]).submitClaims(temp_validatorClaimsBRC);
-
-      const temp_validatorClaimsBRC2 = structuredClone(validatorClaimsBRC);
-      temp_validatorClaimsBRC2.bridgingRequestClaims[0].retryCounter = 1;
-      temp_validatorClaimsBRC2.bridgingRequestClaims[0].coloredCoinId = 1;
-
-      expect(
-        await chainTokens.chainColoredCoinQuantity(
-          temp_validatorClaimsBRC2.bridgingRequestClaims[0].sourceChainId,
-          temp_validatorClaimsBRC2.bridgingRequestClaims[0].coloredCoinId
-        )
-      ).to.equal(100);
-
-      await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC2);
-      await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsBRC2);
-      await bridge.connect(validators[2]).submitClaims(temp_validatorClaimsBRC2);
-      await bridge.connect(validators[3]).submitClaims(temp_validatorClaimsBRC2);
-
-      expect(
-        await chainTokens.chainColoredCoinQuantity(
-          validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
-          temp_validatorClaimsBRC2.bridgingRequestClaims[0].coloredCoinId
-        )
       ).to.equal(100);
     });
 
@@ -934,8 +780,6 @@ describe("Submit Claims", function () {
     });
 
     it("Should increase chainWrappedTokenQuantity and should NOT increase chainTokenQuantity for destination chain when Bridging Excuted Failed Claim is confirmed and coloredCoinId != 0", async function () {
-      await bridge.connect(owner).registerColoredCoin(coloredCoin);
-
       const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
       temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
 
@@ -990,55 +834,6 @@ describe("Submit Claims", function () {
 
       expect(chain2TokenQuantityAfter).to.be.equal(chain2TokenQuantityStart);
       expect(chain2WrappedTokenQuantityAfter).to.be.equal(chain2WrappedTokenQuantityAfter);
-    });
-
-    it("Should increase coloredCoinQuantity for destination chain when Bridging Excuted Failed Claim is confirmed and destination is the source of coloredCoin", async function () {
-      const temp_coloredCoin = structuredClone(coloredCoin);
-      temp_coloredCoin.chainId = chain2.id;
-
-      await bridge.connect(owner).registerColoredCoin(temp_coloredCoin);
-
-      const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
-
-      const chain2ColoredCoinQuantityStart = await chainTokens.chainColoredCoinQuantity(
-        temp_validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
-        temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId
-      );
-
-      await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[3]).submitClaims(temp_validatorClaimsBRC);
-
-      expect(
-        await chainTokens.chainColoredCoinQuantity(
-          temp_validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
-          temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId
-        )
-      ).to.be.equal(chain2ColoredCoinQuantityStart);
-
-      // wait for next timeout
-      for (let i = 0; i < 10; i++) {
-        await ethers.provider.send("evm_mine");
-      }
-
-      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
-      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
-
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEFC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEFC);
-      await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
-
-      const chain2ColoredCoinQuantityAfter = await chainTokens.chainColoredCoinQuantity(
-        validatorClaimsBEFC.batchExecutionFailedClaims[0].chainId,
-        temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId
-      );
-
-      expect(chain2ColoredCoinQuantityAfter).to.be.equal(chain2ColoredCoinQuantityStart);
     });
   });
 
@@ -1135,10 +930,6 @@ describe("Submit Claims", function () {
       temp_validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = true;
       temp_validatorClaimsRRC.refundRequestClaims[0].coloredCoinId = 1;
 
-      const temp_coloredCoin = structuredClone(coloredCoin);
-      temp_coloredCoin.chainId = temp_validatorClaimsRRC.refundRequestClaims[0].originChainId;
-      await bridge.connect(owner).registerColoredCoin(temp_coloredCoin);
-
       const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
       temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
       temp_validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId = 1;
@@ -1180,76 +971,6 @@ describe("Submit Claims", function () {
       expect(await chainTokens.chainTokenQuantity(RRC_clone.refundRequestClaims[0].originChainId)).to.equal(
         hotWalletState
       );
-    });
-
-    it("Should decrease Hot Wallet status for coloredCoins when Refund Request Claims has shouldDecrementHotWallet set to true and it is 0 retry and coloredCoinId != 0", async function () {
-      await bridge.connect(owner).registerColoredCoin(coloredCoin);
-
-      const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
-
-      await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[3]).submitClaims(temp_validatorClaimsBRC);
-
-      const chainColoredCoinQuantityBefore = await chainTokens.chainColoredCoinQuantity(
-        temp_validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
-        temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId
-      );
-
-      const temp_validatorClaimsRRC = structuredClone(validatorClaimsRRC);
-      temp_validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = true;
-      temp_validatorClaimsRRC.refundRequestClaims[0].coloredCoinId = 1;
-      temp_validatorClaimsRRC.refundRequestClaims[0].originChainId = 1;
-
-      await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsRRC);
-      await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsRRC);
-      await bridge.connect(validators[2]).submitClaims(temp_validatorClaimsRRC);
-      await bridge.connect(validators[3]).submitClaims(temp_validatorClaimsRRC);
-
-      expect(
-        await chainTokens.chainColoredCoinQuantity(
-          temp_validatorClaimsRRC.refundRequestClaims[0].originChainId,
-          temp_validatorClaimsRRC.refundRequestClaims[0].coloredCoinId
-        )
-      ).to.equal(chainColoredCoinQuantityBefore - BigInt(temp_validatorClaimsRRC.refundRequestClaims[0].originAmount));
-    });
-
-    it("Should NOT decrease Hot Wallet status for coloredCoins when Refund Request Claims has shouldDecrementHotWallet set to true and it is NOT 0 retry and coloredCoinId != 0", async function () {
-      const temp_coloredCoin = structuredClone(coloredCoin);
-      temp_coloredCoin.chainId = chain2.id;
-      await bridge.connect(owner).registerColoredCoin(temp_coloredCoin);
-
-      const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
-
-      await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(temp_validatorClaimsBRC);
-      await bridge.connect(validators[3]).submitClaims(temp_validatorClaimsBRC);
-
-      const chainColoredCoinQuantityBefore = await chainTokens.chainColoredCoinQuantity(
-        temp_validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId,
-        temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId
-      );
-
-      const temp_validatorClaimsRRC = structuredClone(validatorClaimsRRC);
-      temp_validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = true;
-      temp_validatorClaimsRRC.refundRequestClaims[0].retryCounter = 1;
-      temp_validatorClaimsRRC.refundRequestClaims[0].coloredCoinId = 1;
-
-      await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsRRC);
-      await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsRRC);
-      await bridge.connect(validators[2]).submitClaims(temp_validatorClaimsRRC);
-      await bridge.connect(validators[3]).submitClaims(temp_validatorClaimsRRC);
-
-      expect(
-        await chainTokens.chainColoredCoinQuantity(
-          temp_validatorClaimsRRC.refundRequestClaims[0].originChainId,
-          temp_validatorClaimsRRC.refundRequestClaims[0].coloredCoinId
-        )
-      ).to.equal(chainColoredCoinQuantityBefore);
     });
 
     it("Use Case 1: BRC -> BEFC -> RRC", async function () {
@@ -1807,7 +1528,6 @@ describe("Submit Claims", function () {
   let validatorAddressChainData: any;
   let validators: any;
   let bridgeAddrIndex: any;
-  let coloredCoin: any;
 
   beforeEach(async function () {
     const fixture = await loadFixture(deployBridgeFixture);
@@ -1832,7 +1552,6 @@ describe("Submit Claims", function () {
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;
     bridgeAddrIndex = fixture.bridgeAddrIndex;
-    coloredCoin = fixture.coloredCoin;
 
     // Register chains
     await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);

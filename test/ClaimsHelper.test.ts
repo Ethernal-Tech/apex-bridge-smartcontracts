@@ -39,7 +39,6 @@ describe("ClaimsHelper Contract", function () {
   let validatorClaimsBEFC: any;
   let signedBatch: any;
   let validatorAddressChainData: any;
-  let coloredCoin: any;
 
   beforeEach(async function () {
     const fixture = await loadFixture(deployBridgeFixture);
@@ -52,7 +51,6 @@ describe("ClaimsHelper Contract", function () {
     validatorClaimsBEFC = fixture.validatorClaimsBEFC;
     signedBatch = fixture.signedBatch;
     validatorAddressChainData = fixture.validatorAddressChainData;
-    coloredCoin = fixture.coloredCoin;
 
     // Register chains
     await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);

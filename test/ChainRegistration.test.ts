@@ -730,7 +730,6 @@ describe("Chain Registration", function () {
   let validatorsc: any;
   let validatorAddressChainData: any;
   let validators: any;
-  let coloredCoin: any;
 
   beforeEach(async function () {
     const fixture = await loadFixture(deployBridgeFixture);
@@ -746,6 +745,5 @@ describe("Chain Registration", function () {
     validatorsc = fixture.validatorsc;
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;
-    coloredCoin = fixture.coloredCoin;
   });
 });

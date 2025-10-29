@@ -453,11 +453,6 @@ export async function deployBridgeFixture() {
     keyFeeSignature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
   }));
 
-  const coloredCoin = {
-    chainId: 1,
-    coloredCoinId: 1,
-  };
-
   const validatorCardanoData = validatorAddressChainData[0].data;
   const bridgeAddrIndex = 0;
 
@@ -489,7 +484,6 @@ export async function deployBridgeFixture() {
     validatorCardanoData,
     cardanoBlocks,
     bridgeAddrIndex,
-    coloredCoin,
   };
 }
 

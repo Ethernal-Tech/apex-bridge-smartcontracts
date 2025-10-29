@@ -274,10 +274,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 revert ChainIsNotRegistered(originChainId);
             }
 
-            if (_claim.coloredCoinId != 0 && chainTokens.coloredCoinToChain(_claim.coloredCoinId) != originChainId) {
-                revert ColoredCoinNotNotRegisteredOnChain(_claim.coloredCoinId, originChainId);
-            }
-
             claimsProcessor.submitClaimsRRC(_claim, i, _caller);
         }
         for (uint i; i < hotWalletIncrementClaimsLength; i++) {
@@ -285,10 +281,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             uint8 chainId = _claim.chainId;
             if (!isChainRegistered[chainId]) {
                 revert ChainIsNotRegistered(chainId);
-            }
-
-            if (_claim.coloredCoinId != 0 && chainTokens.coloredCoinToChain(_claim.coloredCoinId) != chainId) {
-                revert ColoredCoinNotNotRegisteredOnChain(_claim.coloredCoinId, chainId);
             }
 
             claimsProcessor.submitClaimHWIC(_claim, _caller);
