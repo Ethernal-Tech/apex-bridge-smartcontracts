@@ -410,7 +410,7 @@ export async function deployBridgeFixture() {
   };
 }
 
-export function encodeBridgeRequestClaim(claim: any) {
+export function hashBridgeRequestClaim(claim: any) {
   const abiCoder = new ethers.AbiCoder();
   const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
   const lst = [];
@@ -447,14 +447,14 @@ export function encodeBridgeRequestClaim(claim: any) {
     ]
   );
 
-  return (
+  return ethers.keccak256(
     "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-    encodedPrefix.substring(66) +
-    encoded.substring(2)
+      encodedPrefix.substring(66) +
+      encoded.substring(2)
   );
 }
 
-export function encodeBatchExecutedClaim(claim: any) {
+export function hashBatchExecutedClaim(claim: any) {
   const abiCoder = new ethers.AbiCoder();
   const encodedPrefix = abiCoder.encode(["string"], ["BEC"]);
   const encoded = abiCoder.encode(
@@ -462,14 +462,14 @@ export function encodeBatchExecutedClaim(claim: any) {
     [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]
   );
 
-  return (
+  return ethers.keccak256(
     "0x0000000000000000000000000000000000000000000000000000000000000080" +
-    encoded.substring(2) +
-    encodedPrefix.substring(66)
+      encoded.substring(2) +
+      encodedPrefix.substring(66)
   );
 }
 
-export function encodeBatchExecutionFailedClaim(claim: any) {
+export function hashBatchExecutionFailedClaim(claim: any) {
   const abiCoder = new ethers.AbiCoder();
   const encodedPrefix = abiCoder.encode(["string"], ["BEFC"]);
   const encoded = abiCoder.encode(
@@ -477,14 +477,14 @@ export function encodeBatchExecutionFailedClaim(claim: any) {
     [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]
   );
 
-  return (
+  return ethers.keccak256(
     "0x0000000000000000000000000000000000000000000000000000000000000080" +
-    encoded.substring(2) +
-    encodedPrefix.substring(66)
+      encoded.substring(2) +
+      encodedPrefix.substring(66)
   );
 }
 
-export function encodeRefundRequestClaim(claim: any) {
+export function hashRefundRequestClaim(claim: any) {
   const abiCoder = new ethers.AbiCoder();
   const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
   const encoded = abiCoder.encode(
@@ -517,23 +517,24 @@ export function encodeRefundRequestClaim(claim: any) {
       claim.coloredCoinId,
     ]
   );
-  return (
+  return ethers.keccak256(
     "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-    encodedPrefix.substring(66) +
-    encoded.substring(2)
+      encodedPrefix.substring(66) +
+      encoded.substring(2)
   );
 }
 
-export function encodeHotWalletIncrementClaim(claim: any) {
+export function hashHotWalletIncrementClaim(claim: any) {
   const abiCoder = new ethers.AbiCoder();
   const encodedPrefix = abiCoder.encode(["string"], ["HWIC"]);
   const encoded = abiCoder.encode(
     ["uint8", "uint256", "uint256", "uint8"],
     [claim.chainId, claim.amount, claim.amountWrapped, claim.coloredCoinId]
   );
-  return (
+
+  return ethers.keccak256(
     "0x00000000000000000000000000000000000000000000000000000000000000a0" +
-    encoded.substring(2) +
-    encodedPrefix.substring(66)
+      encoded.substring(2) +
+      encodedPrefix.substring(66)
   );
 }
