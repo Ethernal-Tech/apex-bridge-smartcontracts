@@ -133,12 +133,19 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         adminContractAddress = _adminContractAddress;
     }
 
-    /// @notice Sets the BridgingAddresses contract dependency.
+    /// @notice Sets the BridgingAddresses and ChainTokens contracts dependency and syncs it with the registered chains..
     /// @dev This function can only be called by the upgrade admin.
     ///      It verifies that the provided address is a contract before using it.
     /// @param _bridgingAddresses The address of the BridgingAddresses contract to set.
-    function setBridgingAddrsDependencyAndSync(address _bridgingAddresses) external onlyUpgradeAdmin {
+    /// @param _chainTokens The address of the ChainTokens contract to set.
+    function setAdditionalDependenciesAndSync(
+        address _bridgingAddresses,
+        address _chainTokens
+    ) external onlyUpgradeAdmin {
         if (!_isContract(_bridgingAddresses)) revert NotContractAddress();
+
+        _setChainTokensDependencyAndSync(_chainTokens);
+
         bridgingAddresses = BridgingAddresses(_bridgingAddresses);
         Chain[] memory registeredChains = IBridge(bridgeAddress).getAllRegisteredChains();
 
@@ -155,7 +162,15 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
     }
 
+    /// @notice Sets the ChainTokens contract dependency and syncs it with the registered chains.
+    /// @dev This function can only be called by the upgrade admin.
+    ///      It verifies that the provided address is a contract before using it.
+    /// @param _chainTokens The address of the ChainTokens contract to set.
     function setChainTokensDependencyAndSync(address _chainTokens) external onlyUpgradeAdmin {
+        _setChainTokensDependencyAndSync(_chainTokens);
+    }
+
+    function _setChainTokensDependencyAndSync(address _chainTokens) internal {
         if (!_isContract(_chainTokens)) revert NotContractAddress();
         chainTokens = ChainTokens(_chainTokens);
         Chain[] memory registeredChains = IBridge(bridgeAddress).getAllRegisteredChains();
