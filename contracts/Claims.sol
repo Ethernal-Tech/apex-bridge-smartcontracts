@@ -877,11 +877,11 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         );
         confirmedTx.totalAmount = _amount;
         confirmedTx.totalWrappedAmount = _amountWrapped;
-        confirmedTx.nonce = nextNonce;
-        confirmedTx.sourceChainId = _chainId;
+        // confirmedTx.nonce = nextNonce;
+        // confirmedTx.sourceChainId = _chainId;
         confirmedTx.transactionType = TransactionTypesLib.DEFUND;
         confirmedTx.receivers.push(Receiver(_amount, _amountWrapped, _defundAddress));
-        confirmedTx.destinationChainId = _chainId;
+        // confirmedTx.destinationChainId = _chainId;
         confirmedTx.coloredCoinId = _coloredCoinId;
 
         chainTokenQuantity[_chainId] = _currentAmount - _amount;
@@ -1030,49 +1030,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         if ((chainIdRoleFlag & ConstantsLib.CHAIN_ID_AS_SOURCE) != 0) {
             confirmedTx.sourceChainId = chainId;
-        }
-    }
-
-    function registerColoredCoin(ColoredCoin calldata _coloredCoin) external onlyBridge {
-        coloredCoinToChain[_coloredCoin.coloredCoinId] = _coloredCoin.chainId;
-    }
-
-    function numberOfVotes(bytes32 _hash) external view returns (uint256) {
-        return claimsHelper.numberOfVotes(_hash);
-    }
-
-    function updateVote(bytes32 _hash, uint8 _validatorIdx) external onlyBridge returns (bool) {
-        return claimsHelper.updateVote(_hash, _validatorIdx);
-    }
-
-    function isColoredCoinRegisteredOnChain(uint8 _coloredCoinId, uint8 _chainId) public view returns (bool) {
-        return _coloredCoinId != 0 && coloredCoinToChain[_coloredCoinId] == _chainId;
-    }
-
-    /// @notice Updates the coloredCoin quantity for a registered chain by increasing or decreasing the amount.
-    /// @dev Reverts if the chain is not registered or if subtraction causes underflow.
-    /// @param _chainId The ID of the chain whose token quantity is to be updated.
-    /// @param _isIncrease A boolean indicating whether to increase (true) or decrease (false) the token amount.
-    /// @param _chainColoredCoinAmount The amount of tokens to add or subtract from the chain's total.
-    /// @param _coloredCoinId The ID of the colored coin to update.
-    function updateChainColoredCoinQuantity(
-        uint8 _chainId,
-        bool _isIncrease,
-        uint256 _chainColoredCoinAmount,
-        uint8 _coloredCoinId
-    ) external onlyAdminContract {
-        if (!isColoredCoinRegisteredOnChain(_coloredCoinId, _chainId)) {
-            revert ColoredCoinNotNotRegisteredOnChain(_coloredCoinId, _chainId);
-        }
-
-        uint256 _currentColoredCointAmount = chainColoredCoinQuantity[_chainId][_coloredCoinId];
-        if (_isIncrease) {
-            chainColoredCoinQuantity[_chainId][_coloredCoinId] = _currentColoredCointAmount + _chainColoredCoinAmount;
-        } else {
-            if (_currentColoredCointAmount < _chainColoredCoinAmount) {
-                revert NegativeChainTokenAmount(_currentColoredCointAmount, _chainColoredCoinAmount);
-            }
-            chainColoredCoinQuantity[_chainId][_coloredCoinId] = _currentColoredCointAmount - _chainColoredCoinAmount;
         }
     }
 

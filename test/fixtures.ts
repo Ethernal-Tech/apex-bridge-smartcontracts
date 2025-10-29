@@ -1,3 +1,4 @@
+import { RefundRequestClaimStruct } from "./../typechain-types/contracts/BridgeV2";
 import { ethers } from "hardhat";
 import {
   Bridge,
@@ -201,27 +202,15 @@ export async function deployBridgeFixture() {
             destinationAddress: "0x123...",
           },
         ],
-        sourceChainId: 1,
-        destinationChainId: 2,
-        bridgeAddrIndex: 1,
-      },
-    ],
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [],
-    hotWalletIncrementClaims: [],
-  };
-  const validatorClaimsBRCWrapped = {
-    bridgingRequestClaims: [
-      {
-        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        nativeCurrencyAmountSource: 0,
+        nativeCurrencyAmountSource: 100,
         wrappedTokenAmountSource: 100,
         nativeCurrencyAmountDestination: 100,
         wrappedTokenAmountDestination: 100,
         retryCounter: 0,
         sourceChainId: 1,
         destinationChainId: 2,
+        bridgeAddrIndex: 1,
+        coloredCoinId: 0,
       },
     ],
     batchExecutedClaims: [],
@@ -233,11 +222,6 @@ export async function deployBridgeFixture() {
   const validatorClaimsBRC_bunch32 = {
     bridgingRequestClaims: Array.from({ length: 32 }, (_, i) => ({
       observedTransactionHash: "0x" + Buffer.from(`test${i}`).toString("hex").padEnd(64, "0").slice(0, 64),
-      nativeCurrencyAmountSource: 100,
-      wrappedTokenAmountSource: 0,
-      nativeCurrencyAmountDestination: 100,
-      wrappedTokenAmountDestination: 0,
-      retryCounter: 0,
       receivers: [
         {
           amount: 100 + i,
@@ -245,8 +229,15 @@ export async function deployBridgeFixture() {
           destinationAddress: `0x123...${i}`,
         },
       ],
+      nativeCurrencyAmountSource: 100,
+      wrappedTokenAmountSource: 0,
+      nativeCurrencyAmountDestination: 100,
+      wrappedTokenAmountDestination: 0,
+      retryCounter: 0,
       sourceChainId: 1,
       destinationChainId: 2,
+      bridgeAddrIndex: 1,
+      coloredCoinId: 0,
     })),
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
@@ -257,11 +248,6 @@ export async function deployBridgeFixture() {
   const validatorClaimsBRC_bunch33 = {
     bridgingRequestClaims: Array.from({ length: 33 }, (_, i) => ({
       observedTransactionHash: "0x" + Buffer.from(`test${i}`).toString("hex").padEnd(64, "0").slice(0, 64),
-      nativeCurrencyAmountSource: 100,
-      wrappedTokenAmountSource: 0,
-      nativeCurrencyAmountDestination: 100,
-      wrappedTokenAmountDestination: 0,
-      retryCounter: 0,
       receivers: [
         {
           amount: 100 + i,
@@ -269,62 +255,16 @@ export async function deployBridgeFixture() {
           destinationAddress: `0x123...${i}`,
         },
       ],
+      nativeCurrencyAmountSource: 100,
+      wrappedTokenAmountSource: 0,
+      nativeCurrencyAmountDestination: 100,
+      wrappedTokenAmountDestination: 0,
+      retryCounter: 0,
       sourceChainId: 1,
       destinationChainId: 2,
+      bridgeAddrIndex: 1,
+      coloredCoinId: 0,
     })),
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [],
-    hotWalletIncrementClaims: [],
-  };
-
-  const validatorClaimsBRC_confirmedTransactions = {
-    bridgingRequestClaims: [
-      {
-        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        nativeCurrencyAmountSource: 100,
-        wrappedTokenAmountSource: 0,
-        nativeCurrencyAmountDestination: 100,
-        wrappedTokenAmountDestination: 0,
-        retryCounter: 0,
-        receivers: [
-          {
-            amount: 99,
-            destinationAddress: "0x234...",
-            amountWrapped: 0,
-          },
-        ],
-        sourceChainId: 1,
-        destinationChainId: 2,
-      },
-    ],
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [],
-    hotWalletIncrementClaims: [],
-  };
-
-  const validatorClaimsBRC_tooManyReceivers = {
-    bridgingRequestClaims: [
-      {
-        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        nativeCurrencyAmountSource: 100,
-        wrappedTokenAmountSource: 0,
-        nativeCurrencyAmountDestination: 100,
-        wrappedTokenAmountDestination: 0,
-        totalAmount: 100,
-        retryCounter: 0,
-        receivers: [
-          ...Array.from({ length: 17 }, (_, i) => ({
-            amount: 99 + i,
-            destinationAddress: `0x123...${(i + 1).toString().padStart(8, "0")}`,
-            amountWrapped: 100 + i,
-          })),
-        ],
-        sourceChainId: 1,
-        destinationChainId: 2,
-      },
-    ],
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
@@ -382,48 +322,6 @@ export async function deployBridgeFixture() {
     hotWalletIncrementClaims: [],
   };
 
-  const validatorClaimsRRC_shouldDecrement = {
-    bridgingRequestClaims: [],
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [
-      {
-        originTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        refundTransactionHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
-        originAmount: 100,
-        originWrappedAmount: 100,
-        outputIndexes: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        originSenderAddress: "receiver1",
-        retryCounter: 0,
-        originChainId: 2,
-        shouldDecrementHotWallet: true,
-        destinationChainId: 1,
-      },
-    ],
-    hotWalletIncrementClaims: [],
-  };
-
-  const validatorClaimsRRC_wrongHash = {
-    bridgingRequestClaims: [],
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [
-      {
-        originTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        refundTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000001",
-        originAmount: 100,
-        originWrappedAmount: 100,
-        outputIndexes: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        originSenderAddress: "receiver1",
-        retryCounter: 0,
-        originChainId: 2,
-        shouldDecrementHotWallet: false,
-        destinationChainId: 1,
-      },
-    ],
-    hotWalletIncrementClaims: [],
-  };
-
   const validatorClaimsHWIC = {
     bridgingRequestClaims: [],
     batchExecutedClaims: [],
@@ -444,30 +342,6 @@ export async function deployBridgeFixture() {
     firstTxNonceId: 1,
     lastTxNonceId: 1,
     destinationChainId: 2,
-    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
-    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
-    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    batchType: BatchType.NORMAL,
-    stakeSignature: "0x746573740000000000000000000000000000000000000000000000000000000B",
-  };
-
-  const signedBatchConsolidation = {
-    id: 1,
-    firstTxNonceId: 0,
-    lastTxNonceId: 0,
-    destinationChainId: 2,
-    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
-    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
-    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    batchType: BatchType.CONSOLIDATION,
-    stakeSignature: "0x746573740000000000000000000000000000000000000000000000000000000B",
-  };
-
-  const signedBatchStakeDelOrRedistr = {
-    id: 1,
-    firstTxNonceId: 1,
-    lastTxNonceId: 1,
-    destinationChainId: 1,
     signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
@@ -522,45 +396,19 @@ export async function deployBridgeFixture() {
     chain1,
     chain2,
     validatorClaimsBRC,
+    validatorClaimsBRC_bunch32,
+    validatorClaimsBRC_bunch33,
     validatorClaimsBEC,
     validatorClaimsBEFC,
     validatorClaimsRRC,
     validatorClaimsHWIC,
     signedBatch,
-    signedBatchConsolidation,
-    signedBatchStakeDelOrRedistr,
     validatorAddressChainData,
     validatorCardanoData,
     cardanoBlocks,
     bridgeAddrIndex,
     coloredCoin,
   };
-}
-
-export function encodeRefundRequestClaim(claim: any) {
-  const abiCoder = new ethers.AbiCoder();
-  const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
-  const encoded = abiCoder.encode(
-    ["bytes32", "bytes32", "uint256", "uint256", "bytes", "string", "uint64", "uint8", "bool", "uint8", "uint8"],
-    [
-      claim.originTransactionHash,
-      claim.refundTransactionHash,
-      claim.originAmount,
-      claim.originWrappedAmount,
-      claim.outputIndexes,
-      claim.originSenderAddress,
-      claim.retryCounter,
-      claim.originChainId,
-      claim.shouldDecrementHotWallet,
-      claim.destinationChainId,
-      claim.bridgeAddrIndex,
-    ]
-  );
-  return (
-    "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-    encodedPrefix.substring(66) +
-    encoded.substring(2)
-  );
 }
 
 export function encodeBridgeRequestClaim(claim: any) {
@@ -602,5 +450,102 @@ export function encodeBridgeRequestClaim(claim: any) {
     "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
     encodedPrefix.substring(66) +
     encoded.substring(2)
+  );
+}
+
+export function encodeBatchExecutedClaim(claim: any) {
+  const abiCoder = new ethers.AbiCoder();
+  const encodedPrefix = abiCoder.encode(["string"], ["BEC"]);
+  const encoded = abiCoder.encode(
+    ["bytes32", "uint64", "uint8"],
+    [
+      claim.batchExecutedClaims[0].observedTransactionHash,
+      claim.batchExecutedClaims[0].batchNonceId,
+      claim.batchExecutedClaims[0].chainId,
+    ]
+  );
+
+  return (
+    "0x0000000000000000000000000000000000000000000000000000000000000080" +
+    encoded.substring(2) +
+    encodedPrefix.substring(66)
+  );
+}
+
+export function encodeBatchExecutionFailedClaim(claim: any) {
+  const abiCoder = new ethers.AbiCoder();
+  const encodedPrefix = abiCoder.encode(["string"], ["BEFC"]);
+  const encoded = abiCoder.encode(
+    ["bytes32", "uint64", "uint8"],
+    [
+      claim.batchExecutionFailedClaims[0].observedTransactionHash,
+      claim.batchExecutionFailedClaims[0].batchNonceId,
+      claim.batchExecutionFailedClaims[0].chainId,
+    ]
+  );
+
+  return (
+    "0x0000000000000000000000000000000000000000000000000000000000000080" +
+    encoded.substring(2) +
+    encodedPrefix.substring(66)
+  );
+}
+
+export function encodeRefundRequestClaim(claim: any) {
+  const abiCoder = new ethers.AbiCoder();
+  const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
+  const encoded = abiCoder.encode(
+    [
+      "bytes32",
+      "bytes32",
+      "uint256",
+      "uint256",
+      "bytes",
+      "string",
+      "uint64",
+      "uint8",
+      "bool",
+      "uint8",
+      "uint8",
+      "uint8",
+    ],
+    [
+      claim.refundRequestClaims[0].originTransactionHash,
+      claim.refundRequestClaims[0].refundTransactionHash,
+      claim.refundRequestClaims[0].originAmount,
+      claim.refundRequestClaims[0].originWrappedAmount,
+      claim.refundRequestClaims[0].outputIndexes,
+      claim.refundRequestClaims[0].originSenderAddress,
+      claim.refundRequestClaims[0].retryCounter,
+      claim.refundRequestClaims[0].originChainId,
+      claim.refundRequestClaims[0].shouldDecrementHotWallet,
+      claim.refundRequestClaims[0].destinationChainId,
+      claim.refundRequestClaims[0].bridgeAddrIndex,
+      claim.refundRequestClaims[0].coloredCoinId,
+    ]
+  );
+  return (
+    "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+    encodedPrefix.substring(66) +
+    encoded.substring(2)
+  );
+}
+
+export function encodeHotWalletIncrementClaim(claim: any) {
+  const abiCoder = new ethers.AbiCoder();
+  const encodedPrefix = abiCoder.encode(["string"], ["HWIC"]);
+  const encoded = abiCoder.encode(
+    ["uint8", "uint256", "uint256", "uint8"],
+    [
+      claim.hotWalletIncrementClaims[0].chainId,
+      claim.hotWalletIncrementClaims[0].amount,
+      claim.hotWalletIncrementClaims[0].amountWrapped,
+      claim.hotWalletIncrementClaims[0].coloredCoinId,
+    ]
+  );
+  return (
+    "0x0000000000000000000000000000000000000000000000000000000000000080" +
+    encoded.substring(2) +
+    encodedPrefix.substring(66)
   );
 }

@@ -101,7 +101,6 @@ describe("Colored Coins", function () {
   let validatorClaimsRRC: any;
   let validatorClaimsHWIC: any;
   let signedBatch: any;
-  let signedBatchConsolidation: any;
   let validatorAddressChainData: any;
   let validators: any;
   let coloredCoin: any;
@@ -121,7 +120,6 @@ describe("Colored Coins", function () {
     validatorClaimsRRC = fixture.validatorClaimsRRC;
     validatorClaimsHWIC = fixture.validatorClaimsHWIC;
     signedBatch = fixture.signedBatch;
-    signedBatchConsolidation = fixture.signedBatchConsolidation;
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;
     coloredCoin = fixture.coloredCoin;
