@@ -190,11 +190,6 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         _;
     }
 
-    modifier onlyClaims() {
-        if (msg.sender != claimsAddress) revert NotClaims();
-        _;
-    }
-
     modifier onlyClaimsProcessor() {
         if (msg.sender != claimsProcessorAddress) revert NotClaimsProcessor();
         _;

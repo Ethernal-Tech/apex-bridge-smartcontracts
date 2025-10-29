@@ -196,11 +196,6 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
         _;
     }
 
-    modifier onlyClaims() {
-        if (msg.sender != address(claims)) revert NotClaims();
-        _;
-    }
-
     modifier onlyAdminContract() {
         if (msg.sender != adminContractAddress) revert NotAdminContract();
         _;
