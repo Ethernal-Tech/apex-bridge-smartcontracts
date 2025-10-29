@@ -1,4 +1,3 @@
-import { BridgingRequestClaimStruct } from "./../typechain-types/contracts/Bridge";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { ethers } from "hardhat";
 import { expect } from "chai";
