@@ -458,11 +458,7 @@ export function encodeBatchExecutedClaim(claim: any) {
   const encodedPrefix = abiCoder.encode(["string"], ["BEC"]);
   const encoded = abiCoder.encode(
     ["bytes32", "uint64", "uint8"],
-    [
-      claim.batchExecutedClaims[0].observedTransactionHash,
-      claim.batchExecutedClaims[0].batchNonceId,
-      claim.batchExecutedClaims[0].chainId,
-    ]
+    [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]
   );
 
   return (
@@ -477,11 +473,7 @@ export function encodeBatchExecutionFailedClaim(claim: any) {
   const encodedPrefix = abiCoder.encode(["string"], ["BEFC"]);
   const encoded = abiCoder.encode(
     ["bytes32", "uint64", "uint8"],
-    [
-      claim.batchExecutionFailedClaims[0].observedTransactionHash,
-      claim.batchExecutionFailedClaims[0].batchNonceId,
-      claim.batchExecutionFailedClaims[0].chainId,
-    ]
+    [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]
   );
 
   return (
@@ -510,18 +502,18 @@ export function encodeRefundRequestClaim(claim: any) {
       "uint8",
     ],
     [
-      claim.refundRequestClaims[0].originTransactionHash,
-      claim.refundRequestClaims[0].refundTransactionHash,
-      claim.refundRequestClaims[0].originAmount,
-      claim.refundRequestClaims[0].originWrappedAmount,
-      claim.refundRequestClaims[0].outputIndexes,
-      claim.refundRequestClaims[0].originSenderAddress,
-      claim.refundRequestClaims[0].retryCounter,
-      claim.refundRequestClaims[0].originChainId,
-      claim.refundRequestClaims[0].shouldDecrementHotWallet,
-      claim.refundRequestClaims[0].destinationChainId,
-      claim.refundRequestClaims[0].bridgeAddrIndex,
-      claim.refundRequestClaims[0].coloredCoinId,
+      claim.originTransactionHash,
+      claim.refundTransactionHash,
+      claim.originAmount,
+      claim.originWrappedAmount,
+      claim.outputIndexes,
+      claim.originSenderAddress,
+      claim.retryCounter,
+      claim.originChainId,
+      claim.shouldDecrementHotWallet,
+      claim.destinationChainId,
+      claim.bridgeAddrIndex,
+      claim.coloredCoinId,
     ]
   );
   return (
@@ -536,12 +528,7 @@ export function encodeHotWalletIncrementClaim(claim: any) {
   const encodedPrefix = abiCoder.encode(["string"], ["HWIC"]);
   const encoded = abiCoder.encode(
     ["uint8", "uint256", "uint256", "uint8"],
-    [
-      claim.hotWalletIncrementClaims[0].chainId,
-      claim.hotWalletIncrementClaims[0].amount,
-      claim.hotWalletIncrementClaims[0].amountWrapped,
-      claim.hotWalletIncrementClaims[0].coloredCoinId,
-    ]
+    [claim.chainId, claim.amount, claim.amountWrapped, claim.coloredCoinId]
   );
   return (
     "0x0000000000000000000000000000000000000000000000000000000000000080" +

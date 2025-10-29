@@ -1079,7 +1079,7 @@ describe("Submit Claims", function () {
 
   describe("Submit new Refund Request Claims", function () {
     it("Should set voted on Refund Request Claim", async function () {
-      const encoded = encodeRefundRequestClaim(validatorClaimsRRC);
+      const encoded = encodeRefundRequestClaim(validatorClaimsRRC.refundRequestClaims[0]);
       const hash = ethers.keccak256(encoded);
       expect(await claims.hasVoted(hash, validators[0].address)).to.be.false;
       expect(await claims.hasVoted(hash, validators[1].address)).to.be.false;
