@@ -298,22 +298,22 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             return; // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
         }
 
-        if (_chainWrappedTokenQuantityDestination < _wrappedTokenAmountDestination) {
-            emit NotEnoughFunds("BRC - Native Token", i, _chainWrappedTokenQuantityDestination);
-            return; // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-        }
+        //if (_chainWrappedTokenQuantityDestination < _wrappedTokenAmountDestination) {
+        //    emit NotEnoughFunds("BRC - Native Token", i, _chainWrappedTokenQuantityDestination);
+        //    return; // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
+        //}
         // update votes count with current validator
         bool _isNewVote = claimsHelper.updateVote(_claimHash, _validatorIdx);
         // check if quorum is reached for the first time
         if (_isNewVote && _votesCount + 1 == _quorumCount) {
             chainTokenQuantity[_destinationChainId] -= _nativeCurrencyAmountDestination;
-            chainWrappedTokenQuantity[_destinationChainId] -= _wrappedTokenAmountDestination;
+            // chainWrappedTokenQuantity[_destinationChainId] -= _wrappedTokenAmountDestination;
 
             // if it is the first occurance of Bridging Request Claim, add the amount to the source chain
             // otherwise, it is a retry and we do not add the amount to the source chain, since it has already been done
             if (_claim.retryCounter == 0) {
                 chainTokenQuantity[_claim.sourceChainId] += _claim.nativeCurrencyAmountSource;
-                chainWrappedTokenQuantity[_claim.sourceChainId] += _claim.wrappedTokenAmountSource;
+                // chainWrappedTokenQuantity[_claim.sourceChainId] += _claim.wrappedTokenAmountSource;
             }
 
             uint256 _confirmedTxCount = getBatchingTxsCount(_destinationChainId);
