@@ -79,7 +79,7 @@ describe("Batch creation", function () {
 
     await signedBatches.connect(bridgeContract).submitSignedBatch(signedBatch, validators[0].address, false);
 
-    expect(await signedBatches.hasVoted(hash, validators[0].address)).to.equal(true);
+    expect(await hasVotedSignedBatches(hash, validators[0].address)).to.equal(true);
 
     const temp_signedBatch = structuredClone(signedBatch);
     temp_signedBatch.id = 1000;
@@ -100,7 +100,7 @@ describe("Batch creation", function () {
 
     await signedBatches.connect(bridgeContract).submitSignedBatch(temp_signedBatch, validators[0].address, false);
 
-    expect(await signedBatches.hasVoted(hashFalse, validators[0].address)).to.equal(false);
+    expect(await hasVotedSignedBatches(hashFalse, validators[0])).to.equal(false);
   });
 
   it("SignedBatch submition should do nothing if shouldCreateBatch is false", async function () {
@@ -118,9 +118,9 @@ describe("Batch creation", function () {
 
     await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
 
-    const validatorIndex = Number(await validatorsc.getValidatorIndex(validators[0])) - 1;
+    // const validatorIndex = Number(await validatorsc.getValidatorIndex(validators[0])) - 1;
 
-    expect(await claimsHelper.hasVoted(hash, validatorIndex)).to.equal(false);
+    expect(await hasVotedClaims(hash, validators[0])).to.equal(false);
   });
 
   it("getNextBatchId should return 0 if there are no confirmed claims", async function () {
@@ -469,4 +469,28 @@ describe("Batch creation", function () {
     await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
     await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
   });
+
+  async function hasVotedClaims(hash: string, _addr: string): Promise<boolean> {
+    // bitmap(...) returns bigint in ethers v6
+    const validatorIndex = ((await validatorsc.getValidatorIndex(_addr)) as bigint) - 1n;
+    const bitmap = (await claimsHelper.bitmap(hash)) as bigint;
+
+    return (bitmap & (1n << BigInt(validatorIndex))) !== 0n;
+  }
+
+  async function hasVotedSignedBatches(hash: string, addr: string): Promise<boolean> {
+    // 1) get validator index exactly like contract does
+    const validatorIdxRaw: bigint | number = await validatorsc.getValidatorIndex(addr);
+
+    const validatorIdx = BigInt(validatorIdxRaw); // convert to bigint
+
+    if (validatorIdx === 0n) {
+      return false; // not validator, same as Solidity
+    }
+
+    const bitmap = await signedBatches.votes(hash); // returns bigint directly now
+
+    const bit = 1n << (validatorIdx - 1n);
+    return (bitmap & bit) !== 0n;
+  }
 });

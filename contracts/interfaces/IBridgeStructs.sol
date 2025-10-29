@@ -203,7 +203,6 @@ interface IBridgeStructs {
     // ------------------------------------------------------------------------
     // Errors
     // ------------------------------------------------------------------------
-    error AlreadyProposed(uint8 _claimTransactionHash);
     error ChainAlreadyRegistered(uint8 _chainId);
     error NotOwner();
     error NotValidator();

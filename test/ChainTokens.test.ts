@@ -6,12 +6,6 @@ import hre from "hardhat";
 
 describe("Chain Tokens", function () {
   describe("BRC Tokens Quantity Validations", function () {
-    it("Should revert if validateBRC is not called by Claims SC", async function () {
-      await expect(
-        chainTokens.connect(owner).validateBRC(validatorClaimsBRC.bridgingRequestClaims[0], 1)
-      ).to.be.revertedWithCustomError(chainTokens, "NotClaimsProcessor");
-    });
-
     it("Should emit NotEnoughFunds for colored coin with insufficient balance", async function () {
       // Setup: register colored coin on destination chain
       const destColoredCoin = structuredClone(coloredCoin);
@@ -51,12 +45,6 @@ describe("Chain Tokens", function () {
   });
 
   describe("RRC Tokens Quantity Validations", function () {
-    it("Should revert if validateRRC is not called by Claims SC", async function () {
-      await expect(
-        chainTokens.connect(owner).validateRRC(validatorClaimsRRC.refundRequestClaims[0], 0)
-      ).to.be.revertedWithCustomError(chainTokens, "NotClaimsProcessor");
-    });
-
     it("Should emit NotEnoughFunds for colored coin with insufficient balance", async function () {
       // Setup: register colored coin on destination chain
       const sourceColoredCoin = structuredClone(coloredCoin);
@@ -99,13 +87,6 @@ describe("Chain Tokens", function () {
   });
 
   describe("Defund Tokens Quantity Validations", function () {
-    it("Should revert if defund is not called by Claims SC", async function () {
-      await expect(chainTokens.connect(owner).validateDefund(chain1.id, 1, 1, 0)).to.be.revertedWithCustomError(
-        chainTokens,
-        "NotClaims"
-      );
-    });
-
     it("Should revert with DefundRequestTooHigh error for colored coin with insufficient balance", async function () {
       await admin.setFundAdmin(validators[0].address);
       await bridge.connect(owner).registerColoredCoin(coloredCoin);

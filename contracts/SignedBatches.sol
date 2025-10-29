@@ -23,7 +23,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
     /// @notice Maps batch hash to validator votes information
     /// @dev hash -> SignedBatchVotesInfo represent signatures (bls | multisig+fee) and bitmap
-    mapping(bytes32 => SignedBatchVotesInfo) private votes;
+    mapping(bytes32 => SignedBatchVotesInfo) public votes;
 
     /// @notice Stores the last confirmed batch per destination chain
     /// @dev BlockchainId -> ConfirmedBatch
@@ -130,7 +130,6 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
             return;
         }
 
-        uint256 _quorumCount = validators.getQuorumNumberOfValidators();
         uint256 _numberOfVotes = _votesInfo.signatures.length;
 
         _votesInfo.signatures.push(_signedBatch.signature);
@@ -139,7 +138,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         _votesInfo.bitmap = _bitmapNewValue;
 
         // check if quorum reached (+1 is last vote)
-        if (_numberOfVotes + 1 >= _quorumCount) {
+        if (_numberOfVotes + 1 >= validators.getQuorumNumberOfValidators()) {
             lastConfirmedBatch[_destinationChainId] = ConfirmedBatch(
                 _votesInfo.signatures,
                 _votesInfo.feeSignatures,
@@ -171,14 +170,6 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
     function getNumberOfSignatures(bytes32 _hash) external view returns (uint256) {
         return votes[_hash].signatures.length;
-    }
-
-    function hasVoted(bytes32 _hash, address _addr) external view returns (bool) {
-        uint8 _validatorIdx = validators.getValidatorIndex(_addr);
-        if (_validatorIdx == 0) {
-            return false; // address is not a validator
-        }
-        return votes[_hash].bitmap & (1 << (_validatorIdx - 1)) != 0;
     }
 
     /// @notice Returns the current version of the contract
