@@ -86,14 +86,6 @@ contract Registration is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         validators = Validators(_validatorsAddress);
     }
 
-    function setAdditionalDependenciesAndSync() external onlyUpgradeAdmin {
-        Chain[] memory _chains = bridge.getAllRegisteredChains();
-        uint8 _chainsLength = uint8(chains.length);
-        for (uint8 i = 0; i < _chainsLength; i++) {
-            chains.push(_chains[i]);
-        }
-    }
-
     /// @notice Set additional metadata for a chain, such as multisig and fee payer addresses.
     /// @param _chainId The target chain ID.
     /// @param addressMultisig Multisig address associated with the chain.
@@ -267,6 +259,10 @@ contract Registration is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         } else {
             emit newColoredCoinProposal(_coloredCoin.chainId, _coloredCoin.coloredCoinId);
         }
+    }
+
+    function addChain(Chain calldata _chain) external onlyBridge {
+        chains.push(_chain);
     }
 
     /// @notice Checks validity of colored coin metadata submited for registration

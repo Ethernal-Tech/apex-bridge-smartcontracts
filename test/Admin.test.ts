@@ -307,7 +307,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalWrappedAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(45);
+      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(44);
       expect((await claims.confirmedTransactions(chain1.id, 1)).coloredCoinId).to.equal(0);
     });
 
@@ -331,7 +331,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(0);
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalWrappedAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(49);
+      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(48);
       expect((await claims.confirmedTransactions(chain1.id, 1)).coloredCoinId).to.equal(1);
     });
 
@@ -387,7 +387,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalWrappedAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(51);
+      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(50);
       expect((await claims.confirmedTransactions(chain2.id, 3)).coloredCoinId).to.equal(0);
     });
 
@@ -449,7 +449,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalAmount).to.equal(0);
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalWrappedAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(52);
+      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(51);
       expect((await claims.confirmedTransactions(chain2.id, 3)).coloredCoinId).to.equal(2);
     });
 
