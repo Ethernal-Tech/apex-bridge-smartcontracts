@@ -516,7 +516,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// Effects:
     /// - Sets the validator's vote via `claimsHelper`.
     /// - If quorum is reached, updates token balances, confirms the refund transaction, and adjusts timeout blocks.
-    function _submitClaimsRRC(RefundRequestClaim calldata _claim, uint256 i, address _caller) internal {
+    function _submitClaimsRRC(RefundRequestClaim calldata _claim, uint256 _index, uint256 i, address _caller) internal {
         // temporary check until automatic refund is implemented
         // once automatic refund is implemented, this check should be that
         // either originTransactionHash or refundTransactionHash should be empty
@@ -542,7 +542,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
                 return;
             } else {
-                if (_chainTokenQuantityOrigin < _claim.originAmount) {
+                if (_chainTokenQuantityOrigin < _claim, _index.originAmount) {
                     emit NotEnoughFunds("RRC - Colored Coin", i, _chainTokenQuantityOrigin);
                     // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
                     return;
