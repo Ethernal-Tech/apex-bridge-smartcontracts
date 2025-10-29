@@ -11,9 +11,9 @@ describe("Admin Functions", function () {
       ).to.be.revertedWithCustomError(admin, "NotFundAdmin");
     });
 
-    it("Should revert if updateChainTokenQuantity in Clais is not called by Admin contract", async function () {
-      await expect(claims.updateChainTokenQuantity(chain1.id, true, 100)).to.be.revertedWithCustomError(
-        claims,
+    it("Should revert if updateChainTokenQuantity in ChainTokens is not called by Admin contract", async function () {
+      await expect(chainTokens.updateChainTokenQuantity(chain1.id, true, 100)).to.be.revertedWithCustomError(
+        chainTokens,
         "NotAdminContract"
       );
     });
@@ -62,9 +62,9 @@ describe("Admin Functions", function () {
       ).to.be.revertedWithCustomError(admin, "NotFundAdmin");
     });
 
-    it("Should revert if updateChainWrappedTokenQuantity in Clais is not called by Admin contract", async function () {
-      await expect(claims.updateChainWrappedTokenQuantity(1, true, 100)).to.be.revertedWithCustomError(
-        claims,
+    it("Should revert if updateChainWrappedTokenQuantity in ChainTokens is not called by Admin contract", async function () {
+      await expect(chainTokens.updateChainWrappedTokenQuantity(1, true, 100)).to.be.revertedWithCustomError(
+        chainTokens,
         "NotAdminContract"
       );
     });
