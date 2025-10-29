@@ -80,15 +80,15 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         bool _isIncrease,
         uint256 _chainTokenQuantity
     ) external onlyFundAdmin {
+        if (!claims.isChainRegistered(_chainId)) {
+            revert ChainIsNotRegistered(_chainId);
+        }
+
         if (!_isIncrease) {
             uint256 currentQuantity = chainTokens.chainTokenQuantity(_chainId);
             if (currentQuantity < _chainTokenQuantity) {
                 revert NegativeChainTokenAmount(currentQuantity, _chainTokenQuantity);
             }
-        }
-
-        if (!claims.isChainRegistered(_chainId)) {
-            revert ChainIsNotRegistered(_chainId);
         }
 
         chainTokens.updateChainTokenQuantity(_chainId, _isIncrease, _chainTokenQuantity);
@@ -104,15 +104,15 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         bool _isIncrease,
         uint256 _chainWrappedTokenQuantity
     ) external onlyFundAdmin {
+        if (!claims.isChainRegistered(_chainId)) {
+            revert ChainIsNotRegistered(_chainId);
+        }
+
         if (!_isIncrease) {
             uint256 currentWrappedQuantity = chainTokens.chainWrappedTokenQuantity(_chainId);
             if (currentWrappedQuantity < _chainWrappedTokenQuantity) {
                 revert NegativeChainTokenAmount(currentWrappedQuantity, _chainWrappedTokenQuantity);
             }
-        }
-
-        if (!claims.isChainRegistered(_chainId)) {
-            revert ChainIsNotRegistered(_chainId);
         }
 
         chainTokens.updateChainWrappedTokenQuantity(_chainId, _isIncrease, _chainWrappedTokenQuantity);
@@ -130,6 +130,9 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         uint256 _chainColoredCointQuantity,
         uint8 _coloredCoinId
     ) external onlyFundAdmin {
+        if (_coloredCoinId != 0 && chainTokens.coloredCoinToChain(_coloredCoinId) != _chainId) {
+            revert ColoredCoinNotNotRegisteredOnChain(_coloredCoinId, _chainId);
+        }
         if (!_isIncrease) {
             uint256 currentColoredCoinQuantity = chainTokens.chainColoredCoinQuantity(_chainId, _coloredCoinId);
             if (currentColoredCoinQuantity < _chainColoredCointQuantity) {
