@@ -80,7 +80,25 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// - The batch must have the expected sequential ID.
     /// - The caller must not have already voted on this batch hash.
     /// - If quorum is reached after this vote, the batch is confirmed and stored, and temporary data is cleared.
-    function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
+    function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller, bool _evmFlag) external onlyBridge {
+        bool valid = _evmFlag
+            ? validators.isBlsSignatureValidByValidatorAddress(
+                _signedBatch.destinationChainId,
+                keccak256(_signedBatch.rawTransaction),
+                _signedBatch.signature,
+                _caller
+            )
+            : validators.areSignaturesValid(
+                _signedBatch.destinationChainId,
+                _signedBatch.rawTransaction,
+                _signedBatch.signature,
+                _signedBatch.feeSignature,
+                _signedBatch.stakeSignature,
+                _caller
+            );
+
+        if (!valid) revert InvalidSignature();
+
         uint8 _destinationChainId = _signedBatch.destinationChainId;
         uint64 _sbId = lastConfirmedBatch[_destinationChainId].id + 1;
 
