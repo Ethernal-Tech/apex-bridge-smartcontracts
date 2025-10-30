@@ -768,6 +768,13 @@ describe("Claims Contract", function () {
 
       expect(status).to.equal(1);
     });
+
+    it("Should revert if updateNextTimeoutBlockIfNeeded is not called by ClaimsProcessor", async function () {
+      await expect(claims.connect(owner).updateNextTimeoutBlockIfNeeded(1, 0)).to.be.revertedWithCustomError(
+        bridge,
+        "NotClaimsProcessor"
+      );
+    });
   });
 
   let bridge: any;

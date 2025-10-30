@@ -121,7 +121,7 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
 
             claims.setConfirmedTransactions(_claim);
 
-            _updateNextTimeoutBlockIfNeeded(_destinationChainId, _confirmedTxCount);
+            claims.updateNextTimeoutBlockIfNeeded(_destinationChainId, _confirmedTxCount);
         }
     }
 
@@ -321,7 +321,7 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
 
             claims.setConfirmedTransactionsRRC(_claim);
 
-            _updateNextTimeoutBlockIfNeeded(originChainId, _confirmedTxCount);
+            claims.updateNextTimeoutBlockIfNeeded(originChainId, _confirmedTxCount);
         }
     }
 
@@ -341,22 +341,6 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
             )
         ) {
             chainTokens.updateTokensHWIC(_claim);
-        }
-    }
-
-    /// @notice Updates the next timeout block for a given chain if certain conditions are met.
-    /// @dev This function resets the timeout block only when there is no batch in progress,
-    ///      no confirmed transactions, and the current block has reached or passed the timeout.
-    /// @param _chainId The ID of the chain to update the timeout block for.
-    /// @param _confirmedTxCount The number of confirmed transactions for the specified chain.
-    function _updateNextTimeoutBlockIfNeeded(uint8 _chainId, uint256 _confirmedTxCount) internal {
-        if (
-            (claimsHelper.currentBatchBlock(_chainId) == -1) && // there is no batch in progress
-            (_confirmedTxCount == 0) && // check if there is no other confirmed transactions
-            (block.number >= claims.nextTimeoutBlock(_chainId))
-        ) // check if the current block number is greater or equal than the NEXT_BATCH_TIMEOUT_BLOCK
-        {
-            claims.setNextTimeoutBlock(_chainId, block.number + claims.timeoutBlocksNumber());
         }
     }
 

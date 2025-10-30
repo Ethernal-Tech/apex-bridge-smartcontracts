@@ -467,6 +467,15 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     ///      no confirmed transactions, and the current block has reached or passed the timeout.
     /// @param _chainId The ID of the chain to update the timeout block for.
     /// @param _confirmedTxCount The number of confirmed transactions for the specified chain.
+    function updateNextTimeoutBlockIfNeeded(uint8 _chainId, uint256 _confirmedTxCount) external onlyClaimsProcessor {
+        _updateNextTimeoutBlockIfNeeded(_chainId, _confirmedTxCount);
+    }
+
+    /// @notice Updates the next timeout block for a given chain if certain conditions are met.
+    /// @dev This function resets the timeout block only when there is no batch in progress,
+    ///      no confirmed transactions, and the current block has reached or passed the timeout.
+    /// @param _chainId The ID of the chain to update the timeout block for.
+    /// @param _confirmedTxCount The number of confirmed transactions for the specified chain.
     function _updateNextTimeoutBlockIfNeeded(uint8 _chainId, uint256 _confirmedTxCount) internal {
         if (
             (claimsHelper.currentBatchBlock(_chainId) == -1) && // there is no batch in progress
