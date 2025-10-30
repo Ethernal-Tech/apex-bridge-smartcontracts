@@ -15,6 +15,9 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     address public fundAdmin;
     Claims private claims;
 
+    /// @dev If true, a validator set change is in progress.
+    bool public validatorSetChange;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
@@ -36,6 +39,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         if (_upgradeAdmin == address(0)) revert ZeroAddress();
         upgradeAdmin = _upgradeAdmin;
         fundAdmin = _owner;
+        validatorSetChange = false;
     }
 
     /// @notice Authorizes a new implementation for upgrade
@@ -98,6 +102,12 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     function version() public pure returns (string memory) {
         return "1.0.0";
     }
+
+    /// @notice Set to true if a validator set change is in progress, and to false once it is finished.
+    /// @param isInProgress Boolean flag indicating whether the validator set change is currently in progress.
+    function setValidatorSetChange(bool isInProgress) external onlyOwner {
+        validatorSetChange = isInProgress;
+    }   
 
     modifier onlyFundAdmin() {
         if (msg.sender != fundAdmin) revert NotFundAdmin();
