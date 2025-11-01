@@ -52,7 +52,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[46] private __gap;
+    uint256[45] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -424,8 +424,8 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         }
 
         // Compact chainData for each chainId
-        uint256 chainsLenght = _chains.length;
-        for (uint i = 0; i < chainsLenght; i++) {
+        uint256 chainsLength = _chains.length;
+        for (uint i = 0; i < chainsLength; i++) {
             uint8 _chainId = _chains[i].id;
 
             for (uint j = 0; j < _newIndex; j++) {
