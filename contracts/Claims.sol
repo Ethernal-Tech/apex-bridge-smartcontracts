@@ -279,10 +279,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev The function also updates the next timeout block if necessary and sets the confirmed transaction details.
     function _submitClaimsBRC(BridgingRequestClaim calldata _claim, uint256 i, address _caller) internal {
         uint256 _nativeCurrencyAmountDestination = _claim.nativeCurrencyAmountDestination;
-        uint256 _wrappedTokenAmountDestination = _claim.wrappedTokenAmountDestination;
+        // uint256 _wrappedTokenAmountDestination = _claim.wrappedTokenAmountDestination;
         uint8 _destinationChainId = _claim.destinationChainId;
         uint256 _chainTokenQuantityDestination = chainTokenQuantity[_destinationChainId];
-        uint256 _chainWrappedTokenQuantityDestination = chainWrappedTokenQuantity[_destinationChainId];
+        // uint256 _chainWrappedTokenQuantityDestination = chainWrappedTokenQuantity[_destinationChainId];
 
         bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
