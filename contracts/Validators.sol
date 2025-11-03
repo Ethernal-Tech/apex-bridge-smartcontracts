@@ -76,6 +76,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
                 revert InvalidData("DuplicatedValidator");
             }
             addressValidatorIndex[_validators[i]] = i + 1;
+            validatorAddresses.push(_validators[i]);
         }
         validatorsCount = uint8(_validators.length);
     }
@@ -95,6 +96,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @dev This function can only be called by the upgrade admin. It verifies that the provided address is a contract.
     /// @param _validators Current list of validator addresses
     function setAdditionalDependenciesAndSync(address[] calldata _validators) external onlyUpgradeAdmin {
+        delete validatorAddresses;
         for (uint8 i; i < _validators.length; i++) {
             validatorAddresses.push(_validators[i]);
         }
