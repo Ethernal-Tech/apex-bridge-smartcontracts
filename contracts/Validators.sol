@@ -23,6 +23,8 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     address constant VALIDATOR_BLS_PRECOMPILE = 0x0000000000000000000000000000000000002060;
     /// @dev Gas limit for the BLS precompile
     uint32 constant VALIDATOR_BLS_PRECOMPILE_GAS = 50000;
+    /// @dev blade apex-bridge fake chain id
+    uint8 constant BLADE_CHAIN_ID = 255;
 
     /// @notice Mapping of chain ID to validator key data
     /// @dev BlockchainId -> ValidatorChainData[]
@@ -305,7 +307,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
             for (uint256 j; j < _numberOfRegisteredChains; j++) {
                 if (
                     _newValidatorSetDelta.addedValidators[i].chainId != _chains[j].id &&
-                    _newValidatorSetDelta.addedValidators[i].chainId != 255
+                    _newValidatorSetDelta.addedValidators[i].chainId != BLADE_CHAIN_ID
                 ) {
                     continue;
                 }
@@ -486,7 +488,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
 
             uint256 _numberOfChains = newValidatorSetDelta.addedValidators.length;
             for (uint8 i; i < _numberOfChains; i++) {
-                if (newValidatorSetDelta.addedValidators[i].chainId == 255) {
+                if (newValidatorSetDelta.addedValidators[i].chainId == BLADE_CHAIN_ID) {
                     continue;
                 }
                 ValidatorSet memory _validatorSet = newValidatorSetDelta.addedValidators[i];
