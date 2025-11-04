@@ -11,6 +11,7 @@ describe("Dynamic Validator Set", function () {
         "NotSystem"
       );
     });
+
     it("Should revert if there is already a new validator set pending", async function () {
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
@@ -142,6 +143,33 @@ describe("Dynamic Validator Set", function () {
         bridge,
         "newValidatorSetSubmitted"
       );
+    });
+
+    it("Should revert submitSignedBatch if there is new validator set pending and signedBatch is not validatorSet", async function () {
+      const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
+
+      await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
+
+      await expect(bridge.connect(validators[0]).submitSignedBatch(signedBatch)).to.be.revertedWithCustomError(
+        bridge,
+        "NewValidatorSetPending"
+      );
+    });
+
+    it("Should revert submitSignedBatch if there is NO new validator set pending and signedBatch IS validatorSet", async function () {
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      // wait for next timeout
+      for (let i = 0; i < 3; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      await expect(
+        bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSet)
+      ).to.be.revertedWithCustomError(bridge, "NoNewValidatorSetPending");
     });
 
     it("Should NOT set bitmap to +1 if there is quorum on submit NOT final validator set batch", async function () {
@@ -854,6 +882,7 @@ describe("Dynamic Validator Set", function () {
   let newValidatorSetDelta_TooManyChains: any;
   let newValidatorSetDelta_TooManyValidators: any;
   let newValidatorSetDelta_ZeroAddress: any;
+  let signedBatch: any;
   let signedBatch_ValidatorSet: any;
   let validatorClaimsBRC: any;
   let validatorClaimsBEC: any;
@@ -886,6 +915,7 @@ describe("Dynamic Validator Set", function () {
     newValidatorSetDelta_TooManyChains = fixture.newValidatorSetDelta_TooManyChains;
     newValidatorSetDelta_TooManyValidators = fixture.newValidatorSetDelta_TooManyValidators;
     newValidatorSetDelta_ZeroAddress = fixture.newValidatorSetDelta_ZeroAddress;
+    signedBatch = fixture.signedBatch;
     signedBatch_ValidatorSet = fixture.signedBatch_ValidatorSet;
     validatorClaimsBRC = fixture.validatorClaimsBRC;
     validatorClaimsBEC = fixture.validatorClaimsBEC;

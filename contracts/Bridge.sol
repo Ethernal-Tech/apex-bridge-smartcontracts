@@ -127,24 +127,11 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             return;
         }
 
-        // if there is pending validator set, only validator set batches can be submitted
-        // it there is no pending validator set, any batch can be submitted
-        bool isValidatorSetBatch = _signedBatch.batchType == BatchTypesLib.VALIDATORSET ||
-            _signedBatch.batchType == BatchTypesLib.VALIDATORSET_FINAL;
-
-        bool isPending = validators.newValidatorSetPending();
-
-        if (isPending != isValidatorSetBatch) {
-            if (isPending) {
-                revert NewValidatorSetPending();
-            } else {
-                revert NoNewValidatorSetPending();
-            }
-        }
+        _pendingValidatorSetCheck(_signedBatch);
 
         // Only validate signatures if NOT FINAL, FINAL is a flag with no signatures
         if (_signedBatch.batchType != BatchTypesLib.VALIDATORSET_FINAL) {
-            bool valid = validators.areSignaturesValid(
+            bool valid = validators.isSignatureValidByValidatorAddress(
                 _signedBatch.destinationChainId,
                 _signedBatch.rawTransaction,
                 _signedBatch.signature,
@@ -164,25 +151,35 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             return;
         }
 
-        if (
-            validators.newValidatorSetPending() &&
-            !(_signedBatch.batchType != BatchTypesLib.VALIDATORSET ||
-                _signedBatch.batchType != BatchTypesLib.VALIDATORSET_FINAL)
-        ) {
-            revert NewValidatorSetPending();
-        }
+        _pendingValidatorSetCheck(_signedBatch);
 
-        if (
-            !validators.isBlsSignatureValidByValidatorAddress(
+        if (_signedBatch.batchType != BatchTypesLib.VALIDATORSET_FINAL) {
+            bool valid = validators.isBlsSignatureValidByValidatorAddress(
                 _signedBatch.destinationChainId,
                 keccak256(_signedBatch.rawTransaction),
                 _signedBatch.signature,
                 msg.sender
-            )
-        ) {
-            revert InvalidSignature();
+            );
+
+            if (!valid) revert InvalidSignature();
         }
+
         signedBatches.submitSignedBatch(_signedBatch, msg.sender);
+    }
+
+    function _pendingValidatorSetCheck(SignedBatch calldata _signedBatch) internal view {
+        bool isValidatorSetBatch = _signedBatch.batchType == BatchTypesLib.VALIDATORSET ||
+            _signedBatch.batchType == BatchTypesLib.VALIDATORSET_FINAL;
+
+        bool isPending = validators.newValidatorSetPending();
+
+        if (isPending != isValidatorSetBatch) {
+            if (isPending) {
+                revert NewValidatorSetPending();
+            } else {
+                revert NoNewValidatorSetPending();
+            }
+        }
     }
 
     /// @notice Submit new validator set data
