@@ -16,7 +16,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     Claims private claims;
 
     /// @dev If true, a validator set change is in progress.
-    bool public validatorSetChange;
+    bool public validatorChange;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
@@ -39,7 +39,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         if (_upgradeAdmin == address(0)) revert ZeroAddress();
         upgradeAdmin = _upgradeAdmin;
         fundAdmin = _owner;
-        validatorSetChange = false;
+        validatorChange = false;
     }
 
     /// @notice Authorizes a new implementation for upgrade
@@ -105,8 +105,8 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
 
     /// @notice Set to true if a validator set change is in progress, and to false once it is finished.
     /// @param isInProgress Boolean flag indicating whether the validator set change is currently in progress.
-    function setValidatorSetChange(bool isInProgress) external onlyOwner {
-        validatorSetChange = isInProgress;
+    function setValidatorChange(bool isInProgress) external onlyOwner {
+        validatorChange = isInProgress;
     }   
 
     modifier onlyFundAdmin() {
