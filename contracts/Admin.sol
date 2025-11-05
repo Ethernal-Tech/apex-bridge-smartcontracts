@@ -21,7 +21,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[50] private __gap;
+    uint256[49] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
