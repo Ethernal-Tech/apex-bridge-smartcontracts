@@ -116,27 +116,6 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         return validatorAddresses;
     }
 
-    /// @notice Validates multisignature and fee signature from a validator
-    /// @param _chainId The chain ID
-    /// @param _txRaw Raw transaction data
-    /// @param _signature Multisignature of transaction
-    /// @param _signatureFee Signature for fee validation
-    /// @param _validatorAddr Validator address
-    /// @return True if both signatures are valid
-    function isSignatureValidByValidatorAddress(
-        uint8 _chainId,
-        bytes calldata _txRaw,
-        bytes calldata _signature,
-        bytes calldata _signatureFee,
-        address _validatorAddr
-    ) public view returns (bool) {
-        uint256 indx = addressValidatorIndex[_validatorAddr] - 1;
-        uint256[4] memory key = chainData[_chainId][indx].key;
-        // multisig and fee verification
-        return
-            isSignatureValid(_txRaw, _signature, key[0], true) && isSignatureValid(_txRaw, _signatureFee, key[1], true);
-    }
-
     /// @notice Verifies a standard cryptographic signature against the given input data.
     /// @dev Calls a precompiled contract at the `PRECOMPILE` address with fixed gas to check signature validity.
     ///      The input parameters are ABI-encoded and passed to the precompile: `_data`, `_signature`, `_verifyingKey`, and `_isTx`.
@@ -160,23 +139,6 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         return callSuccess && abi.decode(returnData, (bool));
     }
 
-    /// @notice Verifies BLS signature by validator address
-    /// @param _chainId Chain ID
-    /// @param _hash The hash to verify
-    /// @param _signature The BLS signature
-    /// @param _validatorAddr Validator address
-    /// @return True if the BLS signature is valid
-    function isBlsSignatureValidByValidatorAddress(
-        uint8 _chainId,
-        bytes32 _hash,
-        bytes calldata _signature,
-        address _validatorAddr
-    ) public view returns (bool) {
-        uint256 indx = addressValidatorIndex[_validatorAddr] - 1;
-        uint256[4] memory key = chainData[_chainId][indx].key;
-        return isBlsSignatureValid(_hash, _signature, key);
-    }
-
     /// @notice Verifies a BLS signature for a given hash using a provided verifying key
     /// @dev Uses a precompile contract located at `VALIDATOR_BLS_PRECOMPILE` to perform BLS signature verification.
     ///      The BLS precompile expects the inputs to be ABI-encoded and prefixed with a function selector byte `0`.
@@ -197,6 +159,44 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
             gas: VALIDATOR_BLS_PRECOMPILE_GAS
         }(abi.encodePacked(uint8(0), abi.encode(_hash, _signature, _verifyingKey)));
         return callSuccess && abi.decode(returnData, (bool));
+    }
+
+    /// @notice Validates multisignature and fee signature from a validator
+    /// @param _chainId The chain ID
+    /// @param _txRaw Raw transaction data
+    /// @param _signature Multisignature of transaction
+    /// @param _signatureFee Signature for fee validation
+    /// @param _validatorAddr Validator address
+    /// @return True if both signatures are valid
+    function areSignaturesValid(
+        uint8 _chainId,
+        bytes calldata _txRaw,
+        bytes calldata _signature,
+        bytes calldata _signatureFee,
+        address _validatorAddr
+    ) public view returns (bool) {
+        uint256 indx = addressValidatorIndex[_validatorAddr] - 1;
+        uint256[4] memory key = chainData[_chainId][indx].key;
+        // multisig and fee verification
+        return
+            isSignatureValid(_txRaw, _signature, key[0], true) && isSignatureValid(_txRaw, _signatureFee, key[1], true);
+    }
+
+    /// @notice Verifies BLS signature by validator address
+    /// @param _chainId Chain ID
+    /// @param _hash The hash to verify
+    /// @param _signature The BLS signature
+    /// @param _validatorAddr Validator address
+    /// @return True if the BLS signature is valid
+    function isBlsSignatureValidByValidatorAddress(
+        uint8 _chainId,
+        bytes32 _hash,
+        bytes calldata _signature,
+        address _validatorAddr
+    ) public view returns (bool) {
+        uint256 indx = addressValidatorIndex[_validatorAddr] - 1;
+        uint256[4] memory key = chainData[_chainId][indx].key;
+        return isBlsSignatureValid(_hash, _signature, key);
     }
 
     /// @notice Sets the validator-specific chain data for a given chain ID
