@@ -49,8 +49,8 @@ describe("Confirmed Transactions", function () {
       expect(confirmedTxs[0].blockHeight).to.be.lessThan(
         await claims.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)
       );
-      expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
-      expect(confirmedTxs[0].receivers[0].amount).to.equal(expectedReceiversAmount);
+      expect(confirmedTxs[0].receiversWithColor[0].destinationAddress).to.equal(expectedReceiversAddress);
+      expect(confirmedTxs[0].receiversWithColor[0].amount).to.equal(expectedReceiversAmount);
     });
 
     it("GetConfirmedTransactions should not return more transaction than MAX_NUMBER_OF_TRANSACTIONS", async function () {
@@ -76,6 +76,12 @@ describe("Confirmed Transactions", function () {
       const tempBRC = structuredClone(validatorClaimsBRC);
       tempBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination = 1n;
       tempBRC.bridgingRequestClaims[0].wrappedTokenAmountDestination = 1n;
+      tempBRC.bridgingRequestClaims[0].receivers.push({
+        amount: 200,
+        amountWrapped: 200,
+        destinationAddress: "0x123...",
+        coloredCoinId: 1,
+      });
 
       const validatorClaimsBRC2 = {
         ...tempBRC,
@@ -118,6 +124,7 @@ describe("Confirmed Transactions", function () {
 
       const expectedReceiversAddress = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].destinationAddress;
       const expectedReceiversAmount = validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount;
+      const expectedReceiversWrappedAmount = tempBRC.bridgingRequestClaims[0].receivers[1].amountWrapped;
 
       const blockNum = await claims.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId);
       expect(confirmedTxs.length).to.equal(2);
@@ -127,14 +134,21 @@ describe("Confirmed Transactions", function () {
       );
       expect(confirmedTxs[0].sourceChainId).to.equal(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId);
       expect(confirmedTxs[0].blockHeight).to.be.lessThan(blockNum);
-      expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
-      expect(confirmedTxs[0].receivers[0].amount).to.equal(expectedReceiversAmount);
+      expect(confirmedTxs[0].receiversWithColor[0].destinationAddress).to.equal(expectedReceiversAddress);
+      expect(confirmedTxs[0].receiversWithColor[0].amount).to.equal(expectedReceiversAmount);
+      expect(confirmedTxs[0].receiversWithColor[0].coloredCoinId).to.equal(0);
       expect(confirmedTxs[1].nonce).to.equal(2);
       expect(confirmedTxs[1].observedTransactionHash).to.equal(
         validatorClaimsBRC2.bridgingRequestClaims[0].observedTransactionHash
       );
       expect(confirmedTxs[1].sourceChainId).to.equal(validatorClaimsBRC2.bridgingRequestClaims[0].sourceChainId);
       expect(confirmedTxs[1].blockHeight).to.be.lessThan(blockNum);
+      expect(confirmedTxs[1].receiversWithColor[0].destinationAddress).to.equal(expectedReceiversAddress);
+      expect(confirmedTxs[1].receiversWithColor[0].amount).to.equal(expectedReceiversAmount);
+      expect(confirmedTxs[1].receiversWithColor[0].coloredCoinId).to.equal(0);
+      expect(confirmedTxs[1].receiversWithColor[1].destinationAddress).to.equal(expectedReceiversAddress);
+      expect(confirmedTxs[1].receiversWithColor[1].amountWrapped).to.equal(expectedReceiversWrappedAmount);
+      expect(confirmedTxs[1].receiversWithColor[1].coloredCoinId).to.equal(1);
     });
 
     it("GetConfirmedTransactions should return transactions with appropriate Observed Transaction Hashes", async function () {
@@ -211,14 +225,79 @@ describe("Confirmed Transactions", function () {
       );
       expect(confirmedTxs[0].sourceChainId).to.equal(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId);
       expect(confirmedTxs[0].blockHeight).to.be.lessThan(blockNum);
-      expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
-      expect(confirmedTxs[0].receivers[0].amount).to.equal(expectedReceiversAmount);
+      expect(confirmedTxs[0].receiversWithColor[0].destinationAddress).to.equal(expectedReceiversAddress);
+      expect(confirmedTxs[0].receiversWithColor[0].amount).to.equal(expectedReceiversAmount);
       expect(confirmedTxs[1].nonce).to.equal(2);
       expect(confirmedTxs[1].observedTransactionHash).to.equal(
         validatorClaimsBRC3.bridgingRequestClaims[0].observedTransactionHash
       );
       expect(confirmedTxs[1].sourceChainId).to.equal(validatorClaimsBRC3.bridgingRequestClaims[0].sourceChainId);
       expect(confirmedTxs[1].blockHeight).to.be.lessThan(blockNum);
+    });
+
+    it("GetConfirmedTransactions should return confirmed transaction after RefundRequestClaim", async function () {
+      // Impersonate as Bridge in order to set Next Timeout Block value
+      const bridgeAddress = await bridge.getAddress();
+
+      await hre.network.provider.request({
+        method: "hardhat_stopImpersonatingAccount",
+        params: [bridgeAddress],
+      });
+
+      const expectedCCAmounts = [
+        { coloredCoinId: 1, amountCurrency: 10, amountCC: 100 },
+        { coloredCoinId: 2, amountCurrency: 10, amountCC: 200 },
+      ];
+
+      // Clone and modify refundRequestClaims
+      const tempRRC = structuredClone(validatorClaimsRRC);
+      tempRRC.refundRequestClaims[0].coloredCoinAmounts = expectedCCAmounts.map(cc => ({
+        coloredCoinId: cc.coloredCoinId,
+        amountColoredCoins: cc.amountCC,
+        amountCurrency: cc.amountCurrency,
+      }));
+
+      // Submit BRC claims
+      for (const validator of validators) {
+        await bridge.connect(validator).submitClaims(validatorClaimsBRC);
+      }
+
+      // Submit RRC claims
+      for (const validator of validators) {
+        await bridge.connect(validator).submitClaims(tempRRC);
+      }
+
+      const claim = tempRRC.refundRequestClaims[0];
+      const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(claim.originChainId);
+
+      const expectedReceiversAddress = claim.originSenderAddress;
+      const blockNum = await claims.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId);
+
+      // Basic transaction checks
+      const tx = confirmedTxs[1];
+      expect(confirmedTxs.length).to.equal(2);
+      expect(tx.nonce).to.equal(2);
+      expect(tx.observedTransactionHash).to.equal(claim.originTransactionHash);
+      expect(tx.sourceChainId).to.equal(claim.originChainId);
+      expect(tx.blockHeight).to.be.lessThan(blockNum);
+
+      // Receivers checks
+      expect(tx.receiversWithColor.length).to.equal(3);
+
+      tx.receiversWithColor.forEach((receiver: any, idx: any) => {
+        expect(receiver.destinationAddress).to.equal(expectedReceiversAddress);
+
+        if (idx === 0) {
+          expect(receiver.amount).to.equal(claim.originAmount);
+          expect(receiver.amountWrapped).to.equal(claim.originWrappedAmount);
+          expect(receiver.coloredCoinId).to.equal(0);
+        } else {
+          const expected = expectedCCAmounts[idx - 1];
+          expect(receiver.amount).to.equal(expected.amountCurrency);
+          expect(receiver.amountWrapped).to.equal(expected.amountCC);
+          expect(receiver.coloredCoinId).to.equal(expected.coloredCoinId);
+        }
+      });
     });
   });
 
@@ -243,6 +322,7 @@ describe("Confirmed Transactions", function () {
   let chain1: any;
   let chain2: any;
   let validatorClaimsBRC: any;
+  let validatorClaimsRRC: any;
   let validatorAddressChainData: any;
   let validators: any;
 
@@ -255,6 +335,7 @@ describe("Confirmed Transactions", function () {
     chain1 = fixture.chain1;
     chain2 = fixture.chain2;
     validatorClaimsBRC = fixture.validatorClaimsBRC;
+    validatorClaimsRRC = fixture.validatorClaimsRRC;
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;
 

@@ -57,7 +57,7 @@ describe("Unregistered Chains Contract", function () {
 
   it("Should revert if defund is called on unregistered chain", async function () {
     await admin.setFundAdmin(validators[0].address);
-    await expect(admin.connect(validators[0]).defund(1, 100, 100, 0, "address"))
+    await expect(admin.connect(validators[0]).defund(1, 100, 100, [], "address"))
       .to.be.revertedWithCustomError(admin, "ChainIsNotRegistered")
       .withArgs(1);
   });

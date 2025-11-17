@@ -20,6 +20,7 @@ describe("Claims Contract", function () {
           amount: 99 + i,
           amountWrapped: 100 + i,
           destinationAddress: `0x123...${(i + 1).toString().padStart(8, "0")}`,
+          coloredCoinId: 0,
         })),
       ];
       await expect(

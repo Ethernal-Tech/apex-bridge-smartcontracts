@@ -58,7 +58,7 @@ describe("Chain Tokens", function () {
 
       expect(await chainTokens.chainTokenQuantity(chain1.id)).to.equal(100);
       expect(await chainTokens.chainWrappedTokenQuantity(chain1.id)).to.equal(100);
-      await expect(admin.connect(validators[0]).defund(chain1.id, amount, 0, 0, "address"))
+      await expect(admin.connect(validators[0]).defund(chain1.id, amount, 0, [], "address"))
         .to.be.revertedWithCustomError(chainTokens, "DefundRequestTooHigh")
         .withArgs("Defund - Currency", chain1.id, 100, amount);
     });
@@ -69,7 +69,7 @@ describe("Chain Tokens", function () {
 
       expect(await chainTokens.chainTokenQuantity(chain1.id)).to.equal(100);
       expect(await chainTokens.chainWrappedTokenQuantity(chain1.id)).to.equal(100);
-      await expect(admin.connect(validators[0]).defund(chain1.id, 0, amount, 0, "address"))
+      await expect(admin.connect(validators[0]).defund(chain1.id, 0, amount, [], "address"))
         .to.be.revertedWithCustomError(chainTokens, "DefundRequestTooHigh")
         .withArgs("Defund - Native Token", chain1.id, 100, amount);
     });

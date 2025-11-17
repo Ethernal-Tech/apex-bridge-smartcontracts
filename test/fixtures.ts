@@ -279,6 +279,7 @@ export async function deployBridgeFixture() {
             amount: 100,
             amountWrapped: 100,
             destinationAddress: "0x123...",
+            coloredCoinId: 0,
           },
         ],
         nativeCurrencyAmountSource: 100,
@@ -289,7 +290,6 @@ export async function deployBridgeFixture() {
         sourceChainId: 1,
         destinationChainId: 2,
         bridgeAddrIndex: 1,
-        coloredCoinId: 0,
       },
     ],
     batchExecutedClaims: [],
@@ -306,6 +306,7 @@ export async function deployBridgeFixture() {
           amount: 100 + i,
           amountWrapped: 100 + i,
           destinationAddress: `0x123...${i}`,
+          coloredCoinId: 0,
         },
       ],
       nativeCurrencyAmountSource: 100,
@@ -316,7 +317,6 @@ export async function deployBridgeFixture() {
       sourceChainId: 1,
       destinationChainId: 2,
       bridgeAddrIndex: 1,
-      coloredCoinId: 0,
     })),
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
@@ -332,6 +332,7 @@ export async function deployBridgeFixture() {
           amount: 100 + i,
           amountWrapped: 100 + i,
           destinationAddress: `0x123...${i}`,
+          coloredCoinId: 0,
         },
       ],
       nativeCurrencyAmountSource: 100,
@@ -342,7 +343,6 @@ export async function deployBridgeFixture() {
       sourceChainId: 1,
       destinationChainId: 2,
       bridgeAddrIndex: 1,
-      coloredCoinId: 0,
     })),
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
@@ -395,7 +395,7 @@ export async function deployBridgeFixture() {
         shouldDecrementHotWallet: false,
         destinationChainId: 1,
         bridgeAddrIndex: 1,
-        coloredCoinId: 0,
+        coloredCoinAmounts: [],
       },
     ],
     hotWalletIncrementClaims: [],
@@ -411,7 +411,6 @@ export async function deployBridgeFixture() {
         chainId: 1,
         amount: 100,
         amountWrapped: 100,
-        coloredCoinId: 0,
       },
     ],
   };
@@ -456,6 +455,14 @@ export async function deployBridgeFixture() {
   const validatorCardanoData = validatorAddressChainData[0].data;
   const bridgeAddrIndex = 0;
 
+  const coloredCoinAmounts = [
+    {
+      coloredCoinId: 1,
+      amountColoredCoins: 10,
+      amountCurrency: 1
+    }
+  ];
+
   return {
     admin,
     bridge,
@@ -484,6 +491,7 @@ export async function deployBridgeFixture() {
     validatorCardanoData,
     cardanoBlocks,
     bridgeAddrIndex,
+    coloredCoinAmounts,
   };
 }
 
@@ -492,19 +500,18 @@ export function hashBridgeRequestClaim(claim: any) {
   const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
   const lst = [];
   for (let receiver of claim.receivers) {
-    lst.push([receiver.amount, receiver.amountWrapped, receiver.destinationAddress]);
+    lst.push([receiver.amount, receiver.amountWrapped, receiver.destinationAddress, receiver.coloredCoinId]);
   }
 
   const encoded = abiCoder.encode(
     [
       "bytes32",
-      "tuple(uint256, uint256, string)[]",
+      "tuple(uint256, uint256, string, uint8)[]",
       "uint256",
       "uint256",
       "uint256",
       "uint256",
       "uint256",
-      "uint8",
       "uint8",
       "uint8",
       "uint8",
@@ -520,14 +527,13 @@ export function hashBridgeRequestClaim(claim: any) {
       claim.sourceChainId,
       claim.destinationChainId,
       claim.bridgeAddrIndex,
-      claim.coloredCoinId,
     ]
   );
 
   return ethers.keccak256(
     "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-      encodedPrefix.substring(66) +
-      encoded.substring(2)
+    encodedPrefix.substring(66) +
+    encoded.substring(2)
   );
 }
 
@@ -541,8 +547,8 @@ export function hashBatchExecutedClaim(claim: any) {
 
   return ethers.keccak256(
     "0x0000000000000000000000000000000000000000000000000000000000000080" +
-      encoded.substring(2) +
-      encodedPrefix.substring(66)
+    encoded.substring(2) +
+    encodedPrefix.substring(66)
   );
 }
 
@@ -556,14 +562,19 @@ export function hashBatchExecutionFailedClaim(claim: any) {
 
   return ethers.keccak256(
     "0x0000000000000000000000000000000000000000000000000000000000000080" +
-      encoded.substring(2) +
-      encodedPrefix.substring(66)
+    encoded.substring(2) +
+    encodedPrefix.substring(66)
   );
 }
 
 export function hashRefundRequestClaim(claim: any) {
   const abiCoder = new ethers.AbiCoder();
   const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
+  const ccAmounts = [];
+  for (let ccAmount of claim.coloredCoinAmounts) {
+    ccAmounts.push([ccAmount.coloredCoinId, ccAmount.amount]);
+  }
+
   const encoded = abiCoder.encode(
     [
       "bytes32",
@@ -577,7 +588,7 @@ export function hashRefundRequestClaim(claim: any) {
       "bool",
       "uint8",
       "uint8",
-      "uint8",
+      "tuple(uint8, uint256)[]",
     ],
     [
       claim.originTransactionHash,
@@ -591,27 +602,33 @@ export function hashRefundRequestClaim(claim: any) {
       claim.shouldDecrementHotWallet,
       claim.destinationChainId,
       claim.bridgeAddrIndex,
-      claim.coloredCoinId,
+      ccAmounts,
     ]
   );
   return ethers.keccak256(
     "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-      encodedPrefix.substring(66) +
-      encoded.substring(2)
+    encodedPrefix.substring(66) +
+    encoded.substring(2)
   );
 }
 
 export function hashHotWalletIncrementClaim(claim: any) {
   const abiCoder = new ethers.AbiCoder();
-  const encodedPrefix = abiCoder.encode(["string"], ["HWIC"]);
+
   const encoded = abiCoder.encode(
-    ["uint8", "uint256", "uint256", "uint8"],
-    [claim.chainId, claim.amount, claim.amountWrapped, claim.coloredCoinId]
+    [
+      "string",
+      "tuple(uint8 chainId, uint256 amount, uint256 amountWrapped)"
+    ],
+    [
+      "HWIC",
+      {
+        chainId: claim.chainId,
+        amount: claim.amount,
+        amountWrapped: claim.amountWrapped
+      }
+    ]
   );
 
-  return ethers.keccak256(
-    "0x00000000000000000000000000000000000000000000000000000000000000a0" +
-      encoded.substring(2) +
-      encodedPrefix.substring(66)
-  );
+  return ethers.keccak256(encoded);
 }

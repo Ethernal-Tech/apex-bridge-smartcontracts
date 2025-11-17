@@ -227,22 +227,12 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
                 uint8 _txType = _ctx.transactionType;
 
                 if (_txType == TransactionTypesLib.NORMAL) {
-                    chainTokens.updateTokensBEFC(
-                        chainId,
-                        _ctx.coloredCoinId,
-                        _ctx.totalAmount,
-                        _ctx.totalWrappedAmount
-                    );
+                    chainTokens.updateTokensBEFC(chainId, _ctx.totalAmount, _ctx.totalWrappedAmount);
                 } else if (_txType == TransactionTypesLib.DEFUND) {
                     if (_ctx.retryCounter < MAX_NUMBER_OF_RETRIES) {
                         claims.retryTx(chainId, _ctx);
                     } else {
-                        chainTokens.updateTokensBEFC(
-                            chainId,
-                            _ctx.coloredCoinId,
-                            _ctx.totalAmount,
-                            _ctx.totalWrappedAmount
-                        );
+                        chainTokens.updateTokensBEFC(chainId, _ctx.totalAmount, _ctx.totalWrappedAmount);
 
                         emit DefundFailedAfterMultipleRetries();
                     }

@@ -163,11 +163,29 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         for (uint8 i; i < registeredChains.length; i++) {
             uint8 chainId = registeredChains[i].id;
+
             chainTokens.setInitialTokenQuantities(
                 chainId,
                 _chainTokenQuantity[chainId],
                 _chainWrappedTokenQuantity[chainId]
             );
+
+            uint64 nextNonce = lastBatchedTxNonce[chainId] + 1;
+            uint64 lastConfirmedNonce = lastConfirmedTxNonce[chainId];
+
+            // Rebuild receiversWithColor for non-executed confirmed transactions
+            for (uint64 nonce = nextNonce; nonce <= lastConfirmedNonce; nonce++) {
+                ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nonce];
+
+                uint256 receiversLength = confirmedTx._receivers.length;
+                for (uint256 j; j < receiversLength; j++) {
+                    Receiver storage r = confirmedTx._receivers[j];
+
+                    confirmedTx.receiversWithColor.push(
+                        ReceiverWithColor(r.amount, r.amountWrapped, r.destinationAddress, 0)
+                    );
+                }
+            }
         }
     }
 
@@ -314,9 +332,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         uint256 receiversLength = _claim.receivers.length;
         for (uint i; i < receiversLength; i++) {
-            confirmedTx.receivers.push(_claim.receivers[i]);
+            confirmedTx.receiversWithColor.push(_claim.receivers[i]);
         }
-        confirmedTx.coloredCoinId = _claim.coloredCoinId;
     }
 
     /// @notice Sets the confirmed transaction details for a refund request claim.
@@ -342,10 +359,22 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         confirmedTx.destinationChainId = _claim.destinationChainId;
         confirmedTx.outputIndexes = _claim.outputIndexes;
         confirmedTx.alreadyTriedBatch = _claim.shouldDecrementHotWallet;
-        confirmedTx.receivers.push(
-            Receiver(_claim.originAmount, _claim.originWrappedAmount, _claim.originSenderAddress)
+
+        confirmedTx.receiversWithColor.push(
+            ReceiverWithColor(_claim.originAmount, _claim.originWrappedAmount, _claim.originSenderAddress, 0)
         );
-        confirmedTx.coloredCoinId = _claim.coloredCoinId;
+
+        uint256 colCoinsLength = _claim.coloredCoinAmounts.length;
+        for (uint i; i < colCoinsLength; i++) {
+            confirmedTx.receiversWithColor.push(
+                ReceiverWithColor(
+                    _claim.coloredCoinAmounts[i].amountCurrency,
+                    _claim.coloredCoinAmounts[i].amountColoredCoins,
+                    _claim.originSenderAddress,
+                    _claim.coloredCoinAmounts[i].coloredCoinId
+                )
+            );
+        }
     }
 
     /// @notice Determines whether a new batch should be created for a specific destination chain.
@@ -434,14 +463,14 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint8 _chainId,
         uint256 _amount,
         uint256 _amountWrapped,
-        uint8 _coloredCoinId,
+        ColoredCoinAmount[] calldata _coloredCoinAmounts,
         string calldata _defundAddress
     ) external onlyAdminContract {
         if (!isChainRegistered[_chainId]) {
             revert ChainIsNotRegistered(_chainId);
         }
 
-        chainTokens.validateDefund(_chainId, _amount, _amountWrapped, _coloredCoinId);
+        chainTokens.validateDefund(_chainId, _amount, _amountWrapped);
 
         uint256 _confirmedTxCount = getBatchingTxsCount(_chainId);
 
@@ -454,10 +483,21 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         );
         confirmedTx.totalAmount = _amount;
         confirmedTx.totalWrappedAmount = _amountWrapped;
-        confirmedTx.receivers.push(Receiver(_amount, _amountWrapped, _defundAddress));
-        confirmedTx.coloredCoinId = _coloredCoinId;
+        confirmedTx.receiversWithColor.push(ReceiverWithColor(_amount, _amountWrapped, _defundAddress, 0));
 
-        chainTokens.updateDefund(_chainId, _amount, _amountWrapped, _coloredCoinId);
+        uint256 colCoinsLength = _coloredCoinAmounts.length;
+        for (uint i; i < colCoinsLength; i++) {
+            confirmedTx.receiversWithColor.push(
+                ReceiverWithColor(
+                    _coloredCoinAmounts[i].amountCurrency,
+                    _coloredCoinAmounts[i].amountColoredCoins,
+                    _defundAddress,
+                    _coloredCoinAmounts[i].coloredCoinId
+                )
+            );
+        }
+
+        chainTokens.updateDefund(_chainId, _amount, _amountWrapped);
 
         _updateNextTimeoutBlockIfNeeded(_chainId, _confirmedTxCount);
     }
@@ -481,8 +521,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             (claimsHelper.currentBatchBlock(_chainId) == -1) && // there is no batch in progress
             (_confirmedTxCount == 0) && // check if there is no other confirmed transactions
             (block.number >= nextTimeoutBlock[_chainId])
-        ) // check if the current block number is greater or equal than the NEXT_BATCH_TIMEOUT_BLOCK
-        {
+        ) {
+            // check if the current block number is greater or equal than the NEXT_BATCH_TIMEOUT_BLOCK
             nextTimeoutBlock[_chainId] = block.number + timeoutBlocksNumber;
         }
     }

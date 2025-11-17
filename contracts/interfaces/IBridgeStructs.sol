@@ -53,13 +53,13 @@ interface IBridgeStructs {
         uint8 sourceChainId;
         uint8 transactionType; // TransactionTypesLib
         bool alreadyTriedBatch;
-        Receiver[] receivers;
+        Receiver[] _receivers;
         bytes outputIndexes;
         uint8 destinationChainId;
         string stakePoolId;
         uint8 bridgeAddrIndex;
         uint8 transactionSubType; // TransactionTypesLib
-        uint8 coloredCoinId;
+        ReceiverWithColor[] receiversWithColor;
     }
 
     /// @notice Represents a block from the Cardano chain.
@@ -82,7 +82,7 @@ interface IBridgeStructs {
         // hash of tx on the source chain
         bytes32 observedTransactionHash;
         // key is the address on destination UTXO chain; value is the amount of tokens
-        Receiver[] receivers;
+        ReceiverWithColor[] receivers;
         uint256 nativeCurrencyAmountSource;
         uint256 wrappedTokenAmountSource;
         uint256 nativeCurrencyAmountDestination;
@@ -91,7 +91,6 @@ interface IBridgeStructs {
         uint8 sourceChainId;
         uint8 destinationChainId;
         uint8 bridgeAddrIndex;
-        uint8 coloredCoinId;
     }
 
     /// @notice A claim that a batch was executed on a specific chain.
@@ -140,7 +139,7 @@ interface IBridgeStructs {
         // index of bridging address
         uint8 bridgeAddrIndex;
         // ID of colored coin
-        uint8 coloredCoinId;
+        ColoredCoinAmount[] coloredCoinAmounts;
     }
 
     /// @notice A claim to increase the balance of a chain's hot wallet.
@@ -148,14 +147,27 @@ interface IBridgeStructs {
         uint8 chainId;
         uint256 amount;
         uint256 amountWrapped;
-        uint8 coloredCoinId;
     }
 
-    /// @notice Destination address and amount for a transaction output.
+    /// @notice Depricated destination address and amount for a transaction output.
     struct Receiver {
         uint256 amount;
         uint256 amountWrapped;
         string destinationAddress;
+    }
+
+    /// @notice Destination address and amount for a transaction output.
+    struct ReceiverWithColor {
+        uint256 amount;
+        uint256 amountWrapped;
+        string destinationAddress;
+        uint16 coloredCoinId;
+    }
+
+    struct ColoredCoinAmount {
+        uint16 coloredCoinId;
+        uint256 amountColoredCoins;
+        uint256 amountCurrency;
     }
 
     /// @notice Metadata about a chain registered with the bridge.
@@ -241,7 +253,7 @@ interface IBridgeStructs {
         uint8 _chainId,
         uint256 _amount,
         uint256 _amountWrapped,
-        uint8 _coloredCoinId,
+        ColoredCoinAmount[] _coloredCoinAmounts,
         string _defundAddress
     );
     event FundAdminChanged(address _newFundAdmin);
