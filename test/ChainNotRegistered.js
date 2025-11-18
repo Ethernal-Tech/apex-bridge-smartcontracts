@@ -1,6 +1,5 @@
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
-import { deployBridgeFixture } from "./fixtures";
+import { deployBridgeFixture } from "./fixtures.js";
 
 describe("Unregistered Chains Contract", function () {
   it("Should revert submit BRC if either source and destination chains are not registered", async function () {
@@ -57,7 +56,11 @@ describe("Unregistered Chains Contract", function () {
   });
 
   it("Performance for registerChain", async function () {
-    const { bridge, chain1, owner, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
+    const fixture = await deployBridgeFixture();
+    let bridge = fixture.bridge;
+    let chain1 = fixture.chain1;
+    let owner = fixture.owner;
+    let validatorAddressChainData = fixture.validatorAddressChainData;
 
     const tx = await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
     const receipt = await tx.wait();
@@ -65,7 +68,11 @@ describe("Unregistered Chains Contract", function () {
   });
 
   it("Performance for registerChainGovernance", async function () {
-    const { bridge, chain1, validators, validatorCardanoData } = await loadFixture(deployBridgeFixture);
+    const fixture = await deployBridgeFixture();
+    let bridge = fixture.bridge;
+    let chain1 = fixture.chain1;
+    let validators = fixture.validators;
+    let validatorCardanoData = fixture.validatorCardanoData;
 
     for (let i = 0; i < (validators.length * 2) / 3 + 1; i++) {
       // fourth one is quorum
@@ -84,23 +91,23 @@ describe("Unregistered Chains Contract", function () {
     }
   });
 
-  let bridge: any;
-  let admin: any;
-  let claims: any;
-  let claimsHelper: any;
-  let owner: any;
-  let chain1: any;
-  let validatorClaimsBRC: any;
-  let validatorClaimsBEC: any;
-  let validatorClaimsBEFC: any;
-  let validatorClaimsRRC: any;
-  let validatorClaimsHWIC: any;
-  let validatorAddressChainData: any;
-  let validators: any;
-  let cardanoBlocks: any;
+  let bridge;
+  let admin;
+  let claims;
+  let claimsHelper;
+  let owner;
+  let chain1;
+  let validatorClaimsBRC;
+  let validatorClaimsBEC;
+  let validatorClaimsBEFC;
+  let validatorClaimsRRC;
+  let validatorClaimsHWIC;
+  let validatorAddressChainData;
+  let validators;
+  let cardanoBlocks;
 
   beforeEach(async function () {
-    const fixture = await loadFixture(deployBridgeFixture);
+    const fixture = await deployBridgeFixture();
 
     admin = fixture.admin;
     bridge = fixture.bridge;

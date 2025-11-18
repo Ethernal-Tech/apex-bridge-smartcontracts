@@ -6,6 +6,7 @@ export { Admin__factory } from './Admin__factory.js';
 export { Bridge__factory } from './Bridge__factory.js';
 export { Claims__factory } from './Claims__factory.js';
 export { ClaimsHelper__factory } from './ClaimsHelper__factory.js';
+export { MyProxy__factory } from './MyProxy__factory.js';
 export { SignedBatches__factory } from './SignedBatches__factory.js';
 export { Slots__factory } from './Slots__factory.js';
 export { Validators__factory } from './Validators__factory.js';

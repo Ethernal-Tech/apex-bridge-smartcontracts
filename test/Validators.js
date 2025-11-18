@@ -1,6 +1,5 @@
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
-import { deployBridgeFixture } from "./fixtures";
+import { deployBridgeFixture } from "./fixtures.js";
 
 describe("Validators Contract", function () {
   it("addValidatorChainData from Validators SC should revert if not called by Bridge SC", async function () {
@@ -15,14 +14,14 @@ describe("Validators Contract", function () {
     ).to.be.revertedWithCustomError(bridge, "NotBridge");
   });
 
-  let bridge: any;
-  let owner: any;
-  let validatorsc: any;
-  let validatorCardanoData: any;
-  let validatorAddressChainData: any;
+  let bridge;
+  let owner;
+  let validatorsc;
+  let validatorCardanoData;
+  let validatorAddressChainData;
 
   beforeEach(async function () {
-    const fixture = await loadFixture(deployBridgeFixture);
+    const fixture = await deployBridgeFixture();
 
     bridge = fixture.bridge;
     owner = fixture.owner;

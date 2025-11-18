@@ -1,13 +1,14 @@
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import hre from "hardhat";
+const { ethers } = hre;
 import { expect } from "chai";
-import { ethers } from "hardhat";
+
 import {
   deployBridgeFixture,
   hashBatchExecutedClaim,
   hashBatchExecutionFailedClaim,
   hashBridgeRequestClaim,
   hashRefundRequestClaim,
-} from "./fixtures";
+} from "./fixtures.js";
 
 describe("Submit Claims", function () {
   describe("Submit new Bridging Request Claim", function () {
@@ -908,25 +909,34 @@ describe("Submit Claims", function () {
     });
   });
 
-  let admin: any;
-  let bridge: any;
-  let bridgingAddresses: any;
-  let claimsHelper: any;
-  let claims: any;
-  let signedBatches: any;
-  let owner: any;
-  let chain1: any;
-  let chain2: any;
-  let validatorClaimsBRC: any;
-  let validatorClaimsBEC: any;
-  let validatorClaimsBEFC: any;
-  let validatorClaimsRRC: any;
-  let signedBatch: any;
-  let validatorAddressChainData: any;
-  let validators: any;
+  let admin;
+  let bridge;
+  let claimsHelper;
+  let claims;
+  let signedBatches;
+  let owner;
+  let chain1;
+  let chain2;
+  let validatorClaimsBRC;
+  let validatorClaimsBEC;
+  let validatorClaimsBEFC;
+  let validatorClaimsRRC;
+  let signedBatch;
+  let validatorAddressChainData;
+  let validators;
 
   beforeEach(async function () {
-    const fixture = await loadFixture(deployBridgeFixture);
+    const fixture = await deployBridgeFixture();
+
+    await hre.ethers.provider.send("hardhat_setCode", [
+      "0x0000000000000000000000000000000000002050",
+      "0x600160005260206000F3",
+    ]);
+
+    await hre.ethers.provider.send("hardhat_setCode", [
+      "0x0000000000000000000000000000000000002060",
+      "0x600160005260206000F3",
+    ]);
 
     admin = fixture.admin;
     bridge = fixture.bridge;

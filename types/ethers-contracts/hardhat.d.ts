@@ -14,6 +14,7 @@ declare module "@nomicfoundation/hardhat-ethers/types" {
 getContractFactory(name: 'Bridge', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.Bridge__factory>
 getContractFactory(name: 'Claims', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.Claims__factory>
 getContractFactory(name: 'ClaimsHelper', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.ClaimsHelper__factory>
+getContractFactory(name: 'MyProxy', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.MyProxy__factory>
 getContractFactory(name: 'SignedBatches', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.SignedBatches__factory>
 getContractFactory(name: 'Slots', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.Slots__factory>
 getContractFactory(name: 'Validators', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.Validators__factory>
@@ -24,6 +25,7 @@ getContractFactory(name: 'IBridgeStructs', signerOrOptions?: ethers.Signer | Fac
 getContractAt(name: 'Bridge', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.Bridge>
 getContractAt(name: 'Claims', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.Claims>
 getContractAt(name: 'ClaimsHelper', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.ClaimsHelper>
+getContractAt(name: 'MyProxy', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.MyProxy>
 getContractAt(name: 'SignedBatches', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.SignedBatches>
 getContractAt(name: 'Slots', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.Slots>
 getContractAt(name: 'Validators', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.Validators>
@@ -34,6 +36,7 @@ getContractAt(name: 'IBridgeStructs', address: string | ethers.Addressable, sign
 deployContract(name: 'Bridge', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Bridge>
 deployContract(name: 'Claims', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Claims>
 deployContract(name: 'ClaimsHelper', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.ClaimsHelper>
+deployContract(name: 'MyProxy', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.MyProxy>
 deployContract(name: 'SignedBatches', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.SignedBatches>
 deployContract(name: 'Slots', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Slots>
 deployContract(name: 'Validators', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Validators>
@@ -44,6 +47,7 @@ deployContract(name: 'IBridgeStructs', signerOrOptions?: ethers.Signer | DeployC
 deployContract(name: 'Bridge', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Bridge>
 deployContract(name: 'Claims', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Claims>
 deployContract(name: 'ClaimsHelper', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.ClaimsHelper>
+deployContract(name: 'MyProxy', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.MyProxy>
 deployContract(name: 'SignedBatches', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.SignedBatches>
 deployContract(name: 'Slots', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Slots>
 deployContract(name: 'Validators', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Validators>

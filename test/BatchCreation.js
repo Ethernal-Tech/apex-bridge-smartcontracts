@@ -1,7 +1,7 @@
-import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import hre from "hardhat";
+const { ethers } = hre;
 import { expect } from "chai";
-import { ethers } from "hardhat";
-import { deployBridgeFixture } from "./fixtures";
+import { deployBridgeFixture } from "./fixtures.js";
 
 describe("Batch Creation", function () {
   describe("Batch creation", function () {
@@ -42,7 +42,6 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-      await setCode("0x0000000000000000000000000000000000002050", "0x60206000F3"); // should return false for precompile
       await expect(bridge.connect(validators[0]).submitSignedBatch(signedBatch)).to.be.revertedWithCustomError(
         bridge,
         "InvalidSignature"
@@ -395,40 +394,41 @@ describe("Batch Creation", function () {
       expect(nextBatchBlock).to.lessThan(currentBlock + 1);
     });
   });
-  async function impersonateAsContractAndMintFunds(contractAddress: string) {
-    const hre = require("hardhat");
-    const address = await contractAddress.toLowerCase();
-    // impersonate as an contract on specified address
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [address],
-    });
+  async function impersonateAsContractAndMintFunds(contractAddress) {
+    const address = contractAddress.toLowerCase();
+
+    // Impersonate the account
+    await ethers.provider.send("hardhat_impersonateAccount", [address]);
 
     const signer = await ethers.getSigner(address);
-    // minting 100000000000000000000 tokens to signer
-    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+
+    // Mint 100 ETH (in wei) to the account
+    await ethers.provider.send("hardhat_setBalance", [
+      signer.address,
+      "0x56BC75E2D63100000", // 100 ETH in hex
+    ]);
 
     return signer;
   }
 
-  let bridge: any;
-  let claimsHelper: any;
-  let claims: any;
-  let signedBatches: any;
-  let owner: any;
-  let chain1: any;
-  let chain2: any;
-  let validatorClaimsBRC: any;
-  let validatorClaimsBEC: any;
-  let signedBatch: any;
-  let validatorAddressChainData: any;
-  let validators: any;
+  let bridge;
+  let claimsHelper;
+  let claims;
+  let signedBatches;
+  let owner;
+  let chain1;
+  let chain2;
+  let validatorClaimsBRC;
+  let validatorClaimsBEC;
+  let signedBatch;
+  let validatorAddressChainData;
+  let validators;
 
   beforeEach(async function () {
     // mock isSignatureValid precompile to always return true
-    await setCode("0x0000000000000000000000000000000000002050", "0x600160005260206000F3");
-    await setCode("0x0000000000000000000000000000000000002060", "0x600160005260206000F3");
-    const fixture = await loadFixture(deployBridgeFixture);
+    // await setCode("0x0000000000000000000000000000000000002050", "0x600160005260206000F3");
+    // await setCode("0x0000000000000000000000000000000000002060", "0x600160005260206000F3");
+    const fixture = await deployBridgeFixture();
 
     bridge = fixture.bridge;
     claimsHelper = fixture.claimsHelper;

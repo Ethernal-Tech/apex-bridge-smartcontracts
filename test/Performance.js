@@ -1,6 +1,4 @@
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import { ethers } from "hardhat";
-import { deployBridgeFixture } from "./fixtures";
+import { deployBridgeFixture } from "./fixtures.js";
 
 describe("Performance", function () {
   it("submitClaims BRC", async function () {
@@ -68,22 +66,19 @@ describe("Performance", function () {
     }
   });
 
-  let bridge: any;
-  let owner: any;
-  let chain1: any;
-  let chain2: any;
-  let validatorClaimsBRC: any;
-  let validatorClaimsBEC: any;
-  let validatorClaimsBEFC: any;
-  let validatorClaimsRRC: any;
-  let validatorClaimsHWIC: any;
-  let signedBatch: any;
-  let validatorAddressChainData: any;
-  let validatorCardanoData: any;
-  let validators: any;
+  let bridge;
+  let owner;
+  let chain1;
+  let chain2;
+  let validatorClaimsBRC;
+  let validatorClaimsBEC;
+  let validatorClaimsRRC;
+  let signedBatch;
+  let validatorAddressChainData;
+  let validators;
 
   beforeEach(async function () {
-    const fixture = await loadFixture(deployBridgeFixture);
+    const fixture = await deployBridgeFixture();
 
     bridge = fixture.bridge;
     owner = fixture.owner;
@@ -91,12 +86,9 @@ describe("Performance", function () {
     chain2 = fixture.chain2;
     validatorClaimsBRC = fixture.validatorClaimsBRC;
     validatorClaimsBEC = fixture.validatorClaimsBEC;
-    validatorClaimsBEFC = fixture.validatorClaimsBEFC;
     validatorClaimsRRC = fixture.validatorClaimsRRC;
-    validatorClaimsHWIC = fixture.validatorClaimsHWIC;
     signedBatch = fixture.signedBatch;
     validatorAddressChainData = fixture.validatorAddressChainData;
-    validatorCardanoData = fixture.validatorCardanoData;
     validators = fixture.validators;
 
     // Register chains

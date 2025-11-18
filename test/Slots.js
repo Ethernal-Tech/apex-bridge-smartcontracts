@@ -1,6 +1,5 @@
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
-import { deployBridgeFixture } from "./fixtures";
+import { deployBridgeFixture } from "./fixtures.js";
 
 describe("Slots Contract", function () {
   describe("Slot management", function () {
@@ -83,17 +82,17 @@ describe("Slots Contract", function () {
     });
   });
 
-  let bridge: any;
-  let owner: any;
-  let validators: any;
-  let slots: any;
-  let cardanoBlocks: any;
-  let chain1: any;
-  let chain2: any;
-  let validatorAddressChainData: any;
+  let bridge;
+  let owner;
+  let validators;
+  let slots;
+  let cardanoBlocks;
+  let chain1;
+  let chain2;
+  let validatorAddressChainData;
 
   beforeEach(async function () {
-    const fixture = await loadFixture(deployBridgeFixture);
+    const fixture = await deployBridgeFixture();
 
     bridge = fixture.bridge;
     owner = fixture.owner;

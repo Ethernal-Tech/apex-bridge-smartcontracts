@@ -1,20 +1,21 @@
-import { ethers } from "hardhat";
-import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin } from "../typechain-types";
+import { expect } from "chai";
+import hre from "hardhat";
 
-export enum TransactionType {
-  NORMAL = 0,
-  DEFUND = 1,
-  REFUND = 2,
-  STAKE = 3,
-  REDISTRIBUTION = 4,
-}
+export const TransactionType = {
+  NORMAL: 0,
+  DEFUND: 1,
+  REFUND: 2,
+  STAKE: 3,
+  REDISTRIBUTION: 4,
+};
 
 export async function deployBridgeFixture() {
-  // Contracts are deployed using the first signer/account by default
-  const [owner, validator1, validator2, validator3, validator4, validator5, validator6] = await ethers.getSigners();
-  const validators = [validator1, validator2, validator3, validator4, validator5];
+  const connection = await hre.network.connect();
+  const { ethers } = connection; // <-- ethers is available here
+  const signers = await ethers.getSigners();
 
-  const hre = require("hardhat");
+  const [owner, validator1, validator2, validator3, validator4, validator5, validator6] = signers;
+  const validators = [validator1, validator2, validator3, validator4, validator5];
 
   const Bridge = await ethers.getContractFactory("Bridge");
   const bridgeLogic = await Bridge.deploy();
@@ -38,13 +39,13 @@ export async function deployBridgeFixture() {
   const adminLogic = await Admin.deploy();
 
   // deployment of contract proxy
-  const BridgeProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const ClaimsHelperProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const ClaimsProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const SignedBatchesProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const SlotsProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const ValidatorscProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const AdminProxy = await ethers.getContractFactory("ERC1967Proxy");
+  const BridgeProxy = await ethers.getContractFactory("MyProxy");
+  const ClaimsHelperProxy = await ethers.getContractFactory("MyProxy");
+  const ClaimsProxy = await ethers.getContractFactory("MyProxy");
+  const SignedBatchesProxy = await ethers.getContractFactory("MyProxy");
+  const SlotsProxy = await ethers.getContractFactory("MyProxy");
+  const ValidatorscProxy = await ethers.getContractFactory("MyProxy");
+  const AdminProxy = await ethers.getContractFactory("MyProxy");
 
   const bridgeProxy = await BridgeProxy.deploy(
     await bridgeLogic.getAddress(),
@@ -91,25 +92,25 @@ export async function deployBridgeFixture() {
 
   //casting proxy contracts to contract logic
   const BridgeDeployed = await ethers.getContractFactory("Bridge");
-  const bridge = BridgeDeployed.attach(bridgeProxy.target) as Bridge;
+  const bridge = BridgeDeployed.attach(bridgeProxy.target);
 
   const ClaimsHelperDeployed = await ethers.getContractFactory("ClaimsHelper");
-  const claimsHelper = ClaimsHelperDeployed.attach(claimsHelperProxy.target) as ClaimsHelper;
+  const claimsHelper = ClaimsHelperDeployed.attach(claimsHelperProxy.target);
 
   const ClaimsDeployed = await ethers.getContractFactory("Claims");
-  const claims = ClaimsDeployed.attach(claimsProxy.target) as Claims;
+  const claims = ClaimsDeployed.attach(claimsProxy.target);
 
   const SignedBatchesDeployed = await ethers.getContractFactory("SignedBatches");
-  const signedBatches = SignedBatchesDeployed.attach(signedBatchesProxy.target) as SignedBatches;
+  const signedBatches = SignedBatchesDeployed.attach(signedBatchesProxy.target);
 
   const SlotsDeployed = await ethers.getContractFactory("Slots");
-  const slots = SlotsDeployed.attach(slotsProxy.target) as Slots;
+  const slots = SlotsDeployed.attach(slotsProxy.target);
 
   const ValidatorsDeployed = await ethers.getContractFactory("Validators");
-  const validatorsc = ValidatorsDeployed.attach(validatorsProxy.target) as Validators;
+  const validatorsc = ValidatorsDeployed.attach(validatorsProxy.target);
 
   const AdminDeployed = await ethers.getContractFactory("Admin");
-  const admin = AdminDeployed.attach(adminProxy.target) as Admin;
+  const admin = AdminDeployed.attach(adminProxy.target);
 
   await bridge.setDependencies(
     claimsProxy.target,
@@ -341,7 +342,7 @@ export async function deployBridgeFixture() {
   };
 }
 
-export function hashBridgeRequestClaim(claim: any) {
+export function hashBridgeRequestClaim(claim) {
   const abiCoder = new ethers.AbiCoder();
   const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
   const lst = [];
@@ -369,7 +370,7 @@ export function hashBridgeRequestClaim(claim: any) {
   );
 }
 
-export function hashBatchExecutedClaim(claim: any) {
+export function hashBatchExecutedClaim(claim) {
   const abiCoder = new ethers.AbiCoder();
   const encodedPrefix = abiCoder.encode(["string"], ["BEC"]);
   const encoded = abiCoder.encode(
@@ -384,7 +385,7 @@ export function hashBatchExecutedClaim(claim: any) {
   );
 }
 
-export function hashBatchExecutionFailedClaim(claim: any) {
+export function hashBatchExecutionFailedClaim(claim) {
   const abiCoder = new ethers.AbiCoder();
   const encodedPrefix = abiCoder.encode(["string"], ["BEFC"]);
   const encoded = abiCoder.encode(
@@ -399,7 +400,7 @@ export function hashBatchExecutionFailedClaim(claim: any) {
   );
 }
 
-export function hashRefundRequestClaim(claim: any) {
+export function hashRefundRequestClaim(claim) {
   const abiCoder = new ethers.AbiCoder();
   const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
   const encoded = abiCoder.encode(
@@ -422,7 +423,7 @@ export function hashRefundRequestClaim(claim: any) {
   );
 }
 
-export function hashHotWalletIncrementClaim(claim: any) {
+export function hashHotWalletIncrementClaim(claim) {
   const abiCoder = new ethers.AbiCoder();
   const encodedPrefix = abiCoder.encode(["string"], ["HWIC"]);
   const encoded = abiCoder.encode(["uint8", "uint256"], [claim.chainId, claim.amount]);

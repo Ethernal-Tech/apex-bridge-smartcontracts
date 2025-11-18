@@ -1,26 +1,9 @@
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import { expect } from "chai";
-import { ethers } from "hardhat";
-import { deployBridgeFixture } from "./fixtures";
 import hre from "hardhat";
+const { ethers } = hre;
+import { expect } from "chai";
+import { deployBridgeFixture } from "./fixtures.js";
 
 describe("Confirmed Transacrions", function () {
-  async function impersonateAsContractAndMintFunds(contractAddress: string) {
-    const hre = require("hardhat");
-    const address = await contractAddress.toLowerCase();
-    // impersonate as an contract on specified address
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [address],
-    });
-
-    const signer = await ethers.getSigner(address);
-    // minting 100000000000000000000 tokens to signer
-    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
-
-    return signer;
-  }
-
   describe("Transaction Confirmation", function () {
     it("GetConfirmedTransaction should not return transaction that occured after the timeout", async function () {
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
@@ -244,17 +227,34 @@ describe("Confirmed Transacrions", function () {
     });
   });
 
-  let bridge: any;
-  let claims: any;
-  let owner: any;
-  let chain1: any;
-  let chain2: any;
-  let validatorClaimsBRC: any;
-  let validatorAddressChainData: any;
-  let validators: any;
+  async function impersonateAsContractAndMintFunds(contractAddress) {
+    const address = contractAddress.toLowerCase();
+
+    // Impersonate the account
+    await ethers.provider.send("hardhat_impersonateAccount", [address]);
+
+    const signer = await ethers.getSigner(address);
+
+    // Fund the account with 100 ETH (in wei)
+    await ethers.provider.send("hardhat_setBalance", [
+      signer.address,
+      "0x56BC75E2D63100000", // 100 ETH
+    ]);
+
+    return signer;
+  }
+
+  let bridge;
+  let claims;
+  let owner;
+  let chain1;
+  let chain2;
+  let validatorClaimsBRC;
+  let validatorAddressChainData;
+  let validators;
 
   beforeEach(async function () {
-    const fixture = await loadFixture(deployBridgeFixture);
+    const fixture = await deployBridgeFixture();
 
     bridge = fixture.bridge;
     claims = fixture.claims;

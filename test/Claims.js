@@ -1,6 +1,5 @@
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
-import { ethers } from "hardhat";
+
 import {
   deployBridgeFixture,
   hashBridgeRequestClaim,
@@ -8,7 +7,7 @@ import {
   hashRefundRequestClaim,
   hashBatchExecutedClaim,
   hashHotWalletIncrementClaim,
-} from "./fixtures";
+} from "./fixtures.js";
 
 describe("Claims Contract", function () {
   describe("Submit new Bridging Request Claim", function () {
@@ -516,15 +515,15 @@ describe("Claims Contract", function () {
       ]);
 
       const event = receipt.logs
-        .map((log: any) => {
+        .map((log) => {
           try {
             return iface.parseLog(log);
           } catch {
             return null;
           }
         })
-        .filter((log: any) => log !== null)
-        .find((log: any) => log.name === "NotEnoughFunds");
+        .filter((log) => log !== null)
+        .find((log) => log.name === "NotEnoughFunds");
 
       expect(event).to.not.be.undefined;
       expect(event.fragment.name).to.equal("NotEnoughFunds");
@@ -673,27 +672,27 @@ describe("Claims Contract", function () {
     });
   });
 
-  let bridge: any;
-  let claimsHelper: any;
-  let claims: any;
-  let signedBatches: any;
-  let owner: any;
-  let chain1: any;
-  let chain2: any;
-  let validatorClaimsBRC: any;
-  let validatorClaimsBRC_bunch32: any;
-  let validatorClaimsBRC_bunch33: any;
-  let validatorClaimsBEC: any;
-  let validatorClaimsBEFC: any;
-  let validatorClaimsRRC: any;
-  let validatorClaimsHWIC: any;
-  let signedBatch: any;
+  let bridge;
+  let claimsHelper;
+  let claims;
+  let signedBatches;
+  let owner;
+  let chain1;
+  let chain2;
+  let validatorClaimsBRC;
+  let validatorClaimsBRC_bunch32;
+  let validatorClaimsBRC_bunch33;
+  let validatorClaimsBEC;
+  let validatorClaimsBEFC;
+  let validatorClaimsRRC;
+  let validatorClaimsHWIC;
+  let signedBatch;
 
-  let validatorAddressChainData: any;
-  let validators: any;
+  let validatorAddressChainData;
+  let validators;
 
   beforeEach(async function () {
-    const fixture = await loadFixture(deployBridgeFixture);
+    const fixture = await deployBridgeFixture();
 
     bridge = fixture.bridge;
     claimsHelper = fixture.claimsHelper;

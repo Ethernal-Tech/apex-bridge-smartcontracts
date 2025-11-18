@@ -1,18 +1,14 @@
-const networkHelpers = require("@nomicfoundation/hardhat-network-helpers");
-const loadFixture = networkHelpers.loadFixture;
-const setCode = networkHelpers.setCode;
-// import { loadFixture, setCode } from "@nomicfoundation/hardhat-network-helpers";
-// import { ethers } from "hardhat";
-import { ethers } from "ethers";
+import hre from "hardhat";
+const { ethers } = hre;
 import { expect } from "chai";
 import { deployBridgeFixture } from "./fixtures.js";
 
 describe("Admin Functions", function () {
-  beforeEach(async () => {
-    // mock isSignatureValid precompile to always return true
-    await setCode("0x0000000000000000000000000000000000002050", "0x600160005260206000F3");
-    await setCode("0x0000000000000000000000000000000000002060", "0x600160005260206000F3");
-  });
+  // beforeEach(async () => {
+  //   // mock isSignatureValid precompile to always return true
+  //   await setCode("0x0000000000000000000000000000000000002050", "0x600160005260206000F3");
+  //   await setCode("0x0000000000000000000000000000000000002060", "0x600160005260206000F3");
+  // });
 
   describe("Chain Token Quantity", function () {
     it("Should revert any claim if not called by fundAdmin", async function () {
@@ -284,21 +280,34 @@ describe("Admin Functions", function () {
     });
   });
 
-  let bridge: any;
-  let claimsHelper: any;
-  let claims: any;
-  let admin: any;
-  let owner: any;
-  let chain1: any;
-  let chain2: any;
-  let validatorClaimsBRC: any;
-  let validatorClaimsBEFC: any;
-  let signedBatch: any;
-  let validatorAddressChainData: any;
-  let validators: any;
+  let bridge;
+  let claimsHelper;
+  let claims;
+  let admin;
+  let owner;
+  let chain1;
+  let chain2;
+  let validatorClaimsBRC;
+  let validatorClaimsBEFC;
+  let signedBatch;
+  let validatorAddressChainData;
+  let validators;
 
   beforeEach(async function () {
-    const fixture = await loadFixture(deployBridgeFixture);
+    const fixture = await deployBridgeFixture();
+
+    await hre.network.provider.send("hardhat_setCode", [
+      "0x0000000000000000000000000000000000002050",
+      "0x600160005260206000F3",
+    ]);
+
+    await hre.network.provider.send("hardhat_setCode", [
+      "0x0000000000000000000000000000000000002060",
+      "0x600160005260206000F3",
+    ]);
+
+    // await setCode("0x0000000000000000000000000000000000002050", "0x600160005260206000F3");
+    // await setCode("0x0000000000000000000000000000000000002060", "0x600160005260206000F3");
 
     bridge = fixture.bridge;
     claimsHelper = fixture.claimsHelper;
