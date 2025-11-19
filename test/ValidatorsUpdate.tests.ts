@@ -105,6 +105,7 @@ describe("submitNewValidatorSet+validatorSetUpdated", function () {
         }
 
         expect(await validatorsSC.validatorsCount()).to.equal(5);
+        expect(await validatorsSC.getValidatorsAddresses()).to.deep.equal(validatorsAddresses);
 
         const chainDataPrimeOld = await validatorsSC.getValidatorsChainData(1);
         const chainDataVectorOld = await validatorsSC.getValidatorsChainData(2);
@@ -118,6 +119,12 @@ describe("submitNewValidatorSet+validatorSetUpdated", function () {
         expect(await validatorsSC.validatorsCount()).to.equal(4);
         expect(chainDataPrime.length).to.equal(4);
         expect(chainDataVector.length).to.equal(4);
+        expect(await validatorsSC.getValidatorsAddresses()).to.deep.equal([
+            validatorsAddresses[0],
+            validatorsAddresses[2],
+            validatorsAddresses[4],
+            validatorsAdditional.address,
+        ]);
 
         let indx = 0
         for (let i = 0; i < chainDataPrime.length; i++) {
@@ -158,10 +165,11 @@ describe("submitNewValidatorSet+validatorSetUpdated", function () {
                     ],
                 },
             ],
-            removedValidators: [validatorsAddresses[4]],
+            removedValidators: [validatorsAddresses[0]],
         }
 
         expect(await validatorsSC.validatorsCount()).to.equal(5);
+        expect(await validatorsSC.getValidatorsAddresses()).to.deep.equal(validatorsAddresses);
 
         const chainDataPrimeOld = await validatorsSC.getValidatorsChainData(1);
         const chainDataVectorOld = await validatorsSC.getValidatorsChainData(2);
@@ -175,14 +183,21 @@ describe("submitNewValidatorSet+validatorSetUpdated", function () {
         expect(await validatorsSC.validatorsCount()).to.equal(5);
         expect(chainDataPrime.length).to.equal(5);
         expect(chainDataVector.length).to.equal(5);
+        expect(await validatorsSC.getValidatorsAddresses()).to.deep.equal([
+            validatorsAddresses[1],
+            validatorsAddresses[2],
+            validatorsAddresses[3],
+            validatorsAddresses[4],
+            validatorsAdditional.address,
+        ]);
 
         for (let i = 0; i < chainDataPrime.length; i++) {
             const prime = chainDataPrime[i];
             const vector = chainDataVector[i];
 
             if (i != chainDataPrime.length - 1) {
-                expect(prime.key).to.deep.equal(chainDataPrimeOld[i].key);
-                expect(vector.key).to.deep.equal(chainDataVectorOld[i].key);
+                expect(prime.key).to.deep.equal(chainDataPrimeOld[i+1].key);
+                expect(vector.key).to.deep.equal(chainDataVectorOld[i+1].key);
             } else {
                 expect(prime.key).to.deep.equal(generateKey(6, 0));
                 expect(vector.key).to.deep.equal(generateKey(6, 256));
@@ -202,13 +217,19 @@ describe("submitNewValidatorSet+validatorSetUpdated", function () {
         expect(await validatorsSC.validatorsCount()).to.equal(4);
         expect(chainDataPrime.length).to.equal(4);
         expect(chainDataVector.length).to.equal(4);
+        expect(await validatorsSC.getValidatorsAddresses()).to.deep.equal([
+            validatorsAddresses[1],
+            validatorsAddresses[2],
+            validatorsAddresses[3],
+            validatorsAddresses[4],
+        ]);
 
         for (let i = 0; i < chainDataPrime.length; i++) {
             const prime = chainDataPrime[i];
             const vector = chainDataVector[i];
 
-            expect(prime.key).to.deep.equal(chainDataPrimeOld[i].key);
-            expect(vector.key).to.deep.equal(chainDataVectorOld[i].key);
+            expect(prime.key).to.deep.equal(chainDataPrimeOld[i+1].key);
+            expect(vector.key).to.deep.equal(chainDataVectorOld[i+1].key);
         }
     });
 });
