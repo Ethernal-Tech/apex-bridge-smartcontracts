@@ -21,6 +21,17 @@ describe("submitNewValidatorSet+validatorSetUpdated", function () {
         ];
     }
 
+    const generateValidatorChainData = function (addr: string, indx: number, prefix: number): any {
+        return {
+            addr: addr,
+            data: {
+                key: generateKey(indx, prefix),
+            },
+            keySignature: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcde5",
+            keyFeeSignature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567898",
+        };
+    }
+
     beforeEach(async () => {
         const [owner, validator1, validator2, validator3, validator4, validator5, validator6] = await ethers.getSigners();
         const ValidatorscProxy = await ethers.getContractFactory("ERC1967Proxy");
@@ -48,23 +59,8 @@ describe("submitNewValidatorSet+validatorSetUpdated", function () {
             { id: 2, chainType: 0, addressMultisig: "", addressFeePayer: "" },
         ];
 
-        validatorsChainDataPrime = validatorsAddresses.map((addr, index) => ({
-            addr: addr,
-            data: {
-                key: generateKey(index, 0),
-            },
-            keySignature: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-            keyFeeSignature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-        }));
-
-        validatorsChainDataVector = validatorsAddresses.map((addr, index) => ({
-            addr: addr,
-            data: {
-                key: generateKey(index, 256),
-            },
-            keySignature: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdee",
-            keyFeeSignature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567891",
-        }));
+        validatorsChainDataPrime = validatorsAddresses.map((addr, index) => generateValidatorChainData(addr, index, 0));
+        validatorsChainDataVector = validatorsAddresses.map((addr, index) => generateValidatorChainData(addr, index, 256));
 
         const fakeBridgeAddr = await validatorscLogic.getAddress();
         //Impersonate the factory to make calls
@@ -89,40 +85,19 @@ describe("submitNewValidatorSet+validatorSetUpdated", function () {
                 {
                     chainId: 1,
                     validators: [
-                        {
-                            addr: validatorsAdditional.address,
-                            data: {
-                                key: generateKey(6, 0),
-                            },
-                            keySignature: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-                            keyFeeSignature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-                        },
+                        generateValidatorChainData(validatorsAdditional.address, 6, 0)
                     ],
                 },
                 {
                     chainId: 2,
                     validators: [
-                        {
-                            addr: validatorsAdditional.address,
-                            data: {
-                                key: generateKey(6, 256),
-                            },
-                            keySignature: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-                            keyFeeSignature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-                        },
+                        generateValidatorChainData(validatorsAdditional.address, 6, 256)
                     ],
                 },
                 {
                     chainId: 255,
                     validators: [
-                        {
-                            addr: validatorsAdditional.address,
-                            data: {
-                                key: generateKey(6, 65535),
-                            },
-                            keySignature: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-                            keyFeeSignature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-                        },
+                        generateValidatorChainData(validatorsAdditional.address, 6, 65535)
                     ],
                 },
             ],
@@ -167,40 +142,19 @@ describe("submitNewValidatorSet+validatorSetUpdated", function () {
                 {
                     chainId: 1,
                     validators: [
-                        {
-                            addr: validatorsAdditional.address,
-                            data: {
-                                key: generateKey(6, 0),
-                            },
-                            keySignature: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-                            keyFeeSignature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-                        },
+                        generateValidatorChainData(validatorsAdditional.address, 6, 0)
                     ],
                 },
                 {
                     chainId: 2,
                     validators: [
-                        {
-                            addr: validatorsAdditional.address,
-                            data: {
-                                key: generateKey(6, 256),
-                            },
-                            keySignature: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-                            keyFeeSignature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-                        },
+                        generateValidatorChainData(validatorsAdditional.address, 6, 256)
                     ],
                 },
                 {
                     chainId: 255,
                     validators: [
-                        {
-                            addr: validatorsAdditional.address,
-                            data: {
-                                key: generateKey(6, 65535),
-                            },
-                            keySignature: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-                            keyFeeSignature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-                        },
+                        generateValidatorChainData(validatorsAdditional.address, 6, 65535)
                     ],
                 },
             ],
