@@ -415,7 +415,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         for (uint i = 0; i < _oldValidatorsCount; i++) {
             address addr = validatorAddresses[i];
             if (addressValidatorIndex[addr] != 0) {
-                validatorAddresses[i] = addr;
+                validatorAddresses[_newIndex] = addr;
                 addressValidatorIndex[addr] = _newIndex + 1;
                 _oldIndexMap[_newIndex] = i;
                 _newIndex++;
