@@ -16,15 +16,12 @@ import "./Validators.sol";
 /// @notice Cross-chain bridge for validator claim submission,
 /// batch transaction signing, and governance-based chain registration.
 /// @dev UUPS upgradeable and modular via dependency contracts (Claims, Validators, Slots, SignedBatches).
-contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {    
     address private upgradeAdmin;
     Claims private claims;
     SignedBatches private signedBatches;
     Slots private slots;
     Validators private validators;
-
-    /// @dev Address of StakeManger contract
-    address constant STAKE_MANAGER_ADDRESS = 0x0000000000000000000000000000000000010022;
 
     /// @notice Array of registered chains.
     Chain[] private chains;
@@ -35,13 +32,10 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice system address to limit access to certain functions
     address public constant SYSTEM = 0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE;
 
-    /// @notice Bitmap used to flag that validator set has been confirmed for specific chains.
-    uint8 public newValidatorSetBitmap;
-
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[49] private __gap;
+    uint256[50] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -91,33 +85,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @param _claims The claims submitted by a validator.
     function submitClaims(ValidatorClaims calldata _claims) external override onlyValidator {
         claims.submitClaims(_claims, msg.sender);
-    }
-
-    function _countSetBits(uint256 _newValidatorSetBitmap) internal pure returns (uint256 count) {
-        while (_newValidatorSetBitmap != 0) {
-            _newValidatorSetBitmap &= (_newValidatorSetBitmap - 1);
-            count++;
-        }
-    }
-
-    function updateOnStakeManagerIfAllChainsConfirmed(SignedBatch calldata _signedBatch) external onlySignedBatches {
-        newValidatorSetBitmap |= uint8(1 << _signedBatch.destinationChainId);
-
-        if (_countSetBits(newValidatorSetBitmap) == chains.length) {
-            (bool success, ) = address(STAKE_MANAGER_ADDRESS).call(
-                abi.encodeWithSignature(
-                    "updateValidatorSet(((uint8,(address,uint256[4],bytes,bytes)[])[],address[]))",
-                    validators.getNewValidatorSetDelta()
-                )
-            );
-
-            if (!success) {
-                revert StakeManagerUpdateFailed();
-            }
-
-            // restart new validator set bitmap
-            newValidatorSetBitmap = 0;
-        }
     }
 
     /// @notice Submit a signed transaction batch for the Cardano chain.
@@ -447,10 +414,16 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         return validators.currentValidatorSetId();
     }
 
+    /// @notice Return a a number of registered chains
+    /// @return number of registered chains
+    function getAllRegisteredChainsCount() external view returns (uint8) {
+        return uint8(chains.length);
+    }
+
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.1.0";
+        return "1.1.1";
     }
 
     modifier onlyValidator() {

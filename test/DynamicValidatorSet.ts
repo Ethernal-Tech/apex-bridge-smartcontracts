@@ -181,7 +181,7 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(validators[1]).submitSignedBatch(signedBatch_ValidatorSet);
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch_ValidatorSet);
 
-      let bitmap = await bridge.newValidatorSetBitmap();
+      let bitmap = await signedBatches.newValidatorSetBitmap();
 
       let count = 0;
       while (bitmap !== 0n) {
@@ -193,7 +193,7 @@ describe("Dynamic Validator Set", function () {
 
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch_ValidatorSet);
 
-      bitmap = await bridge.newValidatorSetBitmap();
+      bitmap = await signedBatches.newValidatorSetBitmap();
 
       while (bitmap !== 0n) {
         bitmap &= bitmap - 1n; // Clear the lowest set bit
@@ -208,7 +208,7 @@ describe("Dynamic Validator Set", function () {
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
 
-      let bitmap = await bridge.newValidatorSetBitmap();
+      let bitmap = await signedBatches.newValidatorSetBitmap();
 
       const signedBatch_ValidatorSetFinal = structuredClone(signedBatch_ValidatorSet);
       signedBatch_ValidatorSetFinal.batchType = BatchType.VALIDATORSET_FINAL;
@@ -227,7 +227,7 @@ describe("Dynamic Validator Set", function () {
 
       await bridge.connect(validators[3]).submitSignedBatch(signedBatch_ValidatorSetFinal);
 
-      bitmap = await bridge.newValidatorSetBitmap();
+      bitmap = await signedBatches.newValidatorSetBitmap();
 
       while (bitmap !== 0n) {
         bitmap &= bitmap - 1n; // Clear the lowest set bit
@@ -496,7 +496,7 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
 
-      let bitmap = await bridge.newValidatorSetBitmap();
+      let bitmap = await signedBatches.newValidatorSetBitmap();
 
       let count = 0;
       while (bitmap !== 0n) {
@@ -508,7 +508,7 @@ describe("Dynamic Validator Set", function () {
 
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
-      bitmap = await bridge.newValidatorSetBitmap();
+      bitmap = await signedBatches.newValidatorSetBitmap();
 
       count = 0;
       while (bitmap !== 0n) {
