@@ -111,10 +111,10 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         validatorAddresses.push(0x95227572e2f990506B57637D50e4cf11e16ab7C3);
         validatorAddresses.push(0xfd0926b6aAbcb4B1EA7CE3Bff9B5475dC727eB14);
         validatorAddresses.push(0xF2a47F6eD224BC882f20651eC55b1Ff2bb8509Fa);
-        addressValidatorIndex[0x4864fa00a8eb9524374e661759dC896783692c1A] = 0;
-        addressValidatorIndex[0x95227572e2f990506B57637D50e4cf11e16ab7C3] = 1;
-        addressValidatorIndex[0xfd0926b6aAbcb4B1EA7CE3Bff9B5475dC727eB14] = 2;
-        addressValidatorIndex[0xF2a47F6eD224BC882f20651eC55b1Ff2bb8509Fa] = 3;
+        addressValidatorIndex[0x4864fa00a8eb9524374e661759dC896783692c1A] = 1;
+        addressValidatorIndex[0x95227572e2f990506B57637D50e4cf11e16ab7C3] = 2;
+        addressValidatorIndex[0xfd0926b6aAbcb4B1EA7CE3Bff9B5475dC727eB14] = 3;
+        addressValidatorIndex[0xF2a47F6eD224BC882f20651eC55b1Ff2bb8509Fa] = 4;
         // ChainIDIntPrime  = chainIDNum(1)
         // ChainIDIntVector = chainIDNum(2)
         // ChainIDIntNexus  = chainIDNum(3)
