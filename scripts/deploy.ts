@@ -120,8 +120,6 @@ async function main() {
   console.log("---");
   console.log("ValdatorsLogic numberOfValidators:", await validatorscLogic.validatorsCount());
   console.log("Valdators numberOfValidators:", await validatorsc.validatorsCount());
-
-  //await bridgeDeployed.console.log(`Bridge deployed to ${bridge.target}`);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

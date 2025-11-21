@@ -23,6 +23,8 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     address constant VALIDATOR_BLS_PRECOMPILE = 0x0000000000000000000000000000000000002060;
     /// @dev Gas limit for the BLS precompile
     uint32 constant VALIDATOR_BLS_PRECOMPILE_GAS = 50000;
+    /// @dev blade apex-bridge fake chain id
+    uint8 constant BLADE_CHAIN_ID = 255;
 
     /// @notice Mapping of chain ID to validator key data
     /// @dev BlockchainId -> ValidatorChainData[]
@@ -30,16 +32,29 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
 
     /// @notice Mapping of validator address to index
     /// @dev validator address index(+1) in chainData mapping
-    mapping(address => uint8) private addressValidatorIndex;
+    mapping(address => uint8) public addressValidatorIndex;
 
     /// @notice Total number of registered validators
     /// @dev max possible number of validators is 127
     uint8 public validatorsCount;
 
+    /// @notice Addresses of validators in the current validator set
+    address[] public validatorAddresses;
+
+    /// @notice Full new validator set Delta compared to the current one
+    NewValidatorSetDelta newValidatorSetDelta;
+
+    /// @notice Flag for new validator set pending
+    bool public newValidatorSetPending;
+
+    /// @notice Id of the current validator set
+    /// @dev This is used to track the current validator set version
+    uint256 public currentValidatorSetId;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[50] private __gap;
+    uint256[45] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -60,9 +75,10 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         upgradeAdmin = _upgradeAdmin;
         for (uint8 i; i < _validators.length; i++) {
             if (addressValidatorIndex[_validators[i]] != 0) {
-                revert InvalidData("Duplicate validator");
+                revert InvalidData("DuplicatedValidator");
             }
             addressValidatorIndex[_validators[i]] = i + 1;
+            validatorAddresses.push(_validators[i]);
         }
         validatorsCount = uint8(_validators.length);
     }
@@ -78,12 +94,26 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         bridgeAddress = _bridgeAddress;
     }
 
+    /// @notice Sets the external contract dependencies.
+    /// @dev This function can only be called by the upgrade admin. It verifies that the provided address is a contract.
+    /// @param _validators Current list of validator addresses
+    function setAdditionalDependenciesAndSync(address[] calldata _validators) external onlyUpgradeAdmin {
+        delete validatorAddresses;
+        for (uint8 i; i < _validators.length; i++) {
+            validatorAddresses.push(_validators[i]);
+        }
+    }
+
     function isValidator(address _addr) public view returns (bool) {
         return addressValidatorIndex[_addr] != 0;
     }
 
     function getValidatorIndex(address _addr) public view returns (uint8) {
         return addressValidatorIndex[_addr];
+    }
+
+    function getValidatorsAddresses() public view returns (address[] memory) {
+        return validatorAddresses;
     }
 
     /// @notice Verifies a standard cryptographic signature against the given input data.
@@ -96,7 +126,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @param _isTx A boolean flag indicating whether the signature pertains to a transaction.
     /// @return isValid A boolean value indicating whether the signature is valid.
     function isSignatureValid(
-        bytes calldata _data,
+        bytes memory _data,
         bytes calldata _signature,
         uint256 _verifyingKey,
         bool _isTx
@@ -184,7 +214,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     ) external onlyBridge {
         uint8 validatorsCnt = validatorsCount;
         if (validatorsCnt != _chainDatas.length) {
-            revert InvalidData("validators count");
+            revert InvalidData("WrongNumberOfValidators");
         }
 
         // recreate array with n elements
@@ -212,11 +242,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @param _addr The address of the validator whose data is being set
     /// @param _data The chain-specific validator data (e.g., BLS keys) to associate with the validator
     /// @custom:revert InvalidData if `_addr` is not a registered validator (implicitly via index underflow)
-    function addValidatorChainData(
-        uint8 _chainId,
-        address _addr,
-        ValidatorChainData calldata _data
-    ) external onlyBridge {
+    function addValidatorChainData(uint8 _chainId, address _addr, ValidatorChainData memory _data) public onlyBridge {
         if (chainData[_chainId].length == 0) {
             // recreate array with n elements
             for (uint i; i < validatorsCount; i++) {
@@ -226,6 +252,116 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         unchecked {
             uint8 indx = addressValidatorIndex[_addr] - 1;
             chainData[_chainId][indx] = _data;
+        }
+    }
+
+    /// @notice Validates the new validator set data
+    /// @param _newValidatorSetDelta Full set of changed in the validator set
+    /// @dev checks that there are as many new validator set as there are registered chains
+    /// @dev checks that number of validators is between 4 and 126 - allowed values
+    /// @dev checks that number of validators is the same for all chains
+    /// @dev checks that there is a new validator set for all registered chains and for Blade chain
+    /// @dev checks that address of validators is not zero
+    /// @dev checkes for duplicate validator addresses
+    function _validateValidatorSet(
+        NewValidatorSetDelta calldata _newValidatorSetDelta,
+        Chain[] memory _chains
+    ) internal view {
+        //validator set needs to include validator data for all chains
+        uint256 _numberOfChainsInValidatorSets = _newValidatorSetDelta.addedValidators.length;
+        uint256 _numberOfRegisteredChains = _chains.length;
+
+        // checks that there are as many new validator set as there are registered chains
+        // validator set for Blade chain will always be included in the _validatorSet, but Blade
+        // is never registered as a chain on bridge, thus +1
+
+        if (_numberOfChainsInValidatorSets != 0 && _numberOfChainsInValidatorSets != _numberOfRegisteredChains + 1) {
+            revert InvalidData("WrongNumberOfChains");
+        }
+
+        uint256 numberOfNewValidators = _newValidatorSetDelta.addedValidators.length == 0
+            ? 0
+            : _newValidatorSetDelta.addedValidators[0].validators.length;
+
+        // the number of validators must bet between 4 and 126
+
+        uint256 newValidatorSetSize = validatorsCount +
+            numberOfNewValidators -
+            _newValidatorSetDelta.removedValidators.length;
+
+        if (newValidatorSetSize < 4 || newValidatorSetSize > 126) {
+            revert InvalidData("WrongNumberOfValidators");
+        }
+
+        // all chains must have the same number of validators
+        for (uint256 i = 1; i < _numberOfChainsInValidatorSets; i++) {
+            if (_newValidatorSetDelta.addedValidators[i].validators.length != numberOfNewValidators) {
+                revert InvalidData("WrongNumberOfValidators");
+            }
+        }
+
+        for (uint i; i < _numberOfChainsInValidatorSets; i++) {
+            bool chainMatched = false;
+            // checks that there is a new validator set for all registered chains
+            // and for Blade -> chainId == 255
+            for (uint256 j; j < _numberOfRegisteredChains; j++) {
+                if (
+                    _newValidatorSetDelta.addedValidators[i].chainId != _chains[j].id &&
+                    _newValidatorSetDelta.addedValidators[i].chainId != BLADE_CHAIN_ID
+                ) {
+                    continue;
+                }
+                chainMatched = true; // This validator matches the chain
+            }
+
+            if (!chainMatched) {
+                revert InvalidData("ChainIdMismatch");
+            }
+
+            //check that validator addresses are not zero addresses
+            for (uint256 k; k < numberOfNewValidators; k++) {
+                address _validatorAddress = _newValidatorSetDelta.addedValidators[i].validators[k].addr;
+
+                if (_validatorAddress == address(0)) {
+                    revert ZeroAddress();
+                }
+
+                //checks for duplicate validator addresses
+                for (uint l = k + 1; l < numberOfNewValidators; l++) {
+                    if (_validatorAddress == _newValidatorSetDelta.addedValidators[i].validators[l].addr) {
+                        revert InvalidData("DuplicatedValidator"); // duplicate found
+                    }
+                }
+
+                // TODO check for empty multisig and fee addresses                
+            }
+        }
+    }
+
+    /// @dev Validates key and fee signatures based on chain type.
+    function validateSignatures(
+        uint8 _chainType,
+        address _sender,
+        bytes calldata _keySignature,
+        bytes calldata _keyFeeSignature,
+        ValidatorChainData calldata _validatorChainData
+    ) public view {
+        bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", _sender));
+
+        if (_chainType == 0) {
+            bytes memory messageHashBytes = _bytes32ToBytesAssembly(messageHashBytes32);
+            if (
+                !isSignatureValid(messageHashBytes, _keySignature, _validatorChainData.key[0], false) ||
+                !isSignatureValid(messageHashBytes, _keyFeeSignature, _validatorChainData.key[1], false)
+            ) {
+                revert InvalidSignature();
+            }
+        } else if (_chainType == 1) {
+            if (!isBlsSignatureValid(messageHashBytes32, _keySignature, _validatorChainData.key)) {
+                revert InvalidSignature();
+            }
+        } else {
+            revert InvalidData("chainType");
         }
     }
 
@@ -240,10 +376,135 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         }
     }
 
+    function _removeOldValidatorsData(Chain[] calldata _chains) internal {
+        if (newValidatorSetDelta.removedValidators.length == 0) return;
+
+        address[] memory _validatorAddressesToRemove = newValidatorSetDelta.removedValidators;
+
+        // Mark validator addresses as removed
+        for (uint i = 0; i < _validatorAddressesToRemove.length; i++) {
+            address addr = _validatorAddressesToRemove[i];
+            if (addressValidatorIndex[addr] != 0) {
+                addressValidatorIndex[addr] = 0;
+            }
+        }
+
+        // Create temp array with remaining addresses and reset mapping indexes
+        uint8 _newIndex = 0;
+        uint256 _oldValidatorsCount = validatorAddresses.length;
+        uint[] memory _oldIndexMap = new uint[](_oldValidatorsCount); // map new => old index
+
+        for (uint i = 0; i < _oldValidatorsCount; i++) {
+            address addr = validatorAddresses[i];
+            if (addressValidatorIndex[addr] != 0) {
+                validatorAddresses[_newIndex] = addr;
+                addressValidatorIndex[addr] = _newIndex + 1;
+                _oldIndexMap[_newIndex] = i;
+                _newIndex++;
+            }
+        }
+
+        // pop old addresses
+        for (uint i = _newIndex; i < _oldValidatorsCount; i++) {
+            validatorAddresses.pop();
+        }
+
+        // Compact chainData for each chainId
+        uint256 chainsLength = _chains.length;
+        for (uint i = 0; i < chainsLength; i++) {
+            uint8 _chainId = _chains[i].id;
+
+            for (uint j = 0; j < _newIndex; j++) {
+                chainData[_chainId][j] = chainData[_chainId][_oldIndexMap[j]];
+            }
+
+            for (uint j = _newIndex; j < _oldValidatorsCount; j++) {
+                chainData[_chainId].pop();
+            }
+        }
+
+        validatorsCount = uint8(validatorAddresses.length);
+    }
+
+    function submitNewValidatorSet(
+        NewValidatorSetDelta calldata _newValidatorSetDelta,
+        Chain[] calldata chains
+    ) external onlyBridge {
+        //TODO: check if these validators are indeed in the current set???
+        _validateValidatorSet(_newValidatorSetDelta, chains);
+
+        newValidatorSetDelta = _newValidatorSetDelta;
+
+        newValidatorSetPending = true;
+    }
+
+    function validatorSetUpdated(Chain[] calldata chains) external onlyBridge {
+        _removeOldValidatorsData(chains);
+        _addNewValidatorsData();
+        delete newValidatorSetDelta;
+        newValidatorSetPending = false;
+        currentValidatorSetId++;
+    }
+
+    /// @notice Adds newly proposed validators to the current validator set across all chains.
+    /// @dev
+    /// - Updates `validatorsCount` to include the new validators.
+    /// - Ensures no duplicate validator addresses are added by checking `addressValidatorIndex`.
+    /// - Appends new validator addresses to `validatorAddresses` and updates their index mapping.
+    /// - Updates chain-specific validator data (`chainData`) for each chain in the new validator set delta.
+    /// - Increments `currentValidatorSetId` to reflect the updated validator set.
+    function _addNewValidatorsData() internal {
+        if (newValidatorSetDelta.addedValidators.length != 0) {
+            uint256 _numberOfNewValidators = newValidatorSetDelta.addedValidators[0].validators.length;
+            uint256 _numberOfOldValidators = validatorAddresses.length;
+            validatorsCount = uint8(_numberOfOldValidators + _numberOfNewValidators);
+
+            for (uint8 i; i < _numberOfNewValidators; i++) {
+                address _validatorAddress = newValidatorSetDelta.addedValidators[0].validators[i].addr;
+                if (addressValidatorIndex[_validatorAddress] != 0) {
+                    revert InvalidData("DuplicatedValidator");
+                }
+                validatorAddresses.push(_validatorAddress);
+                addressValidatorIndex[_validatorAddress] = uint8(_numberOfOldValidators + i + 1);
+            }
+
+            uint256 _numberOfChains = newValidatorSetDelta.addedValidators.length;
+            for (uint8 i; i < _numberOfChains; i++) {
+                if (newValidatorSetDelta.addedValidators[i].chainId == BLADE_CHAIN_ID) {
+                    continue;
+                }
+                ValidatorSet memory _validatorSet = newValidatorSetDelta.addedValidators[i];
+
+                for (uint8 k; k < _numberOfNewValidators; k++) {
+                    chainData[_validatorSet.chainId].push(_validatorSet.validators[k].data);
+                }
+            }
+        }
+    }
+
+    function getNewValidatorSetDelta() external view returns (NewValidatorSetDelta memory) {
+        if (!newValidatorSetPending) {
+            revert NoNewValidatorSetPending();
+        }
+        return newValidatorSetDelta;
+    }
+
+    /// @dev Converts a bytes32 value to a bytes array.
+    /// @param input Input bytes32 value.
+    function _bytes32ToBytesAssembly(bytes32 input) internal pure returns (bytes memory output) {
+        output = new bytes(32);
+
+        assembly {
+            mstore(add(output, 32), input)
+        }
+
+        return output;
+    }
+
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.0";
+        return "1.1.1";
     }
 
     modifier onlyBridge() {

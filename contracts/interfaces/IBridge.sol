@@ -10,7 +10,7 @@ abstract contract IBridge is IBridgeStructs {
     /// @param _claims The claims submitted by a validator.
     function submitClaims(ValidatorClaims calldata _claims) external virtual;
 
-    /// @notice Submit a signed transaction batch for the Cardano chain.
+    /// @notice Submit a signed transaction batch.
     /// @param _signedBatch The batch of signed transactions.
     function submitSignedBatch(SignedBatch calldata _signedBatch) external virtual;
 
@@ -18,19 +18,23 @@ abstract contract IBridge is IBridgeStructs {
     /// @param _signedBatch The batch of signed transactions.
     function submitSignedBatchEVM(SignedBatch calldata _signedBatch) external virtual;
 
+    /// @notice Submit new validator set data
+    /// @notice _newValidatorSetDelta Added and removed validators for a new validator set.
+    function submitNewValidatorSet(NewValidatorSetDelta calldata _newValidatorSetDelta) external virtual;
+
     /// @notice Submit the last observed Cardano blocks from validators for synchronization purposes.
-    /// @param chainId The source chain ID.
-    /// @param blocks Array of Cardano blocks to be recorded.
-    function submitLastObservedBlocks(uint8 chainId, CardanoBlock[] calldata blocks) external virtual;
+    /// @param _chainId The source chain ID.
+    /// @param _blocks Array of Cardano blocks to be recorded.
+    function submitLastObservedBlocks(uint8 _chainId, CardanoBlock[] calldata _blocks) external virtual;
 
     /// @notice Set additional metadata for a chain, such as multisig and fee payer addresses.
     /// @param _chainId The target chain ID.
-    /// @param addressMultisig Multisig address associated with the chain.
-    /// @param addressFeePayer Fee payer address used for covering transaction costs.
+    /// @param _addressMultisig Multisig address associated with the chain.
+    /// @param _addressFeePayer Fee payer address used for covering transaction costs.
     function setChainAdditionalData(
         uint8 _chainId,
-        string calldata addressMultisig,
-        string calldata addressFeePayer
+        string calldata _addressMultisig,
+        string calldata _addressFeePayer
     ) external virtual;
 
     /// @notice Register a new chain and its validator data.
@@ -98,15 +102,32 @@ abstract contract IBridge is IBridgeStructs {
     /// @notice Get raw transaction data from the most recent batch for a given destination chain.
     /// @param _destinationChain ID of the destination chain.
     /// @return Raw bytes of the transaction data.
-    function getRawTransactionFromLastBatch(uint8 _destinationChain) external view virtual returns (bytes memory);
+    function getRawTransactionAndBatchTypeFromLastBatch(
+        uint8 _destinationChain
+    ) external view virtual returns (bytes memory, uint8);
 
     /// @notice Get transactions included in a specific batch for a given chain.
     /// @param _chainId ID of the chain.
     /// @param _batchId ID of the batch.
-    /// @return status Status of the batch.
-    /// @return txs Array of transaction data included in the batch.
+    /// @return _status Status of the batch.
+    /// @return _txs Array of transaction data included in the batch.
     function getBatchStatusAndTransactions(
         uint8 _chainId,
         uint64 _batchId
-    ) external virtual returns (uint8 status, TxDataInfo[] memory txs);
+    ) external virtual returns (uint8 _status, TxDataInfo[] memory _txs);
+
+    /// @notice Notifies the bridge that new validator set has been implemented on Blade.
+    function validatorSetUpdated() external virtual;
+
+    /// @notice Check if a new validator set is pending.
+    /// @return _pending True if a new validator set is pending, false otherwise.
+    function isNewValidatorSetPending() external virtual returns (bool _pending);
+
+    /// @notice Get the delta of the new validator set.
+    /// @return _newValidatorSetDelta The new validator set delta.
+    function getNewValidatorSetDelta() external virtual returns (NewValidatorSetDelta calldata _newValidatorSetDelta);
+
+    /// @notice Get id of the current validator set.
+    /// @return _currentValidatorSetId The current validator set id.
+    function getCurrentValidatorSetId() external virtual returns (uint256 _currentValidatorSetId);
 }

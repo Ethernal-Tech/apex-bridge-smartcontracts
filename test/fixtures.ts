@@ -1,6 +1,20 @@
 import { ethers } from "hardhat";
 import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin } from "../typechain-types";
 
+export enum BatchType {
+  NORMAL = 0,
+  CONSOLIDATION = 1,
+  VALIDATORSET = 2,
+  VALIDATORSET_FINAL = 3,
+}
+
+export enum ConstantsLib {
+  NOT_EXIST = 0,
+  IN_PROGRESS = 1,
+  EXECUTED = 2,
+  FAILED = 3,
+}
+
 export enum TransactionType {
   NORMAL = 0,
   DEFUND = 1,
@@ -51,14 +65,14 @@ export async function deployBridgeFixture() {
     Bridge.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
-  const claimsHelperProxy = await ClaimsHelperProxy.deploy(
-    await claimsHelperLogic.getAddress(),
-    ClaimsHelper.interface.encodeFunctionData("initialize", [owner.address, owner.address])
-  );
-
   const claimsProxy = await ClaimsProxy.deploy(
     await claimsLogic.getAddress(),
     Claims.interface.encodeFunctionData("initialize", [owner.address, owner.address, 2, 5])
+  );
+
+  const claimsHelperProxy = await ClaimsHelperProxy.deploy(
+    await claimsHelperLogic.getAddress(),
+    ClaimsHelper.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
   const signedBatchesProxy = await SignedBatchesProxy.deploy(
@@ -93,11 +107,11 @@ export async function deployBridgeFixture() {
   const BridgeDeployed = await ethers.getContractFactory("Bridge");
   const bridge = BridgeDeployed.attach(bridgeProxy.target) as Bridge;
 
-  const ClaimsHelperDeployed = await ethers.getContractFactory("ClaimsHelper");
-  const claimsHelper = ClaimsHelperDeployed.attach(claimsHelperProxy.target) as ClaimsHelper;
-
   const ClaimsDeployed = await ethers.getContractFactory("Claims");
   const claims = ClaimsDeployed.attach(claimsProxy.target) as Claims;
+
+  const ClaimsHelperDeployed = await ethers.getContractFactory("ClaimsHelper");
+  const claimsHelper = ClaimsHelperDeployed.attach(claimsHelperProxy.target) as ClaimsHelper;
 
   const SignedBatchesDeployed = await ethers.getContractFactory("SignedBatches");
   const signedBatches = SignedBatchesDeployed.attach(signedBatchesProxy.target) as SignedBatches;
@@ -127,6 +141,7 @@ export async function deployBridgeFixture() {
   await slots.setDependencies(bridge.target, validatorsc.target);
 
   await validatorsc.setDependencies(bridge.target);
+  await validatorsc.setAdditionalDependenciesAndSync(validatorsAddresses);
 
   await admin.setDependencies(claims.target);
 
@@ -141,7 +156,7 @@ export async function deployBridgeFixture() {
     id: 2,
     addressMultisig: "addr_test1vr8zy7jk35n9yyw4jg0r4z98eygmrqxvz5sch4dva9c8s2qjv2edc",
     addressFeePayer: "addr_test1vz8g63va7qat4ajyja4sndp06rv3penf3htqcwt6x4znyacfpea75",
-    chainType: 1, // nexus chain
+    chainType: 1, // evm chain
   };
 
   const validatorClaimsBRC = {
@@ -277,7 +292,29 @@ export async function deployBridgeFixture() {
     signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    isConsolidation: false,
+    batchType: BatchType.NORMAL,
+  };
+
+  const signedBatch_ValidatorSet = {
+    id: 1,
+    firstTxNonceId: 2n ** 64n - 1n,
+    lastTxNonceId: 2n ** 64n - 1n,
+    destinationChainId: 2,
+    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
+    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
+    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
+    batchType: BatchType.VALIDATORSET,
+  };
+
+  const signedBatch_ValidatorSetFinal = {
+    id: 1,
+    firstTxNonceId: 2n ** 64n - 1n,
+    lastTxNonceId: 2n ** 64n - 1n,
+    destinationChainId: 2,
+    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
+    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
+    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
+    batchType: BatchType.VALIDATORSET_FINAL,
   };
 
   const cardanoBlocks = [
@@ -312,6 +349,235 @@ export async function deployBridgeFixture() {
 
   const validatorCardanoData = validatorAddressChainData[0].data;
 
+  const validatorSets = Array.from({ length: 3 }, (_, i) => {
+    const chainId = i < 2 ? i + 1 : 255; // for i=0,1 → 1,2; for i=2 → 255
+    return {
+      chainId,
+      validators: Array.from({ length: 5 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: `0x${addrNum}`,
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_NotEnoughChains = Array.from({ length: 1 }, (_, i) => {
+    const chainId = i + 1;
+    return {
+      chainId,
+      validators: Array.from({ length: 5 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: `0x${addrNum}`,
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_TooManyChains = Array.from({ length: 4 }, (_, i) => {
+    const chainId = i + 1;
+    return {
+      chainId,
+      validators: Array.from({ length: 5 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: `0x${addrNum}`,
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_NotEnoughValidators = Array.from({ length: 3 }, (_, i) => {
+    const chainId = i < 2 ? i + 1 : 255; // for i=0,1 → 1,2; for i=2 → 255
+    return {
+      chainId,
+      validators: Array.from({ length: 3 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: `0x${addrNum}`,
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_TooManyValidators = Array.from({ length: 3 }, (_, i) => {
+    const chainId = i < 2 ? i + 1 : 255; // for i=0,1 → 1,2; for i=2 → 255
+    return {
+      chainId,
+      validators: Array.from({ length: 127 }, (_, j) => {
+        const addrNum = (i * 127 + j + 1).toString(16).padStart(40, "0");
+
+        // Generate 4-byte (8 hex digit) valid hex strings
+        const suffix = (j + 1).toString(16).padStart(2, "0"); // e.g., "01"
+        const keySignature = `0x${"abc0" + suffix}`.padEnd(10, "0"); // 10 chars = 0x + 8 hex digits
+        const keyFeeSignature = `0x${"def0" + suffix}`.padEnd(10, "0");
+
+        return {
+          addr: `0x${addrNum}`,
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature,
+          keyFeeSignature,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_ZeroAddress = Array.from({ length: 3 }, (_, i) => {
+    const chainId = i < 2 ? i + 1 : 255; // for i=0,1 → 1,2; for i=2 → 255
+    return {
+      chainId,
+      validators: Array.from({ length: 5 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: "0x0000000000000000000000000000000000000000",
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_DoubleAddress = Array.from({ length: 3 }, (_, i) => {
+    const chainId = i < 2 ? i + 1 : 255; // for i=0,1 → 1,2; for i=2 → 255
+    return {
+      chainId,
+      validators: Array.from({ length: 5 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: "0x0000000000000000000000000000000000000001",
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_MissingChainIDs = Array.from({ length: 3 }, (_, i) => {
+    const chainId = i < 2 ? i + 100 : 255; // for i=0,1 → 1,2; for i=2 → 255
+    return {
+      chainId,
+      validators: Array.from({ length: 5 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: `0x${addrNum}`,
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
+  const validatorSets_BladeMissing = Array.from({ length: 3 }, (_, i) => {
+    const chainId = i + 1;
+    return {
+      chainId,
+      validators: Array.from({ length: 5 }, (_, j) => {
+        const addrNum = (i * 5 + j + 1).toString(16).padStart(40, "0");
+        return {
+          addr: `0x${addrNum}`,
+          data: {
+            key: [j * 4 + 1, j * 4 + 2, j * 4 + 3, j * 4 + 4],
+          },
+          keySignature: `0xabc${j + 1}`,
+          keyFeeSignature: `0xdef${j + 1}`,
+        };
+      }),
+    };
+  });
+
+  const newValidatorSetDelta = {
+    addedValidators: validatorSets,
+    removedValidators: [validator4.address, validator5.address],
+  };
+
+  const newValidatorSetDelta_AddOnly = {
+    addedValidators: validatorSets,
+    removedValidators: [],
+  };
+
+  const newValidatorSetDelta_RemoveOnly = {
+    addedValidators: [],
+    removedValidators: [validator5.address],
+  };
+
+  const newValidatorSetDelta_ZeroAddress = {
+    addedValidators: validatorSets_ZeroAddress,
+    removedValidators: [validator4.address, validator5.address],
+  };
+
+  const newValidatorSetDelta_DoubleAddress = {
+    addedValidators: validatorSets_DoubleAddress,
+    removedValidators: [validator4.address, validator5.address],
+  };
+
+  const newValidatorSetDelta_TooManyValidators = {
+    addedValidators: validatorSets_TooManyValidators,
+    removedValidators: [validator4.address, validator5.address],
+  };
+
+  const newValidatorSetDelta_NotEnoughValidators = {
+    addedValidators: validatorSets_NotEnoughValidators,
+    removedValidators: [
+      validator1.address,
+      validator2.address,
+      validator3.address,
+      validator4.address,
+      validator5.address,
+    ],
+  };
+
+  const newValidatorSetDelta_TooManyChains = {
+    addedValidators: validatorSets_TooManyChains,
+    removedValidators: [validator4.address, validator5.address],
+  };
+
+  const newValidatorSetDelta_NotEnoughChains = {
+    addedValidators: validatorSets_NotEnoughChains,
+    removedValidators: [validator4.address, validator5.address],
+  };
+
+  const newValidatorSetDelta_MissingChainIDs = {
+    addedValidators: validatorSets_MissingChainIDs,
+    removedValidators: [validator4.address, validator5.address],
+  };
+
+  const newValidatorSetDelta_BladeMissing = {
+    addedValidators: validatorSets_BladeMissing,
+    removedValidators: [validator4.address, validator5.address],
+  };
+
   return {
     hre,
     bridge,
@@ -333,102 +599,107 @@ export async function deployBridgeFixture() {
     validatorClaimsRRC,
     validatorClaimsHWIC,
     signedBatch,
+    signedBatch_ValidatorSet,
     validatorAddressChainData,
     validatorCardanoData,
     validators,
     cardanoBlocks,
     cardanoBlocksTooManyBlocks,
+    validatorSets,
+    newValidatorSetDelta,
+    newValidatorSetDelta_AddOnly,
+    newValidatorSetDelta_RemoveOnly,
+    newValidatorSetDelta_DoubleAddress,
+    newValidatorSetDelta_ZeroAddress,
+    newValidatorSetDelta_TooManyValidators,
+    newValidatorSetDelta_NotEnoughValidators,
+    newValidatorSetDelta_TooManyChains,
+    newValidatorSetDelta_NotEnoughChains,
+    newValidatorSetDelta_MissingChainIDs,
+    newValidatorSetDelta_BladeMissing,
   };
 }
 
-export function hashBridgeRequestClaim(claim: any) {
-  const abiCoder = new ethers.AbiCoder();
-  const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
+export function hashBridgeRequestClaim(validatorSet: number, claim: any) {
+  const abi = new ethers.AbiCoder();
+
   const lst = [];
   for (let receiver of claim.receivers) {
     lst.push([receiver.amount, receiver.destinationAddress]);
   }
 
-  const encoded = abiCoder.encode(
-    ["bytes32", "tuple(uint256, string)[]", "uint256", "uint256", "uint256", "uint8", "uint8"],
-    [
-      claim.observedTransactionHash,
-      lst,
-      claim.totalAmountSrc,
-      claim.totalAmountDst,
-      claim.retryCounter,
-      claim.sourceChainId,
-      claim.destinationChainId,
-    ]
-  );
-
   return ethers.keccak256(
-    "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-      encodedPrefix.substring(66) +
-      encoded.substring(2)
+    abi.encode(
+      ["uint256", "string", "tuple(bytes32,tuple(uint256,string)[],uint256,uint256,uint256,uint8,uint8)"],
+      [
+        validatorSet,
+        "BRC",
+        [
+          claim.observedTransactionHash,
+          lst,
+          claim.totalAmountSrc,
+          claim.totalAmountDst,
+          claim.retryCounter,
+          claim.sourceChainId,
+          claim.destinationChainId,
+        ],
+      ]
+    )
   );
 }
 
-export function hashBatchExecutedClaim(claim: any) {
-  const abiCoder = new ethers.AbiCoder();
-  const encodedPrefix = abiCoder.encode(["string"], ["BEC"]);
-  const encoded = abiCoder.encode(
-    ["bytes32", "uint64", "uint8"],
-    [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]
-  );
+export function hashBatchExecutedClaim(validatorSet: number, claim: any) {
+  const abi = new ethers.AbiCoder();
 
   return ethers.keccak256(
-    "0x0000000000000000000000000000000000000000000000000000000000000080" +
-      encoded.substring(2) +
-      encodedPrefix.substring(66)
+    abi.encode(
+      ["uint256", "string", "tuple(bytes32,uint64,uint8)"],
+      [validatorSet, "BEC", [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]]
+    )
   );
 }
 
-export function hashBatchExecutionFailedClaim(claim: any) {
-  const abiCoder = new ethers.AbiCoder();
-  const encodedPrefix = abiCoder.encode(["string"], ["BEFC"]);
-  const encoded = abiCoder.encode(
-    ["bytes32", "uint64", "uint8"],
-    [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]
-  );
+export function hashBatchExecutionFailedClaim(validatorSet: number, claim: any) {
+  const abi = new ethers.AbiCoder();
 
   return ethers.keccak256(
-    "0x0000000000000000000000000000000000000000000000000000000000000080" +
-      encoded.substring(2) +
-      encodedPrefix.substring(66)
+    abi.encode(
+      ["uint256", "string", "tuple(bytes32,uint64,uint8)"],
+      [validatorSet, "BEFC", [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]]
+    )
   );
 }
 
-export function hashRefundRequestClaim(claim: any) {
-  const abiCoder = new ethers.AbiCoder();
-  const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
-  const encoded = abiCoder.encode(
-    ["bytes32", "bytes32", "uint256", "bytes", "string", "uint64", "uint8", "bool"],
-    [
-      claim.originTransactionHash,
-      claim.refundTransactionHash,
-      claim.originAmount,
-      claim.outputIndexes,
-      claim.originSenderAddress,
-      claim.retryCounter,
-      claim.originChainId,
-      claim.shouldDecrementHotWallet,
-    ]
-  );
+export function hashRefundRequestClaim(validatorSet: number, claim: any) {
+  // const abiCoder = new ethers.AbiCoder();
+
+  const abi = new ethers.AbiCoder();
+
   return ethers.keccak256(
-    "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-      encodedPrefix.substring(66) +
-      encoded.substring(2)
+    abi.encode(
+      ["uint256", "string", "tuple(bytes32,bytes32,uint256,bytes,string,uint64,uint8,bool)"],
+      [
+        validatorSet,
+        "RRC",
+        [
+          claim.originTransactionHash,
+          claim.refundTransactionHash,
+          claim.originAmount,
+          claim.outputIndexes,
+          claim.originSenderAddress,
+          claim.retryCounter,
+          claim.originChainId,
+          claim.shouldDecrementHotWallet,
+        ],
+      ]
+    )
   );
 }
 
-export function hashHotWalletIncrementClaim(claim: any) {
-  const abiCoder = new ethers.AbiCoder();
-  const encodedPrefix = abiCoder.encode(["string"], ["HWIC"]);
-  const encoded = abiCoder.encode(["uint8", "uint256"], [claim.chainId, claim.amount]);
+export function hashHotWalletIncrementClaim(validatorSet: number, claim: any) {
+  const abi = new ethers.AbiCoder();
+
   return ethers.keccak256(
-    "0x0000000000000000000000000000000000000000000000000000000000000060" +
-      encoded.substring(2) +
-      encodedPrefix.substring(66)
+    abi.encode(["uint256", "string", "tuple(uint8,uint256)"], [validatorSet, "HWIC", [claim.chainId, claim.amount]])
   );
 }

@@ -5,7 +5,9 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
+import "./interfaces/BatchTypesLib.sol";
 import "./Utils.sol";
+import "./Bridge.sol";
 import "./ClaimsHelper.sol";
 import "./Validators.sol";
 
@@ -13,6 +15,9 @@ import "./Validators.sol";
 /// @notice Handles submission and confirmation of signed transaction batches for a cross-chain bridge.
 /// @dev Utilizes OpenZeppelin upgradeable contracts and interacts with ClaimsHelper and Validators for consensus logic.
 contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+    /// @dev Address of StakeManger contract
+    address constant STAKE_MANAGER_ADDRESS = 0x0000000000000000000000000000000000010022;
+    
     address private upgradeAdmin;
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
@@ -26,10 +31,13 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// @dev BlockchainId -> ConfirmedBatch
     mapping(uint8 => ConfirmedBatch) private lastConfirmedBatch;
 
+    /// @notice Bitmap used to flag that validator set has been confirmed for specific chains.
+    uint256 public newValidatorSetBitmap;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[50] private __gap;
+    uint256[49] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -79,6 +87,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// - If quorum is reached after this vote, the batch is confirmed and stored, and temporary data is cleared.
     function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
         uint8 _destinationChainId = _signedBatch.destinationChainId;
+
         uint64 _sbId = lastConfirmedBatch[_destinationChainId].id + 1;
 
         if (_signedBatch.id != _sbId) {
@@ -87,12 +96,13 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
         bytes32 _sbHash = keccak256(
             abi.encodePacked(
+                validators.currentValidatorSetId(),
                 _signedBatch.id,
                 _signedBatch.firstTxNonceId,
                 _signedBatch.lastTxNonceId,
                 _destinationChainId,
                 _signedBatch.rawTransaction,
-                _signedBatch.isConsolidation
+                _signedBatch.batchType
             )
         );
 
@@ -124,10 +134,17 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
                 _votesInfo.bitmap,
                 _signedBatch.rawTransaction,
                 _sbId,
-                _signedBatch.isConsolidation
+                false, // isConsolidation is not used
+                _signedBatch.batchType
             );
 
             claimsHelper.setConfirmedSignedBatchData(_signedBatch);
+
+            if (_signedBatch.batchType == BatchTypesLib.VALIDATORSET_FINAL) {
+                updateOnStakeManagerIfAllChainsConfirmed(_signedBatch);
+                claimsHelper.resetCurrentBatchBlock(_destinationChainId);
+                claimsHelper.setConfirmedSignedBatchStatus(_destinationChainId, _sbId, ConstantsLib.EXECUTED);
+            }
 
             delete votes[_sbHash];
         }
@@ -141,8 +158,10 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         return lastConfirmedBatch[_destinationChain].id;
     }
 
-    function getConfirmedBatchTransaction(uint8 _destinationChain) external view returns (bytes memory) {
-        return lastConfirmedBatch[_destinationChain].rawTransaction;
+    function getConfirmedBatchTransactionAndBatchType(
+        uint8 _destinationChain
+    ) external view returns (bytes memory, uint8) {
+        return (lastConfirmedBatch[_destinationChain].rawTransaction, lastConfirmedBatch[_destinationChain].batchType);
     }
 
     function getNumberOfSignatures(bytes32 _hash) external view returns (uint256) {
@@ -157,10 +176,38 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         return votes[_hash].bitmap & (1 << (_validatorIdx - 1)) != 0;
     }
 
+    function updateOnStakeManagerIfAllChainsConfirmed(SignedBatch calldata _signedBatch) internal {
+        newValidatorSetBitmap |= uint256(1 << _signedBatch.destinationChainId);
+        uint256 _validatorSetBitmap = newValidatorSetBitmap;
+        uint8 _count;
+        uint8 _registeredChainsCount = Bridge(bridgeAddress).getAllRegisteredChainsCount();
+
+        while (_validatorSetBitmap != 0) {
+            _validatorSetBitmap &= (_validatorSetBitmap - 1);
+            _count++;
+        }
+
+        if (_count == _registeredChainsCount) {
+            (bool success, ) = address(STAKE_MANAGER_ADDRESS).call(
+                abi.encodeWithSignature(
+                    "updateValidatorSet(((uint8,(address,uint256[4],bytes,bytes)[])[],address[]))",
+                    validators.getNewValidatorSetDelta()
+                )
+            );
+
+            if (!success) {
+                revert StakeManagerUpdateFailed();
+            }
+
+            // restart new validator set bitmap
+            newValidatorSetBitmap = 0;
+        }
+    }
+
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.0";
+        return "1.1.1";
     }
 
     modifier onlyBridge() {

@@ -3,7 +3,6 @@ import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { deployBridgeFixture } from "./fixtures";
 import { ethers } from "hardhat";
-import { Validators } from "../typechain-types";
 
 describe("Deployment", function () {
   const getValidatorsSc = async function (cnt: number) {
@@ -45,21 +44,21 @@ describe("Deployment", function () {
     expect(await validatorsc.getQuorumNumberOfValidators()).to.equal(85);
   });
 
-  // it("Quorum formula should work correctly 1 - 90", async function () {
-  //   for (let i = 1; i <= 90; i++) {
-  //     const validatorsc = await getValidatorsSc(i);
-  //     // for 6 validators, quorum is 5
-  //     expect(await validatorsc.getQuorumNumberOfValidators()).to.equal(Math.floor((i * 2) / 3) + 1);
-  //   }
-  // });
+  it("Quorum formula should work correctly 1 - 90", async function () {
+    for (let i = 1; i <= 90; i++) {
+      const validatorsc = await getValidatorsSc(i);
+      // for 6 validators, quorum is 5
+      expect(await validatorsc.getQuorumNumberOfValidators()).to.equal(Math.floor((i * 2) / 3) + 1);
+    }
+  });
 
-  // it("Quorum formula should work correctly 91 - 127", async function () {
-  //   for (let i = 91; i <= 127; i++) {
-  //     const validatorsc = await getValidatorsSc(i);
-  //     // for 6 validators, quorum is 5
-  //     expect(await validatorsc.getQuorumNumberOfValidators()).to.equal(Math.floor((i * 2) / 3) + 1);
-  //   }
-  // });
+  it("Quorum formula should work correctly 91 - 127", async function () {
+    for (let i = 91; i <= 127; i++) {
+      const validatorsc = await getValidatorsSc(i);
+      // for 6 validators, quorum is 5
+      expect(await validatorsc.getQuorumNumberOfValidators()).to.equal(Math.floor((i * 2) / 3) + 1);
+    }
+  });
 
   it("Revert if there are too many validators", async function () {
     await expect(getValidatorsSc(128)).to.revertedWith("Too many validators (max 127)");
@@ -108,6 +107,7 @@ describe("Deployment", function () {
       "NotContractAddress"
     );
   });
+
   it("Should revert if there are duplicate validator addresses in Validatorsc initialize function", async function () {
     const [owner, validator1, validator2] = await ethers.getSigners();
     // Deploy implementation contract
@@ -129,11 +129,11 @@ describe("Deployment", function () {
       validatorAddresses,
     ]);
     // Deploy proxy with initialization
-    await expect(ValidatorsProxy.deploy(await validatorsLogic.getAddress(), initData)).to.be.revertedWithCustomError(
-      Validators,
-      "InvalidData"
-    );
+    await expect(ValidatorsProxy.deploy(await validatorsLogic.getAddress(), initData))
+      .to.be.revertedWithCustomError(Validators, "InvalidData")
+      .withArgs("DuplicatedValidator");
   });
+
   it("Should revert if initializes with zero addresses for owner and upgrade admin", async function () {
     const [, validator1, validator2, validator3, validator4] = await ethers.getSigners();
 
@@ -156,7 +156,7 @@ describe("Deployment", function () {
     const BridgeLogic = await Bridge.deploy();
     const BridgeProxy = await ethers.getContractFactory("ERC1967Proxy");
     // Prepare initialization data with zero addresses
-    initData = Admin.interface.encodeFunctionData("initialize", [
+    initData = Bridge.interface.encodeFunctionData("initialize", [
       ZERO_ADDRESS, // owner address
       ZERO_ADDRESS, // upgrade admin address
     ]);

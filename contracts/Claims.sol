@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
 import "./interfaces/ConstantsLib.sol";
+import "./interfaces/TransactionTypesLib.sol";
 import "./Utils.sol";
 import "./Bridge.sol";
 import "./ClaimsHelper.sol";
@@ -15,17 +16,12 @@ import "./Validators.sol";
 /// @notice Handles validator-submitted claims in a cross-chain bridge system.
 /// @dev Inherits from OpenZeppelin upgradeable contracts for upgradability and ownership control.
 contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
-    using ConstantsLib for uint8;
-
     address private upgradeAdmin;
     address private bridgeAddress;
     ClaimsHelper private claimsHelper;
     Validators private validators;
 
     address private adminContractAddress;
-
-    /// @notice Hash for the "Defund" packed claim type.
-    bytes32 public constant defundHash = 0xc74d0d70be942fd68984df57687b9f453f1321726e8db77762dee952a5c85b24;
 
     /// @notice Mapping to track if a chain is registered.
     /// @dev BlockchainId -> bool
@@ -58,9 +54,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     mapping(uint8 => uint64) public lastBatchedTxNonce;
 
     /// @notice Maximum number of retries allowed for defund claims.
-    uint8 private constant MAX_NUMBER_OF_DEFUND_RETRIES = 3;
+    uint8 private constant MAX_NUMBER_OF_RETRIES = 3;
     /// @notice Maximum number of claims allowed per submission.
-    uint8 private constant MAX_NUMBER_OF_CLAIMS = 32;
+    uint8 public constant MAX_NUMBER_OF_CLAIMS = 32;
     /// @notice Maximum number of receivers in a BridgingRequestClaim.
     uint8 private constant MAX_NUMBER_OF_RECEIVERS = 16;
 
@@ -127,9 +123,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @param _caller Address of the validator submitting the claims.
     function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
         uint256 bridgingRequestClaimsLength = _claims.bridgingRequestClaims.length;
+        uint256 refundRequestClaimsLength = _claims.refundRequestClaims.length;
         uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
         uint256 batchExecutionFailedClaimsLength = _claims.batchExecutionFailedClaims.length;
-        uint256 refundRequestClaimsLength = _claims.refundRequestClaims.length;
         uint256 hotWalletIncrementClaimsLength = _claims.hotWalletIncrementClaims.length;
 
         uint256 claimsLength = bridgingRequestClaimsLength +
@@ -137,6 +133,16 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             batchExecutionFailedClaimsLength +
             refundRequestClaimsLength +
             hotWalletIncrementClaimsLength;
+
+        if (validators.newValidatorSetPending()) {
+            uint256 notUsedClaims = bridgingRequestClaimsLength +
+                refundRequestClaimsLength +
+                hotWalletIncrementClaimsLength;
+
+            if (notUsedClaims != 0) {
+                revert NewValidatorSetPending();
+            }
+        }
 
         if (claimsLength > MAX_NUMBER_OF_CLAIMS) {
             revert TooManyClaims(claimsLength, MAX_NUMBER_OF_CLAIMS);
@@ -209,12 +215,15 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev After quorum is reached, the destination chain's token quantity is reduced, and the source chain's token quantity is increased if it's the first retry.
     /// @dev The function also updates the next timeout block if necessary and sets the confirmed transaction details.
     function _submitClaimsBRC(BridgingRequestClaim calldata _claim, uint256 i, address _caller) internal {
+        if (validators.newValidatorSetPending()) {
+            revert NewValidatorSetPending();
+        }
         uint256 _receiversSumSrc = _claim.totalAmountSrc;
         uint256 _receiversSumDst = _claim.totalAmountDst;
         uint8 _destinationChainId = _claim.destinationChainId;
         uint256 _chainTokenQuantityDestination = chainTokenQuantity[_destinationChainId];
 
-        bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
+        bytes32 _claimHash = keccak256(abi.encode(validators.currentValidatorSetId(), "BRC", _claim));
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
         uint8 _quorumCount = validators.getQuorumNumberOfValidators();
         uint256 _votesCount = claimsHelper.numberOfVotes(_claimHash);
@@ -242,7 +251,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
             uint256 _confirmedTxCount = getBatchingTxsCount(_destinationChainId);
 
-            _setConfirmedTransactions(_claim, 0);
+            _setConfirmedTransactions(_claim);
 
             _updateNextTimeoutBlockIfNeeded(_destinationChainId, _confirmedTxCount);
         }
@@ -277,7 +286,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             return;
         }
 
-        bytes32 claimHash = keccak256(abi.encode("BEC", _claim));
+        bytes32 claimHash = keccak256(abi.encode(validators.currentValidatorSetId(), "BEC", _claim));
 
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
 
@@ -292,8 +301,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             claimsHelper.resetCurrentBatchBlock(chainId);
             claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.EXECUTED);
 
-            // do not process included transactions if it is a consolidation
-            if (_confirmedSignedBatch.isConsolidation) {
+            // do not process included transactions if it is a consolidation or validator set update
+            if (_confirmedSignedBatch.batchType != BatchTypesLib.NORMAL) {
                 return;
             }
 
@@ -302,6 +311,25 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
     }
 
+    /// @notice Submits a Batch Execution Failed Claim (BEFC) for processing.
+    /// @dev
+    /// - Computes a claim hash for BEFC using the current validator set and claim data.
+    /// - Checks if the claim is still `IN_PROGRESS` before processing.
+    /// - Records validator vote and checks if quorum has been reached.
+    /// - On quorum:
+    ///     * Resets current batch block to unblock bridge.
+    ///     * Marks the batch status as FAILED.
+    ///     * Emits events if batch is related to validator set update.
+    ///     * For consolidation batches, stops further processing.
+    ///     * For other batch types, iterates through included transactions:
+    ///         - Refunds NORMAL transactions back to the chain balance.
+    ///         - Retries DEFUND transactions up to `MAX_NUMBER_OF_RETRIES`; refunds if retries exhausted.
+    /// - Updates chain token quantity, last batched nonce, and timeout block after processing.
+    /// @param _claim Struct containing details of the failed batch execution claim.
+    /// @param _caller Address of the validator submitting the claim.
+    /// Emits:
+    /// - `SignedBatchValidatorSetExecutionFailed(chainId, batchId)` if validator set execution fails.
+    /// - `DefundFailedAfterMultipleRetries()` if DEFUND transaction retries are exhausted.
     function _submitClaimsBEFC(BatchExecutionFailedClaim calldata _claim, address _caller) internal {
         uint8 chainId = _claim.chainId;
         uint64 batchId = _claim.batchNonceId;
@@ -320,7 +348,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             return;
         }
 
-        bytes32 claimHash = keccak256(abi.encode("BEFC", _claim));
+        bytes32 claimHash = keccak256(abi.encode(validators.currentValidatorSetId(), "BEFC", _claim));
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
 
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
@@ -334,8 +362,16 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             claimsHelper.resetCurrentBatchBlock(chainId);
             claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.FAILED);
 
+            if (
+                _confirmedSignedBatch.batchType == BatchTypesLib.VALIDATORSET ||
+                _confirmedSignedBatch.batchType == BatchTypesLib.VALIDATORSET_FINAL
+            ) {
+                emit SignedBatchValidatorSetExecutionFailed(chainId, batchId);
+                return;
+            }
+
             // do not process included transactions if it is a consolidation
-            if (_confirmedSignedBatch.isConsolidation) {
+            if (_confirmedSignedBatch.batchType == BatchTypesLib.CONSOLIDATION) {
                 return;
             }
 
@@ -351,14 +387,11 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
                 ConfirmedTransaction storage _ctx = confirmedTransactions[chainId][i];
                 uint8 _txType = _ctx.transactionType;
-                if (_txType == 0) {
+                if (_txType == TransactionTypesLib.NORMAL) {
                     _currentAmount += _ctx.totalAmount;
-                } else if (_txType == 1) {
-                    if (_ctx.retryCounter < MAX_NUMBER_OF_DEFUND_RETRIES) {
-                        uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
-                        confirmedTransactions[chainId][nextNonce] = _ctx;
-                        confirmedTransactions[chainId][nextNonce].nonce = nextNonce;
-                        confirmedTransactions[chainId][nextNonce].retryCounter++;
+                } else if (_txType == TransactionTypesLib.DEFUND) {
+                    if (_ctx.retryCounter < MAX_NUMBER_OF_RETRIES) {
+                        _retryTx(chainId, _ctx);
                     } else {
                         _currentAmount += _ctx.totalAmount;
                         emit DefundFailedAfterMultipleRetries();
@@ -370,6 +403,17 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             lastBatchedTxNonce[chainId] = _lastTxNonce;
             nextTimeoutBlock[chainId] = block.number + timeoutBlocksNumber;
         }
+    }
+
+    /// @notice Retries a previously confirmed transaction by assigning it a new nonce.
+    /// @dev Increments the chain's last confirmed transaction nonce and stores the retried transaction with an updated retry counter.
+    /// @param chainId The ID of the chain for which the transaction is being retried.
+    /// @param _ctx The confirmed transaction to retry.
+    function _retryTx(uint8 chainId, ConfirmedTransaction storage _ctx) internal {
+        uint64 nextNonce = ++lastConfirmedTxNonce[chainId];
+        confirmedTransactions[chainId][nextNonce] = _ctx;
+        confirmedTransactions[chainId][nextNonce].nonce = nextNonce;
+        confirmedTransactions[chainId][nextNonce].retryCounter++;
     }
 
     /// @notice Submits a Batch Execution Failed Claim (BEFC) for processing.
@@ -394,7 +438,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         uint8 originChainId = _claim.originChainId;
 
-        bytes32 _claimHash = keccak256(abi.encode("RRC", _claim));
+        bytes32 _claimHash = keccak256(abi.encode(validators.currentValidatorSetId(), "RRC", _claim));
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
         uint8 _quorumCount = validators.getQuorumNumberOfValidators();
         uint256 _votesCount = claimsHelper.numberOfVotes(_claimHash);
@@ -436,7 +480,11 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev The claim is validated by ensuring that a quorum of validators has approved it before proceeding.
     /// @dev If the quorum is reached, the specified amount is added to the hot wallet balance for the given chain.
     function _submitClaimHWIC(HotWalletIncrementClaim calldata _claim, address _caller) internal {
-        bytes32 claimHash = keccak256(abi.encode("HWIC", _claim));
+        if (validators.newValidatorSetPending()) {
+            revert NewValidatorSetPending();
+        }
+
+        bytes32 claimHash = keccak256(abi.encode(validators.currentValidatorSetId(), "HWIC", _claim));
 
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
 
@@ -457,11 +505,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     ///      It also increments the nonce and sets the transaction type.
     /// @param _claim The bridging request claim containing details about the transaction, including the total amount,
     ///               source and destination chain IDs, observed transaction hash, retry counter, and receivers.
-    /// @param _transactionType The type of the transaction (e.g., bridging request, refund, etc.) that is being processed.
     /// @dev The function stores the confirmed transaction details in the `confirmedTransactions` mapping and increments
     ///      the nonce for the destination chain. It also sets the relevant properties for the transaction, including
     ///      its retry counter and list of receivers.
-    function _setConfirmedTransactions(BridgingRequestClaim memory _claim, uint8 _transactionType) internal {
+    function _setConfirmedTransactions(BridgingRequestClaim memory _claim) internal {
         uint8 destinationChainId = _claim.destinationChainId;
         uint64 nextNonce = ++lastConfirmedTxNonce[destinationChainId];
 
@@ -472,7 +519,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         confirmedTx.sourceChainId = _claim.sourceChainId;
         confirmedTx.nonce = nextNonce;
         confirmedTx.retryCounter = _claim.retryCounter;
-        confirmedTx.transactionType = _transactionType;
+        confirmedTx.transactionType = TransactionTypesLib.NORMAL;
 
         uint256 receiversLength = _claim.receivers.length;
         for (uint i; i < receiversLength; i++) {
@@ -500,7 +547,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         confirmedTx.sourceChainId = chainId;
         confirmedTx.nonce = nextNonce;
         confirmedTx.retryCounter = _claim.retryCounter;
-        confirmedTx.transactionType = 2;
+        confirmedTx.transactionType = TransactionTypesLib.REFUND;
         confirmedTx.outputIndexes = _claim.outputIndexes;
         confirmedTx.alreadyTriedBatch = _claim.shouldDecrementHotWallet;
 
@@ -522,9 +569,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     }
 
     /// @notice Determines whether a new batch should be created for a specific destination chain.
-    /// @dev This function checks if the destination chain is registered and whether a batch has already been created for it.
-    ///      It then evaluates if the number of transactions in the batch has reached the maximum limit or if the timeout block
-    ///      has passed, signaling that a new batch can be created.
+    /// @dev This function checks if the destination chain is registered, whether a batch has already been created for it and
+    ///      if the validators are not pending a new set. If these conditions are met, it evaluates the number of confirmed
+    ///      transactions has reached the maximum limit or if the timeout block has passed, signaling that a new batch can be created.
     /// @param _destinationChain The ID of the destination chain for which the batch creation is being checked.
     /// @return A boolean value indicating whether a new batch should be created (`true`) or not (`false`).
     /// @dev If the destination chain is not registered or if a batch has already been created, the function returns `false`.
@@ -538,7 +585,10 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         uint256 cnt = getBatchingTxsCount(_destinationChain);
 
-        return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
+        return
+            cnt >= maxNumberOfTransactions ||
+            (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]) ||
+            validators.newValidatorSetPending();
     }
 
     /// @notice Retrieves a confirmed transaction by chain ID and nonce.
@@ -632,24 +682,19 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             revert DefundRequestTooHigh(_chainId, _currentAmount, _amount);
         }
 
-        BridgingRequestClaim memory _brc = BridgingRequestClaim({
-            observedTransactionHash: defundHash,
-            receivers: new Receiver[](1),
-            totalAmountSrc: _amount,
-            totalAmountDst: _amount,
-            retryCounter: 0,
-            sourceChainId: _chainId,
-            destinationChainId: _chainId
-        });
-
-        _brc.receivers[0].amount = _amount;
-        _brc.receivers[0].destinationAddress = _defundAddress;
-
-        chainTokenQuantity[_chainId] = _currentAmount - _amount;
-
         uint256 _confirmedTxCount = getBatchingTxsCount(_chainId);
 
-        _setConfirmedTransactions(_brc, 1);
+        uint64 nextNonce = ++lastConfirmedTxNonce[_chainId];
+
+        ConfirmedTransaction storage confirmedTx = confirmedTransactions[_chainId][nextNonce];
+        confirmedTx.transactionType = TransactionTypesLib.DEFUND;
+        confirmedTx.nonce = nextNonce;
+        confirmedTx.sourceChainId = _chainId;
+        confirmedTx.totalAmount = _amount;
+        confirmedTx.receivers.push(Receiver(_amount, _defundAddress));
+        confirmedTx.blockHeight = block.number;
+
+        chainTokenQuantity[_chainId] = _currentAmount - _amount;
 
         _updateNextTimeoutBlockIfNeeded(_chainId, _confirmedTxCount);
     }
@@ -719,7 +764,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint64 _lastTxNonce = _confirmedSignedBatch.lastTxNonceId;
         uint8 _status = _confirmedSignedBatch.status;
         // if the batch is a consolidation or does not exist, return empty array
-        if (_status == ConstantsLib.NOT_EXISTS || _confirmedSignedBatch.isConsolidation) {
+        if (_status == ConstantsLib.NOT_EXIST || _confirmedSignedBatch.batchType != BatchTypesLib.NORMAL) {
             return (_status, new TxDataInfo[](0));
         }
 
@@ -736,6 +781,32 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         return (_status, _txHashes);
     }
 
+    /// @notice Retrieves a status for a specific batch on a given chain.
+    /// @param _chainId The ID of the chain on which the batch exists.
+    /// @param _batchId The ID of the batch to retrieve transactions for.
+    /// @return status A status code indicating the success or failure of the operation.
+    function getBatchStatus(uint8 _chainId, uint64 _batchId) external view returns (uint8 status) {
+        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
+            _chainId,
+            _batchId
+        );
+
+        return _confirmedSignedBatch.status;
+    }
+
+    /// @notice Retrieves a status for a specific batch on a given chain.
+    /// @param _chainId The ID of the chain on which the batch exists.
+    /// @param _batchId The ID of the batch to retrieve transactions for.
+    /// @return status A status code indicating the success or failure of the operation.
+    function getSpecialBatchStatus(uint8 _chainId, uint64 _batchId) external view returns (uint8 status) {
+        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
+            _chainId,
+            _batchId
+        );
+
+        return _confirmedSignedBatch.status;
+    }
+
     function updateMaxNumberOfTransactions(uint16 _maxNumberOfTransactions) external onlyAdminContract {
         maxNumberOfTransactions = _maxNumberOfTransactions;
     }
@@ -747,7 +818,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.3";
+        return "1.1.0";
     }
 
     modifier onlyBridge() {

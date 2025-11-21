@@ -13,9 +13,10 @@ import "./Slots.sol";
 import "./Validators.sol";
 
 /// @title Bridge
-/// @notice Cross-chain bridge for validator claim submission, batch transaction signing, and governance-based chain registration.
+/// @notice Cross-chain bridge for validator claim submission,
+/// batch transaction signing, and governance-based chain registration.
 /// @dev UUPS upgradeable and modular via dependency contracts (Claims, Validators, Slots, SignedBatches).
-contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {    
     address private upgradeAdmin;
     Claims private claims;
     SignedBatches private signedBatches;
@@ -27,6 +28,9 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     /// @notice Max number of blocks that can be submitted at once.
     uint8 constant MAX_NUMBER_OF_BLOCKS = 40;
+
+    /// @notice system address to limit access to certain functions
+    address public constant SYSTEM = 0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
@@ -90,17 +94,20 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             return;
         }
 
-        if (
-            !validators.areSignaturesValid(
+        _pendingValidatorSetCheck(_signedBatch);
+
+        // Only validate signatures if NOT FINAL, FINAL is a flag with no signatures
+        if (_signedBatch.batchType != BatchTypesLib.VALIDATORSET_FINAL) {
+            bool valid = validators.areSignaturesValid(
                 _signedBatch.destinationChainId,
                 _signedBatch.rawTransaction,
                 _signedBatch.signature,
                 _signedBatch.feeSignature,
                 msg.sender
-            )
-        ) {
-            revert InvalidSignature();
+            );
+            if (!valid) revert InvalidSignature();
         }
+
         signedBatches.submitSignedBatch(_signedBatch, msg.sender);
     }
 
@@ -111,23 +118,57 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             return;
         }
 
-        if (
-            !validators.isBlsSignatureValidByValidatorAddress(
+        _pendingValidatorSetCheck(_signedBatch);
+
+        if (_signedBatch.batchType != BatchTypesLib.VALIDATORSET_FINAL) {
+            bool valid = validators.isBlsSignatureValidByValidatorAddress(
                 _signedBatch.destinationChainId,
                 keccak256(_signedBatch.rawTransaction),
                 _signedBatch.signature,
                 msg.sender
-            )
-        ) {
-            revert InvalidSignature();
+            );
+
+            if (!valid) revert InvalidSignature();
         }
+
         signedBatches.submitSignedBatch(_signedBatch, msg.sender);
+    }
+
+    function _pendingValidatorSetCheck(SignedBatch calldata _signedBatch) internal view {
+        bool isValidatorSetBatch = _signedBatch.batchType == BatchTypesLib.VALIDATORSET ||
+            _signedBatch.batchType == BatchTypesLib.VALIDATORSET_FINAL;
+
+        bool isPending = validators.newValidatorSetPending();
+
+        if (isPending != isValidatorSetBatch) {
+            if (isPending) {
+                revert NewValidatorSetPending();
+            } else {
+                revert NoNewValidatorSetPending();
+            }
+        }
+    }
+
+    /// @notice Submit new validator set data
+    /// @param _newValidatorSetDelta Full validator data for all of the new validators.
+    function submitNewValidatorSet(NewValidatorSetDelta calldata _newValidatorSetDelta) external override onlySystem {
+        if (validators.newValidatorSetPending()) {
+            revert NewValidatorSetPending();
+        }
+
+        validators.submitNewValidatorSet(_newValidatorSetDelta, chains);
+
+        emit newValidatorSetSubmitted();
     }
 
     /// @notice Submit the last observed Cardano blocks from validators for synchronization purposes.
     /// @param _chainId The source chain ID.
     /// @param _blocks Array of Cardano blocks to be recorded.
     function submitLastObservedBlocks(uint8 _chainId, CardanoBlock[] calldata _blocks) external override onlyValidator {
+        if (validators.newValidatorSetPending()) {
+            revert NewValidatorSetPending();
+        }
+
         if (!claims.isChainRegistered(_chainId)) {
             revert ChainIsNotRegistered(_chainId);
         }
@@ -135,6 +176,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         if (_blocks.length > MAX_NUMBER_OF_BLOCKS) {
             revert TooManyBlocks(_blocks.length, MAX_NUMBER_OF_BLOCKS);
         }
+
         slots.updateBlocks(_chainId, _blocks, msg.sender);
     }
 
@@ -151,7 +193,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             revert ChainIsNotRegistered(_chainId);
         }
         uint256 _chainsLength = chains.length;
-        for (uint i = 0; i < _chainsLength; i++) {
+        for (uint i; i < _chainsLength; i++) {
             if (chains[i].id == _chainId) {
                 chains[i].addressMultisig = addressMultisig;
                 chains[i].addressFeePayer = addressFeePayer;
@@ -171,20 +213,20 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     ) public override onlyOwner {
         uint256 _validatorAddressChainDataLength = _validatorData.length;
 
-        if (_validatorAddressChainDataLength < 4) {
+        if (_validatorAddressChainDataLength < 4 || _validatorAddressChainDataLength > 126) {
             revert InvalidData("ValidatorAddressChainData");
         }
 
         uint8 _chainType = _chain.chainType;
 
-        for (uint i = 0; i < _validatorAddressChainDataLength; i++) {
+        for (uint i; i < _validatorAddressChainDataLength; i++) {
             address _validatorAddress = _validatorData[i].addr;
 
             if (_validatorAddress == address(0)) {
                 revert ZeroAddress();
             }
 
-            _validateSignatures(
+            validators.validateSignatures(
                 _chainType,
                 _validatorAddress,
                 _validatorData[i].keySignature,
@@ -223,13 +265,15 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             revert ChainAlreadyRegistered(_chainId);
         }
 
-        bytes32 chainHash = keccak256(abi.encode(_chainId, _chainType, _tokenQuantity));
+        bytes32 chainHash = keccak256(
+            abi.encode(validators.currentValidatorSetId(), _chainId, _chainType, _tokenQuantity)
+        );
 
         if (claims.hasVoted(chainHash, msg.sender)) {
             revert AlreadyProposed(_chainId);
         }
 
-        _validateSignatures(_chainType, msg.sender, _keySignature, _keyFeeSignature, _validatorChainData);
+        validators.validateSignatures(_chainType, msg.sender, _keySignature, _keyFeeSignature, _validatorChainData);
 
         validators.addValidatorChainData(_chainId, msg.sender, _validatorChainData);
 
@@ -242,33 +286,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             emit newChainRegistered(_chainId);
         } else {
             emit newChainProposal(_chainId, msg.sender);
-        }
-    }
-
-    /// @dev Validates key and fee signatures based on chain type.
-    function _validateSignatures(
-        uint8 _chainType,
-        address _sender,
-        bytes calldata _keySignature,
-        bytes calldata _keyFeeSignature,
-        ValidatorChainData calldata _validatorChainData
-    ) internal view {
-        bytes32 messageHashBytes32 = keccak256(abi.encodePacked("Hello world of apex-bridge:", _sender));
-
-        if (_chainType == 0) {
-            bytes memory messageHashBytes = _bytes32ToBytesAssembly(messageHashBytes32);
-            if (
-                !validators.isSignatureValid(messageHashBytes, _keySignature, _validatorChainData.key[0], false) ||
-                !validators.isSignatureValid(messageHashBytes, _keyFeeSignature, _validatorChainData.key[1], false)
-            ) {
-                revert InvalidSignature();
-            }
-        } else if (_chainType == 1) {
-            if (!validators.isBlsSignatureValid(messageHashBytes32, _keySignature, _validatorChainData.key)) {
-                revert InvalidSignature();
-            }
-        } else {
-            revert InvalidData("chainType");
         }
     }
 
@@ -314,6 +331,13 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         return _confirmedTransactions;
     }
 
+    /// @notice Notifies the bridge that new validator set has been implemented on Blade
+    /// @dev This function is called by the system to update the validator set and make all
+    ///      necessary adjustments in the bridge state.
+    function validatorSetUpdated() external override onlySystem {
+        validators.validatorSetUpdated(chains);
+    }
+
     /// @notice Get the confirmed batch for the given destination chain.
     /// @param _destinationChain ID of the destination chain.
     /// @return _batch The confirmed batch details.
@@ -344,8 +368,10 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Get raw transaction data from the most recent batch for a given destination chain.
     /// @param _destinationChain ID of the destination chain.
     /// @return Raw bytes of the transaction data.
-    function getRawTransactionFromLastBatch(uint8 _destinationChain) external view override returns (bytes memory) {
-        return signedBatches.getConfirmedBatchTransaction(_destinationChain);
+    function getRawTransactionAndBatchTypeFromLastBatch(
+        uint8 _destinationChain
+    ) external view override returns (bytes memory, uint8) {
+        return signedBatches.getConfirmedBatchTransactionAndBatchType(_destinationChain);
     }
 
     /// @notice Get transactions included in a specific batch for a given chain.
@@ -360,22 +386,44 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         return claims.getBatchStatusAndTransactions(_chainId, _batchId);
     }
 
-    /// @dev Converts a bytes32 value to a bytes array.
-    /// @param input Input bytes32 value.
-    function _bytes32ToBytesAssembly(bytes32 input) internal pure returns (bytes memory output) {
-        output = new bytes(32);
+    /// @notice Check if a new validator set is pending.
+    /// @return _pending True if a new validator set is pending, false otherwise.
+    function isNewValidatorSetPending() external view override returns (bool _pending) {
+        return validators.newValidatorSetPending();
+    }
 
-        assembly {
-            mstore(add(output, 32), input)
+    /// @notice Get the delta of the new validator set.
+    /// @return _newValidatorSetDelta The new validator set delta.
+    function getNewValidatorSetDelta()
+        external
+        view
+        override
+        returns (NewValidatorSetDelta memory _newValidatorSetDelta)
+    {
+        if (!validators.newValidatorSetPending()) {
+            revert NoNewValidatorSetPending();
         }
+        return validators.getNewValidatorSetDelta();
+    }
 
-        return output;
+    function getAddressValidatorIndex(address _validator) external view returns (uint8) {
+        return validators.getValidatorIndex(_validator);
+    }
+
+    function getCurrentValidatorSetId() external view override returns (uint256) {
+        return validators.currentValidatorSetId();
+    }
+
+    /// @notice Return a a number of registered chains
+    /// @return number of registered chains
+    function getAllRegisteredChainsCount() external view returns (uint8) {
+        return uint8(chains.length);
     }
 
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.0";
+        return "1.1.1";
     }
 
     modifier onlyValidator() {
@@ -388,8 +436,18 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         _;
     }
 
+    modifier onlySignedBatches() {
+        if (msg.sender != address(signedBatches)) revert NotSignedBatches();
+        _;
+    }
+
     modifier onlyUpgradeAdmin() {
         if (msg.sender != upgradeAdmin) revert NotOwner();
+        _;
+    }
+
+    modifier onlySystem() {
+        if (msg.sender != SYSTEM) revert NotSystem();
         _;
     }
 }

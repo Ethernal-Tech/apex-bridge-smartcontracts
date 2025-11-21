@@ -1,27 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import "./BatchTypesLib.sol";
+
 /// @title IBridgeStructs
 /// @notice Data structure definitions, custom errors, and events used by the IBridge interface
 interface IBridgeStructs {
     /// @notice Represents a signed batch to be executed on a destination chain.
     struct SignedBatch {
         uint64 id;
-        uint64 firstTxNonceId; // does not matter if isConsolidation is true
-        uint64 lastTxNonceId; // does not matter if isConsolidation is true
+        uint64 firstTxNonceId; // does not matter in case of Consolidation
+        uint64 lastTxNonceId; // does not matter in case of Consolidation
         uint8 destinationChainId;
         bytes signature;
         bytes feeSignature;
         bytes rawTransaction;
-        bool isConsolidation;
+        uint8 batchType; // BatchTypesLib
     }
 
     /// @notice Metadata for a batch that has been confirmed.
     struct ConfirmedSignedBatchData {
         uint64 firstTxNonceId;
         uint64 lastTxNonceId;
-        bool isConsolidation;
+        bool __isConsolidation; // not used
         uint8 status; // 0 = deleted, 1 = in progress, 2 = executed, 3 = failed
+        uint8 batchType; // BatchTypesLib
     }
 
     /// @notice Data for a confirmed batch that was executed on-chain.
@@ -31,7 +34,8 @@ interface IBridgeStructs {
         uint256 bitmap;
         bytes rawTransaction;
         uint64 id;
-        bool isConsolidation;
+        bool __isConsolidation; // not used
+        uint8 batchType; // BatchTypesLib
     }
 
     /// @notice A transaction that has been confirmed and is ready for batching.
@@ -42,7 +46,7 @@ interface IBridgeStructs {
         bytes32 observedTransactionHash;
         uint64 nonce;
         uint8 sourceChainId;
-        uint8 transactionType; // 0 = normal, 1 = defund, 2 = refund
+        uint8 transactionType; // TransactionTypesLib
         bool alreadyTriedBatch;
         Receiver[] receivers;
         bytes outputIndexes;
@@ -137,6 +141,18 @@ interface IBridgeStructs {
         string addressFeePayer;
     }
 
+    /// @notice Added and removed validators for a new validator set.
+    struct NewValidatorSetDelta {
+        ValidatorSet[] addedValidators;
+        address[] removedValidators;
+    }
+
+    /// @notice Full data for new Validator Set.
+    struct ValidatorSet {
+        uint8 chainId;
+        ValidatorAddressChainData[] validators;
+    }
+
     /// @notice Data for a validator address and its signing keys.
     struct ValidatorAddressChainData {
         address addr;
@@ -177,7 +193,6 @@ interface IBridgeStructs {
     error NotFundAdmin();
     error NotUpgradeAdmin();
     error NotAdminContract();
-    error NotSignedBatchesOrClaims();
     error CanNotCreateBatchYet(uint8 _chainId);
     error InvalidData(string data);
     error ChainIsNotRegistered(uint8 _chainId);
@@ -189,6 +204,12 @@ interface IBridgeStructs {
     error TooManyBlocks(uint256 _blocksCount, uint256 _maxBlocksCount);
     error TooManyClaims(uint256 _claimsCount, uint256 _maxClaimsCount);
     error NotContractAddress();
+    error NoNewValidatorSetPending();
+    error NewValidatorSetPending();
+    error NotSignedBatchesOrClaims();
+    error NotSystem();
+    error StakeManagerUpdateFailed();
+    error NotClaimsOrSignedBatches();
 
     // ------------------------------------------------------------------------
     // Events
@@ -202,4 +223,6 @@ interface IBridgeStructs {
     event DefundFailedAfterMultipleRetries();
     event UpdatedMaxNumberOfTransactions(uint256 _maxNumberOfTransactions);
     event UpdatedTimeoutBlocksNumber(uint256 _timeoutBlocksNumber);
+    event newValidatorSetSubmitted();
+    event SignedBatchValidatorSetExecutionFailed(uint8 indexed chainId, uint64 indexed batchId);
 }
