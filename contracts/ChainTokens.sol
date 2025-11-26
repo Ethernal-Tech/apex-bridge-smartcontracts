@@ -73,7 +73,7 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     }
 
     /// @notice Validates a Bridging Request Claim (BRC) by ensuring sufficient balances exist
-    ///         on the destination chain for both native and wrapped tokens (and colored coins if applicable).
+    ///         on the destination chain for both native and wrapped tokens.
     /// @dev Emits a `NotEnoughFunds` event instead of reverting when balances are insufficient.
     /// @param _claim The BridgingRequestClaim struct containing claim details such as amounts and chain IDs.
     /// @param _index The index of the claim in the batch, used for event emission.
@@ -91,7 +91,7 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     }
 
     /// @notice Validates a Refund Request Claim (RRC) by checking if sufficient balances exist
-    ///         on the origin chain for both native and wrapped tokens (and colored coins if applicable).
+    ///         on the origin chain for both native and wrapped tokens.
     /// @dev Emits a `NotEnoughFunds` event instead of reverting when balances are insufficient.
     ///      Used to verify refund operations before processing them.
     /// @param _claim The RefundRequestClaim struct containing refund details such as chain ID, token amounts, and coin ID.
@@ -109,13 +109,13 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
             );
     }
 
-    /// @notice Validates a defund request by ensuring sufficient token, wrapped token, or colored coin balances
+    /// @notice Validates a defund request by ensuring sufficient token, wrapped token balances
     ///         exist on the specified chain before processing the defund.
     /// @dev Reverts if balances are insufficient, unlike other validation functions which emit events.
     ///      This function ensures that defund operations do not proceed if there are not enough funds
     ///      available on the given chain for the requested withdrawal.
     /// @param _chainId The ID of the chain from which funds are being defunded.
-    /// @param _amount The amount of native tokens (or colored coin equivalent) to defund.
+    /// @param _amount The amount of native tokens to defund.
     /// @param _amountWrapped The amount of wrapped tokens to defund.
     function validateDefund(uint8 _chainId, uint256 _amount, uint256 _amountWrapped) external {
         // For Defund, we revert instead of returning false
@@ -135,8 +135,7 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     /// - Increases balances on the source chain **only if** this is the first occurrence of the claim
     ///   (i.e., not a retry).
     /// - Retries do not increase source balances again to avoid double-counting.
-    /// @param _claim The Bridging Request Claim containing source/destination chain IDs,
-    ///        colored coin ID, token amounts, and retry counter.
+    /// @param _claim The Bridging Request Claim.
     function updateTokensBRC(BridgingRequestClaim calldata _claim) external onlyClaimsProcessor {
         // decrease destination
         _updateChainBalances(
@@ -175,16 +174,14 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     /// @notice Updates chain token balances after processing a Refund Request Claim (RRC).
     /// @dev Decreases the origin chain’s balances to reflect tokens or wrapped tokens
     ///      being returned as part of a refund operation.
-    /// @param _claim The Refund Request Claim containing origin chain ID, colored coin ID,
-    ///        and token/ wrapped token amounts.
+    /// @param _claim The Refund Request Claim.
     function updateTokensRRC(RefundRequestClaim calldata _claim) external onlyClaimsProcessor {
         _updateChainBalances(_claim.originChainId, _claim.originAmount, _claim.originWrappedAmount, false);
     }
 
     /// @notice Updates chain token balances after processing a Hot Wallet Increment Claim (HWIC).
     /// @dev Increases chain balances to reflect funds being added to the hot wallet.
-    /// @param _claim The Hot Wallet Increment Claim containing chain ID, colored coin ID,
-    ///        and token/ wrapped token amounts to add.
+    /// @param _claim The Hot Wallet Increment Claim.
     function updateTokensHWIC(HotWalletIncrementClaim calldata _claim) external onlyClaimsProcessor {
         _updateChainBalances(_claim.chainId, _claim.amount, _claim.amountWrapped, true);
     }
@@ -264,7 +261,6 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
                     _tokenAmount,
                     _index
                 );
-            // Check colored coin balance
         }
 
         // Check wrapped token balance
@@ -309,7 +305,7 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         }
     }
 
-    /// @dev Universal internal updater: handles tokens, wrapped tokens, and colored coins.
+    /// @dev Universal internal updater: handles tokens and wrapped tokens.
     function _updateChainBalances(uint8 _chainId, uint256 _amount, uint256 _wrapped, bool _increase) internal {
         _updateSingle(chainTokenQuantity, _chainId, _amount, _increase);
         _updateSingle(chainWrappedTokenQuantity, _chainId, _wrapped, _increase);

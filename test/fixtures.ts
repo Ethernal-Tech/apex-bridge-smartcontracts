@@ -279,7 +279,7 @@ export async function deployBridgeFixture() {
             amount: 100,
             amountWrapped: 100,
             destinationAddress: "0x123...",
-            coloredCoinId: 0,
+            tokenId: 0,
           },
         ],
         nativeCurrencyAmountSource: 100,
@@ -306,7 +306,7 @@ export async function deployBridgeFixture() {
           amount: 100 + i,
           amountWrapped: 100 + i,
           destinationAddress: `0x123...${i}`,
-          coloredCoinId: 0,
+          tokenId: 0,
         },
       ],
       nativeCurrencyAmountSource: 100,
@@ -332,7 +332,7 @@ export async function deployBridgeFixture() {
           amount: 100 + i,
           amountWrapped: 100 + i,
           destinationAddress: `0x123...${i}`,
-          coloredCoinId: 0,
+          tokenId: 0,
         },
       ],
       nativeCurrencyAmountSource: 100,
@@ -395,7 +395,7 @@ export async function deployBridgeFixture() {
         shouldDecrementHotWallet: false,
         destinationChainId: 1,
         bridgeAddrIndex: 1,
-        coloredCoinAmounts: [],
+        tokenAmounts: [],
       },
     ],
     hotWalletIncrementClaims: [],
@@ -455,11 +455,11 @@ export async function deployBridgeFixture() {
   const validatorCardanoData = validatorAddressChainData[0].data;
   const bridgeAddrIndex = 0;
 
-  const coloredCoinAmounts = [
+  const tokenAmounts = [
     {
-      coloredCoinId: 1,
-      amountColoredCoins: 10,
-      amountCurrency: 1
+      tokenId: 1,
+      amountCurrency: 1,
+      amountTokens: 10
     }
   ];
 
@@ -491,7 +491,7 @@ export async function deployBridgeFixture() {
     validatorCardanoData,
     cardanoBlocks,
     bridgeAddrIndex,
-    coloredCoinAmounts,
+    tokenAmounts,
   };
 }
 
@@ -500,7 +500,7 @@ export function hashBridgeRequestClaim(claim: any) {
   const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
   const lst = [];
   for (let receiver of claim.receivers) {
-    lst.push([receiver.amount, receiver.amountWrapped, receiver.destinationAddress, receiver.coloredCoinId]);
+    lst.push([receiver.amount, receiver.amountWrapped, receiver.destinationAddress, receiver.tokenId]);
   }
 
   const encoded = abiCoder.encode(
@@ -570,9 +570,9 @@ export function hashBatchExecutionFailedClaim(claim: any) {
 export function hashRefundRequestClaim(claim: any) {
   const abiCoder = new ethers.AbiCoder();
   const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
-  const ccAmounts = [];
-  for (let ccAmount of claim.coloredCoinAmounts) {
-    ccAmounts.push([ccAmount.coloredCoinId, ccAmount.amount]);
+  const amounts = [];
+  for (let amount of claim.tokenAmounts) {
+    amounts.push([amount.tokenId, amount.amount]);
   }
 
   const encoded = abiCoder.encode(
@@ -602,7 +602,7 @@ export function hashRefundRequestClaim(claim: any) {
       claim.shouldDecrementHotWallet,
       claim.destinationChainId,
       claim.bridgeAddrIndex,
-      ccAmounts,
+      amounts,
     ]
   );
   return ethers.keccak256(

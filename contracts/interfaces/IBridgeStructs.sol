@@ -59,7 +59,7 @@ interface IBridgeStructs {
         string stakePoolId;
         uint8 bridgeAddrIndex;
         uint8 transactionSubType; // TransactionTypesLib
-        ReceiverWithColor[] receiversWithColor;
+        ReceiverWithToken[] receiversWithToken;
     }
 
     /// @notice Represents a block from the Cardano chain.
@@ -82,7 +82,7 @@ interface IBridgeStructs {
         // hash of tx on the source chain
         bytes32 observedTransactionHash;
         // key is the address on destination UTXO chain; value is the amount of tokens
-        ReceiverWithColor[] receivers;
+        ReceiverWithToken[] receivers;
         uint256 nativeCurrencyAmountSource;
         uint256 wrappedTokenAmountSource;
         uint256 nativeCurrencyAmountDestination;
@@ -138,8 +138,8 @@ interface IBridgeStructs {
         uint8 destinationChainId;
         // index of bridging address
         uint8 bridgeAddrIndex;
-        // ID of colored coin
-        ColoredCoinAmount[] coloredCoinAmounts;
+        // Amounts of tokens to be refunded
+        TokenAmount[] tokenAmounts;
     }
 
     /// @notice A claim to increase the balance of a chain's hot wallet.
@@ -157,17 +157,17 @@ interface IBridgeStructs {
     }
 
     /// @notice Destination address and amount for a transaction output.
-    struct ReceiverWithColor {
+    struct ReceiverWithToken {
         uint256 amount;
         uint256 amountWrapped;
         string destinationAddress;
-        uint16 coloredCoinId;
+        uint16 tokenId;
     }
 
-    struct ColoredCoinAmount {
-        uint16 coloredCoinId;
-        uint256 amountColoredCoins;
+    struct TokenAmount {
+        uint16 tokenId;
         uint256 amountCurrency;
+        uint256 amountTokens;
     }
 
     /// @notice Metadata about a chain registered with the bridge.
@@ -253,7 +253,7 @@ interface IBridgeStructs {
         uint8 _chainId,
         uint256 _amount,
         uint256 _amountWrapped,
-        ColoredCoinAmount[] _coloredCoinAmounts,
+        TokenAmount[] _tokenAmounts,
         string _defundAddress
     );
     event FundAdminChanged(address _newFundAdmin);

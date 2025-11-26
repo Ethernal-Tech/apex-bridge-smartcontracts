@@ -65,14 +65,14 @@ describe("Submit Claims", function () {
       expect((await claims.confirmedTransactions(destinationChainId, nonce)).blockHeight).to.equal(
         await ethers.provider.getBlockNumber()
       );
-      expect((await claims.confirmedTransactions(destinationChainId, nonce)).coloredCoinId).to.equal(
-        validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId
+      expect((await claims.confirmedTransactions(destinationChainId, nonce)).tokenId).to.equal(
+        validatorClaimsBRC.bridgingRequestClaims[0].tokenId
       );
     });
 
-    it("Should store new confirmedTransactions when Bridging Request Claim for coloredCoin is confirmed", async function () {
+    it("Should store new confirmedTransactions when Bridging Request Claim with token is confirmed", async function () {
       const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
+      temp_validatorClaimsBRC.bridgingRequestClaims[0].tokenId = 1;
       temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination = 0;
       temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountSource = 0;
       temp_validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amount = 0;
@@ -219,9 +219,9 @@ describe("Submit Claims", function () {
       ).to.equal(0);
     });
 
-    it("Should NOT remove amount of currency Tokens from destination chain when Bridging Request Claim is confirmed and coloredCoinId != 0 and it is NOT a retry", async function () {
+    it("Should NOT remove amount of currency Tokens from destination chain when Bridging Request Claim is confirmed and tokenId != 0 and it is NOT a retry", async function () {
       const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].coloredCoinId = 1;
+      temp_validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].tokenId = 1;
       temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination = 0;
 
       expect(
@@ -777,9 +777,9 @@ describe("Submit Claims", function () {
       expect(chain2WrappedTokenQuantityAfter).to.be.equal(chain2WrappedTokenQuantityStart);
     });
 
-    it("Should increase chainWrappedTokenQuantity and should NOT increase chainTokenQuantity for destination chain when Bridging Excuted Failed Claim is confirmed and coloredCoinId != 0", async function () {
+    it("Should increase chainWrappedTokenQuantity and should NOT increase chainTokenQuantity for destination chain when Bridging Excuted Failed Claim is confirmed and tokenId != 0", async function () {
       const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].coloredCoinId = 1;
+      temp_validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].tokenId = 1;
       temp_validatorClaimsBRC.bridgingRequestClaims[0].nativeCurrencyAmountDestination = 0;
 
       const chain2TokenQuantityStart = await chainTokens.chainTokenQuantity(
@@ -924,20 +924,20 @@ describe("Submit Claims", function () {
       );
     });
 
-    it("Should NOT decrease Hot Wallet status for currency when Refund Request Claims has shouldDecrementHotWallet set to true, it is 0 retry and there is coloredCoin receiver", async function () {
+    it("Should NOT decrease Hot Wallet status for currency when Refund Request Claims has shouldDecrementHotWallet set to true, it is 0 retry and there is receiver with token", async function () {
       const temp_validatorClaimsRRC = structuredClone(validatorClaimsRRC);
       temp_validatorClaimsRRC.refundRequestClaims[0].shouldDecrementHotWallet = true;
-      temp_validatorClaimsRRC.refundRequestClaims[0].coloredCoinAmounts = [
+      temp_validatorClaimsRRC.refundRequestClaims[0].tokenAmounts = [
         {
-          coloredCoinId: 1,
-          amountColoredCoins: temp_validatorClaimsRRC.refundRequestClaims[0].originAmount,
+          tokenId: 1,
+          amountTokens: temp_validatorClaimsRRC.refundRequestClaims[0].originAmount,
           amountCurrency: 100
         },
       ]
       temp_validatorClaimsRRC.refundRequestClaims[0].originAmount = 0;
 
       const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
+      temp_validatorClaimsBRC.bridgingRequestClaims[0].tokenId = 1;
       temp_validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId = 1;
       temp_validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId =
         temp_validatorClaimsRRC.refundRequestClaims[0].originChainId;

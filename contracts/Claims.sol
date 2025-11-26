@@ -173,7 +173,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             uint64 nextNonce = lastBatchedTxNonce[chainId] + 1;
             uint64 lastConfirmedNonce = lastConfirmedTxNonce[chainId];
 
-            // Rebuild receiversWithColor for non-executed confirmed transactions
+            // Rebuild receiversWithToken for non-executed confirmed transactions
             for (uint64 nonce = nextNonce; nonce <= lastConfirmedNonce; nonce++) {
                 ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nonce];
 
@@ -181,8 +181,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 for (uint256 j; j < receiversLength; j++) {
                     Receiver storage r = confirmedTx._receivers[j];
 
-                    confirmedTx.receiversWithColor.push(
-                        ReceiverWithColor(r.amount, r.amountWrapped, r.destinationAddress, 0)
+                    confirmedTx.receiversWithToken.push(
+                        ReceiverWithToken(r.amount, r.amountWrapped, r.destinationAddress, 0)
                     );
                 }
             }
@@ -332,7 +332,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         uint256 receiversLength = _claim.receivers.length;
         for (uint i; i < receiversLength; i++) {
-            confirmedTx.receiversWithColor.push(_claim.receivers[i]);
+            confirmedTx.receiversWithToken.push(_claim.receivers[i]);
         }
     }
 
@@ -360,18 +360,18 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         confirmedTx.outputIndexes = _claim.outputIndexes;
         confirmedTx.alreadyTriedBatch = _claim.shouldDecrementHotWallet;
 
-        confirmedTx.receiversWithColor.push(
-            ReceiverWithColor(_claim.originAmount, _claim.originWrappedAmount, _claim.originSenderAddress, 0)
+        confirmedTx.receiversWithToken.push(
+            ReceiverWithToken(_claim.originAmount, _claim.originWrappedAmount, _claim.originSenderAddress, 0)
         );
 
-        uint256 colCoinsLength = _claim.coloredCoinAmounts.length;
+        uint256 colCoinsLength = _claim.tokenAmounts.length;
         for (uint i; i < colCoinsLength; i++) {
-            confirmedTx.receiversWithColor.push(
-                ReceiverWithColor(
-                    _claim.coloredCoinAmounts[i].amountCurrency,
-                    _claim.coloredCoinAmounts[i].amountColoredCoins,
+            confirmedTx.receiversWithToken.push(
+                ReceiverWithToken(
+                    _claim.tokenAmounts[i].amountCurrency,
+                    _claim.tokenAmounts[i].amountTokens,
                     _claim.originSenderAddress,
-                    _claim.coloredCoinAmounts[i].coloredCoinId
+                    _claim.tokenAmounts[i].tokenId
                 )
             );
         }
@@ -456,6 +456,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev Updates internal state and sets a confirmed transaction.
     /// @param _chainId The ID of the chain from which to defund.
     /// @param _amount The amount of tokens to defund.
+    /// @param _amountWrapped The amount of wrapped tokens to defund.
+    /// @param _tokenAmounts An array of additional token amounts to include in the defund transaction.
     /// @param _defundAddress The address (as a string) to which the defunded tokens should be sent.
     /// @custom:reverts ChainIsNotRegistered if the chain is not registered.
     /// @custom:reverts DefundRequestTooHigh if the requested defund amount exceeds the available balance.
@@ -463,7 +465,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint8 _chainId,
         uint256 _amount,
         uint256 _amountWrapped,
-        ColoredCoinAmount[] calldata _coloredCoinAmounts,
+        TokenAmount[] calldata _tokenAmounts,
         string calldata _defundAddress
     ) external onlyAdminContract {
         if (!isChainRegistered[_chainId]) {
@@ -483,16 +485,16 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         );
         confirmedTx.totalAmount = _amount;
         confirmedTx.totalWrappedAmount = _amountWrapped;
-        confirmedTx.receiversWithColor.push(ReceiverWithColor(_amount, _amountWrapped, _defundAddress, 0));
+        confirmedTx.receiversWithToken.push(ReceiverWithToken(_amount, _amountWrapped, _defundAddress, 0));
 
-        uint256 colCoinsLength = _coloredCoinAmounts.length;
+        uint256 colCoinsLength = _tokenAmounts.length;
         for (uint i; i < colCoinsLength; i++) {
-            confirmedTx.receiversWithColor.push(
-                ReceiverWithColor(
-                    _coloredCoinAmounts[i].amountCurrency,
-                    _coloredCoinAmounts[i].amountColoredCoins,
+            confirmedTx.receiversWithToken.push(
+                ReceiverWithToken(
+                    _tokenAmounts[i].amountCurrency,
+                    _tokenAmounts[i].amountTokens,
                     _defundAddress,
-                    _coloredCoinAmounts[i].coloredCoinId
+                    _tokenAmounts[i].tokenId
                 )
             );
         }

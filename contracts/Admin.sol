@@ -124,7 +124,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     /// @param _chainId ID of the chain to defund
     /// @param _amount Amount of native token to defund
     /// @param _amountWrapped Amount of wrapped token to defund
-    /// @param _coloredCoinAmounts Identifier of the colored coins and amounts used in the defund
+    /// @param _tokenAmounts Identifier of the non-wrapped tokens and amounts used in the defund
     /// @param _defundAddress Destination address (as string) where funds will be sent
     /// Requirements:
     /// - Caller must be authorized as Fund Admin (`onlyFundAdmin`)
@@ -132,11 +132,11 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         uint8 _chainId,
         uint256 _amount,
         uint256 _amountWrapped,
-        ColoredCoinAmount[] calldata _coloredCoinAmounts,
+        TokenAmount[] calldata _tokenAmounts,
         string calldata _defundAddress
     ) external onlyFundAdmin {
-        claims.defund(_chainId, _amount, _amountWrapped, _coloredCoinAmounts, _defundAddress);
-        emit ChainDefunded(_chainId, _amount, _amountWrapped, _coloredCoinAmounts, _defundAddress);
+        claims.defund(_chainId, _amount, _amountWrapped, _tokenAmounts, _defundAddress);
+        emit ChainDefunded(_chainId, _amount, _amountWrapped, _tokenAmounts, _defundAddress);
     }
 
     /// @notice Sets a new fund admin

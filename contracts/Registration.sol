@@ -15,7 +15,7 @@ import "./Utils.sol";
 import "./Validators.sol";
 
 /// @title Registration
-/// @notice Registration of chains and colored tokens.
+/// @notice Registration of chains and tokens.
 /// @dev UUPS upgradeable and modular via dependency contracts (Bridge, BridgingAddresses, ChainTokens, Claims, ClaimsHelper, Validators).
 contract Registration is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address private upgradeAdmin;

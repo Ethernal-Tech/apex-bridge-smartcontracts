@@ -153,7 +153,7 @@ describe("Admin Functions", function () {
       await admin.setFundAdmin(validators[0].address);
 
       const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
+      temp_validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].tokenId = 1;
 
       await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsBRC);
@@ -191,20 +191,20 @@ describe("Admin Functions", function () {
         .withArgs(1, 0, 1, [], "address");
     });
 
-    it("Should emit ChainDefunded when coloredCoin defund is executed", async function () {
+    it("Should emit ChainDefunded when defund with non-wrapped token is executed", async function () {
       await admin.setFundAdmin(validators[0].address);
 
       const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
+      temp_validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].tokenId = 1;
 
       await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(temp_validatorClaimsBRC);
       await bridge.connect(validators[4]).submitClaims(temp_validatorClaimsBRC);
 
-      await expect(await admin.connect(validators[0]).defund(chain1.id, 1, 1, coloredCoinAmounts, "address"))
+      await expect(await admin.connect(validators[0]).defund(chain1.id, 1, 1, tokenAmounts, "address"))
         .to.emit(admin, "ChainDefunded")
-        .withArgs(1, 1, 1, [[1n, 10n, 1n]], "address");
+        .withArgs(1, 1, 1, [[1n, 1n, 10n]], "address");
     });
 
     it("Should add confirmedTransactioin when defund is called", async function () {
@@ -234,18 +234,18 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(43);
     });
 
-    it("Should set correct confirmedTransaction when defund is called on coloredCoin", async function () {
+    it("Should set correct confirmedTransaction when defund is called with non-wrapped token", async function () {
       await admin.setFundAdmin(validators[0].address);
 
       const temp_validatorClaimsBRC = structuredClone(validatorClaimsBRC);
-      temp_validatorClaimsBRC.bridgingRequestClaims[0].coloredCoinId = 1;
+      temp_validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].tokenId = 1;
 
       await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(temp_validatorClaimsBRC);
       await bridge.connect(validators[4]).submitClaims(temp_validatorClaimsBRC);
 
-      await admin.connect(validators[0]).defund(chain1.id, 0, 1, coloredCoinAmounts, "address");
+      await admin.connect(validators[0]).defund(chain1.id, 0, 1, tokenAmounts, "address");
 
       expect((await claims.confirmedTransactions(chain1.id, 1)).transactionType).to.equal(1); // TransactionTypesLib.DEFUND)
       expect((await claims.confirmedTransactions(chain1.id, 1)).sourceChainId).to.equal(chain1.id);
@@ -312,7 +312,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(49);
     });
 
-    it("Should set correct confirmedTransaction when coloredCoin defund fails", async function () {
+    it("Should set correct confirmedTransaction when defund with non-wrapped token fails", async function () {
       const signedBatchDefund = structuredClone(signedBatch);
       signedBatchDefund.lastTxNonceId = 2;
 
@@ -328,7 +328,7 @@ describe("Admin Functions", function () {
 
       await admin.setFundAdmin(validators[0].address);
 
-      await admin.connect(validators[0]).defund(chain2.id, 0, 1, coloredCoinAmounts, "address");
+      await admin.connect(validators[0]).defund(chain2.id, 0, 1, tokenAmounts, "address");
 
       expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(2);
 
@@ -418,12 +418,12 @@ describe("Admin Functions", function () {
       }
     });
 
-    it("Should reject coloredCoin defund after maximum number of retries", async function () {
+    it("Should reject defund with non-wrapped token after maximum number of retries", async function () {
       await admin.setFundAdmin(validators[0].address);
 
       const temp_signedBatch = structuredClone(signedBatch);
 
-      await admin.connect(validators[0]).defund(chain2.id, 0, 1, coloredCoinAmounts, "address");
+      await admin.connect(validators[0]).defund(chain2.id, 0, 1, tokenAmounts, "address");
 
       //to avoid the need for public variable this value should be manually set to the value of MAX_NUMBER_OF_DEFUND_RETRIES
       const retryCounter = 3;
@@ -521,7 +521,7 @@ describe("Admin Functions", function () {
   let signedBatch: any;
   let validatorAddressChainData: any;
   let validators: any;
-  let coloredCoinAmounts: any;
+  let tokenAmounts: any;
 
   beforeEach(async function () {
     const fixture = await loadFixture(deployBridgeFixture);
@@ -540,7 +540,7 @@ describe("Admin Functions", function () {
     signedBatch = fixture.signedBatch;
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;
-    coloredCoinAmounts = fixture.coloredCoinAmounts;
+    tokenAmounts = fixture.tokenAmounts;
 
     // Register chains
     await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
