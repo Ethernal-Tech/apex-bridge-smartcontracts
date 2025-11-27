@@ -20,3 +20,8 @@ Create the files that will be used to verify smart contracts on Blockscout
 ```shell
 node contractVerification.js
 ```
+
+Check the size of the contracts
+```shell
+npx hardhat size-all
+```
