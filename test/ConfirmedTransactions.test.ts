@@ -282,21 +282,15 @@ describe("Confirmed Transactions", function () {
       expect(tx.blockHeight).to.be.lessThan(blockNum);
 
       // Receivers checks
-      expect(tx.receiversWithToken.length).to.equal(3);
+      expect(tx.receiversWithToken.length).to.equal(2);
 
       tx.receiversWithToken.forEach((receiver: any, idx: any) => {
         expect(receiver.destinationAddress).to.equal(expectedReceiversAddress);
 
-        if (idx === 0) {
-          expect(receiver.amount).to.equal(claim.originAmount);
-          expect(receiver.amountWrapped).to.equal(claim.originWrappedAmount);
-          expect(receiver.tokenId).to.equal(0);
-        } else {
-          const expected = expectedTokenAmounts[idx - 1];
-          expect(receiver.amount).to.equal(expected.amountCurrency);
-          expect(receiver.amountWrapped).to.equal(expected.amountToken);
-          expect(receiver.tokenId).to.equal(expected.tokenId);
-        }
+        const expected = expectedTokenAmounts[idx];
+        expect(receiver.amount).to.equal(expected.amountCurrency);
+        expect(receiver.amountWrapped).to.equal(expected.amountToken);
+        expect(receiver.tokenId).to.equal(expected.tokenId);
       });
     });
   });

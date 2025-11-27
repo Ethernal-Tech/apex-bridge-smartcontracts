@@ -360,10 +360,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         confirmedTx.outputIndexes = _claim.outputIndexes;
         confirmedTx.alreadyTriedBatch = _claim.shouldDecrementHotWallet;
 
-        confirmedTx.receiversWithToken.push(
-            ReceiverWithToken(_claim.originAmount, _claim.originWrappedAmount, _claim.originSenderAddress, 0)
-        );
-
         uint256 colCoinsLength = _claim.tokenAmounts.length;
         for (uint i; i < colCoinsLength; i++) {
             confirmedTx.receiversWithToken.push(
