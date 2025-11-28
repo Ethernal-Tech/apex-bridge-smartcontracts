@@ -630,9 +630,8 @@ export function hashBridgeRequestClaim(validatorSet: number, claim: any) {
 
   return ethers.keccak256(
     abi.encode(
-      ["uint256", "string", "tuple(bytes32,tuple(uint256,string)[],uint256,uint256,uint256,uint8,uint8)"],
+      ["string", "tuple(bytes32,tuple(uint256,string)[],uint256,uint256,uint256,uint8,uint8)"],
       [
-        validatorSet,
         "BRC",
         [
           claim.observedTransactionHash,
@@ -653,8 +652,8 @@ export function hashBatchExecutedClaim(validatorSet: number, claim: any) {
 
   return ethers.keccak256(
     abi.encode(
-      ["uint256", "string", "tuple(bytes32,uint64,uint8)"],
-      [validatorSet, "BEC", [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]]
+      ["string", "tuple(bytes32,uint64,uint8)"],
+      ["BEC", [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]]
     )
   );
 }
@@ -664,8 +663,8 @@ export function hashBatchExecutionFailedClaim(validatorSet: number, claim: any) 
 
   return ethers.keccak256(
     abi.encode(
-      ["uint256", "string", "tuple(bytes32,uint64,uint8)"],
-      [validatorSet, "BEFC", [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]]
+      ["string", "tuple(bytes32,uint64,uint8)"],
+      ["BEFC", [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]]
     )
   );
 }
@@ -677,9 +676,8 @@ export function hashRefundRequestClaim(validatorSet: number, claim: any) {
 
   return ethers.keccak256(
     abi.encode(
-      ["uint256", "string", "tuple(bytes32,bytes32,uint256,bytes,string,uint64,uint8,bool)"],
+      ["string", "tuple(bytes32,bytes32,uint256,bytes,string,uint64,uint8,bool)"],
       [
-        validatorSet,
         "RRC",
         [
           claim.originTransactionHash,
@@ -699,7 +697,5 @@ export function hashRefundRequestClaim(validatorSet: number, claim: any) {
 export function hashHotWalletIncrementClaim(validatorSet: number, claim: any) {
   const abi = new ethers.AbiCoder();
 
-  return ethers.keccak256(
-    abi.encode(["uint256", "string", "tuple(uint8,uint256)"], [validatorSet, "HWIC", [claim.chainId, claim.amount]])
-  );
+  return ethers.keccak256(abi.encode(["string", "tuple(uint8,uint256)"], ["HWIC", [claim.chainId, claim.amount]]));
 }

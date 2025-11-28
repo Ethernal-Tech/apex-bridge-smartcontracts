@@ -222,8 +222,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint256 _receiversSumDst = _claim.totalAmountDst;
         uint8 _destinationChainId = _claim.destinationChainId;
         uint256 _chainTokenQuantityDestination = chainTokenQuantity[_destinationChainId];
-
-        bytes32 _claimHash = keccak256(abi.encode(validators.currentValidatorSetId(), "BRC", _claim));
+        // oracle wont resubmit already processed claim again even if quorum is not reached while old validator set was active
+        bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
         uint8 _quorumCount = validators.getQuorumNumberOfValidators();
         uint256 _votesCount = claimsHelper.numberOfVotes(_claimHash);
@@ -285,8 +285,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         if (_confirmedSignedBatch.status != ConstantsLib.IN_PROGRESS) {
             return;
         }
-
-        bytes32 claimHash = keccak256(abi.encode(validators.currentValidatorSetId(), "BEC", _claim));
+        // oracle wont resubmit already processed claim again even if quorum is not reached while old validator set was active
+        bytes32 claimHash = keccak256(abi.encode("BEC", _claim));
 
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
 
@@ -347,8 +347,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         if (_confirmedSignedBatch.status != ConstantsLib.IN_PROGRESS) {
             return;
         }
-
-        bytes32 claimHash = keccak256(abi.encode(validators.currentValidatorSetId(), "BEFC", _claim));
+        // oracle wont resubmit already processed claim again even if quorum is not reached while old validator set was active
+        bytes32 claimHash = keccak256(abi.encode("BEFC", _claim));
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
 
         bool _quorumReached = claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
@@ -438,7 +438,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         uint8 originChainId = _claim.originChainId;
 
-        bytes32 _claimHash = keccak256(abi.encode(validators.currentValidatorSetId(), "RRC", _claim));
+        // oracle wont resubmit already processed claim again even if quorum is not reached while old validator set was active
+        bytes32 _claimHash = keccak256(abi.encode("RRC", _claim));
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
         uint8 _quorumCount = validators.getQuorumNumberOfValidators();
         uint256 _votesCount = claimsHelper.numberOfVotes(_claimHash);
@@ -484,7 +485,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             revert NewValidatorSetPending();
         }
 
-        bytes32 claimHash = keccak256(abi.encode(validators.currentValidatorSetId(), "HWIC", _claim));
+        // oracle wont resubmit already processed claim again even if quorum is not reached while old validator set was active
+        bytes32 claimHash = keccak256(abi.encode("HWIC", _claim));
 
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
 
