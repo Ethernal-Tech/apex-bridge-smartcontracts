@@ -15,6 +15,7 @@ import "./ClaimsHelper.sol";
 import "./ClaimsProcessor.sol";
 import "./Utils.sol";
 import "./Validators.sol";
+import "hardhat/console.sol";
 
 /// @title Claims
 /// @notice Handles validator-submitted claims in a cross-chain bridge system.
@@ -398,10 +399,14 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         );
         confirmedTx.totalAmount = _amount;
         confirmedTx.totalWrappedAmount = _amountWrapped;
-        confirmedTx.receiversWithToken.push(ReceiverWithToken(_amount, _amountWrapped, _defundAddress, 0));
+        if (_amount > 0 || _amountWrapped > 0) {
+            confirmedTx.receiversWithToken.push(ReceiverWithToken(_amount, _amountWrapped, _defundAddress, 0));
+        }
 
         uint256 colCoinsLength = _tokenAmounts.length;
+        console.log("DOSAO");
         for (uint i; i < colCoinsLength; i++) {
+            console.log("USAO");
             confirmedTx.receiversWithToken.push(
                 ReceiverWithToken(
                     _tokenAmounts[i].amountCurrency,

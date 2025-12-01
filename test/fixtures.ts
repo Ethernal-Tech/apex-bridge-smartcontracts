@@ -460,8 +460,8 @@ export async function deployBridgeFixture() {
     {
       tokenId: 1,
       amountCurrency: 1,
-      amountTokens: 10
-    }
+      amountTokens: 10,
+    },
   ];
 
   return {
@@ -533,8 +533,8 @@ export function hashBridgeRequestClaim(claim: any) {
 
   return ethers.keccak256(
     "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-    encodedPrefix.substring(66) +
-    encoded.substring(2)
+      encodedPrefix.substring(66) +
+      encoded.substring(2)
   );
 }
 
@@ -548,8 +548,8 @@ export function hashBatchExecutedClaim(claim: any) {
 
   return ethers.keccak256(
     "0x0000000000000000000000000000000000000000000000000000000000000080" +
-    encoded.substring(2) +
-    encodedPrefix.substring(66)
+      encoded.substring(2) +
+      encodedPrefix.substring(66)
   );
 }
 
@@ -563,8 +563,8 @@ export function hashBatchExecutionFailedClaim(claim: any) {
 
   return ethers.keccak256(
     "0x0000000000000000000000000000000000000000000000000000000000000080" +
-    encoded.substring(2) +
-    encodedPrefix.substring(66)
+      encoded.substring(2) +
+      encodedPrefix.substring(66)
   );
 }
 
@@ -608,8 +608,8 @@ export function hashRefundRequestClaim(claim: any) {
   );
   return ethers.keccak256(
     "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-    encodedPrefix.substring(66) +
-    encoded.substring(2)
+      encodedPrefix.substring(66) +
+      encoded.substring(2)
   );
 }
 
@@ -617,17 +617,14 @@ export function hashHotWalletIncrementClaim(claim: any) {
   const abiCoder = new ethers.AbiCoder();
 
   const encoded = abiCoder.encode(
-    [
-      "string",
-      "tuple(uint8 chainId, uint256 amount, uint256 amountWrapped)"
-    ],
+    ["string", "tuple(uint8 chainId, uint256 amount, uint256 amountWrapped)"],
     [
       "HWIC",
       {
         chainId: claim.chainId,
         amount: claim.amount,
-        amountWrapped: claim.amountWrapped
-      }
+        amountWrapped: claim.amountWrapped,
+      },
     ]
   );
 
