@@ -43,6 +43,20 @@ describe("Claims Contract", function () {
       expect(await hasVoted(hash, validators[4])).to.be.false;
     });
 
+    it("Should not emit emit event if there is already a quorum on Bridging Request Claim", async function () {
+      const hash = hashBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      await expect(bridge.connect(validators[4]).submitClaims(validatorClaimsBRC)).not.to.emit(
+        chainTokens,
+        "NotEnoughFunds"
+      );
+    });
+
     it("Should skip if same validator submits the same Bridging Request Claim twice", async function () {
       const hash = hashBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
 
