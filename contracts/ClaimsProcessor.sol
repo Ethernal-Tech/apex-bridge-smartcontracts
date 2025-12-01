@@ -18,6 +18,12 @@ import "./Validators.sol";
 /// @notice Handles validator-submitted claims in a cross-chain bridge system.
 /// @dev Inherits from OpenZeppelin upgradeable contracts for upgradability and ownership control.
 contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+    /// @notice Maximum number of claims allowed per submission.
+    uint8 private constant MAX_NUMBER_OF_CLAIMS = 32;
+    /// @notice Maximum number of receivers in a BridgingRequestClaim.
+    uint8 private constant MAX_NUMBER_OF_RECEIVERS = 16;
+
+    address private bridgeAddress;
     address private upgradeAdmin;
     address private adminContractAddress;
     address private registrationAddress;
@@ -57,6 +63,7 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
     function _authorizeUpgrade(address newImplementation) internal override onlyUpgradeAdmin {}
 
     /// @notice Sets external contract dependencies.
+    /// @param _bridgeContractAddress Address of the Bridge contract
     /// @param _adminContractAddress is set first to avoid circular dependency issues.
     /// @param _bridgingAddresses Address of the BridgingAddresses contract.
     /// @param _chainTokensAddress Address of the ChainTokens contract.
@@ -65,6 +72,7 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
     /// @param _registrationAddress Address of the Registration contract.
     /// @param _validatorsAddress Address of the Validators contract.
     function setDependencies(
+        address _bridgeContractAddress,
         address _adminContractAddress,
         address _bridgingAddresses,
         address _chainTokensAddress,
@@ -80,8 +88,10 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
             !_isContract(_claimsAddress) ||
             !_isContract(_claimsHelperAddress) ||
             !_isContract(_registrationAddress) ||
-            !_isContract(_validatorsAddress)
+            !_isContract(_validatorsAddress) ||
+            !_isContract(_bridgeContractAddress)
         ) revert NotContractAddress();
+        bridgeAddress = _bridgeContractAddress;
         adminContractAddress = _adminContractAddress;
         bridgingAddresses = BridgingAddresses(_bridgingAddresses);
         chainTokens = ChainTokens(_chainTokensAddress);
@@ -89,6 +99,84 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
         registrationAddress = _registrationAddress;
         validators = Validators(_validatorsAddress);
+    }
+
+    /// @notice Submit claims from validators for reaching consensus.
+    /// @param _claims Struct containing all types of validator claims.
+    /// @param _caller Address of the validator submitting the claims.
+    function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
+        uint256 bridgingRequestClaimsLength = _claims.bridgingRequestClaims.length;
+        uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
+        uint256 batchExecutionFailedClaimsLength = _claims.batchExecutionFailedClaims.length;
+        uint256 refundRequestClaimsLength = _claims.refundRequestClaims.length;
+        uint256 hotWalletIncrementClaimsLength = _claims.hotWalletIncrementClaims.length;
+
+        uint256 claimsLength = bridgingRequestClaimsLength +
+            batchExecutedClaimsLength +
+            batchExecutionFailedClaimsLength +
+            refundRequestClaimsLength +
+            hotWalletIncrementClaimsLength;
+
+        if (claimsLength > MAX_NUMBER_OF_CLAIMS) {
+            revert TooManyClaims(claimsLength, MAX_NUMBER_OF_CLAIMS);
+        }
+
+        for (uint i; i < bridgingRequestClaimsLength; i++) {
+            BridgingRequestClaim calldata _claim = _claims.bridgingRequestClaims[i];
+            uint8 sourceChainId = _claim.sourceChainId;
+            uint8 destinationChainId = _claim.destinationChainId;
+
+            if (!claims.isChainRegistered(sourceChainId)) {
+                revert ChainIsNotRegistered(sourceChainId);
+            }
+
+            if (!claims.isChainRegistered(destinationChainId)) {
+                revert ChainIsNotRegistered(destinationChainId);
+            }
+
+            if (_claim.receivers.length > MAX_NUMBER_OF_RECEIVERS) {
+                revert TooManyReceivers(_claim.receivers.length, MAX_NUMBER_OF_RECEIVERS);
+            }
+
+            _submitClaimsBRC(_claim, i, _caller);
+        }
+
+        for (uint i; i < batchExecutedClaimsLength; i++) {
+            BatchExecutedClaim calldata _claim = _claims.batchExecutedClaims[i];
+            if (!claims.isChainRegistered(_claim.chainId)) {
+                revert ChainIsNotRegistered(_claim.chainId);
+            }
+
+            _submitClaimsBEC(_claim, _caller);
+        }
+
+        for (uint i; i < batchExecutionFailedClaimsLength; i++) {
+            BatchExecutionFailedClaim calldata _claim = _claims.batchExecutionFailedClaims[i];
+            if (!claims.isChainRegistered(_claim.chainId)) {
+                revert ChainIsNotRegistered(_claim.chainId);
+            }
+
+            _submitClaimsBEFC(_claim, _caller);
+        }
+
+        for (uint i; i < refundRequestClaimsLength; i++) {
+            RefundRequestClaim calldata _claim = _claims.refundRequestClaims[i];
+            uint8 originChainId = _claim.originChainId;
+            if (!claims.isChainRegistered(originChainId)) {
+                revert ChainIsNotRegistered(originChainId);
+            }
+
+            _submitClaimsRRC(_claim, i, _caller);
+        }
+        for (uint i; i < hotWalletIncrementClaimsLength; i++) {
+            HotWalletIncrementClaim calldata _claim = _claims.hotWalletIncrementClaims[i];
+            uint8 chainId = _claim.chainId;
+            if (!claims.isChainRegistered(chainId)) {
+                revert ChainIsNotRegistered(chainId);
+            }
+
+            _submitClaimHWIC(_claim, _caller);
+        }
     }
 
     /// @notice Submits a Bridging Request Claim (BRC) for processing.
@@ -101,7 +189,7 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
     /// @dev The function requires a quorum of validators to approve the claim before proceeding with the transaction.
     /// @dev After quorum is reached, the destination chain's token quantity is reduced, and the source chain's token quantity is increased if it's the first retry.
     /// @dev The function also updates the next timeout block if necessary and sets the confirmed transaction details.
-    function submitClaimsBRC(BridgingRequestClaim calldata _claim, uint256 i, address _caller) external onlyClaims {
+    function _submitClaimsBRC(BridgingRequestClaim calldata _claim, uint256 i, address _caller) internal {
         if (!chainTokens.validateBRC(_claim, i)) {
             return;
         }
@@ -136,7 +224,7 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
     /// @dev If the batch is not a consolidation, the batch’s last transaction nonce is updated, and the next timeout block
     ///      is set based on the current block number.
     /// @dev The claim's corresponding signed batch data is deleted once the claim is processed.
-    function submitClaimsBEC(BatchExecutedClaim calldata _claim, address _caller) external onlyClaims {
+    function _submitClaimsBEC(BatchExecutedClaim calldata _claim, address _caller) internal {
         uint8 chainId = _claim.chainId;
         uint64 batchId = _claim.batchNonceId;
 
@@ -181,7 +269,7 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
     /// has already been finalized.
     /// @param _claim The BatchExecutionFailedClaim submitted by a validator. Contains chain and batch identifiers.
     /// @param _caller The address of the validator who submitted the claim.
-    function submitClaimsBEFC(BatchExecutionFailedClaim calldata _claim, address _caller) external onlyClaims {
+    function _submitClaimsBEFC(BatchExecutionFailedClaim calldata _claim, address _caller) internal {
         uint8 chainId = _claim.chainId;
 
         ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
@@ -279,7 +367,7 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
     /// Effects:
     /// - Sets the validator's vote via `claimsHelper`.
     /// - If quorum is reached, updates token balances, confirms the refund transaction, and adjusts timeout blocks.
-    function submitClaimsRRC(RefundRequestClaim calldata _claim, uint256 _index, address _caller) external onlyClaims {
+    function _submitClaimsRRC(RefundRequestClaim calldata _claim, uint256 _index, address _caller) internal {
         // temporary check until automatic refund is implemented
         // once automatic refund is implemented, this check should be that
         // either originTransactionHash or refundTransactionHash should be empty
@@ -322,7 +410,7 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
     /// @param _caller The address of the caller who is submitting the claim.
     /// @dev The claim is validated by ensuring that a quorum of validators has approved it before proceeding.
     /// @dev If the quorum is reached, the specified amount is added to the hot wallet balance for the given chain.
-    function submitClaimHWIC(HotWalletIncrementClaim calldata _claim, address _caller) external onlyClaims {
+    function _submitClaimHWIC(HotWalletIncrementClaim calldata _claim, address _caller) internal {
         if (
             claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
                 validators.getValidatorIndex(_caller) - 1,
@@ -345,8 +433,8 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
         _;
     }
 
-    modifier onlyClaims() {
-        if (msg.sender != address(claims)) revert NotClaims();
+    modifier onlyBridge() {
+        if (msg.sender != bridgeAddress) revert NotClaims();
         _;
     }
 }

@@ -61,18 +61,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev chainId -> nonce
     mapping(uint8 => uint64) public lastBatchedTxNonce;
 
-    /// @notice Maximum number of claims allowed per submission.
-    uint8 private constant MAX_NUMBER_OF_CLAIMS = 32;
-    /// @notice Maximum number of receivers in a BridgingRequestClaim.
-    uint8 private constant MAX_NUMBER_OF_RECEIVERS = 16;
-
     /// @dev Depricated: This mapping has been moved to the BridgingAddresses contract.
     ///      Use BridgingAddresses.isAddrDelegatedToStake instead.
     mapping(uint8 => mapping(uint8 => bool)) private __isAddrDelegatedToStake;
 
     BridgingAddresses private bridgingAddresses;
     ChainTokens private chainTokens;
-    ClaimsProcessor private claimsProcessor;
+    address private claimsProcessorAddress;
     address private registrationAddress;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
@@ -156,7 +151,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         if (!_isContract(_chainTokens) || !_isContract(_claimsProcessorAddress) || !_isContract(_registrationAddress))
             revert NotContractAddress();
         chainTokens = ChainTokens(_chainTokens);
-        claimsProcessor = ClaimsProcessor(_claimsProcessorAddress);
+        claimsProcessorAddress = _claimsProcessorAddress;
         registrationAddress = _registrationAddress;
 
         Chain[] memory registeredChains = IBridge(bridgeAddress).getAllRegisteredChains();
@@ -225,84 +220,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         _createConfirmedTxCore(chainId, TransactionTypesLib.REDISTRIBUTION, 0, 0, ConstantsLib.CHAIN_ID_AS_DESTINATION);
 
         _updateNextTimeoutBlockIfNeeded(chainId, _confirmedTxCount);
-    }
-
-    /// @notice Submit claims from validators for reaching consensus.
-    /// @param _claims Struct containing all types of validator claims.
-    /// @param _caller Address of the validator submitting the claims.
-    function submitClaims(ValidatorClaims calldata _claims, address _caller) external onlyBridge {
-        uint256 bridgingRequestClaimsLength = _claims.bridgingRequestClaims.length;
-        uint256 batchExecutedClaimsLength = _claims.batchExecutedClaims.length;
-        uint256 batchExecutionFailedClaimsLength = _claims.batchExecutionFailedClaims.length;
-        uint256 refundRequestClaimsLength = _claims.refundRequestClaims.length;
-        uint256 hotWalletIncrementClaimsLength = _claims.hotWalletIncrementClaims.length;
-
-        uint256 claimsLength = bridgingRequestClaimsLength +
-            batchExecutedClaimsLength +
-            batchExecutionFailedClaimsLength +
-            refundRequestClaimsLength +
-            hotWalletIncrementClaimsLength;
-
-        if (claimsLength > MAX_NUMBER_OF_CLAIMS) {
-            revert TooManyClaims(claimsLength, MAX_NUMBER_OF_CLAIMS);
-        }
-
-        for (uint i; i < bridgingRequestClaimsLength; i++) {
-            BridgingRequestClaim calldata _claim = _claims.bridgingRequestClaims[i];
-            uint8 sourceChainId = _claim.sourceChainId;
-            uint8 destinationChainId = _claim.destinationChainId;
-
-            if (!isChainRegistered[sourceChainId]) {
-                revert ChainIsNotRegistered(sourceChainId);
-            }
-
-            if (!isChainRegistered[destinationChainId]) {
-                revert ChainIsNotRegistered(destinationChainId);
-            }
-
-            if (_claim.receivers.length > MAX_NUMBER_OF_RECEIVERS) {
-                revert TooManyReceivers(_claim.receivers.length, MAX_NUMBER_OF_RECEIVERS);
-            }
-
-            claimsProcessor.submitClaimsBRC(_claim, i, _caller);
-        }
-
-        for (uint i; i < batchExecutedClaimsLength; i++) {
-            BatchExecutedClaim calldata _claim = _claims.batchExecutedClaims[i];
-            if (!isChainRegistered[_claim.chainId]) {
-                revert ChainIsNotRegistered(_claim.chainId);
-            }
-
-            claimsProcessor.submitClaimsBEC(_claim, _caller);
-        }
-
-        for (uint i; i < batchExecutionFailedClaimsLength; i++) {
-            BatchExecutionFailedClaim calldata _claim = _claims.batchExecutionFailedClaims[i];
-            if (!isChainRegistered[_claim.chainId]) {
-                revert ChainIsNotRegistered(_claim.chainId);
-            }
-
-            claimsProcessor.submitClaimsBEFC(_claim, _caller);
-        }
-
-        for (uint i; i < refundRequestClaimsLength; i++) {
-            RefundRequestClaim calldata _claim = _claims.refundRequestClaims[i];
-            uint8 originChainId = _claim.originChainId;
-            if (!isChainRegistered[originChainId]) {
-                revert ChainIsNotRegistered(originChainId);
-            }
-
-            claimsProcessor.submitClaimsRRC(_claim, i, _caller);
-        }
-        for (uint i; i < hotWalletIncrementClaimsLength; i++) {
-            HotWalletIncrementClaim calldata _claim = _claims.hotWalletIncrementClaims[i];
-            uint8 chainId = _claim.chainId;
-            if (!isChainRegistered[chainId]) {
-                revert ChainIsNotRegistered(chainId);
-            }
-
-            claimsProcessor.submitClaimHWIC(_claim, _caller);
-        }
     }
 
     /// @notice Sets the confirmed transaction details for a bridging request claim.
@@ -679,7 +596,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     }
 
     modifier onlyClaimsProcessor() {
-        if (msg.sender != address(claimsProcessor)) revert NotClaimsProcessor();
+        if (msg.sender != claimsProcessorAddress) revert NotClaimsProcessor();
         _;
     }
 }

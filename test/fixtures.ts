@@ -202,7 +202,7 @@ export async function deployBridgeFixture() {
   await bridge.setAdditionalDependenciesAndSync(
     bridgingAddressesProxy.target,
     chainTokensProxy.target,
-    claimsHelperProxy.target,
+    claimsProcessor.target,
     registrationProxy.target,
     true
   );
@@ -228,6 +228,7 @@ export async function deployBridgeFixture() {
   await claimsHelper.setAdditionalDependenciesAndSync(claimsProcessorProxy.target, registrationProxy.target);
 
   await claimsProcessor.setDependencies(
+    bridge.target,
     admin.target,
     bridgingAddresses.target,
     chainTokens.target,

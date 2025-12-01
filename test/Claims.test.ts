@@ -706,13 +706,6 @@ describe("Claims Contract", function () {
       ).to.be.revertedWithCustomError(bridge, "NotClaimsProcessorOrRegistration");
     });
 
-    it("Should revert claim submition in Claims SC if not called by bridge SC", async function () {
-      await expect(claims.connect(owner).submitClaims(validatorClaimsBRC, owner.address)).to.be.revertedWithCustomError(
-        bridge,
-        "NotBridge"
-      );
-    });
-
     it("getBatchTransactions should return txs from batch", async function () {
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);

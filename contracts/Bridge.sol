@@ -33,7 +33,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
     BridgingAddresses public bridgingAddresses;
     ChainTokens private chainTokens;
-    ClaimsHelper private claimsHelper;
+    ClaimsProcessor private claimsProcessor;
     Registration private registration;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
@@ -91,12 +91,12 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @param _bridgingAddresses The address of the deployed BridgingAddresses contract.
     /// @param _chainTokensAddress The address of the deployed ChainTokens contract.
     /// @param _registrationAddress The address of the deployed Registration contract.
-    /// @param _claimsHelperAddress The address of the deployed ClaimsHelper contract.
+    /// @param _claimsProcessorAddress The address of the deployed ClaimsProcessor contract.
     /// @param isInitialDeployment Indicates whether this call occurs during the initial deployment of the contract. Set to false for upgrades.
     function setAdditionalDependenciesAndSync(
         address _bridgingAddresses,
         address _chainTokensAddress,
-        address _claimsHelperAddress,
+        address _claimsProcessorAddress,
         address _registrationAddress,
         bool isInitialDeployment
     ) external onlyUpgradeAdmin {
@@ -107,11 +107,11 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
 
         if (
             !_isContract(_chainTokensAddress) ||
-            !_isContract(_claimsHelperAddress) ||
+            !_isContract(_claimsProcessorAddress) ||
             !_isContract(_registrationAddress)
         ) revert NotContractAddress();
         chainTokens = ChainTokens(_chainTokensAddress);
-        claimsHelper = ClaimsHelper(_claimsHelperAddress);
+        claimsProcessor = ClaimsProcessor(_claimsProcessorAddress);
         registration = Registration(_registrationAddress);
 
         uint8 _chainsLength = uint8(__chains.length);
@@ -123,7 +123,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Submit claims from validators for reaching consensus.
     /// @param _claims The claims submitted by a validator.
     function submitClaims(ValidatorClaims calldata _claims) external override onlyValidator {
-        claims.submitClaims(_claims, msg.sender);
+        claimsProcessor.submitClaims(_claims, msg.sender);
     }
 
     /// @notice Submit a signed transaction batch for the Cardano chain.
