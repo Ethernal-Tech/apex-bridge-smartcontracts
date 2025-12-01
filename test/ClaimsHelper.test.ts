@@ -18,13 +18,12 @@ describe("ClaimsHelper Contract", function () {
       );
     });
 
-    it("Should revert if ClaimsHelper SC setVotedOnlyIfNeededReturnQuorumReached is not called by SignedBatches SC or Claims SC", async function () {
+    it("Claims Helper SC updateVote should revert if not called by Bridge SC", async function () {
       await expect(
         claimsHelper
           .connect(owner)
-          .setVotedOnlyIfNeededReturnQuorumReached(
-            1,
-            "0x7465737600000000000000000000000000000000000000000000000000000000",
+          .updateVote(
+            "0x7465737400000000000000000000000000000000000000000000000000000000",
             1
           )
       ).to.be.revertedWithCustomError(bridge, "NotClaimsProcessorOrRegistration");

@@ -27,7 +27,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     Slots private slots;
     Validators private validators;
 
-    /// @notice Depricated: Array of registered chains.
+    /// @notice Deprecated: Array of registered chains.
     ///      Use registration.chains instead.
     Chain[] private __chains;
 

@@ -273,8 +273,11 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         uint256 _currentAmount,
         uint256 _index
     ) internal returns (bool) {
-        string memory _assetType = _isCurrency ? "Currency" : "Native Token";
-        emit NotEnoughFunds(string.concat(_prefix, " - ", _assetType), _index, _currentAmount);
+        emit NotEnoughFunds(
+            string.concat(_prefix, " - ", _isCurrency ? "Currency" : "Native Token"),
+            _index,
+            _currentAmount
+        );
         return false;
     }
 
@@ -285,9 +288,8 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         uint256 _currentAmount,
         uint256 _requestedAmount
     ) internal pure {
-        string memory _assetType = _isCurrency ? "Currency" : "Native Token";
         revert DefundRequestTooHigh(
-            string.concat(_prefix, " - ", _assetType),
+            string.concat(_prefix, " - ", _isCurrency ? "Currency" : "Native Token"),
             _chainId,
             _currentAmount,
             _requestedAmount

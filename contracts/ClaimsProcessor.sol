@@ -190,25 +190,29 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
     /// @dev After quorum is reached, the destination chain's token quantity is reduced, and the source chain's token quantity is increased if it's the first retry.
     /// @dev The function also updates the next timeout block if necessary and sets the confirmed transaction details.
     function _submitClaimsBRC(BridgingRequestClaim calldata _claim, uint256 i, address _caller) internal {
+        bytes32 _claimHash = keccak256(abi.encode("BRC", _claim));
+        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
+        uint8 _quorumCount = validators.getQuorumNumberOfValidators();
+        uint256 _votesCount = claimsHelper.numberOfVotes(_claimHash);
+        // if quorum is reached, exit MUST occur before any validation!
+        // @see AD-784 Reactor Bridge SC - Not enough funds event even when quorum is reached
+        if (_votesCount == _quorumCount) {
+            return;
+        }
+
         if (!chainTokens.validateBRC(_claim, i)) {
             return;
         }
 
-        if (
-            claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
-                validators.getValidatorIndex(_caller) - 1,
-                keccak256(abi.encode("BRC", _claim)),
-                validators.getQuorumNumberOfValidators()
-            )
-        ) {
+        bool _isNewVote = claimsHelper.updateVote(_claimHash, _validatorIdx);
+        // check if quorum is reached for the first time
+        if (_isNewVote && _votesCount + 1 == _quorumCount) {
             chainTokens.updateTokensBRC(_claim);
 
             uint8 _destinationChainId = _claim.destinationChainId;
-
             uint256 _confirmedTxCount = claims.getBatchingTxsCount(_destinationChainId);
 
             claims.setConfirmedTransactions(_claim);
-
             claims.updateNextTimeoutBlockIfNeeded(_destinationChainId, _confirmedTxCount);
         }
     }
@@ -233,22 +237,24 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
             batchId
         );
 
+        bytes32 _claimHash = keccak256(abi.encode("BEC", _claim));
+        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
+        uint8 _quorumCount = validators.getQuorumNumberOfValidators();
+        uint256 _votesCount = claimsHelper.numberOfVotes(_claimHash);
+
+        // if quorum is reached, exit MUST occur before any validation!
         // Once a quorum has been reached on either BEC or BEFC for a batch, the first and last transaction
         // nonces for that batch are deleted, thus signaling that the batch has been processed. Any further BEC or BEFC
         // claims for the same batch will not be processed. This is to prevent double processing of the same batch,
         // and also to prevent processing of batches with invalid IDs.
         // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-        if (_confirmedSignedBatch.status != ConstantsLib.IN_PROGRESS) {
+        if (_votesCount == _quorumCount || _confirmedSignedBatch.status != ConstantsLib.IN_PROGRESS) {
             return;
         }
 
-        if (
-            claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
-                validators.getValidatorIndex(_caller) - 1,
-                keccak256(abi.encode("BEC", _claim)),
-                validators.getQuorumNumberOfValidators()
-            )
-        ) {
+        bool _isNewVote = claimsHelper.updateVote(_claimHash, _validatorIdx);
+        // check if quorum is reached for the first time
+        if (_isNewVote && _votesCount + 1 == _quorumCount) {
             // current batch block must be reset in any case because otherwise bridge will be blocked
             claimsHelper.resetCurrentBatchBlock(chainId);
             claimsHelper.setConfirmedSignedBatchStatus(chainId, batchId, ConstantsLib.EXECUTED);
@@ -277,22 +283,24 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
             _claim.batchNonceId
         );
 
+        bytes32 _claimHash = keccak256(abi.encode("BEFC", _claim));
+        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
+        uint8 _quorumCount = validators.getQuorumNumberOfValidators();
+        uint256 _votesCount = claimsHelper.numberOfVotes(_claimHash);
+
+        // if quorum is reached, exit MUST occur before any validation!
         // Once a quorum has been reached on either BEC or BEFC for a batch, the first and last transaction
         // nonces for that batch are deleted, thus signaling that the batch has been processed. Any further BEC or BEFC
         // claims for the same batch will not be processed. This is to prevent double processing of the same batch,
         // and also to prevent processing of batches with invalid IDs.
         // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-        if (_confirmedSignedBatch.status != ConstantsLib.IN_PROGRESS) {
+        if (_votesCount == _quorumCount || _confirmedSignedBatch.status != ConstantsLib.IN_PROGRESS) {
             return;
         }
 
-        if (
-            claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
-                validators.getValidatorIndex(_caller) - 1,
-                keccak256(abi.encode("BEFC", _claim)),
-                validators.getQuorumNumberOfValidators()
-            )
-        ) {
+        bool _isNewVote = claimsHelper.updateVote(_claimHash, _validatorIdx);
+        // check if quorum is reached for the first time
+        if (_isNewVote && _votesCount + 1 == _quorumCount) {
             // current batch block must be reset in any case because otherwise bridge will be blocked
             claimsHelper.resetCurrentBatchBlock(chainId);
             claimsHelper.setConfirmedSignedBatchStatus(chainId, _claim.batchNonceId, ConstantsLib.FAILED);
@@ -375,30 +383,36 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
             revert InvalidData("refundTransactionHash");
         }
 
+        bytes32 _claimHash = keccak256(abi.encode("RRC", _claim));
+        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
+        uint8 _quorumCount = validators.getQuorumNumberOfValidators();
+        uint256 _votesCount = claimsHelper.numberOfVotes(_claimHash);
+        // if quorum is reached, exit MUST occur before any validation!
+        // @see AD-784 Reactor Bridge SC - Not enough funds event even when quorum is reached
+        if (_votesCount == _quorumCount) {
+            return;
+        }
+
+        bool _isDecrementAndFirstTime = _claim.shouldDecrementHotWallet && _claim.retryCounter == 0;
         // check token quantity on source if needed
-        if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0 && !chainTokens.validateRRC(_claim, _index)) {
+        if (_isDecrementAndFirstTime && !chainTokens.validateRRC(_claim, _index)) {
             // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
             return;
         }
 
-        if (
-            claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
-                validators.getValidatorIndex(_caller) - 1,
-                keccak256(abi.encode("RRC", _claim)),
-                validators.getQuorumNumberOfValidators()
-            )
-        ) {
+        // update votes count with current validator
+        bool _isNewVote = claimsHelper.updateVote(_claimHash, _validatorIdx);
+        // check if quorum is reached for the first time
+        if (_isNewVote && _votesCount + 1 == _quorumCount) {
             uint8 originChainId = _claim.originChainId;
-
             uint256 _confirmedTxCount = claims.getBatchingTxsCount(originChainId);
 
-            if (_claim.shouldDecrementHotWallet && _claim.retryCounter == 0) {
+            if (_isDecrementAndFirstTime) {
                 // refund after failing on destination chain, return funds to hot wallet
                 chainTokens.updateTokensRRC(_claim);
             }
 
             claims.setConfirmedTransactionsRRC(_claim);
-
             claims.updateNextTimeoutBlockIfNeeded(originChainId, _confirmedTxCount);
         }
     }
@@ -411,13 +425,19 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
     /// @dev The claim is validated by ensuring that a quorum of validators has approved it before proceeding.
     /// @dev If the quorum is reached, the specified amount is added to the hot wallet balance for the given chain.
     function _submitClaimHWIC(HotWalletIncrementClaim calldata _claim, address _caller) internal {
-        if (
-            claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(
-                validators.getValidatorIndex(_caller) - 1,
-                keccak256(abi.encode("HWIC", _claim)),
-                validators.getQuorumNumberOfValidators()
-            )
-        ) {
+        bytes32 _claimHash = keccak256(abi.encode("HWIC", _claim));
+        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
+        uint8 _quorumCount = validators.getQuorumNumberOfValidators();
+        uint256 _votesCount = claimsHelper.numberOfVotes(_claimHash);
+
+        // if quorum is reached, exit MUST occur before any validation!
+        if (_votesCount == _quorumCount) {
+            return;
+        }
+
+        bool _isNewVote = claimsHelper.updateVote(_claimHash, _validatorIdx);
+        // check if quorum is reached for the first time
+        if (_isNewVote && _votesCount + 1 == _quorumCount) {
             chainTokens.updateTokensHWIC(_claim);
         }
     }

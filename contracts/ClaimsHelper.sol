@@ -94,6 +94,23 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         currentBatchBlock[_chainId] = int256(-1);
     }
 
+    /// @notice Update number of votes for specific hash if needed and returns true if update was executed
+    /// @dev Update number of votes for specific hash if needed and returns true if update was executed
+    /// @param _hash hash
+    /// @param _validatorIdx index of validator
+    function updateVote(bytes32 _hash, uint8 _validatorIdx) external onlyClaimsProcessorOrRegistration returns (bool) {
+        uint256 _bitmapValue = bitmap[_hash];
+        uint256 _newBitmapValue = _bitmapValue | (1 << _validatorIdx);
+
+        if (_newBitmapValue == _bitmapValue) {
+            return false;
+        }
+
+        bitmap[_hash] = _newBitmapValue;
+
+        return true;
+    }
+
     /// @notice Stores a confirmed signed batch for a specific destination chain and batch ID.
     /// @dev Updates both `confirmedSignedBatches` and `currentBatchBlock` mappings.
     /// @param _signedBatch The signed batch data containing metadata and transaction nonce range.
@@ -112,43 +129,24 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         currentBatchBlock[destinationChainId] = int256(block.number);
     }
 
-    /// @notice Registers a vote for a specific claim hash only if the voter hasn't already voted and quorum hasn't been reached.
-    /// @dev Increments the vote count if conditions are met and returns whether the quorum is now reached.
-    /// @param _validatorIdx The index of validator in the validator set.
-    /// @param _hash The unique hash representing the claim being voted on.
-    /// @param _quorumCnt The number of votes required to reach quorum.
-    /// @return True if quorum has been reached after this vote; false otherwise.
-    function setVotedOnlyIfNeededReturnQuorumReached(
-        uint8 _validatorIdx,
-        bytes32 _hash,
-        uint256 _quorumCnt
-    ) external onlyClaimsProcessorOrRegistration returns (bool) {
+    function hasVoted(bytes32 _hash, uint8 _validatorIndex) external view returns (bool) {
         uint256 _bitmapValue = bitmap[_hash];
-        uint256 _bitmapNewValue = _bitmapValue | (1 << _validatorIdx);
-        uint256 _votesNum;
+        return (_bitmapValue & (1 << _validatorIndex)) != 0;
+    }
+
+    function numberOfVotes(bytes32 _hash) external view returns (uint8) {
+        uint8 _votesNum;
+        uint256 _bitmapValue = bitmap[_hash];
 
         // Brian Kernighan's algorithm
         // @see https://github.com/estarriolvetch/solidity-bits/blob/main/contracts/Popcount.sol
         unchecked {
-            uint256 _bits = _bitmapNewValue;
-            for (_votesNum = 0; _bits != 0; _votesNum++) {
-                _bits &= _bits - 1;
+            for (_votesNum = 0; _bitmapValue != 0; _votesNum++) {
+                _bitmapValue &= _bitmapValue - 1;
             }
         }
 
-        // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-        if (_bitmapValue == _bitmapNewValue || _votesNum > _quorumCnt) {
-            return false;
-        }
-
-        bitmap[_hash] = _bitmapNewValue;
-
-        return _votesNum == _quorumCnt; // true if quorum is reached
-    }
-
-    function hasVoted(bytes32 _hash, uint8 _validatorIndex) external view returns (bool) {
-        uint256 _bitmapValue = bitmap[_hash];
-        return (_bitmapValue & (1 << _validatorIndex)) != 0;
+        return _votesNum;
     }
 
     /// @notice Sets the specified batch entry to a final status.

@@ -183,21 +183,18 @@ contract Registration is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
             revert ChainAlreadyRegistered(_chainId);
         }
 
-        bytes32 chainHash = keccak256(abi.encode(_chainId, _chainType, _tokenQuantity));
+        bytes32 _chainHash = keccak256(abi.encode(_chainId, _chainType, _tokenQuantity));
+        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
 
-        if (claimsHelper.hasVoted(chainHash, validators.getValidatorIndex(_caller) - 1)) {
+        bool _isNewVote = claimsHelper.updateVote(_chainHash, _validatorIdx);
+        if (!_isNewVote) {
             revert AlreadyProposed(_chainId);
         }
 
         _validateSignatures(_chainType, _caller, _keySignature, _keyFeeSignature, _validatorChainData);
-
         validators.addValidatorChainData(_chainId, _caller, _validatorChainData);
 
-        uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
-
-        if (
-            claimsHelper.setVotedOnlyIfNeededReturnQuorumReached(_validatorIdx, chainHash, validators.validatorsCount())
-        ) {
+        if (claimsHelper.numberOfVotes(_chainHash) == validators.validatorsCount()) {
             chains.push(Chain(_chainId, _chainType, "", ""));
 
             claims.setChainRegistered(_chainId, _tokenQuantity, _wrappedTokenQuantity);
