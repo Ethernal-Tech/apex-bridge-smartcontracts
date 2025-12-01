@@ -661,6 +661,33 @@ describe("Claims Contract", function () {
       expect(await claims.hasVoted(hash, validators[4].address)).to.be.false;
     });
 
+    it("Should NOT skip if same validator submits Hot Wallet Increment Claim with same amount and chainId but different hash", async function () {
+      const hashTx1 = hashHotWalletIncrementClaim(currentValidatorSetId, validatorClaimsHWIC.hotWalletIncrementClaims[0]);
+
+      const validatorClaimsHWIC2 = {
+        bridgingRequestClaims: [],
+        batchExecutedClaims: [],
+        batchExecutionFailedClaims: [],
+        refundRequestClaims: [],
+        hotWalletIncrementClaims: [
+          {
+            chainId: 1,
+            amount: 100,
+            txHash: "0x7465737400000000000000000000000000000000000000000000000000000001",
+          },
+        ],
+      };
+      const hashTx2 = hashHotWalletIncrementClaim(currentValidatorSetId, validatorClaimsHWIC2.hotWalletIncrementClaims[0]);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC);
+
+      expect(await claimsHelper.numberOfVotes(hashTx1)).to.equal(1);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC2);
+
+      expect(await claimsHelper.numberOfVotes(hashTx2)).to.equal(1);
+    });
+
     it("Should skip if same validator submits the same Hot Wallet Increment Claim twice", async function () {
       const hash = hashHotWalletIncrementClaim(currentValidatorSetId, validatorClaimsHWIC.hotWalletIncrementClaims[0]);
 
