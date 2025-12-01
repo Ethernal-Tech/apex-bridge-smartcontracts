@@ -42,13 +42,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Number of blocks after which timeout is triggered.
     uint8 public timeoutBlocksNumber;
 
-    /// @dev Depricated: This mapping has been moved to the ChainTokens contract.
+    /// @dev Deprecated: This mapping has been moved to the ChainTokens contract.
     ///      Use ChainTokens.chainTokenQuantity instead.
-    mapping(uint8 => uint256) public _chainTokenQuantity;
+    mapping(uint8 => uint256) public __chainTokenQuantity;
 
-    /// @dev Depricated: This mapping has been moved to the ChainTokens contract.
+    /// @dev Deprecated: This mapping has been moved to the ChainTokens contract.
     ///      Use ChainTokens.chainWrappedTokenQuantity instead.
-    mapping(uint8 => uint256) public _chainWrappedTokenQuantity;
+    mapping(uint8 => uint256) public __chainWrappedTokenQuantity;
 
     /// @notice Mapping from chain ID and nonce to confirmed transaction.
     /// @dev BlockchainId -> nonce -> ConfirmedTransaction
@@ -62,7 +62,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @dev chainId -> nonce
     mapping(uint8 => uint64) public lastBatchedTxNonce;
 
-    /// @dev Depricated: This mapping has been moved to the BridgingAddresses contract.
+    /// @dev Deprecated: This mapping has been moved to the BridgingAddresses contract.
     ///      Use BridgingAddresses.isAddrDelegatedToStake instead.
     mapping(uint8 => mapping(uint8 => bool)) private __isAddrDelegatedToStake;
 
@@ -162,8 +162,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
             chainTokens.setInitialTokenQuantities(
                 chainId,
-                _chainTokenQuantity[chainId],
-                _chainWrappedTokenQuantity[chainId]
+                chainTokens.chainTokenQuantity(chainId),
+                chainTokens.chainWrappedTokenQuantity(chainId)
             );
 
             uint64 nextNonce = lastBatchedTxNonce[chainId] + 1;

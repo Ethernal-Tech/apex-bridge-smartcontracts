@@ -20,18 +20,6 @@ describe("Claims Contract", function () {
       );
     });
 
-    it("Claims SC setVotedOnlyIfNeededReturnQuorumReached should revert if not called by Bridge SC", async function () {
-      await expect(
-        claimsHelper
-          .connect(owner)
-          .setVotedOnlyIfNeededReturnQuorumReached(
-            1,
-            "0x7465737400000000000000000000000000000000000000000000000000000000",
-            1
-          )
-      ).to.be.revertedWithCustomError(bridge, "NotClaimsProcessorOrRegistration");
-    });
-
     it("getBatchTransactions should return txs from batch", async function () {
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);

@@ -149,7 +149,7 @@ interface IBridgeStructs {
         uint256 amountWrapped;
     }
 
-    /// @notice Depricated destination address and amount for a transaction output.
+    /// @notice Deprecated destination address and amount for a transaction output.
     struct Receiver {
         uint256 amount;
         uint256 amountWrapped;
