@@ -280,6 +280,7 @@ export async function deployBridgeFixture() {
       {
         chainId: 1,
         amount: 100,
+        txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
       },
     ],
   };
@@ -697,5 +698,5 @@ export function hashRefundRequestClaim(validatorSet: number, claim: any) {
 export function hashHotWalletIncrementClaim(validatorSet: number, claim: any) {
   const abi = new ethers.AbiCoder();
 
-  return ethers.keccak256(abi.encode(["string", "tuple(uint8,uint256)"], ["HWIC", [claim.chainId, claim.amount]]));
+  return ethers.keccak256(abi.encode(["string", "tuple(uint8,uint256,bytes32)"], ["HWIC", [claim.chainId, claim.amount, claim.txHash]]));
 }
