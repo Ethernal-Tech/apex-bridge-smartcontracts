@@ -79,15 +79,16 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     /// @param _index The index of the claim in the batch, used for event emission.
     /// @return bool Returns true if all required balances are sufficient, otherwise false.
     function validateBRC(BridgingRequestClaim calldata _claim, uint256 _index) external returns (bool) {
-        return
-            _validateBalanceCheck(
-                _claim.destinationChainId,
-                _claim.nativeCurrencyAmountDestination,
-                _claim.wrappedTokenAmountDestination,
-                "BRC",
-                _index,
-                false // use emit (no revert)
-            );
+        (bool _isOk, bool _isCurrency, uint256 _totalAmount, ) = _validateBalanceCheck(
+            _claim.destinationChainId,
+            _claim.nativeCurrencyAmountDestination,
+            _claim.wrappedTokenAmountDestination
+        );
+        if (_isOk) {
+            return true;
+        }
+
+        return _handleInsufficientFundsEmit("BRC", _isCurrency, _totalAmount, _index);
     }
 
     /// @notice Validates a Refund Request Claim (RRC) by checking if sufficient balances exist
@@ -98,15 +99,16 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     /// @param _index The index of the claim in the batch, used for event emission.
     /// @return bool Returns true if all required balances are sufficient, otherwise false.
     function validateRRC(RefundRequestClaim calldata _claim, uint256 _index) external returns (bool) {
-        return
-            _validateBalanceCheck(
-                _claim.originChainId,
-                _claim.originAmount,
-                _claim.originWrappedAmount,
-                "RRC",
-                _index,
-                false // use emit (no revert)
-            );
+        (bool _isOk, bool _isCurrency, uint256 _totalAmount, ) = _validateBalanceCheck(
+            _claim.originChainId,
+            _claim.originAmount,
+            _claim.originWrappedAmount
+        );
+        if (_isOk) {
+            return true;
+        }
+
+        return _handleInsufficientFundsEmit("RRC", _isCurrency, _totalAmount, _index);
     }
 
     /// @notice Validates a defund request by ensuring sufficient token, wrapped token balances
@@ -115,18 +117,20 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     ///      This function ensures that defund operations do not proceed if there are not enough funds
     ///      available on the given chain for the requested withdrawal.
     /// @param _chainId The ID of the chain from which funds are being defunded.
-    /// @param _amount The amount of native tokens to defund.
+    /// @param _amount The amount of native tokens t_isOkd.
     /// @param _amountWrapped The amount of wrapped tokens to defund.
-    function validateDefund(uint8 _chainId, uint256 _amount, uint256 _amountWrapped) external {
+    function validateDefund(uint8 _chainId, uint256 _amount, uint256 _amountWrapped) external view {
         // For Defund, we revert instead of returning false
-        _validateBalanceCheck(
+        (bool _isOk, bool _isCurrency, uint256 _totalAmount, uint256 _desiredAmount) = _validateBalanceCheck(
             _chainId,
             _amount,
-            _amountWrapped,
-            "Defund",
-            0,
-            true // use revert
+            _amountWrapped
         );
+        if (_isOk) {
+            return;
+        }
+
+        return _handleInsufficientFundsRevert("Defund", _isCurrency, _chainId, _totalAmount, _desiredAmount);
     }
 
     /// @notice Updates token balances after processing a Bridging Request Claim (BRC).
@@ -138,23 +142,17 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     /// @param _claim The Bridging Request Claim.
     function updateTokensBRC(BridgingRequestClaim calldata _claim) external onlyClaimsProcessor {
         // decrease destination
-        _updateChainBalances(
+        _decChainBalances(
             _claim.destinationChainId,
             _claim.nativeCurrencyAmountDestination,
-            _claim.wrappedTokenAmountDestination,
-            false
+            _claim.wrappedTokenAmountDestination
         );
 
         // if it is the first occurance of Bridging Request Claim, add the amount to the source chain
         // otherwise, it is a retry and we do not add the amount to the source chain, since it has already been done
         // increase source (only once)
         if (_claim.retryCounter == 0) {
-            _updateChainBalances(
-                _claim.sourceChainId,
-                _claim.nativeCurrencyAmountSource,
-                _claim.wrappedTokenAmountSource,
-                true
-            );
+            _incChainBalances(_claim.sourceChainId, _claim.nativeCurrencyAmountSource, _claim.wrappedTokenAmountSource);
         }
     }
 
@@ -168,7 +166,7 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         uint256 totalAmount,
         uint256 totalWrappedAmount
     ) external onlyClaimsProcessor {
-        _updateChainBalances(chainId, totalAmount, totalWrappedAmount, true);
+        _incChainBalances(chainId, totalAmount, totalWrappedAmount);
     }
 
     /// @notice Updates chain token balances after processing a Refund Request Claim (RRC).
@@ -176,14 +174,14 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     ///      being returned as part of a refund operation.
     /// @param _claim The Refund Request Claim.
     function updateTokensRRC(RefundRequestClaim calldata _claim) external onlyClaimsProcessor {
-        _updateChainBalances(_claim.originChainId, _claim.originAmount, _claim.originWrappedAmount, false);
+        _decChainBalances(_claim.originChainId, _claim.originAmount, _claim.originWrappedAmount);
     }
 
     /// @notice Updates chain token balances after processing a Hot Wallet Increment Claim (HWIC).
     /// @dev Increases chain balances to reflect funds being added to the hot wallet.
     /// @param _claim The Hot Wallet Increment Claim.
     function updateTokensHWIC(HotWalletIncrementClaim calldata _claim) external onlyClaimsProcessor {
-        _updateChainBalances(_claim.chainId, _claim.amount, _claim.amountWrapped, true);
+        _incChainBalances(_claim.chainId, _claim.amount, _claim.amountWrapped);
     }
 
     /// @notice Updates chain balances after a Defund operation.
@@ -193,7 +191,7 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     /// @param _amount The amount of native tokens to subtract from the chain balance.
     /// @param _amountWrapped The amount of wrapped tokens to subtract from the chain balance.
     function updateDefund(uint8 _chainId, uint256 _amount, uint256 _amountWrapped) external onlyClaims {
-        _updateChainBalances(_chainId, _amount, _amountWrapped, false);
+        _decChainBalances(_chainId, _amount, _amountWrapped);
     }
 
     /// @notice Sets the initial token and wrapped token quantities for a specific chain.
@@ -222,7 +220,11 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         bool _isIncrease,
         uint256 _chainTokenAmount
     ) external onlyAdminContract {
-        _updateSingle(chainTokenQuantity, _chainId, _chainTokenAmount, _isIncrease);
+        if (_isIncrease) {
+            _incSingle(chainTokenQuantity, _chainId, _chainTokenAmount);
+        } else {
+            _decSingle(chainTokenQuantity, _chainId, _chainTokenAmount);
+        }
     }
 
     /// @notice Updates the wrapped token quantity for a registered chain by increasing or decreasing the amount.
@@ -235,88 +237,83 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         bool _isIncrease,
         uint256 _chainWrappedTokenAmount
     ) external onlyAdminContract {
-        _updateSingle(chainWrappedTokenQuantity, _chainId, _chainWrappedTokenAmount, _isIncrease);
+        if (_isIncrease) {
+            _incSingle(chainWrappedTokenQuantity, _chainId, _chainWrappedTokenAmount);
+        } else {
+            _decSingle(chainWrappedTokenQuantity, _chainId, _chainWrappedTokenAmount);
+        }
     }
 
     function _validateBalanceCheck(
         uint8 _chainId,
         uint256 _tokenAmount,
-        uint256 _wrappedAmount,
-        string memory _prefix,
-        uint256 _index,
-        bool _shouldRevert
-    ) internal returns (bool) {
-        uint256 _currentToken = chainTokenQuantity[_chainId];
-        uint256 _currentWrapped = chainWrappedTokenQuantity[_chainId];
-
+        uint256 _wrappedAmount
+    ) internal view returns (bool, bool, uint256, uint256) {
         // Check native currency balance
+        uint256 _currentToken = chainTokenQuantity[_chainId];
         if (_currentToken < _tokenAmount) {
-            return
-                _handleInsufficientFunds(
-                    _shouldRevert,
-                    _prefix,
-                    "Currency",
-                    _chainId,
-                    _currentToken,
-                    _tokenAmount,
-                    _index
-                );
+            return (false, true, _currentToken, _tokenAmount);
         }
 
         // Check wrapped token balance
+        uint256 _currentWrapped = chainWrappedTokenQuantity[_chainId];
         if (_currentWrapped < _wrappedAmount) {
-            return
-                _handleInsufficientFunds(
-                    _shouldRevert,
-                    _prefix,
-                    "Native Token",
-                    _chainId,
-                    _currentWrapped,
-                    _wrappedAmount,
-                    _index
-                );
+            return (false, false, _currentWrapped, _wrappedAmount);
         }
 
-        return true;
+        return (true, true, 0, 0);
     }
 
     /**
      * @dev Handles insufficient funds either by reverting or emitting an event.
      */
-    function _handleInsufficientFunds(
-        bool _shouldRevert,
+    function _handleInsufficientFundsEmit(
         string memory _prefix,
-        string memory _assetType,
-        uint8 _chainId,
+        bool _isCurrency,
         uint256 _currentAmount,
-        uint256 _requestedAmount,
         uint256 _index
     ) internal returns (bool) {
-        if (_shouldRevert) {
-            revert DefundRequestTooHigh(
-                string.concat(_prefix, " - ", _assetType),
-                _chainId,
-                _currentAmount,
-                _requestedAmount
-            );
-        } else {
-            emit NotEnoughFunds(string.concat(_prefix, " - ", _assetType), _index, _currentAmount);
-            return false;
-        }
+        string memory _assetType = _isCurrency ? "Currency" : "Native Token";
+        emit NotEnoughFunds(string.concat(_prefix, " - ", _assetType), _index, _currentAmount);
+        return false;
     }
 
-    /// @dev Universal internal updater: handles tokens and wrapped tokens.
-    function _updateChainBalances(uint8 _chainId, uint256 _amount, uint256 _wrapped, bool _increase) internal {
-        _updateSingle(chainTokenQuantity, _chainId, _amount, _increase);
-        _updateSingle(chainWrappedTokenQuantity, _chainId, _wrapped, _increase);
+    function _handleInsufficientFundsRevert(
+        string memory _prefix,
+        bool _isCurrency,
+        uint8 _chainId,
+        uint256 _currentAmount,
+        uint256 _requestedAmount
+    ) internal pure {
+        string memory _assetType = _isCurrency ? "Currency" : "Native Token";
+        revert DefundRequestTooHigh(
+            string.concat(_prefix, " - ", _assetType),
+            _chainId,
+            _currentAmount,
+            _requestedAmount
+        );
     }
 
-    /// @dev Safe internal update for a mapping
-    function _updateSingle(mapping(uint8 => uint256) storage store, uint8 key, uint256 amount, bool increase) internal {
-        if (increase) store[key] += amount;
-        else {
-            store[key] -= amount;
-        }
+    /// @dev Universal internal balances increase: handles tokens and wrapped tokens.
+    function _incChainBalances(uint8 _chainId, uint256 _amount, uint256 _wrapped) internal {
+        _incSingle(chainTokenQuantity, _chainId, _amount);
+        _incSingle(chainWrappedTokenQuantity, _chainId, _wrapped);
+    }
+
+    /// @dev Universal internal balances decrease: handles tokens and wrapped tokens.
+    function _decChainBalances(uint8 _chainId, uint256 _amount, uint256 _wrapped) internal {
+        _decSingle(chainTokenQuantity, _chainId, _amount);
+        _decSingle(chainWrappedTokenQuantity, _chainId, _wrapped);
+    }
+
+    /// @dev Safe internal increase for a mapping
+    function _incSingle(mapping(uint8 => uint256) storage store, uint8 key, uint256 amount) internal {
+        store[key] += amount;
+    }
+
+    /// @dev Safe internal decrease for a mapping
+    function _decSingle(mapping(uint8 => uint256) storage store, uint8 key, uint256 amount) internal {
+        store[key] -= amount;
     }
 
     /// @notice Returns the current version of the contract
