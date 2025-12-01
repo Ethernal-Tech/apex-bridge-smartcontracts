@@ -404,9 +404,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
 
         uint256 colCoinsLength = _tokenAmounts.length;
-        console.log("DOSAO");
         for (uint i; i < colCoinsLength; i++) {
-            console.log("USAO");
             confirmedTx.receiversWithToken.push(
                 ReceiverWithToken(
                     _tokenAmounts[i].amountCurrency,

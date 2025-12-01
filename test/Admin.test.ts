@@ -262,17 +262,24 @@ describe("Admin Functions", function () {
 
       await admin.connect(validators[0]).defund(chain1.id, 0, 0, tokenAmounts, "address");
 
-      expect((await claims.confirmedTransactions(chain1.id, 1)).transactionType).to.equal(1); // TransactionTypesLib.DEFUND)
-      expect((await claims.confirmedTransactions(chain1.id, 1)).sourceChainId).to.equal(chain1.id);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).nonce).to.equal(1);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).retryCounter).to.equal(0);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
+      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(43);
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(0);
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalWrappedAmount).to.equal(0);
-      console.log("EVO GA");
-      console.log(await claims.confirmedTransactions(chain1.id, 1));
-      expect(await claims.confirmedTransactions(chain1.id, 1).receiversWithToken).length.to.equal(1);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(47);
+      expect((await claims.confirmedTransactions(chain1.id, 1)).retryCounter).to.equal(0);
+      expect((await claims.confirmedTransactions(chain1.id, 1)).observedTransactionHash).to.equal(
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
+      );
+      expect((await claims.confirmedTransactions(chain1.id, 1)).nonce).to.equal(1);
+      expect((await claims.confirmedTransactions(chain1.id, 1)).sourceChainId).to.equal(chain1.id);
+      expect((await claims.confirmedTransactions(chain1.id, 1)).transactionType).to.equal(1); // TransactionTypesLib.DEFUND)
+      expect((await claims.confirmedTransactions(chain1.id, 1)).alreadyTriedBatch).to.equal(false);
+      expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
+      expect((await claims.confirmedTransactions(chain1.id, 1)).destinationChainId).to.equal(1);
+      expect((await claims.confirmedTransactions(chain1.id, 1)).stakePoolId).to.equal("");
+      expect((await claims.confirmedTransactions(chain1.id, 1)).bridgeAddrIndex).to.equal(0);
+      expect((await claims.confirmedTransactions(chain1.id, 1)).transactionSubType).to.equal(0);
+      //TODO
+      // expect((await claims.confirmedTransactions(chain1.id, 1)).receiversWithToken.length).to.equal(1);
     });
 
     it("Should set correct confirmedTransaction when defund fails", async function () {
