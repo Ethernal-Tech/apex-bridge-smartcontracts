@@ -29,6 +29,10 @@ contract Registration is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @notice Array of registered chains.
     Chain[] private chains;
 
+    /// @notice Mapping to track if a chain is registered.
+    /// @dev BlockchainId -> bool
+    mapping(uint8 => bool) public isChainRegistered;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
@@ -95,7 +99,7 @@ contract Registration is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         string calldata addressMultisig,
         string calldata addressFeePayer
     ) external onlyBridge {
-        if (!claims.isChainRegistered(_chainId)) {
+        if (!isChainRegistered[_chainId]) {
             revert ChainIsNotRegistered(_chainId);
         }
         uint8 _chainsLength = uint8(chains.length);
@@ -150,10 +154,9 @@ contract Registration is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
 
         validators.setValidatorsChainData(_chainId, _validatorData);
 
-        if (!claims.isChainRegistered(_chainId)) {
-            chains.push(_chain);
-            claims.setChainRegistered(_chainId, _tokenQuantity, _wrappedTokenQuantity);
-            bridgingAddresses.initRegisteredChain(_chainId);
+        if (!isChainRegistered[_chainId]) {
+            _setChainRegistered(_chain, _tokenQuantity, _wrappedTokenQuantity);
+
             emit newChainRegistered(_chainId);
         }
     }
@@ -179,7 +182,7 @@ contract Registration is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
             revert InvalidData("InvalidChainId");
         }
 
-        if (claims.isChainRegistered(_chainId)) {
+        if (isChainRegistered[_chainId]) {
             revert ChainAlreadyRegistered(_chainId);
         }
 
@@ -195,14 +198,24 @@ contract Registration is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         validators.addValidatorChainData(_chainId, _caller, _validatorChainData);
 
         if (claimsHelper.numberOfVotes(_chainHash) == validators.validatorsCount()) {
-            chains.push(Chain(_chainId, _chainType, "", ""));
+            Chain memory newChain = Chain(_chainId, _chainType, "", "");
+            _setChainRegistered(newChain, _tokenQuantity, _wrappedTokenQuantity);
 
-            claims.setChainRegistered(_chainId, _tokenQuantity, _wrappedTokenQuantity);
-            bridgingAddresses.initRegisteredChain(_chainId);
             emit newChainRegistered(_chainId);
         } else {
             emit newChainProposal(_chainId, _caller);
         }
+    }
+
+    function _setChainRegistered(Chain memory _chain, uint256 _tokenQuantity, uint256 _wrappedTokenQuantity) internal {
+        chains.push(_chain);
+        uint8 _chainId = _chain.id;
+
+        isChainRegistered[_chainId] = true;
+        chainTokens.setInitialTokenQuantities(_chainId, _tokenQuantity, _wrappedTokenQuantity);
+        claims.setNextTimeoutBlock(_chainId);
+        claimsHelper.resetCurrentBatchBlock(_chainId);
+        bridgingAddresses.initRegisteredChain(_chainId);
     }
 
     /// @dev Validates key and fee signatures based on chain type.
@@ -234,6 +247,10 @@ contract Registration is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
 
     function addChain(Chain calldata _chain) external onlyBridge {
         chains.push(_chain);
+    }
+
+    function setIsChainRegistered(uint8 _chainId) external onlyBridge {
+        isChainRegistered[_chainId] = true;
     }
 
     function getAllRegisteredChains() external view returns (Chain[] memory _chains) {

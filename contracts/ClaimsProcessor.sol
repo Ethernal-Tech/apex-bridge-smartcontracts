@@ -12,6 +12,7 @@ import "./BridgingAddresses.sol";
 import "./ChainTokens.sol";
 import "./Claims.sol";
 import "./ClaimsHelper.sol";
+import "./Registration.sol";
 import "./Validators.sol";
 
 /// @title ClaimsProcessor
@@ -26,11 +27,11 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
     address private bridgeAddress;
     address private upgradeAdmin;
     address private adminContractAddress;
-    address private registrationAddress;
     BridgingAddresses private bridgingAddresses;
     ChainTokens private chainTokens;
     Claims private claims;
     ClaimsHelper private claimsHelper;
+    Registration private registration;
     Validators private validators;
 
     /// @notice Maximum number of retries allowed for claims.
@@ -97,7 +98,7 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
         chainTokens = ChainTokens(_chainTokensAddress);
         claims = Claims(_claimsAddress);
         claimsHelper = ClaimsHelper(_claimsHelperAddress);
-        registrationAddress = _registrationAddress;
+        registration = Registration(_registrationAddress);
         validators = Validators(_validatorsAddress);
     }
 
@@ -126,11 +127,11 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
             uint8 sourceChainId = _claim.sourceChainId;
             uint8 destinationChainId = _claim.destinationChainId;
 
-            if (!claims.isChainRegistered(sourceChainId)) {
+            if (!registration.isChainRegistered(sourceChainId)) {
                 revert ChainIsNotRegistered(sourceChainId);
             }
 
-            if (!claims.isChainRegistered(destinationChainId)) {
+            if (!registration.isChainRegistered(destinationChainId)) {
                 revert ChainIsNotRegistered(destinationChainId);
             }
 
@@ -143,7 +144,7 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
 
         for (uint i; i < batchExecutedClaimsLength; i++) {
             BatchExecutedClaim calldata _claim = _claims.batchExecutedClaims[i];
-            if (!claims.isChainRegistered(_claim.chainId)) {
+            if (!registration.isChainRegistered(_claim.chainId)) {
                 revert ChainIsNotRegistered(_claim.chainId);
             }
 
@@ -152,7 +153,7 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
 
         for (uint i; i < batchExecutionFailedClaimsLength; i++) {
             BatchExecutionFailedClaim calldata _claim = _claims.batchExecutionFailedClaims[i];
-            if (!claims.isChainRegistered(_claim.chainId)) {
+            if (!registration.isChainRegistered(_claim.chainId)) {
                 revert ChainIsNotRegistered(_claim.chainId);
             }
 
@@ -162,7 +163,7 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
         for (uint i; i < refundRequestClaimsLength; i++) {
             RefundRequestClaim calldata _claim = _claims.refundRequestClaims[i];
             uint8 originChainId = _claim.originChainId;
-            if (!claims.isChainRegistered(originChainId)) {
+            if (!registration.isChainRegistered(originChainId)) {
                 revert ChainIsNotRegistered(originChainId);
             }
 
@@ -171,7 +172,7 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
         for (uint i; i < hotWalletIncrementClaimsLength; i++) {
             HotWalletIncrementClaim calldata _claim = _claims.hotWalletIncrementClaims[i];
             uint8 chainId = _claim.chainId;
-            if (!claims.isChainRegistered(chainId)) {
+            if (!registration.isChainRegistered(chainId)) {
                 revert ChainIsNotRegistered(chainId);
             }
 
@@ -265,7 +266,7 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
             }
 
             claims.setLastBatchedTxNonce(chainId, _confirmedSignedBatch.lastTxNonceId);
-            claims.setNextTimeoutBlock(chainId, block.number + claims.timeoutBlocksNumber());
+            claims.setNextTimeoutBlock(chainId);
         }
     }
 
@@ -353,7 +354,7 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
             }
 
             claims.setLastBatchedTxNonce(chainId, _confirmedSignedBatch.lastTxNonceId);
-            claims.setNextTimeoutBlock(chainId, block.number + claims.timeoutBlocksNumber());
+            claims.setNextTimeoutBlock(chainId);
         }
     }
 

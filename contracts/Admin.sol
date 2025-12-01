@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./Claims.sol";
 import "./ChainTokens.sol";
+import "./Registration.sol";
 import "./Utils.sol";
 
 /// @title Admin Contract
@@ -17,11 +18,12 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     Claims private claims;
     BridgingAddresses public bridgingAddresses;
     ChainTokens private chainTokens;
+    Registration private registration;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[48] private __gap;
+    uint256[47] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -60,6 +62,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     function setAdditionalDependenciesAndSync(
         address _bridgingAddresses,
         address _chainTokens,
+        address _registrationAddress,
         bool isInitialDeployment
     ) external onlyUpgradeAdmin {
         if (isInitialDeployment) {
@@ -67,8 +70,9 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
             bridgingAddresses = BridgingAddresses(_bridgingAddresses);
         }
 
-        if (!_isContract(_chainTokens)) revert NotContractAddress();
+        if (!_isContract(_chainTokens) || !_isContract(_registrationAddress)) revert NotContractAddress();
         chainTokens = ChainTokens(_chainTokens);
+        registration = Registration(_registrationAddress);
     }
 
     /// @notice Updates token quantity for a specific chain
@@ -80,7 +84,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         bool _isIncrease,
         uint256 _chainTokenQuantity
     ) external onlyFundAdmin {
-        if (!claims.isChainRegistered(_chainId)) {
+        if (!registration.isChainRegistered(_chainId)) {
             revert ChainIsNotRegistered(_chainId);
         }
 
@@ -104,7 +108,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         bool _isIncrease,
         uint256 _chainWrappedTokenQuantity
     ) external onlyFundAdmin {
-        if (!claims.isChainRegistered(_chainId)) {
+        if (!registration.isChainRegistered(_chainId)) {
             revert ChainIsNotRegistered(_chainId);
         }
 
@@ -166,7 +170,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     /// @param _chainId The ID of the chain whose bridging address count is being updated.
     /// @param bridgingAddrsCount The new number of bridging addresses for the specified chain.
     function updateBridgingAddrsCount(uint8 _chainId, uint8 bridgingAddrsCount) external onlyOwner {
-        if (!claims.isChainRegistered(_chainId)) {
+        if (!registration.isChainRegistered(_chainId)) {
             revert ChainIsNotRegistered(_chainId);
         }
 
@@ -177,7 +181,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     /// @dev Only callable by owner. Reverts if the specified chain is not registered.
     /// @param chainId The ID of the chain where token redistribution should occur.
     function redistributeBridgingAddrsTokens(uint8 chainId) external onlyOwner {
-        if (!claims.isChainRegistered(chainId)) {
+        if (!registration.isChainRegistered(chainId)) {
             revert ChainIsNotRegistered(chainId);
         }
 
@@ -196,7 +200,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         string calldata stakePoolId,
         uint8 transactionSubType
     ) external onlyOwner {
-        if (!claims.isChainRegistered(chainId)) {
+        if (!registration.isChainRegistered(chainId)) {
             revert ChainIsNotRegistered(chainId);
         }
 
@@ -218,7 +222,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.2.0";
+        return "1.2.1";
     }
 
     modifier onlyFundAdmin() {

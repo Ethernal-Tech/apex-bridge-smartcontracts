@@ -58,19 +58,19 @@ describe("Chain Registration", function () {
     });
 
     it("Should add new chain if requested by owner", async function () {
-      expect(await claims.isChainRegistered(chain1.id)).to.be.false;
+      expect(await registration.isChainRegistered(chain1.id)).to.be.false;
 
       await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
-      expect(await claims.isChainRegistered(chain1.id)).to.be.true;
+      expect(await registration.isChainRegistered(chain1.id)).to.be.true;
       expect(await chainTokens.chainTokenQuantity(chain1.id)).to.be.equal(100);
       expect(await chainTokens.chainWrappedTokenQuantity(chain1.id)).to.be.equal(100);
     });
 
     it("Should update chain if requested by owner and chain already exists", async function () {
-      expect(await claims.isChainRegistered(chain1.id)).to.be.false;
+      expect(await registration.isChainRegistered(chain1.id)).to.be.false;
 
       await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
-      expect(await claims.isChainRegistered(chain1.id)).to.be.true;
+      expect(await registration.isChainRegistered(chain1.id)).to.be.true;
       expect(await bridge.getAllRegisteredChains()).to.have.length(1);
       expect((await bridge.getAllRegisteredChains())[0].id).to.equal(1);
       expect(await chainTokens.chainTokenQuantity(chain1.id)).to.equal(100); //it should not be changed
@@ -84,7 +84,7 @@ describe("Chain Registration", function () {
       temp_validatorAddressChainData[0].data.key[0] = BigInt(10);
 
       await bridge.connect(owner).registerChain(chain1, 10, 10, temp_validatorAddressChainData);
-      expect(await claims.isChainRegistered(chain1.id)).to.be.true;
+      expect(await registration.isChainRegistered(chain1.id)).to.be.true;
       expect(await bridge.getAllRegisteredChains()).to.have.length(1);
       expect((await bridge.getAllRegisteredChains())[0].id).to.equal(1);
       expect(await chainTokens.chainTokenQuantity(chain1.id)).to.equal(100); //it should not be changed
@@ -223,7 +223,7 @@ describe("Chain Registration", function () {
           "0x7465737400000000000000000000000000000000000000000000000000000000"
         );
 
-      expect(await claims.isChainRegistered(chain1.id)).to.be.false;
+      expect(await registration.isChainRegistered(chain1.id)).to.be.false;
 
       await bridge
         .connect(validators[3])
@@ -237,7 +237,7 @@ describe("Chain Registration", function () {
           "0x7465737400000000000000000000000000000000000000000000000000000000"
         );
 
-      expect(await claims.isChainRegistered(chain1.id)).to.be.false;
+      expect(await registration.isChainRegistered(chain1.id)).to.be.false;
 
       await bridge
         .connect(validators[4])
@@ -251,7 +251,7 @@ describe("Chain Registration", function () {
           "0x7465737400000000000000000000000000000000000000000000000000000000"
         );
 
-      expect(await claims.isChainRegistered(chain1.id)).to.be.true;
+      expect(await registration.isChainRegistered(chain1.id)).to.be.true;
       expect(await chainTokens.chainTokenQuantity(chain1.id)).to.be.equal(100);
       expect(await chainTokens.chainWrappedTokenQuantity(chain1.id)).to.be.equal(100);
 
@@ -387,7 +387,7 @@ describe("Chain Registration", function () {
           "0x7465737400000000000000000000000000000000000000000000000000000000"
         );
 
-      expect(await claims.isChainRegistered(chain1.id)).to.be.false;
+      expect(await registration.isChainRegistered(chain1.id)).to.be.false;
 
       await bridge
         .connect(validators[4])
@@ -401,7 +401,7 @@ describe("Chain Registration", function () {
           "0x7465737400000000000000000000000000000000000000000000000000000000"
         );
 
-      expect(await claims.isChainRegistered(chain1.id)).to.be.true;
+      expect(await registration.isChainRegistered(chain1.id)).to.be.true;
     });
 
     it("Should set correct nextTimeoutBlock when chain is registered with Governance", async function () {
@@ -720,13 +720,12 @@ describe("Chain Registration", function () {
   }
 
   let bridge: any;
-  let claimsHelper: any;
   let claims: any;
   let chainTokens: any;
+  let registration: any;
   let owner: any;
   let chain1: any;
   let chain2: any;
-  let registration: any;
   let validatorsc: any;
   let validatorAddressChainData: any;
   let validators: any;
@@ -735,13 +734,12 @@ describe("Chain Registration", function () {
     const fixture = await loadFixture(deployBridgeFixture);
 
     bridge = fixture.bridge;
-    claimsHelper = fixture.claimsHelper;
     claims = fixture.claims;
     chainTokens = fixture.chainTokens;
+    registration = fixture.registration;
     owner = fixture.owner;
     chain1 = fixture.chain1;
     chain2 = fixture.chain2;
-    registration = fixture.registration;
     validatorsc = fixture.validatorsc;
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;

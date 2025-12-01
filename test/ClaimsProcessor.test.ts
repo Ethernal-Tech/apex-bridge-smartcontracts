@@ -43,13 +43,31 @@ describe("Claims Contract", function () {
       expect(await hasVoted(hash, validators[4])).to.be.false;
     });
 
-    it("Should not emit emit event if there is already a quorum on Bridging Request Claim", async function () {
-      const hash = hashBridgeRequestClaim(validatorClaimsBRC.bridgingRequestClaims[0]);
+    it("Should not emit emit NotEnoughFunds event if there is already a quorum on Bridging Request Claim and not enough funds", async function () {
+      await admin.connect(owner).updateChainTokenQuantity(chain2.id, false, 100n);
+      await admin.connect(owner).updateChainWrappedTokenQuantity(chain2.id, false, 100n);
+
+      expect(await chainTokens.chainTokenQuantity(chain2.id)).to.equal(0n);
+      expect(await chainTokens.chainWrappedTokenQuantity(chain2.id)).to.equal(0n);
+
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.emit(
+        chainTokens,
+        "NotEnoughFunds"
+      );
+
+      await admin.connect(owner).updateChainTokenQuantity(chain2.id, true, 100n);
+      await admin.connect(owner).updateChainWrappedTokenQuantity(chain2.id, true, 100n);
+
+      expect(await chainTokens.chainTokenQuantity(chain2.id)).to.equal(100n);
+      expect(await chainTokens.chainWrappedTokenQuantity(chain2.id)).to.equal(100n);
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      expect(await chainTokens.chainTokenQuantity(chain2.id)).to.equal(0n);
+      expect(await chainTokens.chainWrappedTokenQuantity(chain2.id)).to.equal(0n);
 
       await expect(bridge.connect(validators[4]).submitClaims(validatorClaimsBRC)).not.to.emit(
         chainTokens,
@@ -554,6 +572,38 @@ describe("Claims Contract", function () {
       expect(await hasVoted(hash, validators[4])).to.be.false;
     });
 
+    it("Should not emit emit NotEnoughFunds event if there is already a quorum on Refund Request Claim and not enough funds", async function () {
+      const validatorClaimsRRCDecrement = structuredClone(validatorClaimsRRC);
+      validatorClaimsRRCDecrement.refundRequestClaims[0].shouldDecrementHotWallet = true;
+
+      await admin.connect(owner).updateChainTokenQuantity(chain2.id, false, 100n);
+      await admin.connect(owner).updateChainWrappedTokenQuantity(chain2.id, false, 100n);
+
+      expect(await chainTokens.chainTokenQuantity(chain2.id)).to.equal(0n);
+      expect(await chainTokens.chainWrappedTokenQuantity(chain2.id)).to.equal(0n);
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsRRCDecrement)).to.emit(
+        chainTokens,
+        "NotEnoughFunds"
+      );
+
+      await admin.connect(owner).updateChainTokenQuantity(chain2.id, true, 100n);
+      await admin.connect(owner).updateChainWrappedTokenQuantity(chain2.id, true, 100n);
+      expect(await chainTokens.chainTokenQuantity(chain2.id)).to.equal(100n);
+      expect(await chainTokens.chainWrappedTokenQuantity(chain2.id)).to.equal(100n);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsRRCDecrement);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsRRCDecrement);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsRRCDecrement);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsRRCDecrement);
+
+      expect(await chainTokens.chainTokenQuantity(chain2.id)).to.equal(0n);
+      expect(await chainTokens.chainWrappedTokenQuantity(chain2.id)).to.equal(0n);
+      await expect(bridge.connect(validators[4]).submitClaims(validatorClaimsRRCDecrement)).not.to.emit(
+        chainTokens,
+        "NotEnoughFunds"
+      );
+    });
+
     it("Should skip if same validator submits the same Refund Request Claims twice", async function () {
       const hash = hashRefundRequestClaim(validatorClaimsRRC.refundRequestClaims[0]);
 
@@ -700,6 +750,7 @@ describe("Claims Contract", function () {
     });
   });
 
+  let admin: any;
   let bridge: any;
   let claimsHelper: any;
   let claims: any;
@@ -723,6 +774,7 @@ describe("Claims Contract", function () {
   beforeEach(async function () {
     const fixture = await loadFixture(deployBridgeFixture);
 
+    admin = fixture.admin;
     bridge = fixture.bridge;
     claimsHelper = fixture.claimsHelper;
     claims = fixture.claims;

@@ -7,7 +7,7 @@ describe("ClaimsHelper Contract", function () {
     it("Should revert if ClaimsHelper SC resetCurrentBatchBlock is not called by Claims SC", async function () {
       await expect(claimsHelper.connect(owner).resetCurrentBatchBlock(1)).to.be.revertedWithCustomError(
         bridge,
-        "NotClaimsOrClaimsProcessor"
+        "NotClaimsProcessorOrRegistration"
       );
     });
 
@@ -20,12 +20,7 @@ describe("ClaimsHelper Contract", function () {
 
     it("Claims Helper SC updateVote should revert if not called by Bridge SC", async function () {
       await expect(
-        claimsHelper
-          .connect(owner)
-          .updateVote(
-            "0x7465737400000000000000000000000000000000000000000000000000000000",
-            1
-          )
+        claimsHelper.connect(owner).updateVote("0x7465737400000000000000000000000000000000000000000000000000000000", 1)
       ).to.be.revertedWithCustomError(bridge, "NotClaimsProcessorOrRegistration");
     });
   });
