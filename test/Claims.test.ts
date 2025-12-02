@@ -1,15 +1,7 @@
 import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import {
-  BatchType,
-  deployBridgeFixture,
-  hashBridgeRequestClaim,
-  hashBatchExecutedClaim,
-  hashBatchExecutionFailedClaim,
-  hashRefundRequestClaim,
-  hashHotWalletIncrementClaim,
-} from "./fixtures";
+import { BatchType, deployBridgeFixture } from "./fixtures";
 
 describe("Claims Contract", function () {
   describe("Claims getters/setters", function () {

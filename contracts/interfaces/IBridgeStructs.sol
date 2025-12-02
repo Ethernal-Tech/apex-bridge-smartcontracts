@@ -147,6 +147,7 @@ interface IBridgeStructs {
         uint8 chainId;
         uint256 amount;
         uint256 amountWrapped;
+        bytes32 txHash;
     }
 
     /// @notice Deprecated destination address and amount for a transaction output.
