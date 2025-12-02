@@ -1,10 +1,25 @@
 import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { BatchType, deployBridgeFixture } from "./fixtures";
+import {
+  BatchType,
+  deployBridgeFixture,
+  hashBridgeRequestClaim,
+  hashBatchExecutedClaim,
+  hashBatchExecutionFailedClaim,
+  hashRefundRequestClaim,
+  hashHotWalletIncrementClaim,
+} from "./fixtures";
 
 describe("Claims Contract", function () {
   describe("Claims getters/setters", function () {
+    it("Should revert if Claims SC setChainRegistered is not called by Bridge SC", async function () {
+      await expect(claims.connect(owner).setChainRegistered(1, 100, 100)).to.be.revertedWithCustomError(
+        bridge,
+        "NotRegistration"
+      );
+    });
+
     it("getBatchTransactions should return txs from batch", async function () {
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);

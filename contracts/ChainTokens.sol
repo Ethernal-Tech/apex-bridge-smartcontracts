@@ -205,7 +205,7 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         uint8 _chainId,
         uint256 _initialTokenSupply,
         uint256 _initialWrappedTokenSupply
-    ) external onlyClaimsOrRegistration {
+    ) external onlyClaims {
         chainTokenQuantity[_chainId] = _initialTokenSupply;
         chainWrappedTokenQuantity[_chainId] = _initialWrappedTokenSupply;
     }
@@ -339,10 +339,6 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         _;
     }
 
-    modifier onlyClaimsOrRegistration() {
-        if (msg.sender != claimsAddress && msg.sender != registrationAddress) revert NotClaimsOrRegistration();
-        _;
-    }
     modifier onlyClaimsProcessor() {
         if (msg.sender != claimsProcessorAddress) revert NotClaimsProcessor();
         _;

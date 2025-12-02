@@ -90,7 +90,7 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
 
     /// @notice Resets the current batch block for a given chain.
     /// @param _chainId The ID of the chain.
-    function resetCurrentBatchBlock(uint8 _chainId) external onlyClaimsProcessorOrRegistration {
+    function resetCurrentBatchBlock(uint8 _chainId) external onlyClaimsOrClaimsProcessor {
         currentBatchBlock[_chainId] = int256(-1);
     }
 

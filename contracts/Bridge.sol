@@ -11,7 +11,6 @@ import "./BridgingAddresses.sol";
 import "./ChainTokens.sol";
 import "./Claims.sol";
 import "./ClaimsHelper.sol";
-import "./ClaimsProcessor.sol";
 import "./Registration.sol";
 import "./SignedBatches.sol";
 import "./Slots.sol";
@@ -118,7 +117,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         uint8 _chainsLength = uint8(__chains.length);
         for (uint8 i = 0; i < _chainsLength; i++) {
             registration.addChain(__chains[i]);
-            registration.setIsChainRegistered(__chains[i].id);
         }
     }
 
@@ -152,7 +150,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @param _chainId The source chain ID.
     /// @param _blocks Array of Cardano blocks to be recorded.
     function submitLastObservedBlocks(uint8 _chainId, CardanoBlock[] calldata _blocks) external override onlyValidator {
-        if (!registration.isChainRegistered(_chainId)) {
+        if (!claims.isChainRegistered(_chainId)) {
             revert ChainIsNotRegistered(_chainId);
         }
 

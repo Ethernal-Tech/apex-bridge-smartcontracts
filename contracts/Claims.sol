@@ -13,7 +13,6 @@ import "./BridgingAddresses.sol";
 import "./ChainTokens.sol";
 import "./ClaimsHelper.sol";
 import "./ClaimsProcessor.sol";
-import "./Registration.sol";
 import "./Utils.sol";
 import "./Validators.sol";
 
@@ -28,8 +27,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     address private adminContractAddress;
 
-    /// @dev deprecated: This mapping has been moved to the Registration contract.
-    mapping(uint8 => bool) public __isChainRegistered;
+    /// @notice Mapping to track if a chain is registered.
+    /// @dev BlockchainId -> bool
+    mapping(uint8 => bool) public isChainRegistered;
 
     /// @notice Mapping from chain ID to next timeout block number.
     /// @dev BlochchainId -> blockNumber
@@ -67,8 +67,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     BridgingAddresses private bridgingAddresses;
     ChainTokens private chainTokens;
-    Registration private registration;
     address private claimsProcessorAddress;
+    address private registrationAddress;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
@@ -152,7 +152,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             revert NotContractAddress();
         chainTokens = ChainTokens(_chainTokens);
         claimsProcessorAddress = _claimsProcessorAddress;
-        registration = Registration(_registrationAddress);
+        registrationAddress = _registrationAddress;
 
         Chain[] memory registeredChains = IBridge(bridgeAddress).getAllRegisteredChains();
 
@@ -301,10 +301,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     ///      the timeout block has been surpassed, in which case it returns `true`.
     function shouldCreateBatch(uint8 _destinationChain) public view returns (bool) {
         // if not registered chain or batch is already created, return false
-        if (
-            !registration.isChainRegistered(_destinationChain) ||
-            claimsHelper.currentBatchBlock(_destinationChain) != int(-1)
-        ) {
+        if (!isChainRegistered[_destinationChain] || claimsHelper.currentBatchBlock(_destinationChain) != int(-1)) {
             return false;
         }
 
@@ -350,6 +347,24 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
     }
 
+    /// @notice Registers a new chain and initializes its token supply.
+    /// @dev This function is restricted to be called only by the Bridge contract.
+    ///      It marks the chain as registered, sets the initial token quantity,
+    ///      initializes the timeout block, and resets the current batch block.
+    /// @param _chainId The ID of the chain to register.
+    /// @param _initialTokenSupply The initial amount of tokens available on the registered chain.
+    function setChainRegistered(
+        uint8 _chainId,
+        uint256 _initialTokenSupply,
+        uint256 _initialWrappedTokenSupply
+    ) external onlyRegistration {
+        isChainRegistered[_chainId] = true;
+        chainTokens.setInitialTokenQuantities(_chainId, _initialTokenSupply, _initialWrappedTokenSupply);
+
+        nextTimeoutBlock[_chainId] = block.number + timeoutBlocksNumber;
+        claimsHelper.resetCurrentBatchBlock(_chainId);
+    }
+
     /// @notice Initiates a defunding operation by creating a BridgingRequestClaim for a specific chain.
     /// @dev Updates internal state and sets a confirmed transaction.
     /// @param _chainId The ID of the chain from which to defund.
@@ -366,7 +381,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         TokenAmount[] calldata _tokenAmounts,
         string calldata _defundAddress
     ) external onlyAdminContract {
-        if (!registration.isChainRegistered(_chainId)) {
+        if (!isChainRegistered[_chainId]) {
             revert ChainIsNotRegistered(_chainId);
         }
 
@@ -547,11 +562,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         lastBatchedTxNonce[_chainId] = _lastBatchedTxNonce;
     }
 
-    /// @notice sets the next timeout block for a given chain.
-    /// @dev Increments the block number by the timeout blocks number.
-    /// @param _chainId The ID of the chain for which the transaction is being retried.
-    function setNextTimeoutBlock(uint8 _chainId) external onlyClaimsProcessorOrRegistration {
-        nextTimeoutBlock[_chainId] = block.number + timeoutBlocksNumber;
+    function setNextTimeoutBlock(uint8 _chainId, uint256 _nextTimeoutBlock) external onlyClaimsProcessor {
+        nextTimeoutBlock[_chainId] = _nextTimeoutBlock;
     }
 
     /// @notice Returns the current version of the contract
@@ -576,7 +588,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     }
 
     modifier onlyRegistration() {
-        if (msg.sender != address(registration)) revert NotRegistration();
+        if (msg.sender != registrationAddress) revert NotRegistration();
         _;
     }
 
@@ -587,12 +599,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     modifier onlyClaimsProcessor() {
         if (msg.sender != claimsProcessorAddress) revert NotClaimsProcessor();
-        _;
-    }
-
-    modifier onlyClaimsProcessorOrRegistration() {
-        if (msg.sender != claimsProcessorAddress && msg.sender != address(registration))
-            revert NotClaimsOrRegistration();
         _;
     }
 }

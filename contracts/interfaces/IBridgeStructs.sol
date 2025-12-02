@@ -242,7 +242,6 @@ interface IBridgeStructs {
     error NotClaimsOrClaimsProcessor();
     error NotClaimsProcessorOrRegistration();
     error AlreadyProposed(uint8 _chainId);
-    error NotClaimsOrRegistration();
 
     // ------------------------------------------------------------------------
     // Events
