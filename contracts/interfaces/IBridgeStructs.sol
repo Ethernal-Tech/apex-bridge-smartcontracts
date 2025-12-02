@@ -125,6 +125,7 @@ interface IBridgeStructs {
     struct HotWalletIncrementClaim {
         uint8 chainId;
         uint256 amount;
+        bytes32 txHash;
     }
 
     /// @notice Destination address and amount for a transaction output.
