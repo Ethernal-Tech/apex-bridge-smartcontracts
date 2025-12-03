@@ -49,8 +49,8 @@ describe("Confirmed Transactions", function () {
       expect(confirmedTxs[0].blockHeight).to.be.lessThan(
         await claims.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)
       );
-      expect(confirmedTxs[0].receiversWithToken[0].destinationAddress).to.equal(expectedReceiversAddress);
-      expect(confirmedTxs[0].receiversWithToken[0].amount).to.equal(expectedReceiversAmount);
+      expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
+      expect(confirmedTxs[0].receivers[0].amount).to.equal(expectedReceiversAmount);
     });
 
     it("GetConfirmedTransactions should not return more transaction than MAX_NUMBER_OF_TRANSACTIONS", async function () {
@@ -134,21 +134,21 @@ describe("Confirmed Transactions", function () {
       );
       expect(confirmedTxs[0].sourceChainId).to.equal(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId);
       expect(confirmedTxs[0].blockHeight).to.be.lessThan(blockNum);
-      expect(confirmedTxs[0].receiversWithToken[0].destinationAddress).to.equal(expectedReceiversAddress);
-      expect(confirmedTxs[0].receiversWithToken[0].amount).to.equal(expectedReceiversAmount);
-      expect(confirmedTxs[0].receiversWithToken[0].tokenId).to.equal(0);
+      expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
+      expect(confirmedTxs[0].receivers[0].amount).to.equal(expectedReceiversAmount);
+      expect(confirmedTxs[0].receivers[0].tokenId).to.equal(0);
       expect(confirmedTxs[1].nonce).to.equal(2);
       expect(confirmedTxs[1].observedTransactionHash).to.equal(
         validatorClaimsBRC2.bridgingRequestClaims[0].observedTransactionHash
       );
       expect(confirmedTxs[1].sourceChainId).to.equal(validatorClaimsBRC2.bridgingRequestClaims[0].sourceChainId);
       expect(confirmedTxs[1].blockHeight).to.be.lessThan(blockNum);
-      expect(confirmedTxs[1].receiversWithToken[0].destinationAddress).to.equal(expectedReceiversAddress);
-      expect(confirmedTxs[1].receiversWithToken[0].amount).to.equal(expectedReceiversAmount);
-      expect(confirmedTxs[1].receiversWithToken[0].tokenId).to.equal(0);
-      expect(confirmedTxs[1].receiversWithToken[1].destinationAddress).to.equal(expectedReceiversAddress);
-      expect(confirmedTxs[1].receiversWithToken[1].amountWrapped).to.equal(expectedReceiversWrappedAmount);
-      expect(confirmedTxs[1].receiversWithToken[1].tokenId).to.equal(1);
+      expect(confirmedTxs[1].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
+      expect(confirmedTxs[1].receivers[0].amount).to.equal(expectedReceiversAmount);
+      expect(confirmedTxs[1].receivers[0].tokenId).to.equal(0);
+      expect(confirmedTxs[1].receivers[1].destinationAddress).to.equal(expectedReceiversAddress);
+      expect(confirmedTxs[1].receivers[1].amountWrapped).to.equal(expectedReceiversWrappedAmount);
+      expect(confirmedTxs[1].receivers[1].tokenId).to.equal(1);
     });
 
     it("GetConfirmedTransactions should return transactions with appropriate Observed Transaction Hashes", async function () {
@@ -225,8 +225,8 @@ describe("Confirmed Transactions", function () {
       );
       expect(confirmedTxs[0].sourceChainId).to.equal(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId);
       expect(confirmedTxs[0].blockHeight).to.be.lessThan(blockNum);
-      expect(confirmedTxs[0].receiversWithToken[0].destinationAddress).to.equal(expectedReceiversAddress);
-      expect(confirmedTxs[0].receiversWithToken[0].amount).to.equal(expectedReceiversAmount);
+      expect(confirmedTxs[0].receivers[0].destinationAddress).to.equal(expectedReceiversAddress);
+      expect(confirmedTxs[0].receivers[0].amount).to.equal(expectedReceiversAmount);
       expect(confirmedTxs[1].nonce).to.equal(2);
       expect(confirmedTxs[1].observedTransactionHash).to.equal(
         validatorClaimsBRC3.bridgingRequestClaims[0].observedTransactionHash
@@ -251,7 +251,7 @@ describe("Confirmed Transactions", function () {
 
       // Clone and modify refundRequestClaims
       const tempRRC = structuredClone(validatorClaimsRRC);
-      tempRRC.refundRequestClaims[0].tokenAmounts = expectedTokenAmounts.map(t => ({
+      tempRRC.refundRequestClaims[0].tokenAmounts = expectedTokenAmounts.map((t) => ({
         tokenId: t.tokenId,
         amountTokens: t.amountToken,
         amountCurrency: t.amountCurrency,
@@ -282,9 +282,9 @@ describe("Confirmed Transactions", function () {
       expect(tx.blockHeight).to.be.lessThan(blockNum);
 
       // Receivers checks
-      expect(tx.receiversWithToken.length).to.equal(2);
+      expect(tx.receivers.length).to.equal(2);
 
-      tx.receiversWithToken.forEach((receiver: any, idx: any) => {
+      tx.receivers.forEach((receiver: any, idx: any) => {
         expect(receiver.destinationAddress).to.equal(expectedReceiversAddress);
 
         const expected = expectedTokenAmounts[idx];

@@ -168,17 +168,15 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             uint64 nextNonce = lastBatchedTxNonce[chainId] + 1;
             uint64 lastConfirmedNonce = lastConfirmedTxNonce[chainId];
 
-            // Rebuild receiversWithToken for non-executed confirmed transactions
+            // Rebuild receivers for non-executed confirmed transactions
             for (uint64 nonce = nextNonce; nonce <= lastConfirmedNonce; nonce++) {
                 ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nonce];
 
-                uint256 receiversLength = confirmedTx._receivers.length;
+                uint256 receiversLength = confirmedTx.__deprecatedReceivers.length;
                 for (uint256 j; j < receiversLength; j++) {
-                    Receiver storage r = confirmedTx._receivers[j];
+                    Receiver storage r = confirmedTx.__deprecatedReceivers[j];
 
-                    confirmedTx.receiversWithToken.push(
-                        ReceiverWithToken(r.amount, r.amountWrapped, r.destinationAddress, 0)
-                    );
+                    confirmedTx.receivers.push(ReceiverWithToken(r.amount, r.amountWrapped, r.destinationAddress, 0));
                 }
             }
         }
@@ -249,7 +247,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         uint256 receiversLength = _claim.receivers.length;
         for (uint i; i < receiversLength; i++) {
-            confirmedTx.receiversWithToken.push(_claim.receivers[i]);
+            confirmedTx.receivers.push(_claim.receivers[i]);
         }
     }
 
@@ -279,7 +277,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         uint256 colCoinsLength = _claim.tokenAmounts.length;
         for (uint i; i < colCoinsLength; i++) {
-            confirmedTx.receiversWithToken.push(
+            confirmedTx.receivers.push(
                 ReceiverWithToken(
                     _claim.tokenAmounts[i].amountCurrency,
                     _claim.tokenAmounts[i].amountTokens,
@@ -399,12 +397,12 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         confirmedTx.totalAmount = _amount;
         confirmedTx.totalWrappedAmount = _amountWrapped;
         if (_amount > 0 || _amountWrapped > 0) {
-            confirmedTx.receiversWithToken.push(ReceiverWithToken(_amount, _amountWrapped, _defundAddress, 0));
+            confirmedTx.receivers.push(ReceiverWithToken(_amount, _amountWrapped, _defundAddress, 0));
         }
 
         uint256 colCoinsLength = _tokenAmounts.length;
         for (uint i; i < colCoinsLength; i++) {
-            confirmedTx.receiversWithToken.push(
+            confirmedTx.receivers.push(
                 ReceiverWithToken(
                     _tokenAmounts[i].amountCurrency,
                     _tokenAmounts[i].amountTokens,

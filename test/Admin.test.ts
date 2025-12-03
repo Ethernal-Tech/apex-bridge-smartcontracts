@@ -278,8 +278,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).stakePoolId).to.equal("");
       expect((await claims.confirmedTransactions(chain1.id, 1)).bridgeAddrIndex).to.equal(0);
       expect((await claims.confirmedTransactions(chain1.id, 1)).transactionSubType).to.equal(0);
-      //TODO
-      // expect((await claims.confirmedTransactions(chain1.id, 1)).receiversWithToken.length).to.equal(1);
+      expect((await claims.getConfirmedTransaction(chain1.id, 1)).receivers.length).to.equal(1);
     });
 
     it("Should set correct confirmedTransaction when defund fails", async function () {

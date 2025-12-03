@@ -53,13 +53,13 @@ interface IBridgeStructs {
         uint8 sourceChainId;
         uint8 transactionType; // TransactionTypesLib
         bool alreadyTriedBatch;
-        Receiver[] _receivers;
+        Receiver[] __deprecatedReceivers; // Deprecated do not use
         bytes outputIndexes;
         uint8 destinationChainId;
         string stakePoolId;
         uint8 bridgeAddrIndex;
         uint8 transactionSubType; // TransactionTypesLib
-        ReceiverWithToken[] receiversWithToken;
+        ReceiverWithToken[] receivers;
     }
 
     /// @notice Represents a block from the Cardano chain.
