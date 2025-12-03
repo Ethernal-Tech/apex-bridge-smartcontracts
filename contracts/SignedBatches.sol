@@ -6,8 +6,8 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
 import "./interfaces/BatchTypesLib.sol";
-import "./Utils.sol";
 import "./ClaimsHelper.sol";
+import "./Utils.sol";
 import "./Validators.sol";
 
 // @title SignedBatches
@@ -23,7 +23,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
 
     /// @notice Maps batch hash to validator votes information
     /// @dev hash -> SignedBatchVotesInfo represent signatures (bls | multisig+fee) and bitmap
-    mapping(bytes32 => SignedBatchVotesInfo) private votes;
+    mapping(bytes32 => SignedBatchVotesInfo) public votes;
 
     /// @notice Stores the last confirmed batch per destination chain
     /// @dev BlockchainId -> ConfirmedBatch
@@ -80,7 +80,25 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     /// - The batch must have the expected sequential ID.
     /// - The caller must not have already voted on this batch hash.
     /// - If quorum is reached after this vote, the batch is confirmed and stored, and temporary data is cleared.
-    function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller) external onlyBridge {
+    function submitSignedBatch(SignedBatch calldata _signedBatch, address _caller, bool _evmFlag) external onlyBridge {
+        bool valid = _evmFlag
+            ? validators.isBlsSignatureValidByValidatorAddress(
+                _signedBatch.destinationChainId,
+                keccak256(_signedBatch.rawTransaction),
+                _signedBatch.signature,
+                _caller
+            )
+            : validators.areSignaturesValid(
+                _signedBatch.destinationChainId,
+                _signedBatch.rawTransaction,
+                _signedBatch.signature,
+                _signedBatch.feeSignature,
+                _signedBatch.stakeSignature,
+                _caller
+            );
+
+        if (!valid) revert InvalidSignature();
+
         uint8 _destinationChainId = _signedBatch.destinationChainId;
         uint64 _sbId = lastConfirmedBatch[_destinationChainId].id + 1;
 
@@ -112,7 +130,6 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
             return;
         }
 
-        uint256 _quorumCount = validators.getQuorumNumberOfValidators();
         uint256 _numberOfVotes = _votesInfo.signatures.length;
 
         _votesInfo.signatures.push(_signedBatch.signature);
@@ -121,7 +138,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         _votesInfo.bitmap = _bitmapNewValue;
 
         // check if quorum reached (+1 is last vote)
-        if (_numberOfVotes + 1 >= _quorumCount) {
+        if (_numberOfVotes + 1 >= validators.getQuorumNumberOfValidators()) {
             lastConfirmedBatch[_destinationChainId] = ConfirmedBatch(
                 _votesInfo.signatures,
                 _votesInfo.feeSignatures,
@@ -155,18 +172,10 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
         return votes[_hash].signatures.length;
     }
 
-    function hasVoted(bytes32 _hash, address _addr) external view returns (bool) {
-        uint8 _validatorIdx = validators.getValidatorIndex(_addr);
-        if (_validatorIdx == 0) {
-            return false; // address is not a validator
-        }
-        return votes[_hash].bitmap & (1 << (_validatorIdx - 1)) != 0;
-    }
-
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.1.0";
+        return "1.1.1";
     }
 
     modifier onlyBridge() {
@@ -175,7 +184,7 @@ contract SignedBatches is IBridgeStructs, Utils, Initializable, OwnableUpgradeab
     }
 
     modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
+        if (msg.sender != upgradeAdmin) revert NotUpgradeAdmin();
         _;
     }
 }

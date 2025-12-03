@@ -53,12 +53,13 @@ interface IBridgeStructs {
         uint8 sourceChainId;
         uint8 transactionType; // TransactionTypesLib
         bool alreadyTriedBatch;
-        Receiver[] receivers;
+        Receiver[] __deprecatedReceivers; // Deprecated do not use
         bytes outputIndexes;
         uint8 destinationChainId;
         string stakePoolId;
         uint8 bridgeAddrIndex;
         uint8 transactionSubType; // TransactionTypesLib
+        ReceiverWithToken[] receivers;
     }
 
     /// @notice Represents a block from the Cardano chain.
@@ -81,7 +82,7 @@ interface IBridgeStructs {
         // hash of tx on the source chain
         bytes32 observedTransactionHash;
         // key is the address on destination UTXO chain; value is the amount of tokens
-        Receiver[] receivers;
+        ReceiverWithToken[] receivers;
         uint256 nativeCurrencyAmountSource;
         uint256 wrappedTokenAmountSource;
         uint256 nativeCurrencyAmountDestination;
@@ -107,7 +108,7 @@ interface IBridgeStructs {
         bytes32 observedTransactionHash;
         // where the batch execution failed
         uint64 batchNonceId;
-        // chain id where the refund was executed
+        // chain id where the execution failed
         uint8 chainId;
     }
 
@@ -137,6 +138,8 @@ interface IBridgeStructs {
         uint8 destinationChainId;
         // index of bridging address
         uint8 bridgeAddrIndex;
+        // Amounts of tokens to be refunded
+        TokenAmount[] tokenAmounts;
     }
 
     /// @notice A claim to increase the balance of a chain's hot wallet.
@@ -144,13 +147,28 @@ interface IBridgeStructs {
         uint8 chainId;
         uint256 amount;
         uint256 amountWrapped;
+        bytes32 txHash;
     }
 
-    /// @notice Destination address and amount for a transaction output.
+    /// @notice Deprecated destination address and amount for a transaction output.
     struct Receiver {
         uint256 amount;
         uint256 amountWrapped;
         string destinationAddress;
+    }
+
+    /// @notice Destination address and amount for a transaction output.
+    struct ReceiverWithToken {
+        uint256 amount;
+        uint256 amountWrapped;
+        string destinationAddress;
+        uint16 tokenId;
+    }
+
+    struct TokenAmount {
+        uint16 tokenId;
+        uint256 amountCurrency;
+        uint256 amountTokens;
     }
 
     /// @notice Metadata about a chain registered with the bridge.
@@ -192,7 +210,6 @@ interface IBridgeStructs {
     // ------------------------------------------------------------------------
     // Errors
     // ------------------------------------------------------------------------
-    error AlreadyProposed(uint8 _claimTransactionHash);
     error ChainAlreadyRegistered(uint8 _chainId);
     error NotOwner();
     error NotValidator();
@@ -208,7 +225,7 @@ interface IBridgeStructs {
     error InvalidData(string data);
     error ChainIsNotRegistered(uint8 _chainId);
     error InvalidSignature();
-    error DefundRequestTooHigh(uint8 _chainId, uint256 _availableAmount, uint256 _requestedAmount);
+    error DefundRequestTooHigh(string token, uint8 _chainId, uint256 _availableAmount, uint256 _requestedAmount);
     error ZeroAddress();
     error NegativeChainTokenAmount(uint256 _availableAmount, uint256 _decreaseAmount);
     error TooManyReceivers(uint256 _receiversCount, uint256 _maxReceiversCount);
@@ -221,6 +238,11 @@ interface IBridgeStructs {
     error BridgingAddrCountAlreadyInit(uint8 _chainId);
     error AddrNotRegistered(uint8 _chainId, uint8 _bridgeAddrIndex);
     error InvalidStakeTransactionSubType(uint8 _transactionSubType);
+    error NotRegistration();
+    error NotClaimsProcessor();
+    error NotClaimsOrClaimsProcessor();
+    error NotClaimsProcessorOrRegistration();
+    error AlreadyProposed(uint8 _chainId);
 
     // ------------------------------------------------------------------------
     // Events
@@ -228,7 +250,13 @@ interface IBridgeStructs {
     event newChainProposal(uint8 indexed _chainId, address indexed sender);
     event newChainRegistered(uint8 indexed _chainId);
     event NotEnoughFunds(string claimeType, uint256 index, uint256 availableAmount);
-    event ChainDefunded(uint8 _chainId, uint256 _amount);
+    event ChainDefunded(
+        uint8 _chainId,
+        uint256 _amount,
+        uint256 _amountWrapped,
+        TokenAmount[] _tokenAmounts,
+        string _defundAddress
+    );
     event FundAdminChanged(address _newFundAdmin);
     event UpdatedChainTokenQuantity(uint indexed chainId, bool isIncrement, uint256 chainTokenQuantity);
     event UpdatedChainWrappedTokenQuantity(uint indexed chainId, bool isIncrement, uint256 chainWrappedTokenQuantity);

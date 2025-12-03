@@ -24,6 +24,8 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     /// @dev hash(slot, hash) -> bitmap
     mapping(bytes32 => uint256) private bitmap;
 
+    uint8 constant MAX_NUMBER_OF_BLOCKS = 40;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
@@ -66,8 +68,11 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     /// @param _blocks An array of `CardanoBlock` objects containing block metadata to process.
     /// @param _caller The address of the validator submitting the block votes.
     function updateBlocks(uint8 _chainId, CardanoBlock[] calldata _blocks, address _caller) external onlyBridge {
+        if (_blocks.length > MAX_NUMBER_OF_BLOCKS) {
+            revert TooManyBlocks(_blocks.length, MAX_NUMBER_OF_BLOCKS);
+        }
+
         // Check if the caller has already voted for this claim
-        uint256 _quorumCnt = validators.getQuorumNumberOfValidators();
         uint8 _validatorIdx = validators.getValidatorIndex(_caller) - 1;
         uint256 _blocksLength = _blocks.length;
         CardanoBlock memory _lastObservedBlock = lastObservedBlock[_chainId];
@@ -103,7 +108,7 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
                 }
             }
 
-            if (_votesNum >= _quorumCnt) {
+            if (_votesNum >= validators.getQuorumNumberOfValidators()) {
                 _lastObservedBlock = _cblock;
                 // can delete because of check
                 //  if (_cblock.blockSlot <= _lastObservedBlock.blockSlot)
@@ -121,7 +126,7 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.0";
+        return "1.0.1";
     }
 
     modifier onlyBridge() {
@@ -130,7 +135,7 @@ contract Slots is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     }
 
     modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
+        if (msg.sender != upgradeAdmin) revert NotUpgradeAdmin();
         _;
     }
 }
