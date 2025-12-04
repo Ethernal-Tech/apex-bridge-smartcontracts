@@ -1,7 +1,7 @@
 import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { deployBridgeFixture } from "./fixtures";
+import { deployBridgeFixture } from "../test/fixtures";
 import { ZeroAddress } from "ethers";
 
 describe("Chain Registration", function () {

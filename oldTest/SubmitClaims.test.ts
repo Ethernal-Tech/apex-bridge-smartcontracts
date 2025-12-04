@@ -7,7 +7,7 @@ import {
   hashBatchExecutionFailedClaim,
   hashBridgeRequestClaim,
   hashRefundRequestClaim,
-} from "./fixtures";
+} from "../test/fixtures";
 
 describe("Submit Claims", function () {
   describe("Submit new Bridging Request Claim", function () {

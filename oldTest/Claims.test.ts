@@ -8,7 +8,7 @@ import {
   hashRefundRequestClaim,
   hashBatchExecutedClaim,
   hashHotWalletIncrementClaim,
-} from "./fixtures";
+} from "../test/fixtures";
 
 describe("Claims Contract", function () {
   describe("Submit new Bridging Request Claim", function () {

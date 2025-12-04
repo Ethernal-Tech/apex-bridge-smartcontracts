@@ -1,6 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
-import { deployBridgeFixture } from "./fixtures";
+import { deployBridgeFixture } from "../test/fixtures";
 
 describe("Unregistered Chains Contract", function () {
   it("Should revert submit BRC if either source and destination chains are not registered", async function () {

@@ -1,7 +1,7 @@
 import { ZeroAddress } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
-import { deployBridgeFixture } from "./fixtures";
+import { deployBridgeFixture } from "../test/fixtures";
 import { ethers } from "hardhat";
 import { Validators } from "../typechain-types";
 

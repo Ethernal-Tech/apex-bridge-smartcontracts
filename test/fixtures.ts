@@ -1,5 +1,5 @@
-import { ethers } from "hardhat";
 import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin } from "../typechain-types";
+import { ethers as ethersType } from "ethers";
 
 export enum TransactionType {
   NORMAL = 0,
@@ -9,12 +9,16 @@ export enum TransactionType {
   REDISTRIBUTION = 4,
 }
 
-export async function deployBridgeFixture() {
+export async function deployBridgeFixture(hre: any) {
+  const ethers: typeof ethersType = hre.ethers;
+  const connection = await hre.network.connect();
+
   // Contracts are deployed using the first signer/account by default
-  const [owner, validator1, validator2, validator3, validator4, validator5, validator6] = await ethers.getSigners();
+  const [owner, validator1, validator2, validator3, validator4, validator5, validator6] =
+    await connection.ethers.getSigners();
   const validators = [validator1, validator2, validator3, validator4, validator5];
 
-  const hre = require("hardhat");
+  // const hre = require("hardhat");
 
   const Bridge = await ethers.getContractFactory("Bridge");
   const bridgeLogic = await Bridge.deploy();
