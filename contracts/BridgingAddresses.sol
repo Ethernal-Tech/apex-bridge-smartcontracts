@@ -4,11 +4,11 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "./interfaces/IBridge.sol";
 import "./interfaces/IBridgeStructs.sol";
 import "./interfaces/TransactionTypesLib.sol";
-import "./interfaces/IBridge.sol";
-import "./Utils.sol";
 import "./Claims.sol";
+import "./Utils.sol";
 
 /// @title BridgingAddresses Contract
 /// @notice Manages bridging addresses for registered chains.
@@ -26,10 +26,13 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
     /// @dev Mapping: chainId => bridgeAddrIndex => true if delegated, false otherwise.
     mapping(uint8 => mapping(uint8 => bool)) public isAddrDelegatedToStake;
 
+    address private claimsProcessorAddress;
+    address private registrationAddress;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[50] private __gap;
+    uint256[48] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -59,35 +62,35 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
         address _claimsAddress,
         address _adminContractAddress
     ) external onlyOwner {
-        if (!_isContract(_bridgeAddress)) revert NotContractAddress();
-        if (!_isContract(_adminContractAddress)) revert NotContractAddress();
-        if (!_isContract(_claimsAddress)) revert NotContractAddress();
+        if (!_isContract(_bridgeAddress) || !_isContract(_adminContractAddress) || !_isContract(_claimsAddress))
+            revert NotContractAddress();
         bridgeAddress = _bridgeAddress;
         adminContractAddress = _adminContractAddress;
         claims = Claims(_claimsAddress);
     }
 
-    /// @notice Initializes the mapping of registered chains and their bridge address counts.
-    /// @dev Can only be called by the authorized bridge contract.
-    /// @param registeredChains An array of chain configuration structs.
-    function initRegisteredChains(Chain[] calldata registeredChains) external onlyBridge {
-        for (uint8 i; i < registeredChains.length; i++) {
-            _initRegisteredChain(registeredChains[i].id);
-        }
+    /// @notice Sets the external contract dependencies.
+    /// @dev This function can only be called by the upgrade admin. It verifies that the provided address is a contract.
+    /// @param _claimsProcessorAddress The address of the deployed ClaimsProcessor contract.
+    /// @param _registrationAddress The address of the deployed Registration contract.
+    function setAdditionalDependenciesAndSync(
+        address _claimsProcessorAddress,
+        address _registrationAddress
+    ) external onlyUpgradeAdmin {
+        if (!_isContract(_claimsProcessorAddress) || !_isContract(_registrationAddress)) revert NotContractAddress();
+        claimsProcessorAddress = _claimsProcessorAddress;
+        registrationAddress = _registrationAddress;
     }
 
     /// @notice Initializes a single registered chain’s bridging address count.
     /// @dev Can only be called by the bridge. Fails if already initialized.
     /// @param _chainId registered chain id
-    function initRegisteredChain(uint8 _chainId) external onlyBridge {
-        _initRegisteredChain(_chainId);
-    }
-
-    function _initRegisteredChain(uint8 _chainId) internal {
+    function initRegisteredChain(uint8 _chainId) external onlyRegistration {
         // Initialize the count to 1 if not already set (acts as default value)
         if (bridgingAddressesCount[_chainId] != 0) {
             revert BridgingAddrCountAlreadyInit(_chainId);
         }
+
         bridgingAddressesCount[_chainId] = 1;
     }
 
@@ -152,7 +155,11 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
         }
     }
 
-    function updateBridgingAddressState(uint8 _chainId, uint8 _bridgeAddrIndex, bool _state) external onlyClaims {
+    function updateBridgingAddressState(
+        uint8 _chainId,
+        uint8 _bridgeAddrIndex,
+        bool _state
+    ) external onlyClaimsProcessor {
         isAddrDelegatedToStake[_chainId][_bridgeAddrIndex] = _state;
     }
 
@@ -176,26 +183,26 @@ contract BridgingAddresses is IBridgeStructs, Utils, Initializable, OwnableUpgra
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.0";
+        return "1.0.1";
     }
 
-    modifier onlyBridge() {
-        if (msg.sender != bridgeAddress) revert NotBridge();
+    modifier onlyRegistration() {
+        if (msg.sender != registrationAddress) revert NotRegistration();
         _;
     }
 
     modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
-        _;
-    }
-
-    modifier onlyClaims() {
-        if (msg.sender != address(claims)) revert NotClaims();
+        if (msg.sender != upgradeAdmin) revert NotUpgradeAdmin();
         _;
     }
 
     modifier onlyAdminContract() {
         if (msg.sender != adminContractAddress) revert NotAdminContract();
+        _;
+    }
+
+    modifier onlyClaimsProcessor() {
+        if (msg.sender != claimsProcessorAddress) revert NotClaimsProcessor();
         _;
     }
 }

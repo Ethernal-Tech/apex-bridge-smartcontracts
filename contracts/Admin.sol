@@ -4,8 +4,9 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "./Utils.sol";
 import "./Claims.sol";
+import "./ChainTokens.sol";
+import "./Utils.sol";
 
 /// @title Admin Contract
 /// @notice Manages configuration and privileged updates for the bridge system
@@ -15,11 +16,12 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     address public fundAdmin;
     Claims private claims;
     BridgingAddresses public bridgingAddresses;
+    ChainTokens private chainTokens;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[49] private __gap;
+    uint256[48] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -50,12 +52,23 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         claims = Claims(_claimsAddress);
     }
 
-    /// @notice Sets the external BridgingAddresses contract dependency.
+    /// @notice Sets the external contract dependencies.
     /// @dev This function can only be called by the upgrade admin. It verifies that the provided address is a contract.
     /// @param _bridgingAddresses The address of the deployed BridgingAddresses contract.
-    function setBridgingAddrsDependency(address _bridgingAddresses) external onlyUpgradeAdmin {
-        if (!_isContract(_bridgingAddresses)) revert NotContractAddress();
-        bridgingAddresses = BridgingAddresses(_bridgingAddresses);
+    /// @param _chainTokens The address of the deployed ChainTokens contract.
+    /// @param isInitialDeployment Indicates whether this call occurs during the initial deployment of the contract. Set to false for upgrades.
+    function setAdditionalDependenciesAndSync(
+        address _bridgingAddresses,
+        address _chainTokens,
+        bool isInitialDeployment
+    ) external onlyUpgradeAdmin {
+        if (isInitialDeployment) {
+            if (!_isContract(_bridgingAddresses)) revert NotContractAddress();
+            bridgingAddresses = BridgingAddresses(_bridgingAddresses);
+        }
+
+        if (!_isContract(_chainTokens)) revert NotContractAddress();
+        chainTokens = ChainTokens(_chainTokens);
     }
 
     /// @notice Updates token quantity for a specific chain
@@ -67,7 +80,18 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         bool _isIncrease,
         uint256 _chainTokenQuantity
     ) external onlyFundAdmin {
-        claims.updateChainTokenQuantity(_chainId, _isIncrease, _chainTokenQuantity);
+        if (!claims.isChainRegistered(_chainId)) {
+            revert ChainIsNotRegistered(_chainId);
+        }
+
+        if (!_isIncrease) {
+            uint256 currentQuantity = chainTokens.chainTokenQuantity(_chainId);
+            if (currentQuantity < _chainTokenQuantity) {
+                revert NegativeChainTokenAmount(currentQuantity, _chainTokenQuantity);
+            }
+        }
+
+        chainTokens.updateChainTokenQuantity(_chainId, _isIncrease, _chainTokenQuantity);
         emit UpdatedChainTokenQuantity(_chainId, _isIncrease, _chainTokenQuantity);
     }
 
@@ -80,26 +104,39 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         bool _isIncrease,
         uint256 _chainWrappedTokenQuantity
     ) external onlyFundAdmin {
-        claims.updateChainWrappedTokenQuantity(_chainId, _isIncrease, _chainWrappedTokenQuantity);
+        if (!claims.isChainRegistered(_chainId)) {
+            revert ChainIsNotRegistered(_chainId);
+        }
+
+        if (!_isIncrease) {
+            uint256 currentWrappedQuantity = chainTokens.chainWrappedTokenQuantity(_chainId);
+            if (currentWrappedQuantity < _chainWrappedTokenQuantity) {
+                revert NegativeChainTokenAmount(currentWrappedQuantity, _chainWrappedTokenQuantity);
+            }
+        }
+
+        chainTokens.updateChainWrappedTokenQuantity(_chainId, _isIncrease, _chainWrappedTokenQuantity);
         emit UpdatedChainWrappedTokenQuantity(_chainId, _isIncrease, _chainWrappedTokenQuantity);
     }
 
-    function getChainTokenQuantity(uint8 _chainId) external view returns (uint256) {
-        return claims.chainTokenQuantity(_chainId);
-    }
-
-    function getChainWrappedTokenQuantity(uint8 _chainId) external view returns (uint256) {
-        return claims.chainWrappedTokenQuantity(_chainId);
-    }
-
+    /// @notice Initiates a defund operation for a specific chain
+    /// @dev Calls the Claims contract to perform the defund and then emits {ChainDefunded}
+    /// @param _chainId ID of the chain to defund
+    /// @param _amount Amount of native token to defund
+    /// @param _amountWrapped Amount of wrapped token to defund
+    /// @param _tokenAmounts Identifier of the non-wrapped tokens and amounts used in the defund
+    /// @param _defundAddress Destination address (as string) where funds will be sent
+    /// Requirements:
+    /// - Caller must be authorized as Fund Admin (`onlyFundAdmin`)
     function defund(
         uint8 _chainId,
         uint256 _amount,
         uint256 _amountWrapped,
+        TokenAmount[] calldata _tokenAmounts,
         string calldata _defundAddress
     ) external onlyFundAdmin {
-        claims.defund(_chainId, _amount, _amountWrapped, _defundAddress);
-        emit ChainDefunded(_chainId, _amount);
+        claims.defund(_chainId, _amount, _amountWrapped, _tokenAmounts, _defundAddress);
+        emit ChainDefunded(_chainId, _amount, _amountWrapped, _tokenAmounts, _defundAddress);
     }
 
     /// @notice Sets a new fund admin
@@ -170,10 +207,18 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         bridgingAddresses.stakeAddressOperation(chainId, bridgeAddrIndex, stakePoolId, transactionSubType);
     }
 
+    function getChainTokenQuantity(uint8 _chainId) external view returns (uint256) {
+        return chainTokens.chainTokenQuantity(_chainId);
+    }
+
+    function getChainWrappedTokenQuantity(uint8 _chainId) external view returns (uint256) {
+        return chainTokens.chainWrappedTokenQuantity(_chainId);
+    }
+
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.1.0";
+        return "1.2.0";
     }
 
     modifier onlyFundAdmin() {

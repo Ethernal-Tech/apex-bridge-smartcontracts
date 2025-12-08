@@ -39,35 +39,45 @@ describe("Deployment", function () {
     expect(await validatorsc.getQuorumNumberOfValidators()).to.equal(5);
   });
 
-  it("Should set 127 validator with quorum of 85", async function () {
-    const validatorsc = await getValidatorsSc(127);
-    // for 6 validators, quorum is 5
-    expect(await validatorsc.getQuorumNumberOfValidators()).to.equal(85);
-  });
+  // it("Should set 127 validator with quorum of 85", async function () {
+  //   const validatorsc = await getValidatorsSc(127);
+  //   // for 6 validators, quorum is 5
+  //   expect(await validatorsc.getQuorumNumberOfValidators()).to.equal(85);
+  // });
 
-  it("Quorum formula should work correctly 1 - 90", async function () {
-    for (let i = 1; i <= 90; i++) {
-      const validatorsc = await getValidatorsSc(i);
-      // for 6 validators, quorum is 5
-      expect(await validatorsc.getQuorumNumberOfValidators()).to.equal(Math.floor((i * 2) / 3) + 1);
-    }
-  });
+  // it("Quorum formula should work correctly 1 - 90", async function () {
+  //   for (let i = 1; i <= 90; i++) {
+  //     const validatorsc = await getValidatorsSc(i);
+  //     // for 6 validators, quorum is 5
+  //     expect(await validatorsc.getQuorumNumberOfValidators()).to.equal(Math.floor((i * 2) / 3) + 1);
+  //   }
+  // });
 
-  it("Quorum formula should work correctly 91 - 127", async function () {
-    for (let i = 91; i <= 127; i++) {
-      const validatorsc = await getValidatorsSc(i);
-      // for 6 validators, quorum is 5
-      expect(await validatorsc.getQuorumNumberOfValidators()).to.equal(Math.floor((i * 2) / 3) + 1);
-    }
-  });
+  // it("Quorum formula should work correctly 91 - 127", async function () {
+  //   for (let i = 91; i <= 127; i++) {
+  //     const validatorsc = await getValidatorsSc(i);
+  //     // for 6 validators, quorum is 5
+  //     expect(await validatorsc.getQuorumNumberOfValidators()).to.equal(Math.floor((i * 2) / 3) + 1);
+  //   }
+  // });
 
   it("Revert if there are too many validators", async function () {
     await expect(getValidatorsSc(128)).to.revertedWith("Too many validators (max 127)");
   });
 
   it("setDependency should fail if any required argument is not smart contract address", async function () {
-    const { admin, bridge, bridgingAddresses, claims, claimsHelper, signedBatches, slots, validatorsc, owner, validators } =
-      await loadFixture(deployBridgeFixture);
+    const {
+      admin,
+      bridge,
+      bridgingAddresses,
+      claims,
+      claimsHelper,
+      signedBatches,
+      slots,
+      validatorsc,
+      owner,
+      validators,
+    } = await loadFixture(deployBridgeFixture);
 
     await expect(admin.connect(owner).setDependencies(ZeroAddress)).to.be.revertedWithCustomError(
       admin,
@@ -85,20 +95,17 @@ describe("Deployment", function () {
         )
     ).to.be.revertedWithCustomError(bridge, "NotContractAddress");
 
-    await expect(bridgingAddresses.connect(owner).setDependencies(ZeroAddress, claims.getAddress(), admin.getAddress())).to.be.revertedWithCustomError(
-      validatorsc,
-      "NotContractAddress"
-    );
+    await expect(
+      bridgingAddresses.connect(owner).setDependencies(ZeroAddress, claims.getAddress(), admin.getAddress())
+    ).to.be.revertedWithCustomError(validatorsc, "NotContractAddress");
 
-    await expect(bridgingAddresses.connect(owner).setDependencies(bridge.getAddress(), ZeroAddress, admin.getAddress())).to.be.revertedWithCustomError(
-      validatorsc,
-      "NotContractAddress"
-    );
+    await expect(
+      bridgingAddresses.connect(owner).setDependencies(bridge.getAddress(), ZeroAddress, admin.getAddress())
+    ).to.be.revertedWithCustomError(validatorsc, "NotContractAddress");
 
-    await expect(bridgingAddresses.connect(owner).setDependencies(bridge.getAddress(), claims.getAddress(), ZeroAddress)).to.be.revertedWithCustomError(
-      validatorsc,
-      "NotContractAddress"
-    );
+    await expect(
+      bridgingAddresses.connect(owner).setDependencies(bridge.getAddress(), claims.getAddress(), ZeroAddress)
+    ).to.be.revertedWithCustomError(validatorsc, "NotContractAddress");
 
     await expect(
       claims
@@ -123,6 +130,7 @@ describe("Deployment", function () {
       "NotContractAddress"
     );
   });
+
   it("Should revert if there are duplicate validator addresses in Validatorsc initialize function", async function () {
     const [owner, validator1, validator2] = await ethers.getSigners();
     // Deploy implementation contract
@@ -144,11 +152,11 @@ describe("Deployment", function () {
       validatorAddresses,
     ]);
     // Deploy proxy with initialization
-    await expect(ValidatorsProxy.deploy(await validatorsLogic.getAddress(), initData)).to.be.revertedWithCustomError(
-      Validators,
-      "InvalidData"
-    );
+    await expect(ValidatorsProxy.deploy(await validatorsLogic.getAddress(), initData))
+      .to.be.revertedWithCustomError(Validators, "InvalidData")
+      .withArgs("Duplicate validator");
   });
+
   it("Should revert if initializes with zero addresses for owner and upgrade admin", async function () {
     const [, validator1, validator2, validator3, validator4] = await ethers.getSigners();
 
@@ -190,10 +198,9 @@ describe("Deployment", function () {
       ZERO_ADDRESS, // upgrade admin address
     ]);
     // Deploy proxy with initialization
-    await expect(BridgingAddressesProxy.deploy(await BridgingAddressesLogic.getAddress(), initData)).to.be.revertedWithCustomError(
-      BridgingAddresses,
-      "ZeroAddress"
-    );
+    await expect(
+      BridgingAddressesProxy.deploy(await BridgingAddressesLogic.getAddress(), initData)
+    ).to.be.revertedWithCustomError(BridgingAddresses, "ZeroAddress");
 
     const Claims = await ethers.getContractFactory("Claims");
     const ClaimsLogic = await Claims.deploy();

@@ -1,5 +1,17 @@
 import { ethers } from "hardhat";
-import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin, BridgingAddresses } from "../typechain-types";
+import {
+  Admin,
+  Bridge,
+  BridgingAddresses,
+  ChainTokens,
+  Claims,
+  ClaimsHelper,
+  ClaimsProcessor,
+  Registration,
+  SignedBatches,
+  Slots,
+  Validators,
+} from "../typechain-types";
 import { setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 
 export enum BatchType {
@@ -30,10 +42,11 @@ export async function deployBridgeFixture() {
   await setCode("0x0000000000000000000000000000000000002060", PRECOMPILE_MOCK);
 
   // Contracts are deployed using the first signer/account by default
-  const [owner, validator1, validator2, validator3, validator4, validator5, validator6] = await ethers.getSigners();
+  const [owner, validator1, validator2, validator3, validator4, validator5] = await ethers.getSigners();
   const validators = [validator1, validator2, validator3, validator4, validator5];
 
-  const hre = require("hardhat");
+  const Admin = await ethers.getContractFactory("Admin");
+  const adminLogic = await Admin.deploy();
 
   const Bridge = await ethers.getContractFactory("Bridge");
   const bridgeLogic = await Bridge.deploy();
@@ -41,11 +54,20 @@ export async function deployBridgeFixture() {
   const BridgingAddresses = await ethers.getContractFactory("BridgingAddresses");
   const bridgingAddressesLogic = await BridgingAddresses.deploy();
 
-  const ClaimsHelper = await ethers.getContractFactory("ClaimsHelper");
-  const claimsHelperLogic = await ClaimsHelper.deploy();
+  const ChainTokens = await ethers.getContractFactory("ChainTokens");
+  const chainTokensLogic = await ChainTokens.deploy();
 
   const Claims = await ethers.getContractFactory("Claims");
   const claimsLogic = await Claims.deploy();
+
+  const ClaimsHelper = await ethers.getContractFactory("ClaimsHelper");
+  const claimsHelperLogic = await ClaimsHelper.deploy();
+
+  const ClaimsProcessor = await ethers.getContractFactory("ClaimsProcessor");
+  const claimsProcessorLogic = await ClaimsProcessor.deploy();
+
+  const Registration = await ethers.getContractFactory("Registration");
+  const registrationLogic = await Registration.deploy();
 
   const SignedBatches = await ethers.getContractFactory("SignedBatches");
   const signedBatchesLogic = await SignedBatches.deploy();
@@ -56,18 +78,23 @@ export async function deployBridgeFixture() {
   const Validators = await ethers.getContractFactory("Validators");
   const validatorscLogic = await Validators.deploy();
 
-  const Admin = await ethers.getContractFactory("Admin");
-  const adminLogic = await Admin.deploy();
-
   // deployment of contract proxy
+  const AdminProxy = await ethers.getContractFactory("ERC1967Proxy");
   const BridgeProxy = await ethers.getContractFactory("ERC1967Proxy");
   const BridgingAddressesProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const ClaimsHelperProxy = await ethers.getContractFactory("ERC1967Proxy");
+  const ChainTokensProxy = await ethers.getContractFactory("ERC1967Proxy");
   const ClaimsProxy = await ethers.getContractFactory("ERC1967Proxy");
+  const ClaimsHelperProxy = await ethers.getContractFactory("ERC1967Proxy");
+  const ClaimsProcessorProxy = await ethers.getContractFactory("ERC1967Proxy");
+  const RegistrationProxy = await ethers.getContractFactory("ERC1967Proxy");
   const SignedBatchesProxy = await ethers.getContractFactory("ERC1967Proxy");
   const SlotsProxy = await ethers.getContractFactory("ERC1967Proxy");
   const ValidatorscProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const AdminProxy = await ethers.getContractFactory("ERC1967Proxy");
+
+  const adminProxy = await AdminProxy.deploy(
+    await adminLogic.getAddress(),
+    Admin.interface.encodeFunctionData("initialize", [owner.address, owner.address])
+  );
 
   const bridgeProxy = await BridgeProxy.deploy(
     await bridgeLogic.getAddress(),
@@ -79,14 +106,29 @@ export async function deployBridgeFixture() {
     BridgingAddresses.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
+  const chainTokensProxy = await ChainTokensProxy.deploy(
+    await chainTokensLogic.getAddress(),
+    ChainTokens.interface.encodeFunctionData("initialize", [owner.address, owner.address])
+  );
+
+  const claimsProxy = await ClaimsProxy.deploy(
+    await claimsLogic.getAddress(),
+    Claims.interface.encodeFunctionData("initialize", [owner.address, owner.address, 2, 10])
+  );
+
   const claimsHelperProxy = await ClaimsHelperProxy.deploy(
     await claimsHelperLogic.getAddress(),
     ClaimsHelper.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
-  const claimsProxy = await ClaimsProxy.deploy(
-    await claimsLogic.getAddress(),
-    Claims.interface.encodeFunctionData("initialize", [owner.address, owner.address, 2, 5])
+  const claimsProcessorProxy = await ClaimsProcessorProxy.deploy(
+    await claimsProcessorLogic.getAddress(),
+    ClaimsProcessor.interface.encodeFunctionData("initialize", [owner.address, owner.address])
+  );
+
+  const registrationProxy = await RegistrationProxy.deploy(
+    await registrationLogic.getAddress(),
+    Registration.interface.encodeFunctionData("initialize", [owner.address, owner.address])
   );
 
   const signedBatchesProxy = await SignedBatchesProxy.deploy(
@@ -112,23 +154,30 @@ export async function deployBridgeFixture() {
     Validators.interface.encodeFunctionData("initialize", [owner.address, owner.address, validatorsAddresses])
   );
 
-  const adminProxy = await AdminProxy.deploy(
-    await adminLogic.getAddress(),
-    Admin.interface.encodeFunctionData("initialize", [owner.address, owner.address])
-  );
-
   //casting proxy contracts to contract logic
+  const AdminDeployed = await ethers.getContractFactory("Admin");
+  const admin = AdminDeployed.attach(adminProxy.target) as Admin;
+
   const BridgeDeployed = await ethers.getContractFactory("Bridge");
   const bridge = BridgeDeployed.attach(bridgeProxy.target) as Bridge;
 
   const BridgingAddressesDeployed = await ethers.getContractFactory("BridgingAddresses");
   const bridgingAddresses = BridgingAddressesDeployed.attach(bridgingAddressesProxy.target) as BridgingAddresses;
 
-  const ClaimsHelperDeployed = await ethers.getContractFactory("ClaimsHelper");
-  const claimsHelper = ClaimsHelperDeployed.attach(claimsHelperProxy.target) as ClaimsHelper;
+  const ChainTokensDeployed = await ethers.getContractFactory("ChainTokens");
+  const chainTokens = ChainTokensDeployed.attach(chainTokensProxy.target) as ChainTokens;
 
   const ClaimsDeployed = await ethers.getContractFactory("Claims");
   const claims = ClaimsDeployed.attach(claimsProxy.target) as Claims;
+
+  const ClaimsHelperDeployed = await ethers.getContractFactory("ClaimsHelper");
+  const claimsHelper = ClaimsHelperDeployed.attach(claimsHelperProxy.target) as ClaimsHelper;
+
+  const ClaimsProcessorDeployed = await ethers.getContractFactory("ClaimsProcessor");
+  const claimsProcessor = ClaimsProcessorDeployed.attach(claimsProcessorProxy.target) as ClaimsProcessor;
+
+  const RegistrationDeployed = await ethers.getContractFactory("Registration");
+  const registration = RegistrationDeployed.attach(registrationProxy.target) as Registration;
 
   const SignedBatchesDeployed = await ethers.getContractFactory("SignedBatches");
   const signedBatches = SignedBatchesDeployed.attach(signedBatchesProxy.target) as SignedBatches;
@@ -139,8 +188,9 @@ export async function deployBridgeFixture() {
   const ValidatorsDeployed = await ethers.getContractFactory("Validators");
   const validatorsc = ValidatorsDeployed.attach(validatorsProxy.target) as Validators;
 
-  const AdminDeployed = await ethers.getContractFactory("Admin");
-  const admin = AdminDeployed.attach(adminProxy.target) as Admin;
+  await admin.setDependencies(claims.target);
+
+  await admin.setAdditionalDependenciesAndSync(bridgingAddressesProxy.target, chainTokensProxy.target, true);
 
   await bridge.setDependencies(
     claimsProxy.target,
@@ -149,29 +199,63 @@ export async function deployBridgeFixture() {
     validatorsProxy.target
   );
 
+  await bridge.setAdditionalDependenciesAndSync(
+    bridgingAddressesProxy.target,
+    chainTokensProxy.target,
+    claimsProcessor.target,
+    registrationProxy.target,
+    true
+  );
+
   await bridgingAddresses.setDependencies(bridge.target, claims.target, admin.target);
 
-  await bridge.setBridgingAddrsDependencyAndSync(
-    bridgingAddressesProxy.target
+  await bridgingAddresses.setAdditionalDependenciesAndSync(claimsProcessor.target, registrationProxy.target);
+
+  await chainTokens.setDependencies(admin.target, bridge.target, claims.target, claimsProcessor.target, registration);
+
+  await claims.setDependencies(bridge.target, claimsHelper.target, validatorsc.target, admin.target);
+
+  await claims.setAdditionalDependenciesAndSync(
+    bridgingAddressesProxy.target,
+    chainTokensProxy.target,
+    claimsProcessorProxy.target,
+    registrationProxy.target,
+    true
   );
 
   await claimsHelper.setDependencies(claims.target, signedBatches.target);
 
-  await claims.setDependencies(bridge.target, claimsHelper.target, validatorsc.target, admin.target);
+  await claimsHelper.setAdditionalDependenciesAndSync(claimsProcessorProxy.target, registrationProxy.target);
 
-  await claims.setBridgingAddrsDependencyAndSync(
-    bridgingAddressesProxy.target
+  await claimsProcessor.setDependencies(
+    bridge.target,
+    admin.target,
+    bridgingAddresses.target,
+    chainTokens.target,
+    claims.target,
+    claimsHelper.target,
+    registration.target,
+    validatorsc.target
   );
 
-  await signedBatches.setDependencies(bridge.target, claimsHelper.target, validatorsc);
+  await registration.setDependencies(
+    bridge.target,
+    bridgingAddresses.target,
+    chainTokens.target,
+    claims.target,
+    claimsHelper.target,
+    validatorsc.target
+  );
+
+  // await registration.setAdditionalDependenciesAndSync();
+
+  await signedBatches.setDependencies(bridge.target, claimsHelper.target, validatorsc.target);
 
   await slots.setDependencies(bridge.target, validatorsc.target);
 
   await validatorsc.setDependencies(bridge.target);
 
-  await admin.setDependencies(claims.target);
-
-  await admin.setBridgingAddrsDependency(bridgingAddressesProxy.target);
+  await validatorsc.setAdditionalDependenciesAndSync(registrationProxy.target);
 
   const chain1 = {
     id: 1,
@@ -191,47 +275,22 @@ export async function deployBridgeFixture() {
     bridgingRequestClaims: [
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        nativeCurrencyAmountSource: 100,
-        wrappedTokenAmountSource: 100,
-        nativeCurrencyAmountDestination: 100,
-        wrappedTokenAmountDestination: 100,
-        retryCounter: 0,
         receivers: [
           {
             amount: 100,
             amountWrapped: 100,
             destinationAddress: "0x123...",
+            tokenId: 0,
           },
         ],
+        nativeCurrencyAmountSource: 100,
+        wrappedTokenAmountSource: 100,
+        nativeCurrencyAmountDestination: 100,
+        wrappedTokenAmountDestination: 100,
+        retryCounter: 0,
         sourceChainId: 1,
         destinationChainId: 2,
         bridgeAddrIndex: 1,
-      },
-    ],
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [],
-    hotWalletIncrementClaims: [],
-  };
-  const validatorClaimsBRCWrapped = {
-    bridgingRequestClaims: [
-      {
-        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        nativeCurrencyAmountSource: 0,
-        wrappedTokenAmountSource: 100,
-        nativeCurrencyAmountDestination: 0,
-        wrappedTokenAmountDestination: 100,
-        retryCounter: 0,
-        receivers: [
-          {
-            amount: 0,
-            amountWrapped: 100,
-            destinationAddress: "0x123...",
-          },
-        ],
-        sourceChainId: 1,
-        destinationChainId: 2,
-        bridgeAddrIndex: 0,
       },
     ],
     batchExecutedClaims: [],
@@ -243,21 +302,22 @@ export async function deployBridgeFixture() {
   const validatorClaimsBRC_bunch32 = {
     bridgingRequestClaims: Array.from({ length: 32 }, (_, i) => ({
       observedTransactionHash: "0x" + Buffer.from(`test${i}`).toString("hex").padEnd(64, "0").slice(0, 64),
-      nativeCurrencyAmountSource: 100,
-      wrappedTokenAmountSource: 0,
-      nativeCurrencyAmountDestination: 100,
-      wrappedTokenAmountDestination: 0,
-      retryCounter: 0,
       receivers: [
         {
           amount: 100 + i,
           amountWrapped: 100 + i,
           destinationAddress: `0x123...${i}`,
+          tokenId: 0,
         },
       ],
+      nativeCurrencyAmountSource: 100,
+      wrappedTokenAmountSource: 0,
+      nativeCurrencyAmountDestination: 100,
+      wrappedTokenAmountDestination: 0,
+      retryCounter: 0,
       sourceChainId: 1,
       destinationChainId: 2,
-      bridgeAddrIndex: 0,
+      bridgeAddrIndex: 1,
     })),
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
@@ -268,77 +328,23 @@ export async function deployBridgeFixture() {
   const validatorClaimsBRC_bunch33 = {
     bridgingRequestClaims: Array.from({ length: 33 }, (_, i) => ({
       observedTransactionHash: "0x" + Buffer.from(`test${i}`).toString("hex").padEnd(64, "0").slice(0, 64),
-      nativeCurrencyAmountSource: 100,
-      wrappedTokenAmountSource: 0,
-      nativeCurrencyAmountDestination: 100,
-      wrappedTokenAmountDestination: 0,
-      retryCounter: 0,
       receivers: [
         {
           amount: 100 + i,
           amountWrapped: 100 + i,
           destinationAddress: `0x123...${i}`,
+          tokenId: 0,
         },
       ],
+      nativeCurrencyAmountSource: 100,
+      wrappedTokenAmountSource: 0,
+      nativeCurrencyAmountDestination: 100,
+      wrappedTokenAmountDestination: 0,
+      retryCounter: 0,
       sourceChainId: 1,
       destinationChainId: 2,
-      bridgeAddrIndex: 0,
+      bridgeAddrIndex: 1,
     })),
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [],
-    hotWalletIncrementClaims: [],
-  };
-
-  const validatorClaimsBRC_confirmedTransactions = {
-    bridgingRequestClaims: [
-      {
-        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        nativeCurrencyAmountSource: 100,
-        wrappedTokenAmountSource: 0,
-        nativeCurrencyAmountDestination: 100,
-        wrappedTokenAmountDestination: 0,
-        retryCounter: 0,
-        receivers: [
-          {
-            amount: 99,
-            destinationAddress: "0x234...",
-            amountWrapped: 0,
-          },
-        ],
-        sourceChainId: 1,
-        destinationChainId: 2,
-        bridgeAddrIndex: 0,
-      },
-    ],
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [],
-    hotWalletIncrementClaims: [],
-  };
-
-  const validatorClaimsBRC_tooManyReceivers = {
-    bridgingRequestClaims: [
-      {
-        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        nativeCurrencyAmountSource: 100,
-        wrappedTokenAmountSource: 0,
-        nativeCurrencyAmountDestination: 100,
-        wrappedTokenAmountDestination: 0,
-        totalAmount: 100,
-        retryCounter: 0,
-        receivers: [
-          ...Array.from({ length: 17 }, (_, i) => ({
-            amount: 99 + i,
-            destinationAddress: `0x123...${(i + 1).toString().padStart(8, "0")}`,
-            amountWrapped: 100 + i,
-          })),
-        ],
-        sourceChainId: 1,
-        destinationChainId: 2,
-        bridgeAddrIndex: 0,
-      },
-    ],
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [],
     refundRequestClaims: [],
@@ -359,40 +365,12 @@ export async function deployBridgeFixture() {
     hotWalletIncrementClaims: [],
   };
 
-  const validatorClaimsBEC_another = {
-    bridgingRequestClaims: [],
-    batchExecutedClaims: [
-      {
-        observedTransactionHash: "0x7465737500000000000000000000000000000000000000000000000000000001",
-        chainId: 2,
-        batchNonceId: 1,
-      },
-    ],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [],
-    hotWalletIncrementClaims: [],
-  };
-
   const validatorClaimsBEFC = {
     bridgingRequestClaims: [],
     batchExecutedClaims: [],
     batchExecutionFailedClaims: [
       {
         observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        chainId: 2,
-        batchNonceId: 1,
-      },
-    ],
-    refundRequestClaims: [],
-    hotWalletIncrementClaims: [],
-  };
-
-  const validatorClaimsBEFC_another = {
-    bridgingRequestClaims: [],
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [
-      {
-        observedTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000001",
         chainId: 2,
         batchNonceId: 1,
       },
@@ -418,50 +396,7 @@ export async function deployBridgeFixture() {
         shouldDecrementHotWallet: false,
         destinationChainId: 1,
         bridgeAddrIndex: 1,
-      },
-    ],
-    hotWalletIncrementClaims: [],
-  };
-
-  const validatorClaimsRRC_shouldDecrement = {
-    bridgingRequestClaims: [],
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [
-      {
-        originTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        refundTransactionHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
-        originAmount: 100,
-        originWrappedAmount: 100,
-        outputIndexes: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        originSenderAddress: "receiver1",
-        retryCounter: 0,
-        originChainId: 2,
-        shouldDecrementHotWallet: true,
-        destinationChainId: 1,
-        bridgeAddrIndex: 0,
-      },
-    ],
-    hotWalletIncrementClaims: [],
-  };
-
-  const validatorClaimsRRC_wrongHash = {
-    bridgingRequestClaims: [],
-    batchExecutedClaims: [],
-    batchExecutionFailedClaims: [],
-    refundRequestClaims: [
-      {
-        originTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        refundTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000001",
-        originAmount: 100,
-        originWrappedAmount: 100,
-        outputIndexes: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        originSenderAddress: "receiver1",
-        retryCounter: 0,
-        originChainId: 2,
-        shouldDecrementHotWallet: false,
-        destinationChainId: 1,
-        bridgeAddrIndex: 0,
+        tokenAmounts: [],
       },
     ],
     hotWalletIncrementClaims: [],
@@ -477,6 +412,7 @@ export async function deployBridgeFixture() {
         chainId: 1,
         amount: 100,
         amountWrapped: 100,
+        txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
       },
     ],
   };
@@ -486,42 +422,6 @@ export async function deployBridgeFixture() {
     firstTxNonceId: 1,
     lastTxNonceId: 1,
     destinationChainId: 2,
-    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
-    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
-    batchType: BatchType.NORMAL,
-    stakeSignature: "0x746573740000000000000000000000000000000000000000000000000000000B",
-  };
-
-  const signedBatchConsolidation = {
-    id: 1,
-    destinationChainId: 2,
-    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
-    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
-    firstTxNonceId: 0,
-    lastTxNonceId: 0,
-    batchType: BatchType.CONSOLIDATION,
-    stakeSignature: "0x746573740000000000000000000000000000000000000000000000000000000B",
-  };
-
-  const signedBatchDefund = {
-    id: 1,
-    firstTxNonceId: 1,
-    lastTxNonceId: 2,
-    destinationChainId: 2,
-    signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
-    feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
-    rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
-    batchType: BatchType.NORMAL,
-    stakeSignature: "0x746573740000000000000000000000000000000000000000000000000000000B",
-  };
-
-  const signedBatchStakeDelOrRedistr = {
-    id: 1,
-    firstTxNonceId: 1,
-    lastTxNonceId: 1,
-    destinationChainId: 1,
     signature: "0x746573740000000000000000000000000000000000000000000000000000000A",
     feeSignature: "0x746573740000000000000000000000000000000000000000000000000000000F",
     rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
@@ -540,11 +440,6 @@ export async function deployBridgeFixture() {
     },
   ];
 
-  const cardanoBlocksTooManyBlocks = Array.from({ length: 41 }, (_, i) => ({
-    blockSlot: i + 1,
-    blockHash: `0x${"74657374".padEnd(64, "0")}${(i + 1).toString(16).padStart(2, "0")}`.slice(0, 66),
-  }));
-
   const validatorAddressChainData = validators.map((val, index) => ({
     addr: val.address,
     data: {
@@ -562,85 +457,58 @@ export async function deployBridgeFixture() {
   const validatorCardanoData = validatorAddressChainData[0].data;
   const bridgeAddrIndex = 0;
 
+  const tokenAmounts = [
+    {
+      tokenId: 1,
+      amountCurrency: 1,
+      amountTokens: 10,
+    },
+  ];
+
   return {
-    hre,
+    admin,
     bridge,
     bridgingAddresses,
-    claimsHelper,
+    chainTokens,
     claims,
+    claimsProcessor,
+    claimsHelper,
+    registration,
     signedBatches,
     slots,
-    admin,
+    validatorsc,
     owner,
+    validators,
     chain1,
     chain2,
-    validatorsc,
-    validator6,
     validatorClaimsBRC,
     validatorClaimsBRC_bunch32,
     validatorClaimsBRC_bunch33,
     validatorClaimsBEC,
-    validatorClaimsBEC_another,
     validatorClaimsBEFC,
-    validatorClaimsBEFC_another,
     validatorClaimsRRC,
     validatorClaimsHWIC,
-    validatorClaimsBRCWrapped,
-    validatorClaimsRRC_wrongHash,
-    validatorClaimsRRC_shouldDecrement,
-    validatorClaimsBRC_confirmedTransactions,
-    validatorClaimsBRC_tooManyReceivers,
     signedBatch,
-    signedBatchConsolidation,
-    signedBatchDefund,
-    signedBatchStakeDelOrRedistr,
     validatorAddressChainData,
     validatorCardanoData,
-    validators,
     cardanoBlocks,
-    cardanoBlocksTooManyBlocks,
     bridgeAddrIndex,
+    tokenAmounts,
   };
 }
 
-export function encodeRefundRequestClaim(claim: any) {
-  const abiCoder = new ethers.AbiCoder();
-  const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
-  const encoded = abiCoder.encode(
-    ["bytes32", "bytes32", "uint256", "uint256", "bytes", "string", "uint64", "uint8", "bool", "uint8", "uint8"],
-    [
-      claim.originTransactionHash,
-      claim.refundTransactionHash,
-      claim.originAmount,
-      claim.originWrappedAmount,
-      claim.outputIndexes,
-      claim.originSenderAddress,
-      claim.retryCounter,
-      claim.originChainId,
-      claim.shouldDecrementHotWallet,
-      claim.destinationChainId,
-      claim.bridgeAddrIndex,
-    ]
-  );
-  return "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-    encodedPrefix.substring(66) +
-    encoded.substring(2);
-}
-
-export function encodeBridgeRequestClaim(claim: any) {
+export function hashBridgeRequestClaim(claim: any) {
   const abiCoder = new ethers.AbiCoder();
   const encodedPrefix = abiCoder.encode(["string"], ["BRC"]);
   const lst = [];
   for (let receiver of claim.receivers) {
-    lst.push([
-      receiver.amount, receiver.amountWrapped, receiver.destinationAddress,
-    ])
+    lst.push([receiver.amount, receiver.amountWrapped, receiver.destinationAddress, receiver.tokenId]);
   }
 
   const encoded = abiCoder.encode(
     [
       "bytes32",
-      "tuple(uint64, uint64, string)[]",
+      "tuple(uint256, uint256, string, uint8)[]",
       "uint256",
       "uint256",
       "uint256",
@@ -664,7 +532,103 @@ export function encodeBridgeRequestClaim(claim: any) {
     ]
   );
 
-  return "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-    encodedPrefix.substring(66) +
-    encoded.substring(2);
+  return ethers.keccak256(
+    "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+      encodedPrefix.substring(66) +
+      encoded.substring(2)
+  );
+}
+
+export function hashBatchExecutedClaim(claim: any) {
+  const abiCoder = new ethers.AbiCoder();
+  const encodedPrefix = abiCoder.encode(["string"], ["BEC"]);
+  const encoded = abiCoder.encode(
+    ["bytes32", "uint64", "uint8"],
+    [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]
+  );
+
+  return ethers.keccak256(
+    "0x0000000000000000000000000000000000000000000000000000000000000080" +
+      encoded.substring(2) +
+      encodedPrefix.substring(66)
+  );
+}
+
+export function hashBatchExecutionFailedClaim(claim: any) {
+  const abiCoder = new ethers.AbiCoder();
+  const encodedPrefix = abiCoder.encode(["string"], ["BEFC"]);
+  const encoded = abiCoder.encode(
+    ["bytes32", "uint64", "uint8"],
+    [claim.observedTransactionHash, claim.batchNonceId, claim.chainId]
+  );
+
+  return ethers.keccak256(
+    "0x0000000000000000000000000000000000000000000000000000000000000080" +
+      encoded.substring(2) +
+      encodedPrefix.substring(66)
+  );
+}
+
+export function hashRefundRequestClaim(claim: any) {
+  const abiCoder = new ethers.AbiCoder();
+  const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
+  const amounts = [];
+  for (let amount of claim.tokenAmounts) {
+    amounts.push([amount.tokenId, amount.amount]);
+  }
+
+  const encoded = abiCoder.encode(
+    [
+      "bytes32",
+      "bytes32",
+      "uint256",
+      "uint256",
+      "bytes",
+      "string",
+      "uint64",
+      "uint8",
+      "bool",
+      "uint8",
+      "uint8",
+      "tuple(uint8, uint256)[]",
+    ],
+    [
+      claim.originTransactionHash,
+      claim.refundTransactionHash,
+      claim.originAmount,
+      claim.originWrappedAmount,
+      claim.outputIndexes,
+      claim.originSenderAddress,
+      claim.retryCounter,
+      claim.originChainId,
+      claim.shouldDecrementHotWallet,
+      claim.destinationChainId,
+      claim.bridgeAddrIndex,
+      amounts,
+    ]
+  );
+  return ethers.keccak256(
+    "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
+      encodedPrefix.substring(66) +
+      encoded.substring(2)
+  );
+}
+
+export function hashHotWalletIncrementClaim(claim: any) {
+  const abiCoder = new ethers.AbiCoder();
+
+  const encoded = abiCoder.encode(
+    ["string", "tuple(uint8 chainId, uint256 amount, uint256 amountWrapped, bytes32 txHash)"],
+    [
+      "HWIC",
+      {
+        chainId: claim.chainId,
+        amount: claim.amount,
+        amountWrapped: claim.amountWrapped,
+        txHash: claim.txHash,
+      },
+    ]
+  );
+
+  return ethers.keccak256(encoded);
 }

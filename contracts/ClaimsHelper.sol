@@ -30,10 +30,13 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
     /// @dev hash(slot, hash) -> bitmap
     mapping(bytes32 => uint256) public bitmap;
 
+    address private claimsProcessorAddress;
+    address private registrationAddress;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[50] private __gap;
+    uint256[48] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -65,6 +68,15 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         signedBatchesAddress = _signedBatchesAddress;
     }
 
+    function setAdditionalDependenciesAndSync(
+        address _claimsProcessorAddress,
+        address _registrationAddress
+    ) external onlyUpgradeAdmin {
+        if (!_isContract(_claimsProcessorAddress) || !_isContract(_registrationAddress)) revert NotContractAddress();
+        claimsProcessorAddress = _claimsProcessorAddress;
+        registrationAddress = _registrationAddress;
+    }
+
     /// @notice Retrieves confirmed signed batch data.
     /// @param _chainId The ID of the destination chain.
     /// @param _batchId The batch ID.
@@ -78,33 +90,15 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
 
     /// @notice Resets the current batch block for a given chain.
     /// @param _chainId The ID of the chain.
-    function resetCurrentBatchBlock(uint8 _chainId) external onlyClaims {
+    function resetCurrentBatchBlock(uint8 _chainId) external onlyClaimsOrClaimsProcessor {
         currentBatchBlock[_chainId] = int256(-1);
-    }
-
-    /// @notice Stores a confirmed signed batch for a specific destination chain and batch ID.
-    /// @dev Updates both `confirmedSignedBatches` and `currentBatchBlock` mappings.
-    /// @param _signedBatch The signed batch data containing metadata and transaction nonce range.
-    function setConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatchesOrClaims {
-        uint8 destinationChainId = _signedBatch.destinationChainId;
-        uint64 signedBatchId = _signedBatch.id;
-
-        confirmedSignedBatches[destinationChainId][signedBatchId] = ConfirmedSignedBatchData(
-            _signedBatch.firstTxNonceId,
-            _signedBatch.lastTxNonceId,
-            false, // deprecated field
-            ConstantsLib.IN_PROGRESS, // status 1 means "in progress"
-            _signedBatch.batchType
-        );
-
-        currentBatchBlock[destinationChainId] = int256(block.number);
     }
 
     /// @notice Update number of votes for specific hash if needed and returns true if update was executed
     /// @dev Update number of votes for specific hash if needed and returns true if update was executed
     /// @param _hash hash
     /// @param _validatorIdx index of validator
-    function updateVote(bytes32 _hash, uint8 _validatorIdx) external onlySignedBatchesOrClaims returns (bool) {
+    function updateVote(bytes32 _hash, uint8 _validatorIdx) external onlyClaimsProcessorOrRegistration returns (bool) {
         uint256 _bitmapValue = bitmap[_hash];
         uint256 _newBitmapValue = _bitmapValue | (1 << _validatorIdx);
 
@@ -117,47 +111,22 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         return true;
     }
 
-    /// @notice Registers a vote for a specific claim hash only if the voter hasn't already voted and quorum hasn't been reached.
-    /// @dev Increments the vote count if conditions are met and returns whether the quorum is now reached.
-    /// @param _validatorIdx The index of validator in the validator set.
-    /// @param _hash The unique hash representing the claim being voted on.
-    /// @param _quorumCnt The number of votes required to reach quorum.
-    /// @return True if quorum has been reached after this vote; false otherwise.
-    function setVotedOnlyIfNeededReturnQuorumReached(
-        uint8 _validatorIdx,
-        bytes32 _hash,
-        uint256 _quorumCnt
-    ) external onlySignedBatchesOrClaims returns (bool) {
-        uint256 _bitmapValue = bitmap[_hash];
-        uint256 _bitmapNewValue = _bitmapValue | (1 << _validatorIdx);
-        uint256 _votesNum;
+    /// @notice Stores a confirmed signed batch for a specific destination chain and batch ID.
+    /// @dev Updates both `confirmedSignedBatches` and `currentBatchBlock` mappings.
+    /// @param _signedBatch The signed batch data containing metadata and transaction nonce range.
+    function setConfirmedSignedBatchData(SignedBatch calldata _signedBatch) external onlySignedBatches {
+        uint8 destinationChainId = _signedBatch.destinationChainId;
+        uint64 signedBatchId = _signedBatch.id;
 
-        // Brian Kernighan's algorithm
-        // @see https://github.com/estarriolvetch/solidity-bits/blob/main/contracts/Popcount.sol
-        unchecked {
-            uint256 _bits = _bitmapNewValue;
-            for (_votesNum = 0; _bits != 0; _votesNum++) {
-                _bits &= _bits - 1;
-            }
-        }
+        confirmedSignedBatches[destinationChainId][signedBatchId] = ConfirmedSignedBatchData(
+            _signedBatch.firstTxNonceId,
+            _signedBatch.lastTxNonceId,
+            false, // deprecated field
+            ConstantsLib.IN_PROGRESS, // status 1 means "in progress"
+            _signedBatch.batchType
+        );
 
-        // Since ValidatorClaims could have other valid claims, we do not revert here, instead we do early exit.
-        if (_bitmapValue == _bitmapNewValue || _votesNum > _quorumCnt) {
-            return false;
-        }
-
-        bitmap[_hash] = _bitmapNewValue;
-
-        return _votesNum == _quorumCnt; // true if quorum is reached
-    }
-
-    /// @notice Sets the specified batch entry to a final status.
-    /// @dev Sets the specified batch entry to a final status.
-    /// @param _chainId The ID of the blockchain where the batch resides.
-    /// @param _batchId The unique identifier of the batch to delete.
-    /// @param _status The new status to set for the batch.
-    function setConfirmedSignedBatchStatus(uint8 _chainId, uint64 _batchId, uint8 _status) external onlyClaims {
-        confirmedSignedBatches[_chainId][_batchId].status = _status;
+        currentBatchBlock[destinationChainId] = int256(block.number);
     }
 
     function hasVoted(bytes32 _hash, uint8 _validatorIndex) external view returns (bool) {
@@ -180,15 +149,23 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         return _votesNum;
     }
 
+    /// @notice Sets the specified batch entry to a final status.
+    /// @dev Sets the specified batch entry to a final status.
+    /// @param _chainId The ID of the blockchain where the batch resides.
+    /// @param _batchId The unique identifier of the batch to delete.
+    /// @param _status The new status to set for the batch.
+    function setConfirmedSignedBatchStatus(
+        uint8 _chainId,
+        uint64 _batchId,
+        uint8 _status
+    ) external onlyClaimsProcessor {
+        confirmedSignedBatches[_chainId][_batchId].status = _status;
+    }
+
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.1.1";
-    }
-
-    modifier onlySignedBatchesOrClaims() {
-        if (msg.sender != signedBatchesAddress && msg.sender != claimsAddress) revert NotSignedBatchesOrClaims();
-        _;
+        return "1.2.1";
     }
 
     modifier onlySignedBatches() {
@@ -196,13 +173,24 @@ contract ClaimsHelper is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
         _;
     }
 
-    modifier onlyClaims() {
-        if (msg.sender != claimsAddress) revert NotClaims();
+    modifier onlyClaimsProcessor() {
+        if (msg.sender != claimsProcessorAddress) revert NotClaimsProcessor();
+        _;
+    }
+
+    modifier onlyClaimsOrClaimsProcessor() {
+        if (msg.sender != claimsAddress && msg.sender != claimsProcessorAddress) revert NotClaimsOrClaimsProcessor();
+        _;
+    }
+
+    modifier onlyClaimsProcessorOrRegistration() {
+        if (msg.sender != claimsProcessorAddress && msg.sender != registrationAddress)
+            revert NotClaimsProcessorOrRegistration();
         _;
     }
 
     modifier onlyUpgradeAdmin() {
-        if (msg.sender != upgradeAdmin) revert NotOwner();
+        if (msg.sender != upgradeAdmin) revert NotUpgradeAdmin();
         _;
     }
 }
