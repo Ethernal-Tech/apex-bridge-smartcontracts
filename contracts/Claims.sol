@@ -165,21 +165,20 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                 __chainWrappedTokenQuantity[chainId]
             );
 
-            // uncomment for mainnet upgrade
-            // uint64 nextNonce = lastBatchedTxNonce[chainId] + 1;
-            // uint64 lastConfirmedNonce = lastConfirmedTxNonce[chainId];
+            uint64 nextNonce = lastBatchedTxNonce[chainId] + 1;
+            uint64 lastConfirmedNonce = lastConfirmedTxNonce[chainId];
 
-            // // Rebuild receivers for non-executed confirmed transactions
-            // for (uint64 nonce = nextNonce; nonce <= lastConfirmedNonce; nonce++) {
-            //     ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nonce];
+            // Rebuild receivers for non-executed confirmed transactions
+            for (uint64 nonce = nextNonce; nonce <= lastConfirmedNonce; nonce++) {
+                ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nonce];
 
-            //     uint256 receiversLength = confirmedTx.__deprecatedReceivers.length;
-            //     for (uint256 j; j < receiversLength; j++) {
-            //         Receiver storage r = confirmedTx.__deprecatedReceivers[j];
+                uint256 receiversLength = confirmedTx.__deprecatedReceivers.length;
+                for (uint256 j; j < receiversLength; j++) {
+                    Receiver storage r = confirmedTx.__deprecatedReceivers[j];
 
-            //         confirmedTx.receivers.push(ReceiverWithToken(r.amount, r.amountWrapped, r.destinationAddress, 0));
-            //     }
-            // }
+                    confirmedTx.receivers.push(ReceiverWithToken(r.amount, r.amountWrapped, r.destinationAddress, 0));
+                }
+            }
         }
     }
 
