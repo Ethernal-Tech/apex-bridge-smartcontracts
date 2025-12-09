@@ -161,24 +161,25 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
             chainTokens.setInitialTokenQuantities(
                 chainId,
-                chainTokens.chainTokenQuantity(chainId),
-                chainTokens.chainWrappedTokenQuantity(chainId)
+                __chainTokenQuantity[chainId],
+                __chainWrappedTokenQuantity[chainId]
             );
 
-            uint64 nextNonce = lastBatchedTxNonce[chainId] + 1;
-            uint64 lastConfirmedNonce = lastConfirmedTxNonce[chainId];
+            // uncomment for mainnet upgrade
+            // uint64 nextNonce = lastBatchedTxNonce[chainId] + 1;
+            // uint64 lastConfirmedNonce = lastConfirmedTxNonce[chainId];
 
-            // Rebuild receivers for non-executed confirmed transactions
-            for (uint64 nonce = nextNonce; nonce <= lastConfirmedNonce; nonce++) {
-                ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nonce];
+            // // Rebuild receivers for non-executed confirmed transactions
+            // for (uint64 nonce = nextNonce; nonce <= lastConfirmedNonce; nonce++) {
+            //     ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nonce];
 
-                uint256 receiversLength = confirmedTx.__deprecatedReceivers.length;
-                for (uint256 j; j < receiversLength; j++) {
-                    Receiver storage r = confirmedTx.__deprecatedReceivers[j];
+            //     uint256 receiversLength = confirmedTx.__deprecatedReceivers.length;
+            //     for (uint256 j; j < receiversLength; j++) {
+            //         Receiver storage r = confirmedTx.__deprecatedReceivers[j];
 
-                    confirmedTx.receivers.push(ReceiverWithToken(r.amount, r.amountWrapped, r.destinationAddress, 0));
-                }
-            }
+            //         confirmedTx.receivers.push(ReceiverWithToken(r.amount, r.amountWrapped, r.destinationAddress, 0));
+            //     }
+            // }
         }
     }
 
@@ -567,7 +568,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.3.0";
+        return "1.3.1";
     }
 
     modifier onlyBridge() {
