@@ -1,15 +1,10 @@
-import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import { ethers } from "hardhat";
+import hre from "hardhat";
 import { expect } from "chai";
-import { deployBridgeFixture } from "../test/fixtures";
+import { deployBridgeFixture } from "./fixtures";
+
+const connection = await hre.network.connect();
 
 describe("Admin Functions", function () {
-  beforeEach(async () => {
-    // mock isSignatureValid precompile to always return true
-    await setCode("0x0000000000000000000000000000000000002050", "0x600160005260206000F3");
-    await setCode("0x0000000000000000000000000000000000002060", "0x600160005260206000F3");
-  });
-
   describe("Chain Token Quantity", function () {
     it("Should revert any claim if not called by fundAdmin", async function () {
       await expect(admin.connect(validators[0]).updateChainTokenQuantity(1, true, 100)).to.be.revertedWithCustomError(
@@ -67,7 +62,10 @@ describe("Admin Functions", function () {
     });
 
     it("Should revert if FundAdmin is ZeroAddress", async function () {
-      await expect(admin.setFundAdmin(ethers.ZeroAddress)).to.be.revertedWithCustomError(admin, "ZeroAddress");
+      await expect(admin.setFundAdmin(connection.ethers.ZeroAddress)).to.be.revertedWithCustomError(
+        admin,
+        "ZeroAddress"
+      );
     });
 
     it("Should set fundAdmin when called by Owner", async function () {
@@ -145,7 +143,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).retryCounter).to.equal(0);
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(25);
+      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(26);
     });
     it("Should set correct confirmedTransaction when defund fails", async function () {
       const signedBatchDefund = structuredClone(signedBatch);
@@ -166,7 +164,7 @@ describe("Admin Functions", function () {
 
       // wait for next timeout
       for (let i = 0; i < 3; i++) {
-        await ethers.provider.send("evm_mine");
+        await connection.ethers.provider.send("evm_mine");
       }
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatchDefund);
@@ -195,7 +193,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain2.id, 3)).retryCounter).to.equal(1);
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(29);
+      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(30);
     });
     it("Should reject defund after maximum number of retries", async function () {
       await admin.setFundAdmin(validators[0].address);
@@ -213,7 +211,7 @@ describe("Admin Functions", function () {
 
         // wait for next timeout
         for (let i = 0; i < 3; i++) {
-          await ethers.provider.send("evm_mine");
+          await connection.ethers.provider.send("evm_mine");
         }
 
         temp_signedBatch.firstTxNonceId = i + 1;
@@ -280,21 +278,22 @@ describe("Admin Functions", function () {
     });
   });
 
-  let bridge: any;
-  let claimsHelper: any;
-  let claims: any;
-  let admin: any;
-  let owner: any;
-  let chain1: any;
-  let chain2: any;
-  let validatorClaimsBRC: any;
-  let validatorClaimsBEFC: any;
-  let signedBatch: any;
-  let validatorAddressChainData: any;
-  let validators: any;
+  let bridge;
+  let claimsHelper;
+  let claims;
+  let admin;
+  let owner;
+  let chain1;
+  let chain2;
+  let validatorClaimsBRC;
+  let validatorClaimsBEFC;
+  let signedBatch;
+  let validatorAddressChainData;
+  let validators;
+  let fixture;
 
   beforeEach(async function () {
-    const fixture = await loadFixture(deployBridgeFixture);
+    fixture = await deployBridgeFixture(hre);
 
     bridge = fixture.bridge;
     claimsHelper = fixture.claimsHelper;

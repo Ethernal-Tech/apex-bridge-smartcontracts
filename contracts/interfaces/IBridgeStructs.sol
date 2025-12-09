@@ -164,6 +164,11 @@ interface IBridgeStructs {
         bytes[] feeSignatures;
     }
 
+    struct PrecompileContracts {
+        address precompile;
+        address precompileBls;
+    }
+
     // ------------------------------------------------------------------------
     // Errors
     // ------------------------------------------------------------------------

@@ -1,7 +1,8 @@
-import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import hre from "hardhat";
 import { expect } from "chai";
-import { ethers } from "hardhat";
-import { deployBridgeFixture } from "../test/fixtures";
+import { deployBridgeFixture } from "./fixtures";
+
+const connection = await hre.network.connect();
 
 describe("Batch Creation", function () {
   describe("Batch creation", function () {
@@ -57,14 +58,15 @@ describe("Batch Creation", function () {
 
     it("If SignedBatch submition id is not expected submittion should be skipped", async function () {
       const encoded = ethers.solidityPacked(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
+        ["uint256", "uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
         [
+          currentValidatorSetId,
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
-          false,
+          signedBatch.batchType,
         ]
       );
 
@@ -80,14 +82,15 @@ describe("Batch Creation", function () {
       signedBatch.id = 1000; //invalid id
 
       const encodedFalse = ethers.solidityPacked(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
+        ["uint256", "uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
         [
+          currentValidatorSetId,
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
-          false,
+          signedBatch.batchType,
         ]
       );
 
@@ -102,14 +105,15 @@ describe("Batch Creation", function () {
 
     it("SignedBatch submition should do nothing if shouldCreateBatch is false", async function () {
       const hash = ethers.solidityPackedKeccak256(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
+        ["uint256", "uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
         [
+          currentValidatorSetId,
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
-          false,
+          signedBatch.batchType,
         ]
       );
 
@@ -259,9 +263,12 @@ describe("Batch Creation", function () {
       expect(confirmedBatch.signatures[3]).to.deep.equal(signedBatch.signature);
       expect(confirmedBatch.feeSignatures[2]).to.deep.equal(signedBatch.feeSignature);
 
-      expect(
-        await bridge.connect(validators[0]).getRawTransactionFromLastBatch(signedBatch.destinationChainId)
-      ).to.equal(signedBatch.rawTransaction);
+      const [rawTx, batchType] = await bridge
+        .connect(validators[0])
+        .getRawTransactionAndBatchTypeFromLastBatch(signedBatch.destinationChainId);
+
+      expect(rawTx).to.equal(signedBatch.rawTransaction);
+      expect(batchType).to.equal(signedBatch.batchType);
     });
 
     it("Should create and execute batch after transactions are confirmed", async function () {
@@ -342,14 +349,15 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
 
       const encoded = ethers.solidityPacked(
-        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
+        ["uint256", "uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
         [
+          currentValidatorSetId,
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
-          false,
+          signedBatch.batchType,
         ]
       );
 
@@ -370,9 +378,9 @@ describe("Batch Creation", function () {
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
       const signedBatchConsolidation = structuredClone(signedBatch);
+      signedBatchConsolidation.batchType = BatchType.CONSOLIDATION;
       signedBatchConsolidation.firstTxNonceId = 0;
       signedBatchConsolidation.lastTxNonceId = 0;
-      signedBatchConsolidation.isConsolidation = true;
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -395,7 +403,7 @@ describe("Batch Creation", function () {
       expect(nextBatchBlock).to.lessThan(currentBlock + 1);
     });
   });
-  async function impersonateAsContractAndMintFunds(contractAddress: string) {
+  async function impersonateAsContractAndMintFunds(contractAddress) {
     const hre = require("hardhat");
     const address = await contractAddress.toLowerCase();
     // impersonate as an contract on specified address
@@ -411,29 +419,30 @@ describe("Batch Creation", function () {
     return signer;
   }
 
-  let bridge: any;
-  let claimsHelper: any;
-  let claims: any;
-  let signedBatches: any;
-  let owner: any;
-  let chain1: any;
-  let chain2: any;
-  let validatorClaimsBRC: any;
-  let validatorClaimsBEC: any;
-  let signedBatch: any;
-  let validatorAddressChainData: any;
-  let validators: any;
+  let bridge;
+  let claimsHelper;
+  let claims;
+  let signedBatches;
+  let validatorsc;
+  let owner;
+  let chain1;
+  let chain2;
+  let validatorClaimsBRC;
+  let validatorClaimsBEC;
+  let signedBatch;
+  let validatorAddressChainData;
+  let validators;
+  let currentValidatorSetId;
+  let fixture;
 
   beforeEach(async function () {
-    // mock isSignatureValid precompile to always return true
-    await setCode("0x0000000000000000000000000000000000002050", "0x600160005260206000F3");
-    await setCode("0x0000000000000000000000000000000000002060", "0x600160005260206000F3");
-    const fixture = await loadFixture(deployBridgeFixture);
+    fixture = await deployBridgeFixture(hre);
 
     bridge = fixture.bridge;
     claimsHelper = fixture.claimsHelper;
     claims = fixture.claims;
     signedBatches = fixture.signedBatches;
+    validatorsc = fixture.validatorsc;
     owner = fixture.owner;
     chain1 = fixture.chain1;
     chain2 = fixture.chain2;

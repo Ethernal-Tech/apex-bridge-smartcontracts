@@ -183,7 +183,6 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             if (_validatorAddress == address(0)) {
                 revert ZeroAddress();
             }
-
             _validateSignatures(
                 _chainType,
                 _validatorAddress,
