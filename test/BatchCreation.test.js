@@ -14,7 +14,7 @@ describe("Batch Creation", function () {
 
       // wait for next timeout
       for (let i = 0; i < 3; i++) {
-        await ethers.provider.send("evm_mine");
+        await connection.ethers.provider.send("evm_mine");
       }
 
       const signedBatch_UnregisteredChain = {
@@ -57,16 +57,15 @@ describe("Batch Creation", function () {
     });
 
     it("If SignedBatch submition id is not expected submittion should be skipped", async function () {
-      const encoded = ethers.solidityPacked(
-        ["uint256", "uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
+      const encoded = connection.ethers.solidityPacked(
+        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
         [
-          currentValidatorSetId,
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
-          signedBatch.batchType,
+          false,
         ]
       );
 
@@ -82,15 +81,14 @@ describe("Batch Creation", function () {
       signedBatch.id = 1000; //invalid id
 
       const encodedFalse = ethers.solidityPacked(
-        ["uint256", "uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
+        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
         [
-          currentValidatorSetId,
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
-          signedBatch.batchType,
+          false,
         ]
       );
 
@@ -104,16 +102,15 @@ describe("Batch Creation", function () {
     });
 
     it("SignedBatch submition should do nothing if shouldCreateBatch is false", async function () {
-      const hash = ethers.solidityPackedKeccak256(
-        ["uint256", "uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
+      const hash = connection.ethers.solidityPackedKeccak256(
+        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
         [
-          currentValidatorSetId,
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
-          signedBatch.batchType,
+          false,
         ]
       );
 
@@ -127,7 +124,7 @@ describe("Batch Creation", function () {
 
       // wait for next timeout
       for (let i = 0; i < 10; i++) {
-        await ethers.provider.send("evm_mine");
+        await connection.ethers.provider.send("evm_mine");
       }
 
       expect(await bridge.getNextBatchId(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(0);
@@ -164,8 +161,8 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       // wait for timeout
-      await ethers.provider.send("evm_mine");
-      await ethers.provider.send("evm_mine");
+      await connection.ethers.provider.send("evm_mine");
+      await connection.ethers.provider.send("evm_mine");
 
       expect(await bridge.getNextBatchId(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(1);
     });
@@ -178,7 +175,7 @@ describe("Batch Creation", function () {
 
       // wait for next timeout
       for (let i = 0; i < 3; i++) {
-        await ethers.provider.send("evm_mine");
+        await connection.ethers.provider.send("evm_mine");
       }
 
       await bridge.connect(validators[4]).submitSignedBatch(signedBatch);
@@ -209,7 +206,7 @@ describe("Batch Creation", function () {
 
       // wait for next timeout
       for (let i = 0; i < 3; i++) {
-        await ethers.provider.send("evm_mine");
+        await connection.ethers.provider.send("evm_mine");
       }
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
@@ -241,7 +238,7 @@ describe("Batch Creation", function () {
 
       // wait for next timeout
       for (let i = 0; i < 3; i++) {
-        await ethers.provider.send("evm_mine");
+        await connection.ethers.provider.send("evm_mine");
       }
 
       await bridge.connect(validators[0]).submitSignedBatchEVM(signedBatch);
@@ -263,12 +260,9 @@ describe("Batch Creation", function () {
       expect(confirmedBatch.signatures[3]).to.deep.equal(signedBatch.signature);
       expect(confirmedBatch.feeSignatures[2]).to.deep.equal(signedBatch.feeSignature);
 
-      const [rawTx, batchType] = await bridge
-        .connect(validators[0])
-        .getRawTransactionAndBatchTypeFromLastBatch(signedBatch.destinationChainId);
-
-      expect(rawTx).to.equal(signedBatch.rawTransaction);
-      expect(batchType).to.equal(signedBatch.batchType);
+      expect(
+        await bridge.connect(validators[0]).getRawTransactionFromLastBatch(signedBatch.destinationChainId)
+      ).to.equal(signedBatch.rawTransaction);
     });
 
     it("Should create and execute batch after transactions are confirmed", async function () {
@@ -284,8 +278,8 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
-      await ethers.provider.send("evm_mine");
-      await ethers.provider.send("evm_mine");
+      await connection.ethers.provider.send("evm_mine");
+      await connection.ethers.provider.send("evm_mine");
 
       const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(_destinationChain);
       expect(confirmedTxs.length).to.equal(1);
@@ -315,7 +309,7 @@ describe("Batch Creation", function () {
 
       // wait for next timeout
       for (let i = 0; i < 3; i++) {
-        await ethers.provider.send("evm_mine");
+        await connection.ethers.provider.send("evm_mine");
       }
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
@@ -341,7 +335,7 @@ describe("Batch Creation", function () {
 
       // wait for next timeout
       for (let i = 0; i < 3; i++) {
-        await ethers.provider.send("evm_mine");
+        await connection.ethers.provider.send("evm_mine");
       }
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
@@ -349,15 +343,14 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
 
       const encoded = ethers.solidityPacked(
-        ["uint256", "uint64", "uint64", "uint64", "uint8", "bytes", "uint8"],
+        ["uint64", "uint64", "uint64", "uint8", "bytes", "bool"],
         [
-          currentValidatorSetId,
           signedBatch.id,
           signedBatch.firstTxNonceId,
           signedBatch.lastTxNonceId,
           signedBatch.destinationChainId,
           signedBatch.rawTransaction,
-          signedBatch.batchType,
+          false,
         ]
       );
 
@@ -378,9 +371,9 @@ describe("Batch Creation", function () {
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
       const signedBatchConsolidation = structuredClone(signedBatch);
-      signedBatchConsolidation.batchType = BatchType.CONSOLIDATION;
       signedBatchConsolidation.firstTxNonceId = 0;
       signedBatchConsolidation.lastTxNonceId = 0;
+      signedBatchConsolidation.isConsolidation = true;
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -398,7 +391,7 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
       const nextBatchBlock = await claims.nextTimeoutBlock(_destinationChain);
-      const currentBlock = await ethers.provider.getBlockNumber();
+      const currentBlock = await connection.ethers.provider.getBlockNumber();
 
       expect(nextBatchBlock).to.lessThan(currentBlock + 1);
     });
@@ -423,7 +416,6 @@ describe("Batch Creation", function () {
   let claimsHelper;
   let claims;
   let signedBatches;
-  let validatorsc;
   let owner;
   let chain1;
   let chain2;
@@ -432,7 +424,6 @@ describe("Batch Creation", function () {
   let signedBatch;
   let validatorAddressChainData;
   let validators;
-  let currentValidatorSetId;
   let fixture;
 
   beforeEach(async function () {
@@ -442,7 +433,6 @@ describe("Batch Creation", function () {
     claimsHelper = fixture.claimsHelper;
     claims = fixture.claims;
     signedBatches = fixture.signedBatches;
-    validatorsc = fixture.validatorsc;
     owner = fixture.owner;
     chain1 = fixture.chain1;
     chain2 = fixture.chain2;
