@@ -318,10 +318,26 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         store[key] -= amount;
     }
 
+    /// TEMP FUNCTION TO MIGRATE CHAIN QUANTITIES TO 1e18 BASE
+    function migrateChainTokenQuantitiesTo1e18(Chain[] calldata _chains) external onlyAdminContract {
+        uint8 chainLength = uint8(_chains.length);
+
+        for (uint8 chainId = 0; chainId < chainLength; chainId++) {
+            uint256 quantity = chainTokenQuantity[chainId];
+            uint256 quantityWrapped = chainWrappedTokenQuantity[chainId];
+            if (quantity > 0) {
+                chainTokenQuantity[chainId] = quantity * 1e12;
+            }
+            if (quantityWrapped > 0) {
+                chainWrappedTokenQuantity[chainId] = quantityWrapped * 1e12;
+            }
+        }
+    }
+
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.0";
+        return "1.0.1";
     }
 
     modifier onlyUpgradeAdmin() {

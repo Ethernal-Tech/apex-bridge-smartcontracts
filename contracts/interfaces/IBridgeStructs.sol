@@ -243,6 +243,9 @@ interface IBridgeStructs {
     error NotClaimsOrClaimsProcessor();
     error NotClaimsProcessorOrRegistration();
     error AlreadyProposed(uint8 _chainId);
+    error ChainNotPaused(uint8 _chainId);
+    error BridgingPaused();
+    error BridgingNotPaused();
 
     // ------------------------------------------------------------------------
     // Events

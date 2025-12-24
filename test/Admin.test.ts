@@ -231,7 +231,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalWrappedAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(43);
+      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(44);
     });
 
     it("Should set correct confirmedTransaction when defund is called with non-wrapped token", async function () {
@@ -254,7 +254,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(0);
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalWrappedAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(47);
+      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(48);
     });
 
     it("Should set correct confirmedTransaction when defund is called with only colored tokens", async function () {
@@ -262,7 +262,7 @@ describe("Admin Functions", function () {
 
       await admin.connect(validators[0]).defund(chain1.id, 0, 0, tokenAmounts, "address");
 
-      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(43);
+      expect((await claims.confirmedTransactions(chain1.id, 1)).blockHeight).to.equal(44);
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(0);
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalWrappedAmount).to.equal(0);
       expect((await claims.confirmedTransactions(chain1.id, 1)).retryCounter).to.equal(0);
@@ -333,7 +333,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalAmount).to.equal(1);
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalWrappedAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(49);
+      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(50);
     });
 
     it("Should set correct confirmedTransaction when defund with non-wrapped token fails", async function () {
@@ -388,7 +388,7 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).outputIndexes).to.equal("0x");
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalAmount).to.equal(0);
       expect((await claims.confirmedTransactions(chain2.id, 3)).totalWrappedAmount).to.equal(1);
-      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(49);
+      expect((await claims.confirmedTransactions(chain2.id, 3)).blockHeight).to.equal(50);
     });
 
     it("Should reject defund after maximum number of retries", async function () {

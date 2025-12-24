@@ -70,10 +70,12 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     address private claimsProcessorAddress;
     address private registrationAddress;
 
+    bool public isBridgingPaused;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[45] private __gap;
+    uint256[44] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -299,7 +301,11 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     ///      the timeout block has been surpassed, in which case it returns `true`.
     function shouldCreateBatch(uint8 _destinationChain) public view returns (bool) {
         // if not registered chain or batch is already created, return false
-        if (!isChainRegistered[_destinationChain] || claimsHelper.currentBatchBlock(_destinationChain) != int(-1)) {
+        if (
+            !isChainRegistered[_destinationChain] ||
+            claimsHelper.currentBatchBlock(_destinationChain) != int(-1) ||
+            isBridgingPaused
+        ) {
             return false;
         }
 
@@ -564,10 +570,40 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         nextTimeoutBlock[_chainId] = _nextTimeoutBlock;
     }
 
+    function setBridgingPaused(bool _isBridgingPaused) external onlyAdminContract {
+        isBridgingPaused = _isBridgingPaused;
+    }
+
+    /// TEMP FUNCTION TO MIGRATE AMOUNTS FROM CONFIRMED TRANSACTIONS TO 1e18 BASE
+    function migrateReceiverAmountsTo1e18(Chain[] calldata _chains) external onlyAdminContract {
+        uint8 chainsLength = uint8(_chains.length);
+        for (uint8 i = 0; i < chainsLength; i++) {
+            uint64 fromNonce = lastBatchedTxNonce[i] + 1;
+            uint64 toNonce = lastConfirmedTxNonce[i];
+
+            for (uint64 nonce = fromNonce; nonce <= toNonce; nonce++) {
+                ConfirmedTransaction storage _confirmedTransaction = confirmedTransactions[i][nonce];
+                uint256 receiversLength = _confirmedTransaction.receivers.length;
+
+                for (uint256 j = 0; j < receiversLength; j++) {
+                    ReceiverWithToken storage _receiverWithToken = _confirmedTransaction.receivers[j];
+
+                    if (_receiverWithToken.amount != 0) {
+                        _receiverWithToken.amount *= 1e12;
+                    }
+
+                    if (_receiverWithToken.amountWrapped != 0) {
+                        _receiverWithToken.amountWrapped *= 1e12;
+                    }
+                }
+            }
+        }
+    }
+
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.3.1";
+        return "1.3.2";
     }
 
     modifier onlyBridge() {
