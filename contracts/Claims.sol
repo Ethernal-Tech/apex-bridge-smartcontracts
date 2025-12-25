@@ -578,12 +578,15 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     function migrateReceiverAmountsTo1e18(Chain[] calldata _chains) external onlyAdminContract {
         uint8 chainsLength = uint8(_chains.length);
         for (uint8 i = 0; i < chainsLength; i++) {
-            uint64 fromNonce = lastBatchedTxNonce[i] + 1;
-            uint64 toNonce = lastConfirmedTxNonce[i];
+            uint8 _chainId = _chains[i].id;
+            uint64 fromNonce = lastBatchedTxNonce[_chainId] + 1;
+            uint64 toNonce = lastConfirmedTxNonce[_chainId];
 
             for (uint64 nonce = fromNonce; nonce <= toNonce; nonce++) {
-                ConfirmedTransaction storage _confirmedTransaction = confirmedTransactions[i][nonce];
+                ConfirmedTransaction storage _confirmedTransaction = confirmedTransactions[_chainId][nonce];
                 uint256 receiversLength = _confirmedTransaction.receivers.length;
+                _confirmedTransaction.totalAmount *= 1e12;
+                _confirmedTransaction.totalWrappedAmount *= 1e12;
 
                 for (uint256 j = 0; j < receiversLength; j++) {
                     ReceiverWithToken storage _receiverWithToken = _confirmedTransaction.receivers[j];

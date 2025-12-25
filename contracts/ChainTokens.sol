@@ -322,14 +322,15 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     function migrateChainTokenQuantitiesTo1e18(Chain[] calldata _chains) external onlyAdminContract {
         uint8 chainLength = uint8(_chains.length);
 
-        for (uint8 chainId = 0; chainId < chainLength; chainId++) {
-            uint256 quantity = chainTokenQuantity[chainId];
-            uint256 quantityWrapped = chainWrappedTokenQuantity[chainId];
-            if (quantity > 0) {
-                chainTokenQuantity[chainId] = quantity * 1e12;
+        for (uint8 i = 0; i < chainLength; i++) {
+            uint8 _chainId = _chains[i].id;
+            uint256 _quantity = chainTokenQuantity[_chainId];
+            uint256 _quantityWrapped = chainWrappedTokenQuantity[_chainId];
+            if (_quantity > 0) {
+                chainTokenQuantity[_chainId] = _quantity * 1e12;
             }
-            if (quantityWrapped > 0) {
-                chainWrappedTokenQuantity[chainId] = quantityWrapped * 1e12;
+            if (_quantityWrapped > 0) {
+                chainWrappedTokenQuantity[_chainId] = _quantityWrapped * 1e12;
             }
         }
     }

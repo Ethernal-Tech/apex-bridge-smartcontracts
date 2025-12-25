@@ -238,8 +238,9 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         Chain[] memory _chains = bridge.getAllRegisteredChains();
 
         for (uint8 i = 0; i < _chains.length; i++) {
-            if (claimsHelper.currentBatchBlock(i) != int(-1)) revert ChainNotPaused(i);
+            if (claimsHelper.currentBatchBlock(_chains[i].id) != int(-1)) revert BatchStillPending(i);
         }
+
         chainTokens.migrateChainTokenQuantitiesTo1e18(_chains);
         claims.migrateReceiverAmountsTo1e18(_chains);
     }
