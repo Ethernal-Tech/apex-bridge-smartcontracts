@@ -43,6 +43,45 @@ describe("Convert 1e6 to 1e18", function () {
         .withArgs(1);
     });
 
+    it("Should revert BRC claims if briding is paused", async function () {
+      await admin.connect(owner).pauseBridging(true);
+
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
+        bridge,
+        "BridgingPaused"
+      );
+    });
+
+    it("Should revert RRC claims if briding is paused", async function () {
+      await admin.connect(owner).pauseBridging(true);
+
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsRRC)).to.be.revertedWithCustomError(
+        bridge,
+        "BridgingPaused"
+      );
+    });
+
+    it("Should revert HWIC claims if briding is paused", async function () {
+      await admin.connect(owner).pauseBridging(true);
+
+      await expect(bridge.connect(validators[0]).submitClaims(calidatorClaimsHWIC)).to.be.revertedWithCustomError(
+        bridge,
+        "BridgingPaused"
+      );
+    });
+
+    it("Should allow BEC claims if briding is paused", async function () {
+      await admin.connect(owner).pauseBridging(true);
+
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEC)).not.to.be.reverted;
+    });
+
+    it("Should allow BEFC claims if briding is paused", async function () {
+      await admin.connect(owner).pauseBridging(true);
+
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC)).not.to.be.reverted;
+    });
+
     it("Should update receivers in confirmedTransaction that were not yet batched", async function () {
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -84,6 +123,57 @@ describe("Convert 1e6 to 1e18", function () {
         expect(tx.receivers[0].amountWrapped).to.equal(
           BigInt(validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amountWrapped) * 1_000_000_000_000n
         );
+      }
+    });
+
+    it("Should NOT update receivers in confirmedTransaction that WERE batched", async function () {
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
+
+      // wait for next timeout
+      for (let i = 0; i < 8; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBEC);
+
+      const lastConfirmedTxNonce = await claims.lastConfirmedTxNonce(
+        validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId
+      );
+
+      let confirmedTransactionBefore = [];
+
+      for (let i = 1; i <= lastConfirmedTxNonce; i++) {
+        confirmedTransactionBefore[i] = await claims.getConfirmedTransaction(
+          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
+          i
+        );
+      }
+
+      await admin.connect(owner).pauseBridging(true);
+
+      await admin.connect(owner).amountsTo1e18();
+
+      for (let i = 1; i <= lastConfirmedTxNonce; i++) {
+        const tx = await claims.getConfirmedTransaction(
+          validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId,
+          i
+        );
+
+        expect(confirmedTransactionBefore[i].totalAmount).to.equal(tx.totalAmount);
+        expect(confirmedTransactionBefore[i].totalWrappedAmount).to.equal(tx.totalWrappedAmount);
+        expect(confirmedTransactionBefore[i].receivers[0].amount).to.equal(tx.receivers[0].amount);
+        expect(confirmedTransactionBefore[i].receivers[0].amountWrapped).to.equal(tx.receivers[0].amountWrapped);
       }
     });
 
@@ -173,7 +263,10 @@ describe("Convert 1e6 to 1e18", function () {
   let chain1: any;
   let chain2: any;
   let validatorClaimsBRC: any;
+  let validatorClaimsRRC: any;
   let validatorClaimsBEC: any;
+  let validatorClaimsBEFC: any;
+  let calidatorClaimsHWIC: any;
   let signedBatch: any;
   let validatorAddressChainData: any;
   let validators: any;
@@ -189,7 +282,10 @@ describe("Convert 1e6 to 1e18", function () {
     chain1 = fixture.chain1;
     chain2 = fixture.chain2;
     validatorClaimsBRC = fixture.validatorClaimsBRC;
+    validatorClaimsRRC = fixture.validatorClaimsRRC;
     validatorClaimsBEC = fixture.validatorClaimsBEC;
+    validatorClaimsBEFC = fixture.validatorClaimsBEFC;
+    calidatorClaimsHWIC = fixture.validatorClaimsHWIC;
     signedBatch = fixture.signedBatch;
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;
