@@ -82,6 +82,24 @@ describe("Convert 1e6 to 1e18", function () {
       await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC)).not.to.be.reverted;
     });
 
+    it("shouldCreateBatch should always return false if bridging is paused", async function () {
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
+
+      // wait for next timeout
+      for (let i = 0; i < 8; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+
+      await admin.connect(owner).pauseBridging(true);
+
+      expect(await bridge.shouldCreateBatch(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
+        false
+      );
+    });
+
     it("Should update receivers in confirmedTransaction that were not yet batched", async function () {
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
@@ -124,6 +142,22 @@ describe("Convert 1e6 to 1e18", function () {
           BigInt(validatorClaimsBRC.bridgingRequestClaims[0].receivers[0].amountWrapped) * 1_000_000_000_000n
         );
       }
+    });
+
+    it("Should revert if amounts are already converted", async function () {
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
+
+      await admin.connect(owner).pauseBridging(true);
+
+      await admin.connect(owner).amountsTo1e18();
+
+      await expect(admin.connect(owner).amountsTo1e18()).to.be.revertedWithCustomError(
+        admin,
+        "AmountsAlreadyConverted"
+      );
     });
 
     it("Should NOT update receivers in confirmedTransaction that WERE batched", async function () {

@@ -246,6 +246,7 @@ interface IBridgeStructs {
     error BridgingPaused();
     error BridgingNotPaused();
     error BatchStillPending(uint _chainId);
+    error AmountsAlreadyConverted();
 
     // ------------------------------------------------------------------------
     // Events

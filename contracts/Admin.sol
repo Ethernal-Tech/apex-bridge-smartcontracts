@@ -23,10 +23,12 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     Bridge private bridge;
     ClaimsHelper private claimsHelper;
 
+    bool private amountsConverted;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[46] private __gap;
+    uint256[45] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -231,6 +233,8 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     }
 
     function amountsTo1e18() external onlyFundAdmin {
+        if (amountsConverted) revert AmountsAlreadyConverted();
+
         if (!claims.isBridgingPaused()) {
             revert BridgingNotPaused();
         }
@@ -243,6 +247,8 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
 
         chainTokens.migrateChainTokenQuantitiesTo1e18(_chains);
         claims.migrateReceiverAmountsTo1e18(_chains);
+
+        amountsConverted = true;
     }
 
     /// @notice Returns the current version of the contract
