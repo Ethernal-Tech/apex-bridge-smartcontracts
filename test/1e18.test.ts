@@ -64,7 +64,7 @@ describe("Convert 1e6 to 1e18", function () {
     it("Should revert HWIC claims if briding is paused", async function () {
       await admin.connect(owner).pauseBridging(true);
 
-      await expect(bridge.connect(validators[0]).submitClaims(calidatorClaimsHWIC)).to.be.revertedWithCustomError(
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC)).to.be.revertedWithCustomError(
         bridge,
         "BridgingPaused"
       );
@@ -287,6 +287,27 @@ describe("Convert 1e6 to 1e18", function () {
         await chainTokens.chainWrappedTokenQuantity(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)
       ).to.equal(BigInt(chainWrappedTokenQuantityVBefore) * 1_000_000_000_000n);
     });
+
+    it("Should emit AmountsConvertedTo1e18Done() when conversion is done", async function () {
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBEC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBEC);
+
+      await admin.connect(owner).pauseBridging(true);
+
+      expect(await admin.connect(owner).amountsTo1e18()).to.emit(admin, "AmountsConvertedTo1e18Done");
+    });
   });
 
   let bridge: any;
@@ -300,7 +321,7 @@ describe("Convert 1e6 to 1e18", function () {
   let validatorClaimsRRC: any;
   let validatorClaimsBEC: any;
   let validatorClaimsBEFC: any;
-  let calidatorClaimsHWIC: any;
+  let validatorClaimsHWIC: any;
   let signedBatch: any;
   let validatorAddressChainData: any;
   let validators: any;
@@ -319,7 +340,7 @@ describe("Convert 1e6 to 1e18", function () {
     validatorClaimsRRC = fixture.validatorClaimsRRC;
     validatorClaimsBEC = fixture.validatorClaimsBEC;
     validatorClaimsBEFC = fixture.validatorClaimsBEFC;
-    calidatorClaimsHWIC = fixture.validatorClaimsHWIC;
+    validatorClaimsHWIC = fixture.validatorClaimsHWIC;
     signedBatch = fixture.signedBatch;
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;

@@ -269,4 +269,5 @@ interface IBridgeStructs {
     event UpdatedTimeoutBlocksNumber(uint256 _timeoutBlocksNumber);
     event StakeOperationFailedAfterMultipleRetries(uint8 _transactionSubType);
     event TokensRedistributionFailedAfterMultipleRetries(uint8 _chainId);
+    event AmountsConvertedTo1e18Done();
 }

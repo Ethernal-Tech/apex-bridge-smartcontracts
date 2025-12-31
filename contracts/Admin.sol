@@ -249,6 +249,8 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         claims.migrateReceiverAmountsTo1e18(_chains);
 
         amountsConverted = true;
+
+        emit AmountsConvertedTo1e18Done();
     }
 
     /// @notice Returns the current version of the contract

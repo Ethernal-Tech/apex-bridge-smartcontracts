@@ -23,6 +23,8 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
     /// @dev BlockchainId -> TokenQuantity
     mapping(uint8 => uint256) public chainWrappedTokenQuantity;
 
+    uint256 constant AMOUNT_CONVERTER = 1e12;
+
     uint256[50] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -327,10 +329,10 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
             uint256 _quantity = chainTokenQuantity[_chainId];
             uint256 _quantityWrapped = chainWrappedTokenQuantity[_chainId];
             if (_quantity > 0) {
-                chainTokenQuantity[_chainId] = _quantity * 1e12;
+                chainTokenQuantity[_chainId] = _quantity * AMOUNT_CONVERTER;
             }
             if (_quantityWrapped > 0) {
-                chainWrappedTokenQuantity[_chainId] = _quantityWrapped * 1e12;
+                chainWrappedTokenQuantity[_chainId] = _quantityWrapped * AMOUNT_CONVERTER;
             }
         }
     }

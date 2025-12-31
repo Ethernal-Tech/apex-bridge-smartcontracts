@@ -72,6 +72,8 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     bool public isBridgingPaused;
 
+    uint256 constant AMOUNT_CONVERTER = 1e12;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
@@ -585,18 +587,22 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             for (uint64 nonce = fromNonce; nonce <= toNonce; nonce++) {
                 ConfirmedTransaction storage _confirmedTransaction = confirmedTransactions[_chainId][nonce];
                 uint256 receiversLength = _confirmedTransaction.receivers.length;
-                _confirmedTransaction.totalAmount *= 1e12;
-                _confirmedTransaction.totalWrappedAmount *= 1e12;
+                if (_confirmedTransaction.totalAmount > 0) {
+                    _confirmedTransaction.totalAmount *= AMOUNT_CONVERTER;
+                }
+                if (_confirmedTransaction.totalWrappedAmount > 0) {
+                    _confirmedTransaction.totalWrappedAmount *= AMOUNT_CONVERTER;
+                }
 
                 for (uint256 j = 0; j < receiversLength; j++) {
                     ReceiverWithToken storage _receiverWithToken = _confirmedTransaction.receivers[j];
 
                     if (_receiverWithToken.amount != 0) {
-                        _receiverWithToken.amount *= 1e12;
+                        _receiverWithToken.amount *= AMOUNT_CONVERTER;
                     }
 
                     if (_receiverWithToken.amountWrapped != 0) {
-                        _receiverWithToken.amountWrapped *= 1e12;
+                        _receiverWithToken.amountWrapped *= AMOUNT_CONVERTER;
                     }
                 }
             }
