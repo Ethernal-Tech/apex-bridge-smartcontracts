@@ -14,7 +14,8 @@ declare module "@nomicfoundation/hardhat-ethers/types" {
 getContractFactory(name: 'Bridge', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.Bridge__factory>
 getContractFactory(name: 'Claims', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.Claims__factory>
 getContractFactory(name: 'ClaimsHelper', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.ClaimsHelper__factory>
-getContractFactory(name: 'MockPrecompile2050', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.MockPrecompile2050__factory>
+getContractFactory(name: 'MockPrecompileFalse', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.MockPrecompileFalse__factory>
+getContractFactory(name: 'MockPrecompileTrue', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.MockPrecompileTrue__factory>
 getContractFactory(name: 'SignedBatches', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.SignedBatches__factory>
 getContractFactory(name: 'Slots', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.Slots__factory>
 getContractFactory(name: 'UUPSProxy', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.UUPSProxy__factory>
@@ -26,7 +27,8 @@ getContractFactory(name: 'IBridgeStructs', signerOrOptions?: ethers.Signer | Fac
 getContractAt(name: 'Bridge', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.Bridge>
 getContractAt(name: 'Claims', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.Claims>
 getContractAt(name: 'ClaimsHelper', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.ClaimsHelper>
-getContractAt(name: 'MockPrecompile2050', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.MockPrecompile2050>
+getContractAt(name: 'MockPrecompileFalse', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.MockPrecompileFalse>
+getContractAt(name: 'MockPrecompileTrue', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.MockPrecompileTrue>
 getContractAt(name: 'SignedBatches', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.SignedBatches>
 getContractAt(name: 'Slots', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.Slots>
 getContractAt(name: 'UUPSProxy', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.UUPSProxy>
@@ -38,7 +40,8 @@ getContractAt(name: 'IBridgeStructs', address: string | ethers.Addressable, sign
 deployContract(name: 'Bridge', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Bridge>
 deployContract(name: 'Claims', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Claims>
 deployContract(name: 'ClaimsHelper', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.ClaimsHelper>
-deployContract(name: 'MockPrecompile2050', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.MockPrecompile2050>
+deployContract(name: 'MockPrecompileFalse', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.MockPrecompileFalse>
+deployContract(name: 'MockPrecompileTrue', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.MockPrecompileTrue>
 deployContract(name: 'SignedBatches', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.SignedBatches>
 deployContract(name: 'Slots', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Slots>
 deployContract(name: 'UUPSProxy', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.UUPSProxy>
@@ -50,7 +53,8 @@ deployContract(name: 'IBridgeStructs', signerOrOptions?: ethers.Signer | DeployC
 deployContract(name: 'Bridge', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Bridge>
 deployContract(name: 'Claims', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Claims>
 deployContract(name: 'ClaimsHelper', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.ClaimsHelper>
-deployContract(name: 'MockPrecompile2050', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.MockPrecompile2050>
+deployContract(name: 'MockPrecompileFalse', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.MockPrecompileFalse>
+deployContract(name: 'MockPrecompileTrue', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.MockPrecompileTrue>
 deployContract(name: 'SignedBatches', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.SignedBatches>
 deployContract(name: 'Slots', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Slots>
 deployContract(name: 'UUPSProxy', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.UUPSProxy>

@@ -11,11 +11,6 @@ export declare namespace IBridgeStructs {
     export type ValidatorChainDataStructOutput = [key: [bigint, bigint, bigint, bigint]] & {key: [bigint, bigint, bigint, bigint] }
   
 
-    export type PrecompileContractsStruct = {precompile: AddressLike, precompileBls: AddressLike}
-
-    export type PrecompileContractsStructOutput = [precompile: string, precompileBls: string] & {precompile: string, precompileBls: string }
-  
-
     export type ValidatorAddressChainDataStruct = {addr: AddressLike, data: IBridgeStructs.ValidatorChainDataStruct, keySignature: BytesLike, keyFeeSignature: BytesLike}
 
     export type ValidatorAddressChainDataStructOutput = [addr: string, data: IBridgeStructs.ValidatorChainDataStructOutput, keySignature: string, keyFeeSignature: string] & {addr: string, data: IBridgeStructs.ValidatorChainDataStructOutput, keySignature: string, keyFeeSignature: string }
@@ -23,7 +18,7 @@ export declare namespace IBridgeStructs {
     }
 
   export interface ValidatorsInterface extends Interface {
-    getFunction(nameOrSignature: "addValidatorChainData" | "areSignaturesValid" | "getQuorumNumberOfValidators" | "getValidatorIndex" | "getValidatorsChainData" | "initialize" | "isBlsSignatureValid" | "isBlsSignatureValidByValidatorAddress" | "isSignatureValid" | "isValidator" | "owner" | "precompileContracts" | "proxiableUUID" | "renounceOwnership" | "setDependencies" | "setValidatorsChainData" | "transferOwnership" | "upgradeTo" | "upgradeToAndCall" | "validatorsCount" | "version"): FunctionFragment;
+    getFunction(nameOrSignature: "addValidatorChainData" | "areSignaturesValid" | "getQuorumNumberOfValidators" | "getValidatorIndex" | "getValidatorsChainData" | "initialize" | "isBlsSignatureValid" | "isBlsSignatureValidByValidatorAddress" | "isSignatureValid" | "isValidator" | "owner" | "proxiableUUID" | "renounceOwnership" | "setDependencies" | "setValidatorsChainData" | "transferOwnership" | "upgradeTo" | "upgradeToAndCall" | "validatorsCount" | "version"): FunctionFragment;
 
     getEvent(nameOrSignatureOrTopic: "AdminChanged" | "BeaconUpgraded" | "ChainDefunded" | "DefundFailedAfterMultipleRetries" | "FundAdminChanged" | "Initialized" | "NotEnoughFunds" | "OwnershipTransferred" | "UpdatedChainTokenQuantity" | "UpdatedMaxNumberOfTransactions" | "UpdatedTimeoutBlocksNumber" | "Upgraded" | "newChainProposal" | "newChainRegistered"): EventFragment;
 
@@ -32,16 +27,15 @@ encodeFunctionData(functionFragment: 'areSignaturesValid', values: [BigNumberish
 encodeFunctionData(functionFragment: 'getQuorumNumberOfValidators', values?: undefined): string;
 encodeFunctionData(functionFragment: 'getValidatorIndex', values: [AddressLike]): string;
 encodeFunctionData(functionFragment: 'getValidatorsChainData', values: [BigNumberish]): string;
-encodeFunctionData(functionFragment: 'initialize', values: [AddressLike, AddressLike, AddressLike[], IBridgeStructs.PrecompileContractsStruct]): string;
+encodeFunctionData(functionFragment: 'initialize', values: [AddressLike, AddressLike, AddressLike[]]): string;
 encodeFunctionData(functionFragment: 'isBlsSignatureValid', values: [BytesLike, BytesLike, [BigNumberish, BigNumberish, BigNumberish, BigNumberish]]): string;
 encodeFunctionData(functionFragment: 'isBlsSignatureValidByValidatorAddress', values: [BigNumberish, BytesLike, BytesLike, AddressLike]): string;
 encodeFunctionData(functionFragment: 'isSignatureValid', values: [BytesLike, BytesLike, BigNumberish, boolean]): string;
 encodeFunctionData(functionFragment: 'isValidator', values: [AddressLike]): string;
 encodeFunctionData(functionFragment: 'owner', values?: undefined): string;
-encodeFunctionData(functionFragment: 'precompileContracts', values?: undefined): string;
 encodeFunctionData(functionFragment: 'proxiableUUID', values?: undefined): string;
 encodeFunctionData(functionFragment: 'renounceOwnership', values?: undefined): string;
-encodeFunctionData(functionFragment: 'setDependencies', values: [AddressLike]): string;
+encodeFunctionData(functionFragment: 'setDependencies', values: [AddressLike, AddressLike, AddressLike]): string;
 encodeFunctionData(functionFragment: 'setValidatorsChainData', values: [BigNumberish, IBridgeStructs.ValidatorAddressChainDataStruct[]]): string;
 encodeFunctionData(functionFragment: 'transferOwnership', values: [AddressLike]): string;
 encodeFunctionData(functionFragment: 'upgradeTo', values: [AddressLike]): string;
@@ -60,7 +54,6 @@ decodeFunctionResult(functionFragment: 'isBlsSignatureValidByValidatorAddress', 
 decodeFunctionResult(functionFragment: 'isSignatureValid', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'isValidator', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'owner', data: BytesLike): Result;
-decodeFunctionResult(functionFragment: 'precompileContracts', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'proxiableUUID', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'renounceOwnership', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'setDependencies', data: BytesLike): Result;
@@ -316,7 +309,7 @@ decodeFunctionResult(functionFragment: 'version', data: BytesLike): Result;
 
     
     initialize: TypedContractMethod<
-      [_owner: AddressLike, _upgradeAdmin: AddressLike, _validators: AddressLike[], _precompileContracts: IBridgeStructs.PrecompileContractsStruct, ],
+      [_owner: AddressLike, _upgradeAdmin: AddressLike, _validators: AddressLike[], ],
       [void],
       'nonpayable'
     >
@@ -363,14 +356,6 @@ decodeFunctionResult(functionFragment: 'version', data: BytesLike): Result;
     
 
     
-    precompileContracts: TypedContractMethod<
-      [],
-      [[string, string] & {precompile: string, precompileBls: string }],
-      'view'
-    >
-    
-
-    
     proxiableUUID: TypedContractMethod<
       [],
       [string],
@@ -388,7 +373,7 @@ decodeFunctionResult(functionFragment: 'version', data: BytesLike): Result;
 
     
     setDependencies: TypedContractMethod<
-      [_bridgeAddress: AddressLike, ],
+      [_bridgeAddress: AddressLike, _precompile: AddressLike, _precompileBls: AddressLike, ],
       [void],
       'nonpayable'
     >
@@ -471,7 +456,7 @@ getFunction(nameOrSignature: 'getValidatorsChainData'): TypedContractMethod<
       'view'
     >;
 getFunction(nameOrSignature: 'initialize'): TypedContractMethod<
-      [_owner: AddressLike, _upgradeAdmin: AddressLike, _validators: AddressLike[], _precompileContracts: IBridgeStructs.PrecompileContractsStruct, ],
+      [_owner: AddressLike, _upgradeAdmin: AddressLike, _validators: AddressLike[], ],
       [void],
       'nonpayable'
     >;
@@ -500,11 +485,6 @@ getFunction(nameOrSignature: 'owner'): TypedContractMethod<
       [string],
       'view'
     >;
-getFunction(nameOrSignature: 'precompileContracts'): TypedContractMethod<
-      [],
-      [[string, string] & {precompile: string, precompileBls: string }],
-      'view'
-    >;
 getFunction(nameOrSignature: 'proxiableUUID'): TypedContractMethod<
       [],
       [string],
@@ -516,7 +496,7 @@ getFunction(nameOrSignature: 'renounceOwnership'): TypedContractMethod<
       'nonpayable'
     >;
 getFunction(nameOrSignature: 'setDependencies'): TypedContractMethod<
-      [_bridgeAddress: AddressLike, ],
+      [_bridgeAddress: AddressLike, _precompile: AddressLike, _precompileBls: AddressLike, ],
       [void],
       'nonpayable'
     >;

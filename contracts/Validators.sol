@@ -16,11 +16,11 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
 
     // slither-disable too-many-digits
     /// @dev Precompile for standard signature verification
-    address constant PRECOMPILE = 0x0000000000000000000000000000000000002050;
+    address precompile;
     /// @dev Gas limit for the PRECOMPILE call
     uint32 constant PRECOMPILE_GAS = 50000;
     /// @dev Precompile for BLS signature verification
-    address constant VALIDATOR_BLS_PRECOMPILE = 0x0000000000000000000000000000000000002060;
+    address precompileBls;
     /// @dev Gas limit for the BLS precompile
     uint32 constant VALIDATOR_BLS_PRECOMPILE_GAS = 50000;
 
@@ -36,8 +36,6 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @dev max possible number of validators is 127
     uint8 public validatorsCount;
 
-    PrecompileContracts public precompileContracts;
-
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
@@ -52,12 +50,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @param _owner The owner of the contract
     /// @param _upgradeAdmin The upgrade admin address
     /// @param _validators Initial list of validator addresses
-    function initialize(
-        address _owner,
-        address _upgradeAdmin,
-        address[] calldata _validators,
-        PrecompileContracts calldata _precompileContracts
-    ) public initializer {
+    function initialize(address _owner, address _upgradeAdmin, address[] calldata _validators) public initializer {
         __Ownable_init();
         __UUPSUpgradeable_init();
         _transferOwnership(_owner);
@@ -72,8 +65,6 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
             addressValidatorIndex[_validators[i]] = i + 1;
         }
         validatorsCount = uint8(_validators.length);
-        precompileContracts.precompile = _precompileContracts.precompile;
-        precompileContracts.precompileBls = _precompileContracts.precompileBls;
     }
 
     /// @notice Authorizes upgrades. Only the upgrade admin can upgrade the contract.
@@ -82,9 +73,11 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
 
     /// @notice Sets external contract dependencies.
     /// @param _bridgeAddress The address of the bridge contract
-    function setDependencies(address _bridgeAddress) external onlyOwner {
+    function setDependencies(address _bridgeAddress, address _precompile, address _precompileBls) external onlyOwner {
         if (!_isContract(_bridgeAddress)) revert NotContractAddress();
         bridgeAddress = _bridgeAddress;
+        precompile = _precompile;
+        precompileBls = _precompileBls;
     }
 
     function isValidator(address _addr) public view returns (bool) {
@@ -111,7 +104,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         bool _isTx
     ) public view returns (bool) {
         // solhint-disable-line avoid-low-level-calls
-        (bool callSuccess, bytes memory returnData) = (precompileContracts.precompile).staticcall{gas: PRECOMPILE_GAS}(
+        (bool callSuccess, bytes memory returnData) = (precompile).staticcall{gas: PRECOMPILE_GAS}(
             abi.encode(_data, _signature, _verifyingKey, _isTx)
         );
 
@@ -134,9 +127,9 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         // verify signatures` for provided sig data and sigs bytes
         // solhint-disable-next-line avoid-low-level-calls
         // slither-disable-next-line low-level-calls,calls-loop
-        (bool callSuccess, bytes memory returnData) = (precompileContracts.precompile).staticcall{
-            gas: VALIDATOR_BLS_PRECOMPILE_GAS
-        }(abi.encodePacked(uint8(0), abi.encode(_hash, _signature, _verifyingKey)));
+        (bool callSuccess, bytes memory returnData) = (precompileBls).staticcall{gas: VALIDATOR_BLS_PRECOMPILE_GAS}(
+            abi.encodePacked(uint8(0), abi.encode(_hash, _signature, _verifyingKey))
+        );
         return callSuccess && abi.decode(returnData, (bool));
     }
 

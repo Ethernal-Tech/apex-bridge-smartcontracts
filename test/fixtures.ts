@@ -84,22 +84,15 @@ export async function deployBridgeFixture(hre: any) {
     validator5.address,
   ];
 
-  const MockPrecompile = await connection.ethers.getContractFactory("MockPrecompile2050");
-  const mockPrecompile = await MockPrecompile.deploy();
+  const MockPrecompileTrue = await connection.ethers.getContractFactory("MockPrecompileTrue");
+  const mockPrecompileTrue = await MockPrecompileTrue.deploy();
 
-  const precompileContracts = {
-    precompile: mockPrecompile.target,
-    precompileBls: mockPrecompile.target,
-  };
+  const MockPrecompileFalse = await connection.ethers.getContractFactory("MockPrecompileFalse");
+  const mockPrecompileFalse = await MockPrecompileFalse.deploy();
 
   const validatorsProxy = await ValidatorscProxy.deploy(
     await validatorscLogic.getAddress(),
-    Validators.interface.encodeFunctionData("initialize", [
-      owner.address,
-      owner.address,
-      validatorsAddresses,
-      precompileContracts,
-    ])
+    Validators.interface.encodeFunctionData("initialize", [owner.address, owner.address, validatorsAddresses])
   );
 
   const adminProxy = await AdminProxy.deploy(
@@ -144,7 +137,7 @@ export async function deployBridgeFixture(hre: any) {
 
   await slots.setDependencies(bridge.target, validatorsc.target);
 
-  await validatorsc.setDependencies(bridge.target);
+  await validatorsc.setDependencies(bridge.target, mockPrecompileTrue.target, mockPrecompileTrue.target);
 
   await admin.setDependencies(claims.target);
 
@@ -358,6 +351,8 @@ export async function deployBridgeFixture(hre: any) {
     cardanoBlocksTooManyBlocks,
     connection,
     provider,
+    ethers: connection.ethers,
+    mockPrecompileFalse,
   };
 }
 
