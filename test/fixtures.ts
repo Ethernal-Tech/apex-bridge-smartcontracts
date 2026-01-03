@@ -12,6 +12,7 @@ export enum TransactionType {
 export async function deployBridgeFixture(hre: any) {
   const ethers: typeof ethersType = hre.ethers;
   const connection = await hre.network.connect();
+  const provider = connection.ethers.provider;
 
   // Contracts are deployed using the first signer/account by default
   const [owner, validator1, validator2, validator3, validator4, validator5, validator6] =
@@ -355,6 +356,8 @@ export async function deployBridgeFixture(hre: any) {
     validators,
     cardanoBlocks,
     cardanoBlocksTooManyBlocks,
+    connection,
+    provider,
   };
 }
 

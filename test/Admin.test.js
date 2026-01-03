@@ -2,8 +2,6 @@ import hre from "hardhat";
 import { expect } from "chai";
 import { deployBridgeFixture } from "./fixtures";
 
-const connection = await hre.network.connect();
-
 describe("Admin Functions", function () {
   describe("Chain Token Quantity", function () {
     it("Should revert any claim if not called by fundAdmin", async function () {
@@ -208,29 +206,23 @@ describe("Admin Functions", function () {
       for (let i = 0; i <= retryCounter; i++) {
         expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(i + 1);
         expect((await claims.confirmedTransactions(chain2.id, i + 1)).retryCounter).to.equal(i);
-
         // wait for next timeout
         for (let i = 0; i < 3; i++) {
           await connection.ethers.provider.send("evm_mine");
         }
-
         temp_signedBatch.firstTxNonceId = i + 1;
         temp_signedBatch.lastTxNonceId = i + 1;
         temp_signedBatch.id = i + 1;
-
         await bridge.connect(validators[0]).submitSignedBatch(temp_signedBatch);
         await bridge.connect(validators[1]).submitSignedBatch(temp_signedBatch);
         await bridge.connect(validators[2]).submitSignedBatch(temp_signedBatch);
         await bridge.connect(validators[3]).submitSignedBatch(temp_signedBatch);
         await bridge.connect(validators[4]).submitSignedBatch(temp_signedBatch);
-
         const temp_validatorClaimsBEFC = structuredClone(validatorClaimsBEFC);
         temp_validatorClaimsBEFC.batchExecutionFailedClaims[0].batchNonceId = i + 1;
-
         await bridge.connect(validators[0]).submitClaims(temp_validatorClaimsBEFC);
         await bridge.connect(validators[1]).submitClaims(temp_validatorClaimsBEFC);
         await bridge.connect(validators[2]).submitClaims(temp_validatorClaimsBEFC);
-
         if (i == Number(retryCounter)) {
           await expect(await bridge.connect(validators[4]).submitClaims(temp_validatorClaimsBEFC)).to.emit(
             claims,
@@ -238,9 +230,7 @@ describe("Admin Functions", function () {
           );
         } else {
           await bridge.connect(validators[4]).submitClaims(temp_validatorClaimsBEFC);
-
           expect(await claims.lastConfirmedTxNonce(chain2.id)).to.equal(i + 2);
-
           expect((await claims.confirmedTransactions(chain2.id, i + 2)).retryCounter).to.equal(i + 1);
         }
       }
@@ -291,6 +281,8 @@ describe("Admin Functions", function () {
   let validatorAddressChainData;
   let validators;
   let fixture;
+  let provider;
+  let connection;
 
   beforeEach(async function () {
     fixture = await deployBridgeFixture(hre);
@@ -307,6 +299,8 @@ describe("Admin Functions", function () {
     signedBatch = fixture.signedBatch;
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;
+    provider = fixture.provider;
+    connection = fixture.connection;
 
     // Register chains
     await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);

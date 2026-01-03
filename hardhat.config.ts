@@ -15,4 +15,14 @@ export default defineConfig({
       viaIR: true,
     },
   },
+  networks: {
+    hardhat: {
+      type: "edr-simulated",
+      mining: {
+        auto: true,
+        interval: 0,
+      },
+      allowBlocksWithSameTimestamp: true,
+    },
+  },
 });
