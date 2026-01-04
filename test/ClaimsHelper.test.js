@@ -1,6 +1,6 @@
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import hre from "hardhat";
 import { expect } from "chai";
-import { deployBridgeFixture } from "../test/fixtures";
+import { deployBridgeFixture } from "./fixtures";
 
 describe("ClaimsHelper Contract", function () {
   describe("Submit new Bridging Request Claim", function () {
@@ -31,17 +31,18 @@ describe("ClaimsHelper Contract", function () {
     });
   });
 
-  let bridge: any;
-  let claimsHelper: any;
-  let owner: any;
-  let chain1: any;
-  let chain2: any;
-  let validatorClaimsBEFC: any;
-  let signedBatch: any;
-  let validatorAddressChainData: any;
+  let bridge;
+  let claimsHelper;
+  let owner;
+  let chain1;
+  let chain2;
+  let validatorClaimsBEFC;
+  let signedBatch;
+  let validatorAddressChainData;
+  let fixture;
 
   beforeEach(async function () {
-    const fixture = await loadFixture(deployBridgeFixture);
+    fixture = await deployBridgeFixture(hre);
 
     bridge = fixture.bridge;
     claimsHelper = fixture.claimsHelper;

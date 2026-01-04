@@ -1,6 +1,5 @@
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import hre from "hardhat";
 import { expect } from "chai";
-import { ethers } from "hardhat";
 import {
   deployBridgeFixture,
   hashBridgeRequestClaim,
@@ -8,7 +7,7 @@ import {
   hashRefundRequestClaim,
   hashBatchExecutedClaim,
   hashHotWalletIncrementClaim,
-} from "../test/fixtures";
+} from "./fixtures";
 
 describe("Claims Contract", function () {
   describe("Submit new Bridging Request Claim", function () {
@@ -144,6 +143,7 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
+
     it("Should revert with BatchNotFound error if there is already a quorum for BEFC for the same batch", async function () {
       const _destinationChain = validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId;
 
@@ -447,7 +447,10 @@ describe("Claims Contract", function () {
       const hashBEFC = hashBatchExecutionFailedClaim(validatorClaimsBEFC.batchExecutionFailedClaims[0]);
 
       // Calculate BEFC_another hash
-      const hashBEFC_another = hashBatchExecutionFailedClaim(validatorClaimsBEFC_another.batchExecutionFailedClaims[0]);
+      const hashBEFC_another = hashBatchExecutionFailedClaim(
+        validatorClaimsBEFC_another.batchExecutionFailedClaims[0],
+        hre
+      );
 
       // Verify that the hashes are different
       expect(hashBEFC).to.not.equal(hashBEFC_another);
@@ -516,15 +519,15 @@ describe("Claims Contract", function () {
       ]);
 
       const event = receipt.logs
-        .map((log: any) => {
+        .map((log) => {
           try {
             return iface.parseLog(log);
           } catch {
             return null;
           }
         })
-        .filter((log: any) => log !== null)
-        .find((log: any) => log.name === "NotEnoughFunds");
+        .filter((log) => log !== null)
+        .find((log) => log.name === "NotEnoughFunds");
 
       expect(event).to.not.be.undefined;
       expect(event.fragment.name).to.equal("NotEnoughFunds");
@@ -574,6 +577,7 @@ describe("Claims Contract", function () {
 
       expect(await claimsHelper.numberOfVotes(hash)).to.equal(1);
     });
+
     it("Should NOT increment totalQuantity if there is still no consensus on Hot Wallet Increment Claim", async function () {
       expect(await claims.chainTokenQuantity(validatorClaimsHWIC.hotWalletIncrementClaims[0].chainId)).to.equal(100);
 
@@ -673,32 +677,31 @@ describe("Claims Contract", function () {
     });
   });
 
-  let bridge: any;
-  let claimsHelper: any;
-  let claims: any;
-  let signedBatches: any;
-  let owner: any;
-  let chain1: any;
-  let chain2: any;
-  let validatorClaimsBRC: any;
-  let validatorClaimsBRC_bunch32: any;
-  let validatorClaimsBRC_bunch33: any;
-  let validatorClaimsBEC: any;
-  let validatorClaimsBEFC: any;
-  let validatorClaimsRRC: any;
-  let validatorClaimsHWIC: any;
-  let signedBatch: any;
-
-  let validatorAddressChainData: any;
-  let validators: any;
+  let bridge;
+  let claimsHelper;
+  let claims;
+  let owner;
+  let chain1;
+  let chain2;
+  let validatorClaimsBRC;
+  let validatorClaimsBRC_bunch32;
+  let validatorClaimsBRC_bunch33;
+  let validatorClaimsBEC;
+  let validatorClaimsBEFC;
+  let validatorClaimsRRC;
+  let validatorClaimsHWIC;
+  let signedBatch;
+  let validatorAddressChainData;
+  let validators;
+  let fixture;
+  let ethers;
 
   beforeEach(async function () {
-    const fixture = await loadFixture(deployBridgeFixture);
+    fixture = await deployBridgeFixture(hre);
 
     bridge = fixture.bridge;
     claimsHelper = fixture.claimsHelper;
     claims = fixture.claims;
-    signedBatches = fixture.signedBatches;
     owner = fixture.owner;
     chain1 = fixture.chain1;
     chain2 = fixture.chain2;
@@ -712,6 +715,7 @@ describe("Claims Contract", function () {
     signedBatch = fixture.signedBatch;
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;
+    ethers = fixture.ethers;
 
     // Register chains
     await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);

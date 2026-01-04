@@ -1,26 +1,8 @@
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import { expect } from "chai";
-import { ethers } from "hardhat";
-import { deployBridgeFixture } from "../test/fixtures";
 import hre from "hardhat";
+import { expect } from "chai";
+import { deployBridgeFixture } from "./fixtures";
 
 describe("Confirmed Transacrions", function () {
-  async function impersonateAsContractAndMintFunds(contractAddress: string) {
-    const hre = require("hardhat");
-    const address = await contractAddress.toLowerCase();
-    // impersonate as an contract on specified address
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [address],
-    });
-
-    const signer = await ethers.getSigner(address);
-    // minting 100000000000000000000 tokens to signer
-    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
-
-    return signer;
-  }
-
   describe("Transaction Confirmation", function () {
     it("GetConfirmedTransaction should not return transaction that occured after the timeout", async function () {
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
@@ -28,7 +10,7 @@ describe("Confirmed Transacrions", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-      const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
+      const firstTimestampBlockNumber = await provider.getBlockNumber();
 
       // Impersonate as Claims in order to set Next Timeout Block value
       const bridgeAddress = await bridge.getAddress();
@@ -42,10 +24,10 @@ describe("Confirmed Transacrions", function () {
           Number(firstTimestampBlockNumber)
         );
 
-      await hre.network.provider.request({
-        method: "hardhat_stopImpersonatingAccount",
-        params: [bridgeAddress],
-      });
+      // await hre.network.provider.request({
+      //   method: "hardhat_stopImpersonatingAccount",
+      //   params: [bridgeAddress],
+      // });
 
       // wait for next timeout
       for (let i = 0; i < 6; i++) {
@@ -78,7 +60,7 @@ describe("Confirmed Transacrions", function () {
     });
 
     it("GetConfirmedTransactions should not return more transaction than MAX_NUMBER_OF_TRANSACTIONS", async function () {
-      const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
+      const firstTimestampBlockNumber = await provider.getBlockNumber();
 
       // Impersonate as Bridge in order to set Next Timeout Block value
       const bridgeAddress = await bridge.getAddress();
@@ -92,10 +74,10 @@ describe("Confirmed Transacrions", function () {
           Number(firstTimestampBlockNumber + 100)
         );
 
-      await hre.network.provider.request({
-        method: "hardhat_stopImpersonatingAccount",
-        params: [bridgeAddress],
-      });
+      // await hre.network.provider.request({
+      //   method: "hardhat_stopImpersonatingAccount",
+      //   params: [bridgeAddress],
+      // });
 
       const tempBRC = structuredClone(validatorClaimsBRC);
       tempBRC.bridgingRequestClaims[0].totalAmountDst = 1n;
@@ -161,7 +143,7 @@ describe("Confirmed Transacrions", function () {
     });
 
     it("GetConfirmedTransactions should return transactions with appropriate Observed Transaction Hashes", async function () {
-      const firstTimestampBlockNumber = await ethers.provider.getBlockNumber();
+      const firstTimestampBlockNumber = await provider.getBlockNumber();
 
       // Impersonate as Claims in order to set Next Timeout Block value
       const bridgeContratAddress = await bridge.getAddress();
@@ -175,10 +157,10 @@ describe("Confirmed Transacrions", function () {
           Number(firstTimestampBlockNumber + 100)
         );
 
-      await hre.network.provider.request({
-        method: "hardhat_stopImpersonatingAccount",
-        params: [bridgeContratAddress],
-      });
+      // await hre.network.provider.request({
+      //   method: "hardhat_stopImpersonatingAccount",
+      //   params: [bridgeContratAddress],
+      // });
 
       const tempBRC = structuredClone(validatorClaimsBRC);
       tempBRC.bridgingRequestClaims[0].totalAmountDst = 1n;
@@ -244,17 +226,34 @@ describe("Confirmed Transacrions", function () {
     });
   });
 
-  let bridge: any;
-  let claims: any;
-  let owner: any;
-  let chain1: any;
-  let chain2: any;
-  let validatorClaimsBRC: any;
-  let validatorAddressChainData: any;
-  let validators: any;
+  async function impersonateAsContractAndMintFunds(contractAddress) {
+    const address = contractAddress.toLowerCase();
+
+    // impersonate as a contract on specified address
+    await provider.send("hardhat_impersonateAccount", [address]);
+
+    const signer = await ethers.getSigner(address);
+
+    // minting 100000000000000000000 tokens to signer
+    await provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+
+    return signer;
+  }
+
+  let bridge;
+  let claims;
+  let owner;
+  let chain1;
+  let chain2;
+  let validatorClaimsBRC;
+  let validatorAddressChainData;
+  let validators;
+  let fixture;
+  let provider;
+  let ethers;
 
   beforeEach(async function () {
-    const fixture = await loadFixture(deployBridgeFixture);
+    fixture = await deployBridgeFixture(hre);
 
     bridge = fixture.bridge;
     claims = fixture.claims;
@@ -264,6 +263,8 @@ describe("Confirmed Transacrions", function () {
     validatorClaimsBRC = fixture.validatorClaimsBRC;
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;
+    provider = fixture.provider;
+    ethers = fixture.ethers;
 
     // Register chains
     await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);

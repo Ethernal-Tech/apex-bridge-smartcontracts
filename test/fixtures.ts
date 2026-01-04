@@ -1,5 +1,5 @@
 import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin } from "../typechain-types";
-import { ethers as ethersType } from "ethers";
+import { ethers } from "ethers";
 
 export enum TransactionType {
   NORMAL = 0,
@@ -10,7 +10,6 @@ export enum TransactionType {
 }
 
 export async function deployBridgeFixture(hre: any) {
-  const ethers: typeof ethersType = hre.ethers;
   const connection = await hre.network.connect();
   const provider = connection.ethers.provider;
 
