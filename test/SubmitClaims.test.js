@@ -1,13 +1,12 @@
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import hre from "hardhat";
 import { expect } from "chai";
-import { ethers } from "hardhat";
 import {
   deployBridgeFixture,
   hashBatchExecutedClaim,
   hashBatchExecutionFailedClaim,
   hashBridgeRequestClaim,
   hashRefundRequestClaim,
-} from "../test/fixtures";
+} from "./fixtures";
 
 describe("Submit Claims", function () {
   describe("Submit new Bridging Request Claim", function () {
@@ -55,7 +54,7 @@ describe("Submit Claims", function () {
         validatorClaimsBRC.bridgingRequestClaims[0].totalAmountDst
       );
       expect((await claims.confirmedTransactions(destinationChainId, nonce)).blockHeight).to.equal(
-        await ethers.provider.getBlockNumber()
+        await provider.getBlockNumber()
       );
     });
 
@@ -80,7 +79,7 @@ describe("Submit Claims", function () {
     it("Should update next timeout block when Bridging Request Claim is confirmed and requirements are met", async function () {
       // wait for next timeout
       for (let i = 0; i < 3; i++) {
-        await ethers.provider.send("evm_mine");
+        await connection.ethers.provider.send("evm_mine");
       }
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
@@ -88,13 +87,13 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
 
       expect(await claims.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
-        28
+        30
       );
 
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       expect(await claims.nextTimeoutBlock(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
-        35
+        37
       );
     });
 
@@ -165,7 +164,7 @@ describe("Submit Claims", function () {
       const lastConfirmedTxNonce = await claims.lastConfirmedTxNonce(_destinationChain);
       const lastBatchedTxNonce = await claims.lastBatchedTxNonce(_destinationChain);
       const nextBatchBlock = await claims.nextTimeoutBlock(_destinationChain);
-      const currentBlock = await ethers.provider.getBlockNumber();
+      const currentBlock = await provider.getBlockNumber();
 
       expect(nextBatchBlock).to.greaterThan(currentBlock + 1);
       expect(lastConfirmedTxNonce - lastBatchedTxNonce).to.be.lessThanOrEqual(1);
@@ -182,8 +181,8 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
-      await ethers.provider.send("evm_mine");
-      await ethers.provider.send("evm_mine");
+      await connection.ethers.provider.send("evm_mine");
+      await connection.ethers.provider.send("evm_mine");
 
       const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(_destinationChain);
       expect(confirmedTxs.length).to.equal(1);
@@ -224,8 +223,8 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
-      await ethers.provider.send("evm_mine");
-      await ethers.provider.send("evm_mine");
+      await connection.ethers.provider.send("evm_mine");
+      await connection.ethers.provider.send("evm_mine");
 
       const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(_destinationChain);
       expect(confirmedTxs.length).to.equal(1);
@@ -268,8 +267,8 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
-      await ethers.provider.send("evm_mine");
-      await ethers.provider.send("evm_mine");
+      await connection.ethers.provider.send("evm_mine");
+      await connection.ethers.provider.send("evm_mine");
 
       const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(_destinationChain);
       expect(confirmedTxs.length).to.equal(1);
@@ -311,7 +310,7 @@ describe("Submit Claims", function () {
 
       // wait for next timeout
       for (let i = 0; i < 3; i++) {
-        await ethers.provider.send("evm_mine");
+        await connection.ethers.provider.send("evm_mine");
       }
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
@@ -380,7 +379,7 @@ describe("Submit Claims", function () {
       const lastConfirmedTxNonce = await claims.lastConfirmedTxNonce(_destinationChain);
       const lastBatchedTxNonce = await claims.lastBatchedTxNonce(_destinationChain);
       const nextBatchBlock = await claims.nextTimeoutBlock(_destinationChain);
-      const currentBlock = await ethers.provider.getBlockNumber();
+      const currentBlock = await provider.getBlockNumber();
 
       expect(nextBatchBlock).to.greaterThan(currentBlock + 1);
       expect(lastConfirmedTxNonce - lastBatchedTxNonce).to.be.lessThanOrEqual(1);
@@ -410,7 +409,7 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEC);
 
       const nextBatchBlock = await claims.nextTimeoutBlock(_destinationChain);
-      const currentBlock = await ethers.provider.getBlockNumber();
+      const currentBlock = await provider.getBlockNumber();
 
       expect(nextBatchBlock).to.lessThan(currentBlock);
     });
@@ -426,8 +425,8 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
-      await ethers.provider.send("evm_mine");
-      await ethers.provider.send("evm_mine");
+      await connection.ethers.provider.send("evm_mine");
+      await connection.ethers.provider.send("evm_mine");
 
       const confirmedTxs = await bridge.connect(validators[0]).getConfirmedTransactions(_destinationChain);
       expect(confirmedTxs.length).to.equal(1);
@@ -503,7 +502,7 @@ describe("Submit Claims", function () {
       const lastConfirmedTxNonce = await claims.lastConfirmedTxNonce(_destinationChain);
       const lastBatchedTxNonce = await claims.lastBatchedTxNonce(_destinationChain);
       const nextBatchBlock = await claims.nextTimeoutBlock(_destinationChain);
-      const currentBlock = await ethers.provider.getBlockNumber();
+      const currentBlock = await provider.getBlockNumber();
 
       expect(nextBatchBlock).to.greaterThan(currentBlock + 1);
       expect(lastConfirmedTxNonce - lastBatchedTxNonce).to.be.lessThanOrEqual(1);
@@ -533,7 +532,7 @@ describe("Submit Claims", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEFC);
 
       const nextBatchBlock = await claims.nextTimeoutBlock(_destinationChain);
-      const currentBlock = await ethers.provider.getBlockNumber();
+      const currentBlock = await provider.getBlockNumber();
 
       expect(nextBatchBlock).to.lessThan(currentBlock);
     });
@@ -636,7 +635,7 @@ describe("Submit Claims", function () {
         validatorClaimsRRC.refundRequestClaims[0].outputIndexes
       );
       expect((await claims.confirmedTransactions(chainID, nonce)).blockHeight).to.equal(
-        await ethers.provider.getBlockNumber()
+        await provider.getBlockNumber()
       );
     });
 
@@ -823,7 +822,7 @@ describe("Submit Claims", function () {
 
       // wait for next timeout
       for (let i = 0; i < 4; i++) {
-        await ethers.provider.send("evm_mine");
+        await connection.ethers.provider.send("evm_mine");
       }
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
@@ -908,27 +907,27 @@ describe("Submit Claims", function () {
     });
   });
 
-  let admin: any;
-  let bridge: any;
-  let bridgingAddresses: any;
-  let claimsHelper: any;
-  let claims: any;
-  let signedBatches: any;
-  let owner: any;
-  let chain1: any;
-  let chain2: any;
-  let validatorClaimsBRC: any;
-  let validatorClaimsBEC: any;
-  let validatorClaimsBEFC: any;
-  let validatorClaimsRRC: any;
-  let signedBatch: any;
-  let validatorAddressChainData: any;
-  let validators: any;
+  let bridge;
+  let claimsHelper;
+  let claims;
+  let signedBatches;
+  let owner;
+  let chain1;
+  let chain2;
+  let validatorClaimsBRC;
+  let validatorClaimsBEC;
+  let validatorClaimsBEFC;
+  let validatorClaimsRRC;
+  let signedBatch;
+  let validatorAddressChainData;
+  let validators;
+  let fixture;
+  let connection;
+  let provider;
 
   beforeEach(async function () {
-    const fixture = await loadFixture(deployBridgeFixture);
+    fixture = await deployBridgeFixture(hre);
 
-    admin = fixture.admin;
     bridge = fixture.bridge;
     claimsHelper = fixture.claimsHelper;
     claims = fixture.claims;
@@ -943,6 +942,8 @@ describe("Submit Claims", function () {
     signedBatch = fixture.signedBatch;
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;
+    connection = fixture.connection;
+    provider = fixture.provider;
 
     // Register chains
     await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
