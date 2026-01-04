@@ -1,26 +1,8 @@
-import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import hre from "hardhat";
 import { expect } from "chai";
-import { ethers } from "hardhat";
-import { deployBridgeFixture } from "../test/fixtures";
-import { ZeroAddress } from "ethers";
+import { deployBridgeFixture } from "./fixtures";
 
 describe("Chain Registration", function () {
-  async function impersonateAsContractAndMintFunds(contractAddress: string) {
-    const hre = require("hardhat");
-    const address = await contractAddress.toLowerCase();
-    // impersonate as an contract on specified address
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [address],
-    });
-
-    const signer = await ethers.getSigner(address);
-    // minting 100000000000000000000 tokens to signer
-    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
-
-    return signer;
-  }
-
   describe("Registering new chain with Owner", function () {
     it("Should revert new chain if not set by owner", async function () {
       await expect(
@@ -38,7 +20,7 @@ describe("Chain Registration", function () {
 
     it("Should revert if validator's address is zero", async function () {
       const validatorAddressChainData_zeroAddress = validators.map((val, index) => ({
-        addr: ZeroAddress,
+        addr: connection.ethers.ZeroAddress,
         data: {
           key: [
             (4n * BigInt(index)).toString(),
@@ -57,7 +39,7 @@ describe("Chain Registration", function () {
     });
 
     it("Should revert Cardano chain proposal if validator message is not signed correctly", async function () {
-      await setCode("0x0000000000000000000000000000000000002050", "0x60206000F3");
+      await validatorsc.setDependencies(bridge.target, mockPrecompileFalse.target, mockPrecompileFalse.target);
 
       await expect(
         bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData)
@@ -65,7 +47,7 @@ describe("Chain Registration", function () {
     });
 
     it("Should revert Nexus chain proposal if validator message is not signed correctly", async function () {
-      await setCode("0x0000000000000000000000000000000000002060", "0x60206000F3");
+      await validatorsc.setDependencies(bridge.target, mockPrecompileFalse.target, mockPrecompileFalse.target);
 
       await expect(
         bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData)
@@ -112,7 +94,7 @@ describe("Chain Registration", function () {
 
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       expect(await claims.nextTimeoutBlock(chain1.id)).to.equal(
-        BigInt(await ethers.provider.getBlockNumber()) + (await claims.timeoutBlocksNumber())
+        BigInt(await provider.getBlockNumber()) + (await claims.timeoutBlocksNumber())
       );
     });
 
@@ -310,7 +292,7 @@ describe("Chain Registration", function () {
     });
 
     it("Should revert Cardano chain proposal if validator message is not signed correctly", async function () {
-      await setCode("0x0000000000000000000000000000000000002050", "0x60206000F3");
+      await validatorsc.setDependencies(bridge.target, mockPrecompileFalse.target, mockPrecompileFalse.target);
 
       await expect(
         bridge
@@ -327,7 +309,7 @@ describe("Chain Registration", function () {
     });
 
     it("Should revert Nexus chain proposal if validator message is not signed correctly", async function () {
-      await setCode("0x0000000000000000000000000000000000002060", "0x60206000F3");
+      await validatorsc.setDependencies(bridge.target, mockPrecompileFalse.target, mockPrecompileFalse.target);
 
       await expect(
         bridge
@@ -474,7 +456,7 @@ describe("Chain Registration", function () {
         );
 
       expect(await claims.nextTimeoutBlock(1)).to.equal(
-        BigInt(await ethers.provider.getBlockNumber()) + (await claims.timeoutBlocksNumber())
+        BigInt(await provider.getBlockNumber()) + (await claims.timeoutBlocksNumber())
       );
     });
 
@@ -691,25 +673,44 @@ describe("Chain Registration", function () {
 
       expect(validatorAddressChainData.length).to.equal(validators.length);
 
-      await hre.network.provider.request({
-        method: "hardhat_stopImpersonatingAccount",
-        params: [bridgeAddress],
-      });
+      // await hre.network.provider.request({
+      //   method: "hardhat_stopImpersonatingAccount",
+      //   params: [bridgeAddress],
+      // });
     });
   });
 
-  let bridge: any;
-  let claimsHelper: any;
-  let claims: any;
-  let owner: any;
-  let chain1: any;
-  let chain2: any;
-  let validatorsc: any;
-  let validatorAddressChainData: any;
-  let validators: any;
+  async function impersonateAsContractAndMintFunds(contractAddress) {
+    const address = contractAddress.toLowerCase();
+
+    // impersonate as a contract on specified address
+    await provider.send("hardhat_impersonateAccount", [address]);
+
+    const signer = await ethers.getSigner(address);
+
+    // minting 100000000000000000000 tokens to signer
+    await provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+
+    return signer;
+  }
+
+  let bridge;
+  let claimsHelper;
+  let claims;
+  let owner;
+  let chain1;
+  let chain2;
+  let validatorsc;
+  let validatorAddressChainData;
+  let validators;
+  let fixture;
+  let connection;
+  let provider;
+  let ethers;
+  let mockPrecompileFalse;
 
   beforeEach(async function () {
-    const fixture = await loadFixture(deployBridgeFixture);
+    fixture = await deployBridgeFixture(hre);
 
     bridge = fixture.bridge;
     claimsHelper = fixture.claimsHelper;
@@ -720,5 +721,9 @@ describe("Chain Registration", function () {
     validatorsc = fixture.validatorsc;
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;
+    connection = fixture.connection;
+    provider = fixture.provider;
+    ethers = fixture.ethers;
+    mockPrecompileFalse = fixture.mockPrecompileFalse;
   });
 });
