@@ -1,5 +1,4 @@
 import hre from "hardhat";
-import { expect } from "chai";
 import { deployBridgeFixture } from "./fixtures";
 
 describe("Performance", function () {
