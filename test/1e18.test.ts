@@ -5,99 +5,8 @@ import { deployBridgeFixture } from "./fixtures";
 
 describe("Convert 1e6 to 1e18", function () {
   describe("Convert 1e6 to 1e18", function () {
-    it("Should revert if pauseBridging is not called by fundAdmin", async function () {
-      await expect(admin.connect(validators[0]).pauseBridging(true)).to.be.revertedWithCustomError(
-        admin,
-        "NotFundAdmin"
-      );
-    });
-
     it("Should revert if amountsTo1e18 is not called by fundAdmin", async function () {
       await expect(admin.connect(validators[0]).amountsTo1e18()).to.be.revertedWithCustomError(admin, "NotFundAdmin");
-    });
-
-    it("Should revert if amountsTo1e18 is not called when bridging is not paused", async function () {
-      await expect(admin.connect(owner).amountsTo1e18()).to.be.revertedWithCustomError(admin, "BridgingNotPaused");
-    });
-
-    it("Should revert amountsTo1e18 if batch is still pending", async function () {
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
-
-      // wait for next timeout
-      for (let i = 0; i < 8; i++) {
-        await ethers.provider.send("evm_mine");
-      }
-
-      await bridge.connect(validators[0]).submitSignedBatchEVM(signedBatch);
-      await bridge.connect(validators[1]).submitSignedBatchEVM(signedBatch);
-      await bridge.connect(validators[2]).submitSignedBatchEVM(signedBatch);
-      await bridge.connect(validators[3]).submitSignedBatchEVM(signedBatch);
-
-      await admin.connect(owner).pauseBridging(true);
-
-      await expect(admin.connect(owner).amountsTo1e18())
-        .to.be.revertedWithCustomError(admin, "BatchStillPending")
-        .withArgs(1);
-    });
-
-    it("Should revert BRC claims if briding is paused", async function () {
-      await admin.connect(owner).pauseBridging(true);
-
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBRC)).to.be.revertedWithCustomError(
-        bridge,
-        "BridgingPaused"
-      );
-    });
-
-    it("Should revert RRC claims if briding is paused", async function () {
-      await admin.connect(owner).pauseBridging(true);
-
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsRRC)).to.be.revertedWithCustomError(
-        bridge,
-        "BridgingPaused"
-      );
-    });
-
-    it("Should revert HWIC claims if briding is paused", async function () {
-      await admin.connect(owner).pauseBridging(true);
-
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC)).to.be.revertedWithCustomError(
-        bridge,
-        "BridgingPaused"
-      );
-    });
-
-    it("Should allow BEC claims if briding is paused", async function () {
-      await admin.connect(owner).pauseBridging(true);
-
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEC)).not.to.be.reverted;
-    });
-
-    it("Should allow BEFC claims if briding is paused", async function () {
-      await admin.connect(owner).pauseBridging(true);
-
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEFC)).not.to.be.reverted;
-    });
-
-    it("shouldCreateBatch should always return false if bridging is paused", async function () {
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
-
-      // wait for next timeout
-      for (let i = 0; i < 8; i++) {
-        await ethers.provider.send("evm_mine");
-      }
-
-      await admin.connect(owner).pauseBridging(true);
-
-      expect(await bridge.shouldCreateBatch(validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId)).to.equal(
-        false
-      );
     });
 
     it("Should update receivers in confirmedTransaction that were not yet batched", async function () {
@@ -125,8 +34,6 @@ describe("Convert 1e6 to 1e18", function () {
         );
       }
 
-      await admin.connect(owner).pauseBridging(true);
-
       await admin.connect(owner).amountsTo1e18();
 
       for (let i = lastBatchedTxNonce + 1n; i <= lastConfirmedTxNonce; i++) {
@@ -149,8 +56,6 @@ describe("Convert 1e6 to 1e18", function () {
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
-
-      await admin.connect(owner).pauseBridging(true);
 
       await admin.connect(owner).amountsTo1e18();
 
@@ -194,8 +99,6 @@ describe("Convert 1e6 to 1e18", function () {
         );
       }
 
-      await admin.connect(owner).pauseBridging(true);
-
       await admin.connect(owner).amountsTo1e18();
 
       for (let i = 1; i <= lastConfirmedTxNonce; i++) {
@@ -237,8 +140,6 @@ describe("Convert 1e6 to 1e18", function () {
         totalWrappedAmountsBefore[i] = tx.totalWrappedAmount;
       }
 
-      await admin.connect(owner).pauseBridging(true);
-
       await admin.connect(owner).amountsTo1e18();
 
       for (let i = lastBatchedTxNonce + 1n; i <= lastConfirmedTxNonce; i++) {
@@ -276,8 +177,6 @@ describe("Convert 1e6 to 1e18", function () {
         validatorClaimsBRC.bridgingRequestClaims[0].destinationChainId
       );
 
-      await admin.connect(owner).pauseBridging(true);
-
       await admin.connect(owner).amountsTo1e18();
 
       expect(
@@ -303,8 +202,6 @@ describe("Convert 1e6 to 1e18", function () {
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBEC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBEC);
-
-      await admin.connect(owner).pauseBridging(true);
 
       expect(await admin.connect(owner).amountsTo1e18()).to.emit(admin, "AmountsConvertedTo1e18Done");
     });

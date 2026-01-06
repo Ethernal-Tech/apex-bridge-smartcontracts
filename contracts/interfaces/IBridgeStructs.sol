@@ -243,9 +243,6 @@ interface IBridgeStructs {
     error NotClaimsOrClaimsProcessor();
     error NotClaimsProcessorOrRegistration();
     error AlreadyProposed(uint8 _chainId);
-    error BridgingPaused();
-    error BridgingNotPaused();
-    error BatchStillPending(uint _chainId);
     error AmountsAlreadyConverted();
 
     // ------------------------------------------------------------------------

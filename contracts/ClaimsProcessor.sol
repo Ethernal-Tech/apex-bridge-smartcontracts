@@ -117,16 +117,6 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
             refundRequestClaimsLength +
             hotWalletIncrementClaimsLength;
 
-        if (claims.isBridgingPaused()) {
-            uint256 notUsedClaims = bridgingRequestClaimsLength +
-                refundRequestClaimsLength +
-                hotWalletIncrementClaimsLength;
-
-            if (notUsedClaims != 0) {
-                revert BridgingPaused();
-            }
-        }
-
         if (claimsLength > MAX_NUMBER_OF_CLAIMS) {
             revert TooManyClaims(claimsLength, MAX_NUMBER_OF_CLAIMS);
         }

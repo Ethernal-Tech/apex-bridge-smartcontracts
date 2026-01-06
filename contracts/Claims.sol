@@ -70,14 +70,12 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     address private claimsProcessorAddress;
     address private registrationAddress;
 
-    bool public isBridgingPaused;
-
     uint256 constant AMOUNT_CONVERTER = 1e12;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[44] private __gap;
+    uint256[45] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -303,11 +301,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     ///      the timeout block has been surpassed, in which case it returns `true`.
     function shouldCreateBatch(uint8 _destinationChain) public view returns (bool) {
         // if not registered chain or batch is already created, return false
-        if (
-            !isChainRegistered[_destinationChain] ||
-            claimsHelper.currentBatchBlock(_destinationChain) != int(-1) ||
-            isBridgingPaused
-        ) {
+        if (!isChainRegistered[_destinationChain] || claimsHelper.currentBatchBlock(_destinationChain) != int(-1)) {
             return false;
         }
 
@@ -570,10 +564,6 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     function setNextTimeoutBlock(uint8 _chainId, uint256 _nextTimeoutBlock) external onlyClaimsProcessor {
         nextTimeoutBlock[_chainId] = _nextTimeoutBlock;
-    }
-
-    function setBridgingPaused(bool _isBridgingPaused) external onlyAdminContract {
-        isBridgingPaused = _isBridgingPaused;
     }
 
     /// TEMP FUNCTION TO MIGRATE AMOUNTS FROM CONFIRMED TRANSACTIONS TO 1e18 BASE

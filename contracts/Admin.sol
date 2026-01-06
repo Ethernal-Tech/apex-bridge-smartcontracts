@@ -228,22 +228,10 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         return chainTokens.chainWrappedTokenQuantity(_chainId);
     }
 
-    function pauseBridging(bool _isBridgingPaused) external onlyFundAdmin {
-        claims.setBridgingPaused(_isBridgingPaused);
-    }
-
     function amountsTo1e18() external onlyFundAdmin {
         if (amountsConverted) revert AmountsAlreadyConverted();
 
-        if (!claims.isBridgingPaused()) {
-            revert BridgingNotPaused();
-        }
-
         Chain[] memory _chains = bridge.getAllRegisteredChains();
-
-        for (uint8 i = 0; i < _chains.length; i++) {
-            if (claimsHelper.currentBatchBlock(_chains[i].id) != int(-1)) revert BatchStillPending(i);
-        }
 
         chainTokens.migrateChainTokenQuantitiesTo1e18(_chains);
         claims.migrateReceiverAmountsTo1e18(_chains);
