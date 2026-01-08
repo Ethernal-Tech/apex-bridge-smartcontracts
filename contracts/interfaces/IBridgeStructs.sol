@@ -244,6 +244,7 @@ interface IBridgeStructs {
     error NotClaimsProcessorOrRegistration();
     error AlreadyProposed(uint8 _chainId);
     error AmountsAlreadyConverted();
+    error NotChainTokensContract();
 
     // ------------------------------------------------------------------------
     // Events

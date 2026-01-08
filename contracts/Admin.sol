@@ -4,9 +4,7 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "./Bridge.sol";
 import "./Claims.sol";
-import "./ClaimsHelper.sol";
 import "./ChainTokens.sol";
 import "./Utils.sol";
 
@@ -20,15 +18,12 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     BridgingAddresses public bridgingAddresses;
     ChainTokens private chainTokens;
 
-    Bridge private bridge;
-    ClaimsHelper private claimsHelper;
-
     bool private amountsConverted;
 
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[45] private __gap;
+    uint256[47] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -63,25 +58,19 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     /// @dev This function can only be called by the upgrade admin. It verifies that the provided address is a contract.
     /// @param _bridgingAddresses The address of the deployed BridgingAddresses contract.
     /// @param _chainTokens The address of the deployed ChainTokens contract.
-    /// @param _bridgeAddress The address of the deployed Bridge contract.
-    /// @param _claimsHelperAddress The address of the deployed ClaimsHelper contract.
     /// @param isInitialDeployment Indicates whether this call occurs during the initial deployment of the contract. Set to false for upgrades.
     function setAdditionalDependenciesAndSync(
         address _bridgingAddresses,
         address _chainTokens,
-        address _bridgeAddress,
-        address _claimsHelperAddress,
         bool isInitialDeployment
     ) external onlyUpgradeAdmin {
         if (isInitialDeployment) {
-            if (!_isContract(_bridgingAddresses) || !_isContract(_chainTokens)) revert NotContractAddress();
+            if (!_isContract(_bridgingAddresses)) revert NotContractAddress();
             bridgingAddresses = BridgingAddresses(_bridgingAddresses);
-            chainTokens = ChainTokens(_chainTokens);
         }
 
-        if (!_isContract(_bridgeAddress) || !_isContract(_claimsHelperAddress)) revert NotContractAddress();
-        bridge = Bridge(_bridgeAddress);
-        claimsHelper = ClaimsHelper(_claimsHelperAddress);
+        if (!_isContract(_chainTokens)) revert NotContractAddress();
+        chainTokens = ChainTokens(_chainTokens);
     }
 
     /// @notice Updates token quantity for a specific chain
@@ -231,10 +220,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     function amountsTo1e18() external onlyFundAdmin {
         if (amountsConverted) revert AmountsAlreadyConverted();
 
-        Chain[] memory _chains = bridge.getAllRegisteredChains();
-
-        chainTokens.migrateChainTokenQuantitiesTo1e18(_chains);
-        claims.migrateReceiverAmountsTo1e18(_chains);
+        chainTokens.amountsTo1e18();
 
         amountsConverted = true;
 

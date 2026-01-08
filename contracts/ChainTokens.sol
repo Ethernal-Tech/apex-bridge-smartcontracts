@@ -5,6 +5,8 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBridgeStructs.sol";
+import "./Bridge.sol";
+import "./Claims.sol";
 import "./Utils.sol";
 
 contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPSUpgradeable {
@@ -320,8 +322,14 @@ contract ChainTokens is IBridgeStructs, Utils, Initializable, OwnableUpgradeable
         store[key] -= amount;
     }
 
+    function amountsTo1e18() external onlyAdminContract {
+        Chain[] memory _chains = Bridge(bridgeAddress).getAllRegisteredChains();
+        _migrateChainTokenQuantitiesTo1e18(_chains);
+        Claims(claimsAddress).migrateReceiverAmountsTo1e18(_chains);
+    }
+
     /// TEMP FUNCTION TO MIGRATE CHAIN QUANTITIES TO 1e18 BASE
-    function migrateChainTokenQuantitiesTo1e18(Chain[] calldata _chains) external onlyAdminContract {
+    function _migrateChainTokenQuantitiesTo1e18(Chain[] memory _chains) internal {
         uint8 chainLength = uint8(_chains.length);
 
         for (uint8 i = 0; i < chainLength; i++) {

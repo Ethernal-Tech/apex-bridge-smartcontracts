@@ -567,7 +567,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     }
 
     /// TEMP FUNCTION TO MIGRATE AMOUNTS FROM CONFIRMED TRANSACTIONS TO 1e18 BASE
-    function migrateReceiverAmountsTo1e18(Chain[] calldata _chains) external onlyAdminContract {
+    function migrateReceiverAmountsTo1e18(Chain[] calldata _chains) external onlyChainTokensContract {
         uint8 chainsLength = uint8(_chains.length);
         for (uint8 i = 0; i < chainsLength; i++) {
             uint8 _chainId = _chains[i].id;
@@ -632,6 +632,11 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     modifier onlyClaimsProcessor() {
         if (msg.sender != claimsProcessorAddress) revert NotClaimsProcessor();
+        _;
+    }
+
+    modifier onlyChainTokensContract() {
+        if (msg.sender != address(chainTokens)) revert NotChainTokensContract();
         _;
     }
 }

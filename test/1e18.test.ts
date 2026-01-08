@@ -9,6 +9,21 @@ describe("Convert 1e6 to 1e18", function () {
       await expect(admin.connect(validators[0]).amountsTo1e18()).to.be.revertedWithCustomError(admin, "NotFundAdmin");
     });
 
+    it("Should revert if amountsTo1e18 on chainTokens is not called by admin contract", async function () {
+      await expect(chainTokens.connect(validators[0]).amountsTo1e18()).to.be.revertedWithCustomError(
+        admin,
+        "NotAdminContract"
+      );
+    });
+
+    it("Should revert if migrateReceiverAmountsTo1e18 is not called by admin chainTokens contract", async function () {
+      const chains = [chain1, chain2];
+      await expect(claims.connect(validators[0]).migrateReceiverAmountsTo1e18(chains)).to.be.revertedWithCustomError(
+        admin,
+        "NotChainTokensContract"
+      );
+    });
+
     it("Should update receivers in confirmedTransaction that were not yet batched", async function () {
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);

@@ -190,20 +190,7 @@ export async function deployBridgeFixture() {
 
   await admin.setDependencies(claims.target);
 
-  await admin.setAdditionalDependenciesAndSync(
-    bridgingAddressesProxy.target,
-    chainTokensProxy.target,
-    bridgeProxy.target,
-    claimsHelperProxy.target,
-    true
-  );
-  await admin.setAdditionalDependenciesAndSync(
-    bridgingAddressesProxy.target,
-    chainTokensProxy.target,
-    bridgeProxy.target,
-    claimsHelperProxy.target,
-    false
-  );
+  await admin.setAdditionalDependenciesAndSync(bridgingAddressesProxy.target, chainTokensProxy.target, true);
 
   await bridge.setDependencies(
     claimsProxy.target,
