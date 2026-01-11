@@ -18,12 +18,10 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     BridgingAddresses public bridgingAddresses;
     ChainTokens private chainTokens;
 
-    bool private amountsConverted;
-
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[47] private __gap;
+    uint256[46] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -218,11 +216,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     }
 
     function amountsTo1e18() external onlyFundAdmin {
-        if (amountsConverted) revert AmountsAlreadyConverted();
-
         chainTokens.amountsTo1e18();
-
-        amountsConverted = true;
 
         emit AmountsConvertedTo1e18Done();
     }

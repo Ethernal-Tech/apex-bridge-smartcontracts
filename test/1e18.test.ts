@@ -66,20 +66,6 @@ describe("Convert 1e6 to 1e18", function () {
       }
     });
 
-    it("Should revert if amounts are already converted", async function () {
-      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-      await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
-
-      await admin.connect(owner).amountsTo1e18();
-
-      await expect(admin.connect(owner).amountsTo1e18()).to.be.revertedWithCustomError(
-        admin,
-        "AmountsAlreadyConverted"
-      );
-    });
-
     it("Should NOT update receivers in confirmedTransaction that WERE batched", async function () {
       await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
