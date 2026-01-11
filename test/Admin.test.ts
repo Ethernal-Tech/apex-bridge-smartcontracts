@@ -493,43 +493,43 @@ describe("Admin Functions", function () {
       }
     });
   });
-  // describe("Update bridge configuration", function () {
-  //   it("Calling updateMaxNumberOfTransactions should revert if not called by owner", async function () {
-  //     await expect(admin.connect(validators[0]).updateMaxNumberOfTransactions(1)).to.be.revertedWith(
-  //       "Ownable: caller is not the owner"
-  //     );
-  //   });
+  describe("Update bridge configuration", function () {
+    it("Calling updateMaxNumberOfTransactions should revert if not called by owner", async function () {
+      await expect(admin.connect(validators[0]).updateMaxNumberOfTransactions(1)).to.be.revertedWith(
+        "Ownable: caller is not the owner"
+      );
+    });
 
-  //   it("Calling updateMaxNumberOfTransactions should update maxNumberOfTransactions", async function () {
-  //     await admin.connect(owner).updateMaxNumberOfTransactions(4);
+    it("Calling updateMaxNumberOfTransactions should update maxNumberOfTransactions", async function () {
+      await admin.connect(owner).updateMaxNumberOfTransactions(4);
 
-  //     expect(await claims.maxNumberOfTransactions()).to.equal(4);
-  //   });
+      expect(await claims.maxNumberOfTransactions()).to.equal(4);
+    });
 
-  //   it("Calling updateMaxNumberOfTransactions should triger UpdatedMaxNumberOfTransactions event", async function () {
-  //     await expect(admin.connect(owner).updateMaxNumberOfTransactions(4))
-  //       .to.emit(admin, "UpdatedMaxNumberOfTransactions")
-  //       .withArgs(4);
-  //   });
+    it("Calling updateMaxNumberOfTransactions should triger UpdatedMaxNumberOfTransactions event", async function () {
+      await expect(admin.connect(owner).updateMaxNumberOfTransactions(4))
+        .to.emit(admin, "UpdatedMaxNumberOfTransactions")
+        .withArgs(4);
+    });
 
-  //   it("Calling timeoutBlocksNumber should revert if not called by owner", async function () {
-  //     await expect(admin.connect(validators[0]).updateTimeoutBlocksNumber(1)).to.be.revertedWith(
-  //       "Ownable: caller is not the owner"
-  //     );
-  //   });
+    it("Calling timeoutBlocksNumber should revert if not called by owner", async function () {
+      await expect(admin.connect(validators[0]).updateTimeoutBlocksNumber(1)).to.be.revertedWith(
+        "Ownable: caller is not the owner"
+      );
+    });
 
-  //   it("Calling timeoutBlocksNumber should update timeoutBlocksNumber", async function () {
-  //     await admin.connect(owner).updateTimeoutBlocksNumber(4);
+    it("Calling timeoutBlocksNumber should update timeoutBlocksNumber", async function () {
+      await admin.connect(owner).updateTimeoutBlocksNumber(4);
 
-  //     expect(await claims.timeoutBlocksNumber()).to.equal(4);
-  //   });
+      expect(await claims.timeoutBlocksNumber()).to.equal(4);
+    });
 
-  //   it("Calling timeoutBlocksNumber should triger UpdatgedTimeoutBlocksNumber event", async function () {
-  //     await expect(admin.connect(owner).updateTimeoutBlocksNumber(4))
-  //       .to.emit(admin, "UpdatedTimeoutBlocksNumber")
-  //       .withArgs(4);
-  //   });
-  // });
+    it("Calling timeoutBlocksNumber should triger UpdatgedTimeoutBlocksNumber event", async function () {
+      await expect(admin.connect(owner).updateTimeoutBlocksNumber(4))
+        .to.emit(admin, "UpdatedTimeoutBlocksNumber")
+        .withArgs(4);
+    });
+  });
 
   let bridge: any;
   let claimsHelper: any;
