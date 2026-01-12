@@ -783,6 +783,24 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         return (_status, _txHashes);
     }
 
+    /// @notice Retrieves status and type for a specific batch on a given chain.
+    /// @dev This function returns status and type for a batch identified by its batch ID.
+    /// @param _chainId The ID of the chain on which the batch exists.
+    /// @param _batchId The ID of the batch to retrieve transactions for.
+    /// @return _status Status code indicating batch execution status.
+    /// @return _type Batch type.
+    function getBatchStatusAndType(
+        uint8 _chainId,
+        uint64 _batchId
+    ) external view returns (uint8 _status, uint8 _type) {
+        ConfirmedSignedBatchData memory _confirmedSignedBatch = claimsHelper.getConfirmedSignedBatchData(
+            _chainId,
+            _batchId
+        );
+
+        return (_confirmedSignedBatch.status, _confirmedSignedBatch.batchType);
+    }
+
     /// @notice Retrieves a status for a specific batch on a given chain.
     /// @param _chainId The ID of the chain on which the batch exists.
     /// @param _batchId The ID of the batch to retrieve transactions for.
@@ -820,7 +838,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.1.0";
+        return "1.1.1";
     }
 
     modifier onlyBridge() {
