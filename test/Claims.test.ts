@@ -794,6 +794,22 @@ describe("Claims Contract", function () {
       expect(txs).to.deep.equal([]);
       expect(status).to.equal(1);
     });
+
+    it("getBatchStatusAndType should return status and type from batch", async function () {
+      await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
+      await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
+
+      await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[1]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[2]).submitSignedBatch(signedBatch);
+      await bridge.connect(validators[3]).submitSignedBatch(signedBatch);
+
+      const [status, type] = await claims.getBatchStatusAndType(signedBatch.destinationChainId, signedBatch.id);
+      expect(status).to.equal(1);
+      expect(type).to.equal(0);
+    });
   });
 
   let bridge: any;

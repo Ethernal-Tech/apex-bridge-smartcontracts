@@ -116,6 +116,16 @@ abstract contract IBridge is IBridgeStructs {
         uint64 _batchId
     ) external virtual returns (uint8 _status, TxDataInfo[] memory _txs);
 
+    /// @notice Get status and type for a specific batch for a given chain.
+    /// @param _chainId ID of the chain.
+    /// @param _batchId ID of the batch.
+    /// @return _status Status of the batch.
+    /// @return _type Type of the batch.
+    function getBatchStatusAndType(
+        uint8 _chainId,
+        uint64 _batchId
+    ) external virtual returns (uint8 _status, uint8 _type);
+
     /// @notice Notifies the bridge that new validator set has been implemented on Blade.
     function validatorSetUpdated() external virtual;
 

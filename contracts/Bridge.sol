@@ -386,6 +386,18 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
         return claims.getBatchStatusAndTransactions(_chainId, _batchId);
     }
 
+    /// @notice Get status and type for a specific batch for a given chain.
+    /// @param _chainId ID of the chain.
+    /// @param _batchId ID of the batch.
+    /// @return _status Status of the batch.
+    /// @return _type Type of the batch.
+    function getBatchStatusAndType(
+        uint8 _chainId,
+        uint64 _batchId
+    ) external view override returns (uint8 _status, uint8 _type) {
+        return claims.getBatchStatusAndType(_chainId, _batchId);
+    }
+
     /// @notice Check if a new validator set is pending.
     /// @return _pending True if a new validator set is pending, false otherwise.
     function isNewValidatorSetPending() external view override returns (bool _pending) {
@@ -423,7 +435,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.1.1";
+        return "1.1.2";
     }
 
     modifier onlyValidator() {
