@@ -1,7 +1,6 @@
-import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import hre from "hardhat";
 import { expect } from "chai";
-import { ethers } from "hardhat";
-import { BatchType, ConstantsLib, deployBridgeFixture } from "./fixtures";
+import { ConstantsLib, BatchType, deployBridgeFixture } from "./fixtures";
 
 describe("Dynamic Validator Set", function () {
   describe("Submit new validator set", function () {
@@ -164,7 +163,7 @@ describe("Dynamic Validator Set", function () {
 
       // wait for next timeout
       for (let i = 0; i < 3; i++) {
-        await ethers.provider.send("evm_mine");
+        await connection.ethers.provider.send("evm_mine");
       }
 
       await expect(
@@ -295,8 +294,8 @@ describe("Dynamic Validator Set", function () {
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
       //every await in this describe is one block, so we need to wait 2 blocks to timeout (current timeout is 5 blocks)
-      await ethers.provider.send("evm_mine");
-      await ethers.provider.send("evm_mine");
+      await connection.ethers.provider.send("evm_mine");
+      await connection.ethers.provider.send("evm_mine");
 
       await expect(
         bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSet)
@@ -308,7 +307,13 @@ describe("Dynamic Validator Set", function () {
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
 
-      await setCode("0x0000000000000000000000000000000000002050", "0x60206000F3"); // should return false for precompile
+      await validatorsc.setAdditionalDependenciesAndSync(
+        validatorsAddresses,
+        mockPrecompileFalse.target,
+        mockPrecompileFalse.target,
+        true
+      );
+
       await expect(
         bridge.connect(validators[0]).submitSignedBatch(signedBatch_ValidatorSet)
       ).to.be.revertedWithCustomError(bridge, "InvalidSignature");
@@ -479,7 +484,7 @@ describe("Dynamic Validator Set", function () {
     });
 
     it("Should not revert if there is new validator set pending", async function () {
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEC)).not.to.be.reverted;
+      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsBEC)).not.to.revert(ethers);
     });
 
     it("Should NOT set bitmap to +1 if there is quorum on non-final batch in SBEC", async function () {
@@ -636,7 +641,7 @@ describe("Dynamic Validator Set", function () {
           const targetFifth = fifthKey.map(BigInt);
 
           const foundFourth = chainData.some(
-            (entry: any) =>
+            (entry) =>
               Array.isArray(entry[0]) &&
               entry[0].length === targetFourth.length &&
               entry[0].every((val, i) => val === targetFourth[i])
@@ -645,7 +650,7 @@ describe("Dynamic Validator Set", function () {
           expect(foundFourth).to.be.false;
 
           const foundFifth = chainData.some(
-            (entry: any) =>
+            (entry) =>
               Array.isArray(entry[0]) &&
               entry[0].length === targetFifth.length &&
               entry[0].every((val, i) => val === targetFifth[i])
@@ -662,7 +667,7 @@ describe("Dynamic Validator Set", function () {
           const target = newValidatorSetDelta.addedValidators[0].validators[j].data.key.map(BigInt);
 
           const found = chainData.some(
-            (entry: any) =>
+            (entry) =>
               Array.isArray(entry[0]) &&
               entry[0].length === target.length &&
               entry[0].every((val, i) => val === target[i])
@@ -756,7 +761,7 @@ describe("Dynamic Validator Set", function () {
           const target = newValidatorSetDelta_AddOnly.addedValidators[0].validators[j].data.key.map(BigInt);
 
           const found = chainData.some(
-            (entry: any) =>
+            (entry) =>
               Array.isArray(entry[0]) &&
               entry[0].length === target.length &&
               entry[0].every((val, i) => val === target[i])
@@ -847,74 +852,63 @@ describe("Dynamic Validator Set", function () {
       expect(await validatorsc.newValidatorSetPending()).to.equal(false);
     });
   });
-  async function impersonateAsContractAndMintFunds(contractAddress: string) {
-    const hre = require("hardhat");
+  async function impersonateAsContractAndMintFunds(contractAddress) {
+    // const hre = require("hardhat");
     const address = await contractAddress.toLowerCase();
     // impersonate as an contract on specified address
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [address],
-    });
+    await connection.ethers.provider.send("hardhat_impersonateAccount", [address]);
 
-    const signer = await ethers.getSigner(address);
+    const signer = await connection.ethers.getSigner(address);
     // minting 100000000000000000000 tokens to signer
-    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+    await connection.ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
 
     return signer;
   }
 
-  let bridge: any;
-  let claimsHelper: any;
-  let claims: any;
-  let signedBatches: any;
-  let validatorsc: any;
-  let owner: any;
-  let chain1: any;
-  let chain2: any;
-  let newValidatorSetDelta: any;
-  let newValidatorSetDelta_AddOnly: any;
-  let newValidatorSetDelta_BladeMissing: any;
-  let newValidatorSetDelta_DoubleAddress: any;
-  let newValidatorSetDelta_MissingChainIDs: any;
-  let newValidatorSetDelta_NotEnoughChains: any;
-  let newValidatorSetDelta_NotEnoughValidators: any;
-  let newValidatorSetDelta_RemoveOnly: any;
-  let newValidatorSetDelta_TooManyChains: any;
-  let newValidatorSetDelta_TooManyValidators: any;
-  let newValidatorSetDelta_ZeroAddress: any;
-  let signedBatch: any;
-  let signedBatch_ValidatorSet: any;
-  let validatorClaimsBRC: any;
-  let validatorClaimsBEC: any;
-  let validatorClaimsBEFC: any;
-  let validatorAddressChainData: any;
-  let validators: any;
+  let bridge;
+  let claims;
+  let claimsHelper;
+  let signedBatches;
+  let validatorsc;
+  let owner;
+  let chain1;
+  let chain2;
+  let signedBatch;
+  let signedBatch_ValidatorSet;
+  let validatorClaimsBRC;
+  let validatorClaimsBEC;
+  let validatorClaimsBEFC;
+  let validatorAddressChainData;
+  let validators;
+  let newValidatorSetDelta;
+  let newValidatorSetDelta_AddOnly;
+  let newValidatorSetDelta_BladeMissing;
+  let newValidatorSetDelta_DoubleAddress;
+  let newValidatorSetDelta_MissingChainIDs;
+  let newValidatorSetDelta_NotEnoughChains;
+  let newValidatorSetDelta_NotEnoughValidators;
+  let newValidatorSetDelta_RemoveOnly;
+  let newValidatorSetDelta_TooManyChains;
+  let newValidatorSetDelta_TooManyValidators;
+  let newValidatorSetDelta_ZeroAddress;
+  let mockPrecompileFalse;
+  let validatorsAddresses;
+  let fixture;
+  let provider;
+  let connection;
+  let ethers;
 
   beforeEach(async function () {
-    // mock isSignatureValid precompile to always return true
-    await setCode("0x0000000000000000000000000000000000002050", "0x600160005260206000F3");
-    await setCode("0x0000000000000000000000000000000000002060", "0x600160005260206000F3");
-    const fixture = await loadFixture(deployBridgeFixture);
+    fixture = await deployBridgeFixture(hre);
 
     bridge = fixture.bridge;
-    claimsHelper = fixture.claimsHelper;
     claims = fixture.claims;
+    claimsHelper = fixture.claimsHelper;
     signedBatches = fixture.signedBatches;
     validatorsc = fixture.validatorsc;
     owner = fixture.owner;
     chain1 = fixture.chain1;
     chain2 = fixture.chain2;
-    newValidatorSetDelta = fixture.newValidatorSetDelta;
-    newValidatorSetDelta_AddOnly = fixture.newValidatorSetDelta_AddOnly;
-    newValidatorSetDelta_BladeMissing = fixture.newValidatorSetDelta_BladeMissing;
-    newValidatorSetDelta_DoubleAddress = fixture.newValidatorSetDelta_DoubleAddress;
-    newValidatorSetDelta_MissingChainIDs = fixture.newValidatorSetDelta_MissingChainIDs;
-    newValidatorSetDelta_NotEnoughChains = fixture.newValidatorSetDelta_NotEnoughChains;
-    newValidatorSetDelta_NotEnoughValidators = fixture.newValidatorSetDelta_NotEnoughValidators;
-    newValidatorSetDelta_RemoveOnly = fixture.newValidatorSetDelta_RemoveOnly;
-    newValidatorSetDelta_TooManyChains = fixture.newValidatorSetDelta_TooManyChains;
-    newValidatorSetDelta_TooManyValidators = fixture.newValidatorSetDelta_TooManyValidators;
-    newValidatorSetDelta_ZeroAddress = fixture.newValidatorSetDelta_ZeroAddress;
     signedBatch = fixture.signedBatch;
     signedBatch_ValidatorSet = fixture.signedBatch_ValidatorSet;
     validatorClaimsBRC = fixture.validatorClaimsBRC;
@@ -922,6 +916,22 @@ describe("Dynamic Validator Set", function () {
     validatorClaimsBEFC = fixture.validatorClaimsBEFC;
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;
+    newValidatorSetDelta = fixture.newValidatorSetDelta;
+    newValidatorSetDelta_DoubleAddress = fixture.newValidatorSetDelta_DoubleAddress;
+    newValidatorSetDelta_AddOnly = fixture.newValidatorSetDelta_AddOnly;
+    newValidatorSetDelta_BladeMissing = fixture.newValidatorSetDelta_BladeMissing;
+    newValidatorSetDelta_MissingChainIDs = fixture.newValidatorSetDelta_MissingChainIDs;
+    newValidatorSetDelta_NotEnoughChains = fixture.newValidatorSetDelta_NotEnoughChains;
+    newValidatorSetDelta_NotEnoughValidators = fixture.newValidatorSetDelta_NotEnoughValidators;
+    newValidatorSetDelta_RemoveOnly = fixture.newValidatorSetDelta_RemoveOnly;
+    newValidatorSetDelta_TooManyChains = fixture.newValidatorSetDelta_TooManyChains;
+    newValidatorSetDelta_TooManyValidators = fixture.newValidatorSetDelta_TooManyValidators;
+    newValidatorSetDelta_ZeroAddress = fixture.newValidatorSetDelta_ZeroAddress;
+    mockPrecompileFalse = fixture.mockPrecompileFalse;
+    validatorsAddresses = fixture.validatorsAddresses;
+    provider = fixture.provider;
+    connection = fixture.connection;
+    ethers = fixture.ethers;
 
     // Register chains
     await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);

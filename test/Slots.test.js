@@ -1,48 +1,16 @@
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import hre from "hardhat";
 import { expect } from "chai";
 import { deployBridgeFixture } from "./fixtures";
-import { ethers, network } from "hardhat";
 
 describe("Slots Contract", function () {
-  async function impersonateAsContractAndMintFunds(contractAddress: string) {
-    const hre = require("hardhat");
-    const address = await contractAddress.toLowerCase();
-    // impersonate as an contract on specified address
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [address],
-    });
-
-    const signer = await ethers.getSigner(address);
-    // minting 100000000000000000000 tokens to signer
-    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
-
-    return signer;
-  }
   describe("Slot management", function () {
     it("Should revert if chain is not registered", async function () {
-      const { bridge, validators, cardanoBlocks } = await loadFixture(deployBridgeFixture);
-
       await expect(
-        bridge.connect(validators[0]).submitLastObservedBlocks(1, cardanoBlocks)
+        bridge.connect(validators[0]).submitLastObservedBlocks(3, cardanoBlocks)
       ).to.be.revertedWithCustomError(bridge, "ChainIsNotRegistered");
     });
 
     it("Should revert if there is new validator set pending", async function () {
-      const {
-        bridge,
-        validators,
-        cardanoBlocks,
-        owner,
-        chain1,
-        chain2,
-        validatorAddressChainData,
-        newValidatorSetDelta,
-      } = await loadFixture(deployBridgeFixture);
-
-      await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
-      await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
       const systemSigner = await impersonateAsContractAndMintFunds("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
 
       await bridge.connect(systemSigner).submitNewValidatorSet(newValidatorSetDelta);
@@ -131,17 +99,35 @@ describe("Slots Contract", function () {
     });
   });
 
-  let bridge: any;
-  let owner: any;
-  let validators: any;
-  let slots: any;
-  let cardanoBlocks: any;
-  let chain1: any;
-  let chain2: any;
-  let validatorAddressChainData: any;
+  async function impersonateAsContractAndMintFunds(contractAddress) {
+    const address = contractAddress.toLowerCase();
+
+    // impersonate as a contract on specified address
+    await provider.send("hardhat_impersonateAccount", [address]);
+
+    const signer = await ethers.getSigner(address);
+
+    // minting 100000000000000000000 tokens to signer
+    await provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+
+    return signer;
+  }
+
+  let bridge;
+  let owner;
+  let validators;
+  let slots;
+  let cardanoBlocks;
+  let chain1;
+  let chain2;
+  let validatorAddressChainData;
+  let newValidatorSetDelta;
+  let fixture;
+  let provider;
+  let ethers;
 
   beforeEach(async function () {
-    const fixture = await loadFixture(deployBridgeFixture);
+    fixture = await deployBridgeFixture(hre);
 
     bridge = fixture.bridge;
     owner = fixture.owner;
@@ -151,6 +137,9 @@ describe("Slots Contract", function () {
     slots = fixture.slots;
     cardanoBlocks = fixture.cardanoBlocks;
     validatorAddressChainData = fixture.validatorAddressChainData;
+    newValidatorSetDelta = fixture.newValidatorSetDelta;
+    provider = fixture.provider;
+    ethers = fixture.ethers;
 
     // Register chains
     await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
