@@ -14,13 +14,8 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     address private upgradeAdmin;
     address private bridgeAddress;
 
-    // slither-disable too-many-digits
-    /// @dev Precompile for standard signature verification
-    address constant PRECOMPILE = 0x0000000000000000000000000000000000002050;
     /// @dev Gas limit for the PRECOMPILE call
     uint32 constant PRECOMPILE_GAS = 50000;
-    /// @dev Precompile for BLS signature verification
-    address constant VALIDATOR_BLS_PRECOMPILE = 0x0000000000000000000000000000000000002060;
     /// @dev Gas limit for the BLS precompile
     uint32 constant VALIDATOR_BLS_PRECOMPILE_GAS = 50000;
     /// @dev blade apex-bridge fake chain id
@@ -51,10 +46,16 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @dev This is used to track the current validator set version
     uint256 public currentValidatorSetId;
 
+    /// @dev Precompile for standard signature verification
+    address precompile;
+
+    /// @dev Precompile for BLS signature verification
+    address precompileBls;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[45] private __gap;
+    uint256[43] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -97,11 +98,24 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @notice Sets the external contract dependencies.
     /// @dev This function can only be called by the upgrade admin. It verifies that the provided address is a contract.
     /// @param _validators Current list of validator addresses
-    function setAdditionalDependenciesAndSync(address[] calldata _validators) external onlyUpgradeAdmin {
-        delete validatorAddresses;
-        for (uint8 i; i < _validators.length; i++) {
-            validatorAddresses.push(_validators[i]);
+    /// @param _precompile The address of the deployed standard precompile contract.
+    /// @param _precompileBls The address of the deployed BLS precompile contract.
+    /// @param isInitialDeployment Indicates whether this call occurs during the initial deployment of the contract. Set to false for upgrades.
+    function setAdditionalDependenciesAndSync(
+        address[] calldata _validators,
+        address _precompile,
+        address _precompileBls,
+        bool isInitialDeployment
+    ) external onlyUpgradeAdmin {
+        if (isInitialDeployment) {
+            delete validatorAddresses;
+            for (uint8 i; i < _validators.length; i++) {
+                validatorAddresses.push(_validators[i]);
+            }
         }
+        if (_precompile == address(0) || _precompileBls == address(0)) revert ZeroAddress();
+        precompile = _precompile;
+        precompileBls = _precompileBls;
     }
 
     function isValidator(address _addr) public view returns (bool) {
@@ -132,7 +146,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         bool _isTx
     ) public view returns (bool) {
         // solhint-disable-line avoid-low-level-calls
-        (bool callSuccess, bytes memory returnData) = PRECOMPILE.staticcall{gas: PRECOMPILE_GAS}(
+        (bool callSuccess, bytes memory returnData) = precompile.staticcall{gas: PRECOMPILE_GAS}(
             abi.encode(_data, _signature, _verifyingKey, _isTx)
         );
 
@@ -155,9 +169,9 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         // verify signatures` for provided sig data and sigs bytes
         // solhint-disable-next-line avoid-low-level-calls
         // slither-disable-next-line low-level-calls,calls-loop
-        (bool callSuccess, bytes memory returnData) = VALIDATOR_BLS_PRECOMPILE.staticcall{
-            gas: VALIDATOR_BLS_PRECOMPILE_GAS
-        }(abi.encodePacked(uint8(0), abi.encode(_hash, _signature, _verifyingKey)));
+        (bool callSuccess, bytes memory returnData) = precompileBls.staticcall{gas: VALIDATOR_BLS_PRECOMPILE_GAS}(
+            abi.encodePacked(uint8(0), abi.encode(_hash, _signature, _verifyingKey))
+        );
         return callSuccess && abi.decode(returnData, (bool));
     }
 
@@ -333,7 +347,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
                     }
                 }
 
-                // TODO check for empty multisig and fee addresses                
+                // TODO check for empty multisig and fee addresses
             }
         }
     }

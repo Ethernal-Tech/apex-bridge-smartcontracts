@@ -1,6 +1,5 @@
-import { loadFixture, setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import hre from "hardhat";
 import { expect } from "chai";
-import { ethers } from "hardhat";
 import { BatchType, deployBridgeFixture } from "./fixtures";
 
 describe("Batch Creation", function () {
@@ -18,15 +17,18 @@ describe("Batch Creation", function () {
 
       const signedBatch_UnregisteredChain = {
         id: 1,
-        destinationChainId: "unregisteredChainId1",
+        destinationChainId: 123,
         rawTransaction: "0x7465737400000000000000000000000000000000000000000000000000000000",
         signature: "0x7465737400000000000000000000000000000000000000000000000000000000",
         feeSignature: "0x7465737400000000000000000000000000000000000000000000000000000000",
         firstTxNonceId: 1,
         lastTxNonceId: 1,
+        batchType: BatchType.NORMAL,
       };
 
-      await expect(bridge.connect(validators[0]).submitSignedBatch(signedBatch_UnregisteredChain)); // submitSignedBatch should return for unregistered chain
+      await expect(bridge.connect(validators[0]).submitSignedBatch(signedBatch_UnregisteredChain)).to.not.be.revert(
+        ethers
+      ); // submitSignedBatch should return for unregistered chain
     });
 
     it("SignedBatch submition should be reverted if not called by validator", async function () {
@@ -42,7 +44,13 @@ describe("Batch Creation", function () {
       await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
       await bridge.connect(validators[3]).submitClaims(validatorClaimsBRC);
 
-      await setCode("0x0000000000000000000000000000000000002050", "0x60206000F3"); // should return false for precompile
+      await validatorsc.setAdditionalDependenciesAndSync(
+        validatorsAddresses,
+        mockPrecompileFalse.target,
+        mockPrecompileFalse.target,
+        true
+      );
+
       await expect(bridge.connect(validators[0]).submitSignedBatch(signedBatch)).to.be.revertedWithCustomError(
         bridge,
         "InvalidSignature"
@@ -402,42 +410,43 @@ describe("Batch Creation", function () {
       expect(nextBatchBlock).to.lessThan(currentBlock + 1);
     });
   });
-  async function impersonateAsContractAndMintFunds(contractAddress: string) {
-    const hre = require("hardhat");
-    const address = await contractAddress.toLowerCase();
-    // impersonate as an contract on specified address
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [address],
-    });
+
+  async function impersonateAsContractAndMintFunds(contractAddress) {
+    const address = contractAddress.toLowerCase();
+
+    // impersonate as a contract on specified address
+    await provider.send("hardhat_impersonateAccount", [address]);
 
     const signer = await ethers.getSigner(address);
+
     // minting 100000000000000000000 tokens to signer
-    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+    await provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
 
     return signer;
   }
 
-  let bridge: any;
-  let claimsHelper: any;
-  let claims: any;
-  let signedBatches: any;
-  let validatorsc: any;
-  let owner: any;
-  let chain1: any;
-  let chain2: any;
-  let validatorClaimsBRC: any;
-  let validatorClaimsBEC: any;
-  let signedBatch: any;
-  let validatorAddressChainData: any;
-  let validators: any;
-  let currentValidatorSetId: any;
+  let bridge;
+  let claimsHelper;
+  let claims;
+  let signedBatches;
+  let validatorsc;
+  let owner;
+  let chain1;
+  let chain2;
+  let validatorClaimsBRC;
+  let validatorClaimsBEC;
+  let signedBatch;
+  let validatorAddressChainData;
+  let validators;
+  let validatorsAddresses;
+  let currentValidatorSetId;
+  let fixture;
+  let provider;
+  let ethers;
+  let mockPrecompileFalse;
 
   beforeEach(async function () {
-    // mock isSignatureValid precompile to always return true
-    await setCode("0x0000000000000000000000000000000000002050", "0x600160005260206000F3");
-    await setCode("0x0000000000000000000000000000000000002060", "0x600160005260206000F3");
-    const fixture = await loadFixture(deployBridgeFixture);
+    fixture = await deployBridgeFixture(hre);
 
     bridge = fixture.bridge;
     claimsHelper = fixture.claimsHelper;
@@ -452,6 +461,10 @@ describe("Batch Creation", function () {
     signedBatch = fixture.signedBatch;
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;
+    validatorsAddresses = fixture.validatorsAddresses;
+    provider = fixture.provider;
+    ethers = fixture.ethers;
+    mockPrecompileFalse = fixture.mockPrecompileFalse;
 
     // Register chains
     await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
