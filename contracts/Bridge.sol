@@ -10,7 +10,7 @@ import "./interfaces/TransactionTypesLib.sol";
 import "./BridgingAddresses.sol";
 import "./ChainTokens.sol";
 import "./Claims.sol";
-import "./ClaimsHelper.sol";
+import "./ClaimsProcessor.sol";
 import "./Registration.sol";
 import "./SignedBatches.sol";
 import "./Slots.sol";

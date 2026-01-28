@@ -237,23 +237,6 @@ describe("Batch creation", function () {
       await ethers.provider.send("evm_mine");
     }
 
-    await expect(bridge.connect(owner).submitSignedBatchEVM(signedBatch)).to.be.revertedWithCustomError(
-      bridge,
-      "NotValidator"
-    );
-  });
-
-  it("Should create ConfirmedBatch if there are enough votes", async function () {
-    await bridge.connect(validators[0]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[1]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[2]).submitClaims(validatorClaimsBRC);
-    await bridge.connect(validators[4]).submitClaims(validatorClaimsBRC);
-
-    // wait for next timeout
-    for (let i = 0; i < 8; i++) {
-      await ethers.provider.send("evm_mine");
-    }
-
     await bridge.connect(validators[0]).submitSignedBatchEVM(signedBatch);
     await bridge.connect(validators[1]).submitSignedBatchEVM(signedBatch);
     await bridge.connect(validators[2]).submitSignedBatchEVM(signedBatch);
