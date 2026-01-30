@@ -1,18 +1,5 @@
-import { ethers } from "hardhat";
-import {
-  Admin,
-  Bridge,
-  BridgingAddresses,
-  ChainTokens,
-  Claims,
-  ClaimsHelper,
-  ClaimsProcessor,
-  Registration,
-  SignedBatches,
-  Slots,
-  Validators,
-} from "../typechain-types";
-import { setCode } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import { Bridge, Claims, ClaimsHelper, SignedBatches, Slots, Validators, Admin } from "../typechain-types";
+import { ethers } from "ethers";
 
 export enum BatchType {
   NORMAL = 0,
@@ -35,61 +22,65 @@ export enum TransactionSubType {
   STAKE_DEREGISTRATION = 2,
 }
 
-export async function deployBridgeFixture() {
-  const PRECOMPILE_MOCK = "0x600160005260206000F3"; // returns true for isSignatureValid
-
-  await setCode("0x0000000000000000000000000000000000002050", PRECOMPILE_MOCK);
-  await setCode("0x0000000000000000000000000000000000002060", PRECOMPILE_MOCK);
+export async function deployBridgeFixture(hre: any) {
+  const connection = await hre.network.connect();
+  const provider = connection.ethers.provider;
 
   // Contracts are deployed using the first signer/account by default
-  const [owner, validator1, validator2, validator3, validator4, validator5] = await ethers.getSigners();
+  const [owner, validator1, validator2, validator3, validator4, validator5] = await connection.ethers.getSigners();
   const validators = [validator1, validator2, validator3, validator4, validator5];
 
-  const Admin = await ethers.getContractFactory("Admin");
+  const Admin = await connection.ethers.getContractFactory("Admin");
   const adminLogic = await Admin.deploy();
 
-  const Bridge = await ethers.getContractFactory("Bridge");
+  const Bridge = await connection.ethers.getContractFactory("Bridge");
   const bridgeLogic = await Bridge.deploy();
 
-  const BridgingAddresses = await ethers.getContractFactory("BridgingAddresses");
+  const BridgingAddresses = await connection.ethers.getContractFactory("BridgingAddresses");
   const bridgingAddressesLogic = await BridgingAddresses.deploy();
 
-  const ChainTokens = await ethers.getContractFactory("ChainTokens");
+  const ChainTokens = await connection.ethers.getContractFactory("ChainTokens");
   const chainTokensLogic = await ChainTokens.deploy();
 
-  const Claims = await ethers.getContractFactory("Claims");
+  const Claims = await connection.ethers.getContractFactory("Claims");
   const claimsLogic = await Claims.deploy();
 
-  const ClaimsHelper = await ethers.getContractFactory("ClaimsHelper");
+  const ClaimsHelper = await connection.ethers.getContractFactory("ClaimsHelper");
   const claimsHelperLogic = await ClaimsHelper.deploy();
 
-  const ClaimsProcessor = await ethers.getContractFactory("ClaimsProcessor");
+  const ClaimsProcessor = await connection.ethers.getContractFactory("ClaimsProcessor");
   const claimsProcessorLogic = await ClaimsProcessor.deploy();
 
-  const Registration = await ethers.getContractFactory("Registration");
+  const Registration = await connection.ethers.getContractFactory("Registration");
   const registrationLogic = await Registration.deploy();
 
-  const SignedBatches = await ethers.getContractFactory("SignedBatches");
+  const SignedBatches = await connection.ethers.getContractFactory("SignedBatches");
   const signedBatchesLogic = await SignedBatches.deploy();
 
-  const Slots = await ethers.getContractFactory("Slots");
+  const Slots = await connection.ethers.getContractFactory("Slots");
   const slotsLogic = await Slots.deploy();
 
-  const Validators = await ethers.getContractFactory("Validators");
+  const Validators = await connection.ethers.getContractFactory("Validators");
   const validatorscLogic = await Validators.deploy();
 
+  const MockPrecompileTrue = await connection.ethers.getContractFactory("MockPrecompileTrue");
+  const mockPrecompileTrue = await MockPrecompileTrue.deploy();
+
+  const MockPrecompileFalse = await connection.ethers.getContractFactory("MockPrecompileFalse");
+  const mockPrecompileFalse = await MockPrecompileFalse.deploy();
+
   // deployment of contract proxy
-  const AdminProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const BridgeProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const BridgingAddressesProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const ChainTokensProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const ClaimsProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const ClaimsHelperProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const ClaimsProcessorProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const RegistrationProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const SignedBatchesProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const SlotsProxy = await ethers.getContractFactory("ERC1967Proxy");
-  const ValidatorscProxy = await ethers.getContractFactory("ERC1967Proxy");
+  const AdminProxy = await connection.ethers.getContractFactory("UUPSProxy");
+  const BridgeProxy = await connection.ethers.getContractFactory("UUPSProxy");
+  const BridgingAddressesProxy = await connection.ethers.getContractFactory("UUPSProxy");
+  const ChainTokensProxy = await connection.ethers.getContractFactory("UUPSProxy");
+  const ClaimsProxy = await connection.ethers.getContractFactory("UUPSProxy");
+  const ClaimsHelperProxy = await connection.ethers.getContractFactory("UUPSProxy");
+  const ClaimsProcessorProxy = await connection.ethers.getContractFactory("UUPSProxy");
+  const RegistrationProxy = await connection.ethers.getContractFactory("UUPSProxy");
+  const SignedBatchesProxy = await connection.ethers.getContractFactory("UUPSProxy");
+  const SlotsProxy = await connection.ethers.getContractFactory("UUPSProxy");
+  const ValidatorscProxy = await connection.ethers.getContractFactory("UUPSProxy");
 
   const adminProxy = await AdminProxy.deploy(
     await adminLogic.getAddress(),
@@ -155,38 +146,38 @@ export async function deployBridgeFixture() {
   );
 
   //casting proxy contracts to contract logic
-  const AdminDeployed = await ethers.getContractFactory("Admin");
-  const admin = AdminDeployed.attach(adminProxy.target) as Admin;
+  const AdminDeployed = await connection.ethers.getContractFactory("Admin");
+  const admin = AdminDeployed.attach(adminProxy.target);
 
-  const BridgeDeployed = await ethers.getContractFactory("Bridge");
-  const bridge = BridgeDeployed.attach(bridgeProxy.target) as Bridge;
+  const BridgeDeployed = await connection.ethers.getContractFactory("Bridge");
+  const bridge = BridgeDeployed.attach(bridgeProxy.target);
 
-  const BridgingAddressesDeployed = await ethers.getContractFactory("BridgingAddresses");
-  const bridgingAddresses = BridgingAddressesDeployed.attach(bridgingAddressesProxy.target) as BridgingAddresses;
+  const BridgingAddressesDeployed = await connection.ethers.getContractFactory("BridgingAddresses");
+  const bridgingAddresses = BridgingAddressesDeployed.attach(bridgingAddressesProxy.target);
 
-  const ChainTokensDeployed = await ethers.getContractFactory("ChainTokens");
-  const chainTokens = ChainTokensDeployed.attach(chainTokensProxy.target) as ChainTokens;
+  const ChainTokensDeployed = await connection.ethers.getContractFactory("ChainTokens");
+  const chainTokens = ChainTokensDeployed.attach(chainTokensProxy.target);
 
-  const ClaimsDeployed = await ethers.getContractFactory("Claims");
-  const claims = ClaimsDeployed.attach(claimsProxy.target) as Claims;
+  const ClaimsDeployed = await connection.ethers.getContractFactory("Claims");
+  const claims = ClaimsDeployed.attach(claimsProxy.target);
 
-  const ClaimsHelperDeployed = await ethers.getContractFactory("ClaimsHelper");
-  const claimsHelper = ClaimsHelperDeployed.attach(claimsHelperProxy.target) as ClaimsHelper;
+  const ClaimsHelperDeployed = await connection.ethers.getContractFactory("ClaimsHelper");
+  const claimsHelper = ClaimsHelperDeployed.attach(claimsHelperProxy.target);
 
-  const ClaimsProcessorDeployed = await ethers.getContractFactory("ClaimsProcessor");
-  const claimsProcessor = ClaimsProcessorDeployed.attach(claimsProcessorProxy.target) as ClaimsProcessor;
+  const ClaimsProcessorDeployed = await connection.ethers.getContractFactory("ClaimsProcessor");
+  const claimsProcessor = ClaimsProcessorDeployed.attach(claimsProcessorProxy.target);
 
-  const RegistrationDeployed = await ethers.getContractFactory("Registration");
-  const registration = RegistrationDeployed.attach(registrationProxy.target) as Registration;
+  const RegistrationDeployed = await connection.ethers.getContractFactory("Registration");
+  const registration = RegistrationDeployed.attach(registrationProxy.target);
 
-  const SignedBatchesDeployed = await ethers.getContractFactory("SignedBatches");
-  const signedBatches = SignedBatchesDeployed.attach(signedBatchesProxy.target) as SignedBatches;
+  const SignedBatchesDeployed = await connection.ethers.getContractFactory("SignedBatches");
+  const signedBatches = SignedBatchesDeployed.attach(signedBatchesProxy.target);
 
-  const SlotsDeployed = await ethers.getContractFactory("Slots");
-  const slots = SlotsDeployed.attach(slotsProxy.target) as Slots;
+  const SlotsDeployed = await connection.ethers.getContractFactory("Slots");
+  const slots = SlotsDeployed.attach(slotsProxy.target);
 
-  const ValidatorsDeployed = await ethers.getContractFactory("Validators");
-  const validatorsc = ValidatorsDeployed.attach(validatorsProxy.target) as Validators;
+  const ValidatorsDeployed = await connection.ethers.getContractFactory("Validators");
+  const validatorsc = ValidatorsDeployed.attach(validatorsProxy.target);
 
   await admin.setDependencies(claims.target);
 
@@ -255,7 +246,12 @@ export async function deployBridgeFixture() {
 
   await validatorsc.setDependencies(bridge.target);
 
-  await validatorsc.setAdditionalDependenciesAndSync(registrationProxy.target);
+  await validatorsc.setAdditionalDependenciesAndSync(
+    registrationProxy.target,
+    mockPrecompileTrue.target,
+    mockPrecompileTrue.target,
+    true
+  );
 
   const chain1 = {
     id: 1,
@@ -494,6 +490,11 @@ export async function deployBridgeFixture() {
     cardanoBlocks,
     bridgeAddrIndex,
     tokenAmounts,
+    mockPrecompileFalse,
+    mockPrecompileTrue,
+    connection,
+    provider,
+    ethers: connection.ethers,
   };
 }
 
