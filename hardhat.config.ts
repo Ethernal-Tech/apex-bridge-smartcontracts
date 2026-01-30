@@ -1,19 +1,18 @@
-import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
-import "@nomiclabs/hardhat-solhint";
+import { defineConfig } from "hardhat/config";
+import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
+import HardhatIgnitionEthersPlugin from "@nomicfoundation/hardhat-ignition-ethers";
 
-const config: HardhatUserConfig = {
+export default defineConfig({
+  plugins: [hardhatToolboxMochaEthers, HardhatIgnitionEthersPlugin],
   solidity: {
     version: "0.8.24",
     settings: {
       evmVersion: "paris",
       optimizer: {
         enabled: true,
-        runs: 1000,
+        runs: 200,
       },
       viaIR: true,
     },
   },
-};
-
-export default config;
+});
