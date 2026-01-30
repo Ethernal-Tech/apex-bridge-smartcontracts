@@ -1,5 +1,4 @@
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import { ethers } from "hardhat";
+import hre from "hardhat";
 import { expect } from "chai";
 import { deployBridgeFixture } from "./fixtures";
 
@@ -74,7 +73,7 @@ describe("Convert 1e6 to 1e18", function () {
 
       // wait for next timeout
       for (let i = 0; i < 8; i++) {
-        await ethers.provider.send("evm_mine");
+        await connection.ethers.provider.send("evm_mine");
       }
 
       await bridge.connect(validators[0]).submitSignedBatch(signedBatch);
@@ -208,24 +207,26 @@ describe("Convert 1e6 to 1e18", function () {
     });
   });
 
-  let bridge: any;
-  let claims: any;
-  let chainTokens: any;
-  let admin: any;
-  let owner: any;
-  let chain1: any;
-  let chain2: any;
-  let validatorClaimsBRC: any;
-  let validatorClaimsRRC: any;
-  let validatorClaimsBEC: any;
-  let validatorClaimsBEFC: any;
-  let validatorClaimsHWIC: any;
-  let signedBatch: any;
-  let validatorAddressChainData: any;
-  let validators: any;
+  let bridge;
+  let claims;
+  let chainTokens;
+  let admin;
+  let owner;
+  let chain1;
+  let chain2;
+  let validatorClaimsBRC;
+  let validatorClaimsRRC;
+  let validatorClaimsBEC;
+  let validatorClaimsBEFC;
+  let validatorClaimsHWIC;
+  let signedBatch;
+  let validatorAddressChainData;
+  let validators;
+  let connection;
+  let fixture;
 
   beforeEach(async function () {
-    const fixture = await loadFixture(deployBridgeFixture);
+    fixture = await deployBridgeFixture(hre);
 
     bridge = fixture.bridge;
     claims = fixture.claims;
@@ -242,6 +243,7 @@ describe("Convert 1e6 to 1e18", function () {
     signedBatch = fixture.signedBatch;
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;
+    connection = fixture.connection;
 
     // Register chains
     await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);

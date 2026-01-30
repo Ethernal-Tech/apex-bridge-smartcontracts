@@ -15,7 +15,7 @@ export declare namespace IBridgeStructs {
   export interface IBridgeStructsInterface extends Interface {
     
 
-    getEvent(nameOrSignatureOrTopic: "ChainDefunded" | "DefundFailedAfterMultipleRetries" | "FundAdminChanged" | "NotEnoughFunds" | "StakeOperationFailedAfterMultipleRetries" | "TokensRedistributionFailedAfterMultipleRetries" | "UpdatedChainTokenQuantity" | "UpdatedChainWrappedTokenQuantity" | "UpdatedMaxNumberOfTransactions" | "UpdatedTimeoutBlocksNumber" | "newChainProposal" | "newChainRegistered"): EventFragment;
+    getEvent(nameOrSignatureOrTopic: "AmountsConvertedTo1e18Done" | "ChainDefunded" | "DefundFailedAfterMultipleRetries" | "FundAdminChanged" | "NotEnoughFunds" | "StakeOperationFailedAfterMultipleRetries" | "TokensRedistributionFailedAfterMultipleRetries" | "UpdatedChainTokenQuantity" | "UpdatedChainWrappedTokenQuantity" | "UpdatedMaxNumberOfTransactions" | "UpdatedTimeoutBlocksNumber" | "newChainProposal" | "newChainRegistered"): EventFragment;
 
     
 
@@ -23,6 +23,18 @@ export declare namespace IBridgeStructs {
   }
 
   
+    export namespace AmountsConvertedTo1e18DoneEvent {
+      export type InputTuple = [];
+      export type OutputTuple = [];
+      export interface OutputObject {};
+      export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>
+      export type Filter = TypedDeferredTopicFilter<Event>
+      export type Log = TypedEventLog<Event>
+      export type LogDescription = TypedLogDescription<Event>
+    }
+
+  
+
     export namespace ChainDefundedEvent {
       export type InputTuple = [_chainId: BigNumberish, _amount: BigNumberish, _amountWrapped: BigNumberish, _tokenAmounts: IBridgeStructs.TokenAmountStruct[], _defundAddress: string];
       export type OutputTuple = [_chainId: bigint, _amount: bigint, _amountWrapped: bigint, _tokenAmounts: IBridgeStructs.TokenAmountStructOutput[], _defundAddress: string];
@@ -206,7 +218,8 @@ export declare namespace IBridgeStructs {
 
     
 
-    getEvent(key: 'ChainDefunded'): TypedContractEvent<ChainDefundedEvent.InputTuple, ChainDefundedEvent.OutputTuple, ChainDefundedEvent.OutputObject>;
+    getEvent(key: 'AmountsConvertedTo1e18Done'): TypedContractEvent<AmountsConvertedTo1e18DoneEvent.InputTuple, AmountsConvertedTo1e18DoneEvent.OutputTuple, AmountsConvertedTo1e18DoneEvent.OutputObject>;
+getEvent(key: 'ChainDefunded'): TypedContractEvent<ChainDefundedEvent.InputTuple, ChainDefundedEvent.OutputTuple, ChainDefundedEvent.OutputObject>;
 getEvent(key: 'DefundFailedAfterMultipleRetries'): TypedContractEvent<DefundFailedAfterMultipleRetriesEvent.InputTuple, DefundFailedAfterMultipleRetriesEvent.OutputTuple, DefundFailedAfterMultipleRetriesEvent.OutputObject>;
 getEvent(key: 'FundAdminChanged'): TypedContractEvent<FundAdminChangedEvent.InputTuple, FundAdminChangedEvent.OutputTuple, FundAdminChangedEvent.OutputObject>;
 getEvent(key: 'NotEnoughFunds'): TypedContractEvent<NotEnoughFundsEvent.InputTuple, NotEnoughFundsEvent.OutputTuple, NotEnoughFundsEvent.OutputObject>;
@@ -221,6 +234,10 @@ getEvent(key: 'newChainRegistered'): TypedContractEvent<newChainRegisteredEvent.
 
     filters: {
       
+      'AmountsConvertedTo1e18Done()': TypedContractEvent<AmountsConvertedTo1e18DoneEvent.InputTuple, AmountsConvertedTo1e18DoneEvent.OutputTuple, AmountsConvertedTo1e18DoneEvent.OutputObject>;
+      AmountsConvertedTo1e18Done: TypedContractEvent<AmountsConvertedTo1e18DoneEvent.InputTuple, AmountsConvertedTo1e18DoneEvent.OutputTuple, AmountsConvertedTo1e18DoneEvent.OutputObject>;
+    
+
       'ChainDefunded(uint8,uint256,uint256,tuple[],string)': TypedContractEvent<ChainDefundedEvent.InputTuple, ChainDefundedEvent.OutputTuple, ChainDefundedEvent.OutputObject>;
       ChainDefunded: TypedContractEvent<ChainDefundedEvent.InputTuple, ChainDefundedEvent.OutputTuple, ChainDefundedEvent.OutputObject>;
     

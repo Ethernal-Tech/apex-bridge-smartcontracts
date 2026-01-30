@@ -13,11 +13,12 @@ export declare namespace IBridgeStructs {
     }
 
   export interface AdminInterface extends Interface {
-    getFunction(nameOrSignature: "bridgingAddresses" | "defund" | "fundAdmin" | "getChainTokenQuantity" | "getChainWrappedTokenQuantity" | "initialize" | "owner" | "proxiableUUID" | "redistributeBridgingAddrsTokens" | "renounceOwnership" | "setAdditionalDependenciesAndSync" | "setDependencies" | "setFundAdmin" | "stakeAddressOperation" | "transferOwnership" | "updateBridgingAddrsCount" | "updateChainTokenQuantity" | "updateChainWrappedTokenQuantity" | "updateMaxNumberOfTransactions" | "updateTimeoutBlocksNumber" | "upgradeTo" | "upgradeToAndCall" | "version"): FunctionFragment;
+    getFunction(nameOrSignature: "amountsTo1e18" | "bridgingAddresses" | "defund" | "fundAdmin" | "getChainTokenQuantity" | "getChainWrappedTokenQuantity" | "initialize" | "owner" | "proxiableUUID" | "redistributeBridgingAddrsTokens" | "renounceOwnership" | "setAdditionalDependenciesAndSync" | "setDependencies" | "setFundAdmin" | "stakeAddressOperation" | "transferOwnership" | "updateBridgingAddrsCount" | "updateChainTokenQuantity" | "updateChainWrappedTokenQuantity" | "updateMaxNumberOfTransactions" | "updateTimeoutBlocksNumber" | "upgradeTo" | "upgradeToAndCall" | "version"): FunctionFragment;
 
-    getEvent(nameOrSignatureOrTopic: "AdminChanged" | "BeaconUpgraded" | "ChainDefunded" | "DefundFailedAfterMultipleRetries" | "FundAdminChanged" | "Initialized" | "NotEnoughFunds" | "OwnershipTransferred" | "StakeOperationFailedAfterMultipleRetries" | "TokensRedistributionFailedAfterMultipleRetries" | "UpdatedChainTokenQuantity" | "UpdatedChainWrappedTokenQuantity" | "UpdatedMaxNumberOfTransactions" | "UpdatedTimeoutBlocksNumber" | "Upgraded" | "newChainProposal" | "newChainRegistered"): EventFragment;
+    getEvent(nameOrSignatureOrTopic: "AdminChanged" | "AmountsConvertedTo1e18Done" | "BeaconUpgraded" | "ChainDefunded" | "DefundFailedAfterMultipleRetries" | "FundAdminChanged" | "Initialized" | "NotEnoughFunds" | "OwnershipTransferred" | "StakeOperationFailedAfterMultipleRetries" | "TokensRedistributionFailedAfterMultipleRetries" | "UpdatedChainTokenQuantity" | "UpdatedChainWrappedTokenQuantity" | "UpdatedMaxNumberOfTransactions" | "UpdatedTimeoutBlocksNumber" | "Upgraded" | "newChainProposal" | "newChainRegistered"): EventFragment;
 
-    encodeFunctionData(functionFragment: 'bridgingAddresses', values?: undefined): string;
+    encodeFunctionData(functionFragment: 'amountsTo1e18', values?: undefined): string;
+encodeFunctionData(functionFragment: 'bridgingAddresses', values?: undefined): string;
 encodeFunctionData(functionFragment: 'defund', values: [BigNumberish, BigNumberish, BigNumberish, IBridgeStructs.TokenAmountStruct[], string]): string;
 encodeFunctionData(functionFragment: 'fundAdmin', values?: undefined): string;
 encodeFunctionData(functionFragment: 'getChainTokenQuantity', values: [BigNumberish]): string;
@@ -41,7 +42,8 @@ encodeFunctionData(functionFragment: 'upgradeTo', values: [AddressLike]): string
 encodeFunctionData(functionFragment: 'upgradeToAndCall', values: [AddressLike, BytesLike]): string;
 encodeFunctionData(functionFragment: 'version', values?: undefined): string;
 
-    decodeFunctionResult(functionFragment: 'bridgingAddresses', data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: 'amountsTo1e18', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'bridgingAddresses', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'defund', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'fundAdmin', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'getChainTokenQuantity', data: BytesLike): Result;
@@ -71,6 +73,18 @@ decodeFunctionResult(functionFragment: 'version', data: BytesLike): Result;
       export type InputTuple = [previousAdmin: AddressLike, newAdmin: AddressLike];
       export type OutputTuple = [previousAdmin: string, newAdmin: string];
       export interface OutputObject {previousAdmin: string, newAdmin: string };
+      export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>
+      export type Filter = TypedDeferredTopicFilter<Event>
+      export type Log = TypedEventLog<Event>
+      export type LogDescription = TypedLogDescription<Event>
+    }
+
+  
+
+    export namespace AmountsConvertedTo1e18DoneEvent {
+      export type InputTuple = [];
+      export type OutputTuple = [];
+      export interface OutputObject {};
       export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>
       export type Filter = TypedDeferredTopicFilter<Event>
       export type Log = TypedEventLog<Event>
@@ -305,6 +319,14 @@ decodeFunctionResult(functionFragment: 'version', data: BytesLike): Result;
 
     
     
+    amountsTo1e18: TypedContractMethod<
+      [],
+      [void],
+      'nonpayable'
+    >
+    
+
+    
     bridgingAddresses: TypedContractMethod<
       [],
       [string],
@@ -491,7 +513,12 @@ decodeFunctionResult(functionFragment: 'version', data: BytesLike): Result;
 
     getFunction<T extends ContractMethod = ContractMethod>(key: string | FunctionFragment): T;
 
-    getFunction(nameOrSignature: 'bridgingAddresses'): TypedContractMethod<
+    getFunction(nameOrSignature: 'amountsTo1e18'): TypedContractMethod<
+      [],
+      [void],
+      'nonpayable'
+    >;
+getFunction(nameOrSignature: 'bridgingAddresses'): TypedContractMethod<
       [],
       [string],
       'view'
@@ -608,6 +635,7 @@ getFunction(nameOrSignature: 'version'): TypedContractMethod<
     >;
 
     getEvent(key: 'AdminChanged'): TypedContractEvent<AdminChangedEvent.InputTuple, AdminChangedEvent.OutputTuple, AdminChangedEvent.OutputObject>;
+getEvent(key: 'AmountsConvertedTo1e18Done'): TypedContractEvent<AmountsConvertedTo1e18DoneEvent.InputTuple, AmountsConvertedTo1e18DoneEvent.OutputTuple, AmountsConvertedTo1e18DoneEvent.OutputObject>;
 getEvent(key: 'BeaconUpgraded'): TypedContractEvent<BeaconUpgradedEvent.InputTuple, BeaconUpgradedEvent.OutputTuple, BeaconUpgradedEvent.OutputObject>;
 getEvent(key: 'ChainDefunded'): TypedContractEvent<ChainDefundedEvent.InputTuple, ChainDefundedEvent.OutputTuple, ChainDefundedEvent.OutputObject>;
 getEvent(key: 'DefundFailedAfterMultipleRetries'): TypedContractEvent<DefundFailedAfterMultipleRetriesEvent.InputTuple, DefundFailedAfterMultipleRetriesEvent.OutputTuple, DefundFailedAfterMultipleRetriesEvent.OutputObject>;
@@ -629,6 +657,10 @@ getEvent(key: 'newChainRegistered'): TypedContractEvent<newChainRegisteredEvent.
       
       'AdminChanged(address,address)': TypedContractEvent<AdminChangedEvent.InputTuple, AdminChangedEvent.OutputTuple, AdminChangedEvent.OutputObject>;
       AdminChanged: TypedContractEvent<AdminChangedEvent.InputTuple, AdminChangedEvent.OutputTuple, AdminChangedEvent.OutputObject>;
+    
+
+      'AmountsConvertedTo1e18Done()': TypedContractEvent<AmountsConvertedTo1e18DoneEvent.InputTuple, AmountsConvertedTo1e18DoneEvent.OutputTuple, AmountsConvertedTo1e18DoneEvent.OutputObject>;
+      AmountsConvertedTo1e18Done: TypedContractEvent<AmountsConvertedTo1e18DoneEvent.InputTuple, AmountsConvertedTo1e18DoneEvent.OutputTuple, AmountsConvertedTo1e18DoneEvent.OutputObject>;
     
 
       'BeaconUpgraded(address)': TypedContractEvent<BeaconUpgradedEvent.InputTuple, BeaconUpgradedEvent.OutputTuple, BeaconUpgradedEvent.OutputObject>;

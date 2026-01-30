@@ -211,6 +211,11 @@
   },
   {
     "inputs": [],
+    "name": "NotChainTokensContract",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "NotClaims",
     "type": "error"
   },
@@ -321,6 +326,12 @@
     "inputs": [],
     "name": "ZeroAddress",
     "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [],
+    "name": "AmountsConvertedTo1e18Done",
+    "type": "event"
   },
   {
     "anonymous": false,
