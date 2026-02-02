@@ -6,7 +6,7 @@ import { deployBridgeFixture } from "./fixtures";
 describe("Convert 1e6 to 1e18", function () {
   describe("Convert 1e6 to 1e18", function () {
     it("Should revert if amountsTo1e18 is not called by fundAdmin", async function () {
-      await expect(admin.connect(validators[0]).amountsTo1e18()).to.be.revertedWithCustomError(admin, "NotFundAdmin");
+      await expect(admin.connect(validators[0]).amountsTo1e18()).to.be.revertedWithCustomError(admin, "NotUpgradeAdmin");
     });
 
     it("Should revert if amountsTo1e18 on chainTokens is not called by admin contract", async function () {
