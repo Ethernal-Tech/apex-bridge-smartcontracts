@@ -215,7 +215,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         return chainTokens.chainWrappedTokenQuantity(_chainId);
     }
 
-    function amountsTo1e18() external onlyFundAdmin {
+    function amountsTo1e18() external onlyUpgradeAdmin {
         chainTokens.amountsTo1e18();
 
         emit AmountsConvertedTo1e18Done();
