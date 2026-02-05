@@ -1,4 +1,4 @@
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import hre from "hardhat";
 import { expect } from "chai";
 import { deployBridgeFixture } from "./fixtures";
 
@@ -56,17 +56,20 @@ describe("Unregistered Chains Contract", function () {
       .withArgs(1);
   });
 
-  it("Performance for registerChain", async function () {
-    const { bridge, chain1, owner, validatorAddressChainData } = await loadFixture(deployBridgeFixture);
+  it("Should revert if chain is not registered", async function () {
+    await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsRRC)).to.be.revertedWithCustomError(
+      bridge,
+      "ChainIsNotRegistered"
+    );
+  });
 
+  it("Performance for registerChain", async function () {
     const tx = await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
     const receipt = await tx.wait();
     console.log(`Gas spent: ${!!receipt ? receipt.gasUsed.toString() : "error"}`);
   });
 
   it("Performance for registerChainGovernance", async function () {
-    const { bridge, chain1, validators, validatorCardanoData } = await loadFixture(deployBridgeFixture);
-
     for (let i = 0; i < (validators.length * 2) / 3 + 1; i++) {
       // fourth one is quorum
       const tx = await bridge
@@ -84,23 +87,25 @@ describe("Unregistered Chains Contract", function () {
     }
   });
 
-  let bridge: any;
-  let admin: any;
-  let claims: any;
-  let claimsHelper: any;
-  let owner: any;
-  let chain1: any;
-  let validatorClaimsBRC: any;
-  let validatorClaimsBEC: any;
-  let validatorClaimsBEFC: any;
-  let validatorClaimsRRC: any;
-  let validatorClaimsHWIC: any;
-  let validatorAddressChainData: any;
-  let validators: any;
-  let cardanoBlocks: any;
+  let bridge;
+  let admin;
+  let claims;
+  let claimsHelper;
+  let owner;
+  let chain1;
+  let validatorClaimsBRC;
+  let validatorClaimsBEC;
+  let validatorClaimsBEFC;
+  let validatorClaimsRRC;
+  let validatorClaimsHWIC;
+  let validatorAddressChainData;
+  let validators;
+  let validatorCardanoData;
+  let cardanoBlocks;
+  let fixture;
 
   beforeEach(async function () {
-    const fixture = await loadFixture(deployBridgeFixture);
+    fixture = await deployBridgeFixture(hre);
 
     admin = fixture.admin;
     bridge = fixture.bridge;
@@ -115,6 +120,7 @@ describe("Unregistered Chains Contract", function () {
     validatorClaimsHWIC = fixture.validatorClaimsHWIC;
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;
+    validatorCardanoData = fixture.validatorCardanoData;
     cardanoBlocks = fixture.cardanoBlocks;
   });
 });

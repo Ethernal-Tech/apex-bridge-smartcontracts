@@ -1,6 +1,5 @@
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import hre from "hardhat";
 import { expect } from "chai";
-import { ethers } from "hardhat";
 import {
   BatchType,
   deployBridgeFixture,
@@ -12,21 +11,6 @@ import {
 } from "./fixtures";
 
 describe("Claims Contract", function () {
-  async function impersonateAsContractAndMintFunds(contractAddress: string) {
-    const hre = require("hardhat");
-    const address = await contractAddress.toLowerCase();
-    // impersonate as an contract on specified address
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [address],
-    });
-
-    const signer = await ethers.getSigner(address);
-    // minting 100000000000000000000 tokens to signer
-    await ethers.provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
-
-    return signer;
-  }
   describe("Submit new Bridging Request Claim", function () {
     it("Should revert if there are too many receivers in BRC", async function () {
       const validatorClaimsBRC_tooManyReceivers = structuredClone(validatorClaimsBRC);
@@ -501,27 +485,7 @@ describe("Claims Contract", function () {
   });
 
   describe("Submit new Refund Request Claims", function () {
-    it("Should revert if chain is not registered", async function () {
-      const { bridge, validators, validatorClaimsRRC } = await loadFixture(deployBridgeFixture);
-
-      await expect(bridge.connect(validators[0]).submitClaims(validatorClaimsRRC)).to.be.revertedWithCustomError(
-        bridge,
-        "ChainIsNotRegistered"
-      );
-    });
-
     it("Should revert if there is new validator set pending", async function () {
-      const {
-        bridge,
-        validators,
-        owner,
-        chain1,
-        chain2,
-        validatorAddressChainData,
-        newValidatorSetDelta,
-        validatorClaimsRRC,
-      } = await loadFixture(deployBridgeFixture);
-
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
@@ -581,15 +545,15 @@ describe("Claims Contract", function () {
       ]);
 
       const event = receipt.logs
-        .map((log: any) => {
+        .map((log) => {
           try {
             return iface.parseLog(log);
           } catch {
             return null;
           }
         })
-        .filter((log: any) => log !== null)
-        .find((log: any) => log.name === "NotEnoughFunds");
+        .filter((log) => log !== null)
+        .find((log) => log.name === "NotEnoughFunds");
 
       expect(event).to.not.be.undefined;
       expect(event.fragment.name).to.equal("NotEnoughFunds");
@@ -607,18 +571,6 @@ describe("Claims Contract", function () {
     });
 
     it("Should revert if there is new validator set pending", async function () {
-      const {
-        bridge,
-        validators,
-        owner,
-        chain1,
-        chain2,
-        validatorAddressChainData,
-        newValidatorSetDelta,
-        validatorClaimsBRC,
-        validatorClaimsHWIC,
-      } = await loadFixture(deployBridgeFixture);
-
       await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
       await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
 
@@ -662,12 +614,19 @@ describe("Claims Contract", function () {
     });
 
     it("Should NOT skip if same validator submits Hot Wallet Increment Claim with same amount and chainId but different hash", async function () {
-      const hashTx1 = hashHotWalletIncrementClaim(currentValidatorSetId, validatorClaimsHWIC.hotWalletIncrementClaims[0]);
+      const hashTx1 = hashHotWalletIncrementClaim(
+        currentValidatorSetId,
+        validatorClaimsHWIC.hotWalletIncrementClaims[0]
+      );
 
       const validatorClaimsHWIC2 = structuredClone(validatorClaimsHWIC);
-      validatorClaimsHWIC2.hotWalletIncrementClaims[0].txHash = "0x7465737400000000000000000000000000000000000000000000000000000001";
+      validatorClaimsHWIC2.hotWalletIncrementClaims[0].txHash =
+        "0x7465737400000000000000000000000000000000000000000000000000000001";
 
-      const hashTx2 = hashHotWalletIncrementClaim(currentValidatorSetId, validatorClaimsHWIC2.hotWalletIncrementClaims[0]);
+      const hashTx2 = hashHotWalletIncrementClaim(
+        currentValidatorSetId,
+        validatorClaimsHWIC2.hotWalletIncrementClaims[0]
+      );
 
       await bridge.connect(validators[0]).submitClaims(validatorClaimsHWIC);
 
@@ -812,32 +771,48 @@ describe("Claims Contract", function () {
     });
   });
 
-  let bridge: any;
-  let claimsHelper: any;
-  let claims: any;
-  let validatorsc: any;
-  let owner: any;
-  let chain1: any;
-  let chain2: any;
-  let validators: any;
-  let validatorAddressChainData: any;
-  let validatorClaimsBRC: any;
-  let validatorClaimsBRC_bunch32: any;
-  let validatorClaimsBRC_bunch33: any;
-  let validatorClaimsBEC: any;
-  let validatorClaimsBEFC: any;
-  let validatorClaimsRRC: any;
-  let validatorClaimsHWIC: any;
-  let signedBatch: any;
-  let currentValidatorSetId: any;
+  async function impersonateAsContractAndMintFunds(contractAddress) {
+    const address = contractAddress.toLowerCase();
+
+    // impersonate as a contract on specified address
+    await provider.send("hardhat_impersonateAccount", [address]);
+
+    const signer = await ethers.getSigner(address);
+
+    // minting 100000000000000000000 tokens to signer
+    await provider.send("hardhat_setBalance", [signer.address, "0x56BC75E2D63100000"]);
+
+    return signer;
+  }
+
+  let bridge;
+  let claimsHelper;
+  let claims;
+  let owner;
+  let chain1;
+  let chain2;
+  let validatorClaimsBRC;
+  let validatorClaimsBRC_bunch32;
+  let validatorClaimsBRC_bunch33;
+  let validatorClaimsBEC;
+  let validatorClaimsBEFC;
+  let validatorClaimsRRC;
+  let validatorClaimsHWIC;
+  let signedBatch;
+  let validatorAddressChainData;
+  let validators;
+  let currentValidatorSetId;
+  let newValidatorSetDelta;
+  let fixture;
+  let provider;
+  let ethers;
 
   beforeEach(async function () {
-    const fixture = await loadFixture(deployBridgeFixture);
+    fixture = await deployBridgeFixture(hre);
 
     bridge = fixture.bridge;
     claimsHelper = fixture.claimsHelper;
     claims = fixture.claims;
-    validatorsc = fixture.validatorsc;
     owner = fixture.owner;
     chain1 = fixture.chain1;
     chain2 = fixture.chain2;
@@ -851,11 +826,13 @@ describe("Claims Contract", function () {
     signedBatch = fixture.signedBatch;
     validatorAddressChainData = fixture.validatorAddressChainData;
     validators = fixture.validators;
+    currentValidatorSetId = fixture.currentValidatorSetId;
+    newValidatorSetDelta = fixture.newValidatorSetDelta;
+    provider = fixture.provider;
+    ethers = fixture.ethers;
 
     // Register chains
     await bridge.connect(owner).registerChain(chain1, 100, validatorAddressChainData);
     await bridge.connect(owner).registerChain(chain2, 100, validatorAddressChainData);
-
-    currentValidatorSetId = await validatorsc.currentValidatorSetId();
   });
 });

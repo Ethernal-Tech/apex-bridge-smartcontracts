@@ -1,4 +1,4 @@
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import hre from "hardhat";
 import { expect } from "chai";
 import { deployBridgeFixture } from "./fixtures";
 
@@ -15,14 +15,15 @@ describe("Validators Contract", function () {
     ).to.be.revertedWithCustomError(bridge, "NotBridge");
   });
 
-  let bridge: any;
-  let owner: any;
-  let validatorsc: any;
-  let validatorCardanoData: any;
-  let validatorAddressChainData: any;
+  let bridge;
+  let owner;
+  let validatorsc;
+  let validatorCardanoData;
+  let validatorAddressChainData;
+  let fixture;
 
   beforeEach(async function () {
-    const fixture = await loadFixture(deployBridgeFixture);
+    fixture = await deployBridgeFixture(hre);
 
     bridge = fixture.bridge;
     owner = fixture.owner;
