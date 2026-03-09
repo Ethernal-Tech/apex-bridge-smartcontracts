@@ -170,7 +170,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             uint64 nextNonce = lastBatchedTxNonce[chainId] + 1;
             uint64 lastConfirmedNonce = lastConfirmedTxNonce[chainId];
 
-            // Rebuild receivers for non-executed confirmed transactions
+            // Rebuild receivers and observed tx hash for non-executed confirmed transactions
             for (uint64 nonce = nextNonce; nonce <= lastConfirmedNonce; nonce++) {
                 ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nonce];
 
@@ -179,6 +179,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
                     Receiver storage r = confirmedTx.__deprecatedReceivers[j];
 
                     confirmedTx.receivers.push(ReceiverWithToken(r.amount, r.amountWrapped, r.destinationAddress, 0));
+                }
+
+                if (
+                    confirmedTx.observedTransactionHash.length == 0 &&
+                    confirmedTx.__observedTransactionHash != bytes32(0)
+                ) {
+                    confirmedTx.observedTransactionHash = abi.encodePacked(confirmedTx.__observedTransactionHash);
                 }
             }
         }
@@ -272,7 +279,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         );
         confirmedTx.totalAmount = _claim.originAmount;
         confirmedTx.totalWrappedAmount = _claim.originWrappedAmount;
-        confirmedTx.observedTransactionHash = _claim.originTransactionHash;
+        confirmedTx.observedTransactionHash = abi.encodePacked(_claim.originTransactionHash);
         confirmedTx.destinationChainId = _claim.destinationChainId;
         confirmedTx.outputIndexes = _claim.outputIndexes;
         confirmedTx.alreadyTriedBatch = _claim.shouldDecrementHotWallet;
@@ -475,6 +482,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
             ConfirmedTransaction storage ctx = confirmedTransactions[_chainId][i];
             _txHashes[i - _firstTxNonce] = TxDataInfo(
+                ctx.__observedTransactionHash,
                 ctx.observedTransactionHash,
                 ctx.sourceChainId,
                 ctx.transactionType

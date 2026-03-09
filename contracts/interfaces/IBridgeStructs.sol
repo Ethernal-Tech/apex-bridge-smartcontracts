@@ -48,7 +48,7 @@ interface IBridgeStructs {
         uint256 totalAmount;
         uint256 totalWrappedAmount;
         uint256 retryCounter;
-        bytes32 observedTransactionHash;
+        bytes32 __observedTransactionHash; // Deprecated do not use
         uint64 nonce;
         uint8 sourceChainId;
         uint8 transactionType; // TransactionTypesLib
@@ -60,6 +60,7 @@ interface IBridgeStructs {
         uint8 bridgeAddrIndex;
         uint8 transactionSubType; // TransactionTypesLib
         ReceiverWithToken[] receivers;
+        bytes observedTransactionHash;
     }
 
     /// @notice Represents a block from the Cardano chain.
@@ -80,7 +81,7 @@ interface IBridgeStructs {
     /// @notice A claim that a bridging request was observed on the source chain.
     struct BridgingRequestClaim {
         // hash of tx on the source chain
-        bytes32 observedTransactionHash;
+        bytes32 __observedTransactionHash; // Deprecated do not use
         // key is the address on destination UTXO chain; value is the amount of tokens
         ReceiverWithToken[] receivers;
         uint256 nativeCurrencyAmountSource;
@@ -91,25 +92,28 @@ interface IBridgeStructs {
         uint8 sourceChainId;
         uint8 destinationChainId;
         uint8 bridgeAddrIndex;
+        bytes observedTransactionHash;
     }
 
     /// @notice A claim that a batch was executed on a specific chain.
     struct BatchExecutedClaim {
         // hash of tx where batch was executed
-        bytes32 observedTransactionHash;
+        bytes32 __observedTransactionHash; // Deprecated do not use
         uint64 batchNonceId;
         // where the batch was executed
         uint8 chainId;
+        bytes observedTransactionHash;
     }
 
     /// @notice A claim that a batch execution failed on a specific chain.
     struct BatchExecutionFailedClaim {
         // hash of tx on the source chain
-        bytes32 observedTransactionHash;
+        bytes32 __observedTransactionHash; // Deprecated do not use
         // where the batch execution failed
         uint64 batchNonceId;
         // chain id where the execution failed
         uint8 chainId;
+        bytes observedTransactionHash;
     }
 
     /// @notice A request to refund a failed bridging transaction.
@@ -194,7 +198,8 @@ interface IBridgeStructs {
 
     /// @notice Summary info for a transaction in a batch.
     struct TxDataInfo {
-        bytes32 observedTransactionHash;
+        bytes32 __observedTransactionHash; // Deprecated do not use
+        bytes observedTransactionHash;
         uint8 sourceChainId;
         uint8 transactionType;
     }
