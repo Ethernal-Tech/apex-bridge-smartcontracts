@@ -183,9 +183,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
                 if (
                     confirmedTx.observedTransactionHash.length == 0 &&
-                    confirmedTx.depricatedObservedTransactionHash != bytes32(0)
+                    confirmedTx.deprecatedObservedTransactionHash != bytes32(0)
                 ) {
-                    confirmedTx.observedTransactionHash = abi.encodePacked(confirmedTx.depricatedObservedTransactionHash);
+                    confirmedTx.observedTransactionHash = abi.encodePacked(confirmedTx.deprecatedObservedTransactionHash);
                 }
             }
         }
@@ -482,7 +482,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         for (uint64 i = _firstTxNonce; i <= _lastTxNonce; i++) {
             ConfirmedTransaction storage ctx = confirmedTransactions[_chainId][i];
             _txHashes[i - _firstTxNonce] = TxDataInfo(
-                ctx.depricatedObservedTransactionHash,
+                ctx.deprecatedObservedTransactionHash,
                 ctx.observedTransactionHash,
                 ctx.sourceChainId,
                 ctx.transactionType

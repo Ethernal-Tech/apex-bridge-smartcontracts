@@ -57,6 +57,23 @@ describe("Chain Registration", function () {
       ).to.be.revertedWithCustomError(bridge, "InvalidSignature");
     });
 
+    it("Should revert Solana chain proposal if validator message is not signed correctly", async function () {
+      await setCode("0x0000000000000000000000000000000000002070", "0x60206000F3");
+
+      await expect(
+        bridge.connect(owner).registerChain(chain3, 100, 100, validatorAddressChainData)
+      ).to.be.revertedWithCustomError(bridge, "InvalidSignature");
+    });
+
+    it("Should add Solana chain if requested by owner", async function () {
+      expect(await claims.isChainRegistered(chain3.id)).to.be.false;
+
+      await bridge.connect(owner).registerChain(chain3, 100, 100, validatorAddressChainData);
+      expect(await claims.isChainRegistered(chain3.id)).to.be.true;
+      expect(await chainTokens.chainTokenQuantity(chain3.id)).to.be.equal(100);
+      expect(await chainTokens.chainWrappedTokenQuantity(chain3.id)).to.be.equal(100);
+    });
+
     it("Should add new chain if requested by owner", async function () {
       expect(await claims.isChainRegistered(chain1.id)).to.be.false;
 
@@ -321,6 +338,62 @@ describe("Chain Registration", function () {
             "0x7465737400000000000000000000000000000000000000000000000000000000"
           )
       ).to.be.revertedWithCustomError(bridge, "InvalidSignature");
+    });
+
+    it("Should revert Solana chain proposal if validator message is not signed correctly", async function () {
+      await setCode("0x0000000000000000000000000000000000002070", "0x60206000F3");
+
+      await expect(
+        bridge
+          .connect(validators[0])
+          .registerChainGovernance(
+            chain3.id,
+            chain3.chainType,
+            100,
+            100,
+            validatorAddressChainData[0].data,
+            "0x7465737400000000000000000000000000000000000000000000000000000000",
+            "0x7465737400000000000000000000000000000000000000000000000000000000"
+          )
+      ).to.be.revertedWithCustomError(bridge, "InvalidSignature");
+    });
+
+    it("Should register Solana chain through governance with all validator votes", async function () {
+      for (let i = 0; i < 4; i++) {
+        await bridge
+          .connect(validators[i])
+          .registerChainGovernance(
+            chain3.id,
+            chain3.chainType,
+            100,
+            100,
+            validatorAddressChainData[i].data,
+            "0x7465737400000000000000000000000000000000000000000000000000000000",
+            "0x7465737400000000000000000000000000000000000000000000000000000000"
+          );
+      }
+
+      expect(await claims.isChainRegistered(chain3.id)).to.be.false;
+
+      await expect(
+        bridge
+          .connect(validators[4])
+          .registerChainGovernance(
+            chain3.id,
+            chain3.chainType,
+            100,
+            100,
+            validatorAddressChainData[4].data,
+            "0x7465737400000000000000000000000000000000000000000000000000000000",
+            "0x7465737400000000000000000000000000000000000000000000000000000000"
+          )
+      )
+        .to.emit(registration, "newChainRegistered")
+        .withArgs(chain3.id);
+
+      expect(await claims.isChainRegistered(chain3.id)).to.be.true;
+      expect(await chainTokens.chainTokenQuantity(chain3.id)).to.be.equal(100);
+      expect(await chainTokens.chainWrappedTokenQuantity(chain3.id)).to.be.equal(100);
     });
 
     it("Should emit new chain proposal", async function () {
@@ -726,6 +799,7 @@ describe("Chain Registration", function () {
   let owner: any;
   let chain1: any;
   let chain2: any;
+  let chain3: any;
   let registration: any;
   let validatorsc: any;
   let validatorAddressChainData: any;
@@ -741,6 +815,7 @@ describe("Chain Registration", function () {
     owner = fixture.owner;
     chain1 = fixture.chain1;
     chain2 = fixture.chain2;
+    chain3 = fixture.chain3;
     registration = fixture.registration;
     validatorsc = fixture.validatorsc;
     validatorAddressChainData = fixture.validatorAddressChainData;

@@ -266,9 +266,12 @@ describe("Admin Functions", function () {
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalAmount).to.equal(0);
       expect((await claims.confirmedTransactions(chain1.id, 1)).totalWrappedAmount).to.equal(0);
       expect((await claims.confirmedTransactions(chain1.id, 1)).retryCounter).to.equal(0);
-      expect((await claims.confirmedTransactions(chain1.id, 1)).observedTransactionHash).to.equal(
+      expect((await claims.confirmedTransactions(chain1.id, 1)).deprecatedObservedTransactionHash).to.equal(
         "0x0000000000000000000000000000000000000000000000000000000000000000"
       );
+      expect((await claims.confirmedTransactions(chain1.id, 1)).observedTransactionHash).to.equal(
+        "0x"
+      )
       expect((await claims.confirmedTransactions(chain1.id, 1)).nonce).to.equal(1);
       expect((await claims.confirmedTransactions(chain1.id, 1)).sourceChainId).to.equal(chain1.id);
       expect((await claims.confirmedTransactions(chain1.id, 1)).transactionType).to.equal(1); // TransactionTypesLib.DEFUND)

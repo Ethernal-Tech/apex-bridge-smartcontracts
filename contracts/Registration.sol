@@ -228,7 +228,11 @@ contract Registration is IBridgeStructs, Utils, Initializable, OwnableUpgradeabl
                 revert InvalidSignature();
             }
         } else if (_chainType == 2) {
-            // TODO: validate signatures for solana chain
+            bytes memory messageHashBytes = _bytes32ToBytesAssembly(messageHashBytes32);
+            
+            if (!validators.isSolanaSignatureValid(messageHashBytes, _keySignature, _validatorChainData.key[0])) {
+                revert InvalidSignature();
+            }
         } else {
             revert InvalidData("chainType");
         }
