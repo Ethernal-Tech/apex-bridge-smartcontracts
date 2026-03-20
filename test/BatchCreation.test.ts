@@ -56,7 +56,7 @@ describe("Batch creation", function () {
 
   it("SignedBatch submition in SignedBatches SC should be reverted if not called by Bridge SC", async function () {
     await expect(
-      signedBatches.connect(owner).submitSignedBatch(signedBatch, owner.address, false)
+      signedBatches.connect(owner).submitSignedBatch(signedBatch, owner.address, 0)
     ).to.be.revertedWithCustomError(bridge, "NotBridge");
   });
 
@@ -77,7 +77,7 @@ describe("Batch creation", function () {
 
     const bridgeContract = await impersonateAsContractAndMintFunds(await bridge.getAddress());
 
-    await signedBatches.connect(bridgeContract).submitSignedBatch(signedBatch, validators[0].address, false);
+    await signedBatches.connect(bridgeContract).submitSignedBatch(signedBatch, validators[0].address, 0);
 
     expect(await hasVotedSignedBatches(hash, validators[0].address)).to.equal(true);
 
@@ -98,7 +98,7 @@ describe("Batch creation", function () {
 
     const hashFalse = ethers.keccak256(encodedFalse);
 
-    await signedBatches.connect(bridgeContract).submitSignedBatch(temp_signedBatch, validators[0].address, false);
+    await signedBatches.connect(bridgeContract).submitSignedBatch(temp_signedBatch, validators[0].address, 0);
 
     expect(await hasVotedSignedBatches(hashFalse, validators[0])).to.equal(false);
   });
@@ -259,6 +259,73 @@ describe("Batch creation", function () {
     expect(await bridge.connect(validators[0]).getRawTransactionFromLastBatch(signedBatch.destinationChainId)).to.equal(
       signedBatch.rawTransaction
     );
+  });
+
+  it("submitSignedBatchSolana should be reverted if not called by validator", async function () {
+    await expect(bridge.connect(owner).submitSignedBatchSolana(signedBatch)).to.be.revertedWithCustomError(
+      bridge,
+      "NotValidator"
+    );
+  });
+
+  it("Should revert signedBatchSolana submition if signature is not valid", async function () {
+    const solanaClaimsBRC = structuredClone(validatorClaimsBRC);
+    solanaClaimsBRC.bridgingRequestClaims[0].destinationChainId = chain3.id;
+
+    await bridge.connect(validators[0]).submitClaims(solanaClaimsBRC);
+    await bridge.connect(validators[1]).submitClaims(solanaClaimsBRC);
+    await bridge.connect(validators[2]).submitClaims(solanaClaimsBRC);
+    await bridge.connect(validators[3]).submitClaims(solanaClaimsBRC);
+
+    for (let i = 0; i < 5; i++) {
+      await ethers.provider.send("evm_mine");
+    }
+
+    const solanaBatch = structuredClone(signedBatch);
+    solanaBatch.destinationChainId = chain3.id;
+
+    await setCode("0x0000000000000000000000000000000000002070", "0x60206000F3");
+    await expect(bridge.connect(validators[0]).submitSignedBatchSolana(solanaBatch)).to.be.revertedWithCustomError(
+      bridge,
+      "InvalidSignature"
+    );
+  });
+
+  it("Should create ConfirmedBatch for Solana if there are enough votes", async function () {
+    const solanaClaimsBRC = structuredClone(validatorClaimsBRC);
+    solanaClaimsBRC.bridgingRequestClaims[0].destinationChainId = chain3.id;
+
+    await bridge.connect(validators[0]).submitClaims(solanaClaimsBRC);
+    await bridge.connect(validators[1]).submitClaims(solanaClaimsBRC);
+    await bridge.connect(validators[2]).submitClaims(solanaClaimsBRC);
+    await bridge.connect(validators[4]).submitClaims(solanaClaimsBRC);
+
+    for (let i = 0; i < 8; i++) {
+      await ethers.provider.send("evm_mine");
+    }
+
+    const solanaBatch = structuredClone(signedBatch);
+    solanaBatch.destinationChainId = chain3.id;
+
+    await bridge.connect(validators[0]).submitSignedBatchSolana(solanaBatch);
+    await bridge.connect(validators[1]).submitSignedBatchSolana(solanaBatch);
+    await bridge.connect(validators[2]).submitSignedBatchSolana(solanaBatch);
+    await bridge.connect(validators[3]).submitSignedBatchSolana(solanaBatch);
+
+    expect(
+      (await bridge.connect(validators[0]).getConfirmedBatch(solanaBatch.destinationChainId)).rawTransaction
+    ).to.equal(solanaBatch.rawTransaction);
+    expect(
+      (await bridge.connect(validators[0]).getConfirmedBatch(solanaBatch.destinationChainId)).signatures.length
+    ).to.equal(4);
+  });
+
+  it("SignedBatch submition in SignedBatches SC should be reverted for invalid chainType", async function () {
+    const bridgeContract = await impersonateAsContractAndMintFunds(await bridge.getAddress());
+
+    await expect(
+      signedBatches.connect(bridgeContract).submitSignedBatch(signedBatch, validators[0].address, 3)
+    ).to.be.revertedWithCustomError(bridge, "InvalidData").withArgs("chainType");
   });
 
   it("Should create and execute batch after transactions are confirmed", async function () {
@@ -422,6 +489,7 @@ describe("Batch creation", function () {
   let owner: any;
   let chain1: any;
   let chain2: any;
+  let chain3: any;
   let validatorClaimsBRC: any;
   let validatorClaimsBEC: any;
   let signedBatch: any;
@@ -440,6 +508,7 @@ describe("Batch creation", function () {
     owner = fixture.owner;
     chain1 = fixture.chain1;
     chain2 = fixture.chain2;
+    chain3 = fixture.chain3;
     validatorClaimsBRC = fixture.validatorClaimsBRC;
     validatorClaimsBEC = fixture.validatorClaimsBEC;
     signedBatch = fixture.signedBatch;
@@ -449,6 +518,7 @@ describe("Batch creation", function () {
     // Register chains
     await bridge.connect(owner).registerChain(chain1, 100, 100, validatorAddressChainData);
     await bridge.connect(owner).registerChain(chain2, 100, 100, validatorAddressChainData);
+    await bridge.connect(owner).registerChain(chain3, 100, 100, validatorAddressChainData);
   });
 
   async function hasVotedClaims(hash: string, _addr: string): Promise<boolean> {

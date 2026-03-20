@@ -14,7 +14,6 @@ describe("Validators Contract", function () {
       validatorsc.connect(owner).setValidatorsChainData(1, validatorAddressChainData)
     ).to.be.revertedWithCustomError(bridge, "NotRegistration");
   });
-
   let bridge: any;
   let owner: any;
   let validatorsc: any;

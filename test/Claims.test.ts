@@ -30,6 +30,7 @@ describe("Claims Contract", function () {
       const [status, txs] = await claims.getBatchStatusAndTransactions(signedBatch.destinationChainId, signedBatch.id);
       expect(txs).to.deep.equal([
         [
+          validatorClaimsBRC.bridgingRequestClaims[0].deprecatedObservedTransactionHash,
           validatorClaimsBRC.bridgingRequestClaims[0].observedTransactionHash,
           BigInt(validatorClaimsBRC.bridgingRequestClaims[0].sourceChainId).toString(),
           0,
