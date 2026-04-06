@@ -633,8 +633,7 @@ describe("Claims Contract", function () {
 
     it("Should revert if refundTransactionHash is not empty in Refund Request Claims", async function () {
       const temp_validatorsClaimsRRC = structuredClone(validatorClaimsRRC);
-      temp_validatorsClaimsRRC.refundRequestClaims[0].refundTransactionHash =
-        "0x7465737400000000000000000000000000000000000000000000000000000001";
+      temp_validatorsClaimsRRC.refundRequestClaims[0].refundTransactionHash = "0x01";
 
       await expect(bridge.connect(validators[0]).submitClaims(temp_validatorsClaimsRRC))
         .to.be.revertedWithCustomError(bridge, "InvalidData")

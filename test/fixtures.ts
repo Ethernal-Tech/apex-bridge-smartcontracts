@@ -398,8 +398,8 @@ export async function deployBridgeFixture() {
     batchExecutionFailedClaims: [],
     refundRequestClaims: [
       {
-        originTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
-        refundTransactionHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
+        deprecatedOriginTransactionHash: ethers.ZeroHash,
+        deprecatedRefundTransactionHash: ethers.ZeroHash,
         originAmount: 100,
         originWrappedAmount: 100,
         outputIndexes: "0x7465737400000000000000000000000000000000000000000000000000000000",
@@ -410,6 +410,8 @@ export async function deployBridgeFixture() {
         destinationChainId: 1,
         bridgeAddrIndex: 1,
         tokenAmounts: [],
+        originTransactionHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        refundTransactionHash: "0x",
       },
     ],
     hotWalletIncrementClaims: [],
@@ -582,47 +584,38 @@ export function hashBatchExecutionFailedClaim(claim: any) {
 
 export function hashRefundRequestClaim(claim: any) {
   const abiCoder = new ethers.AbiCoder();
-  const encodedPrefix = abiCoder.encode(["string"], ["RRC"]);
-  const amounts = [];
-  for (let amount of claim.tokenAmounts) {
-    amounts.push([amount.tokenId, amount.amount]);
-  }
+  const amounts = claim.tokenAmounts.map((amount: any) => [
+    amount.tokenId,
+    amount.amountCurrency,
+    amount.amountTokens,
+  ]);
 
   const encoded = abiCoder.encode(
     [
-      "bytes32",
-      "bytes32",
-      "uint256",
-      "uint256",
-      "bytes",
       "string",
-      "uint64",
-      "uint8",
-      "bool",
-      "uint8",
-      "uint8",
-      "tuple(uint8, uint256)[]",
+      "tuple(bytes32,bytes32,uint256,uint256,bytes,string,uint64,uint8,bool,uint8,uint8,tuple(uint16,uint256,uint256)[],bytes,bytes)",
     ],
     [
-      claim.originTransactionHash,
-      claim.refundTransactionHash,
-      claim.originAmount,
-      claim.originWrappedAmount,
-      claim.outputIndexes,
-      claim.originSenderAddress,
-      claim.retryCounter,
-      claim.originChainId,
-      claim.shouldDecrementHotWallet,
-      claim.destinationChainId,
-      claim.bridgeAddrIndex,
-      amounts,
+      "RRC",
+      [
+        claim.deprecatedOriginTransactionHash,
+        claim.deprecatedRefundTransactionHash,
+        claim.originAmount,
+        claim.originWrappedAmount,
+        claim.outputIndexes,
+        claim.originSenderAddress,
+        claim.retryCounter,
+        claim.originChainId,
+        claim.shouldDecrementHotWallet,
+        claim.destinationChainId,
+        claim.bridgeAddrIndex,
+        amounts,
+        claim.originTransactionHash,
+        claim.refundTransactionHash,
+      ],
     ]
   );
-  return ethers.keccak256(
-    "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080" +
-      encodedPrefix.substring(66) +
-      encoded.substring(2)
-  );
+  return ethers.keccak256(encoded);
 }
 
 export function hashHotWalletIncrementClaim(claim: any) {

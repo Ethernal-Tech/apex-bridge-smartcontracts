@@ -118,10 +118,10 @@ interface IBridgeStructs {
 
     /// @notice A request to refund a failed bridging transaction.
     struct RefundRequestClaim {
-        // Hash of the original transaction on the source chain
-        bytes32 originTransactionHash;
-        // Hash of the manual refund request tx - will not be used in the first version
-        bytes32 refundTransactionHash;
+        // Deprecated do not use
+        bytes32 deprecatedOriginTransactionHash;
+        // Deprecated do not use
+        bytes32 deprecatedRefundTransactionHash;
         // Amount of currency tokens deposited to the multisig address in original transaction
         uint256 originAmount;
         // Amount of wrapped tokens deposited to the multisig address in original transaction
@@ -144,6 +144,10 @@ interface IBridgeStructs {
         uint8 bridgeAddrIndex;
         // Amounts of tokens to be refunded
         TokenAmount[] tokenAmounts;
+        // Hash of the original transaction on the source chain
+        bytes originTransactionHash;
+        // Hash of the manual refund request tx - will not be used in the first version
+        bytes refundTransactionHash;
     }
 
     /// @notice A claim to increase the balance of a chain's hot wallet.

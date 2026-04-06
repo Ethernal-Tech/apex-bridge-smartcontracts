@@ -379,7 +379,7 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
         // temporary check until automatic refund is implemented
         // once automatic refund is implemented, this check should be that
         // either originTransactionHash or refundTransactionHash should be empty
-        if (_claim.refundTransactionHash != bytes32(0)) {
+        if (_claim.refundTransactionHash.length != 0) {
             revert InvalidData("refundTransactionHash");
         }
 

@@ -279,7 +279,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         );
         confirmedTx.totalAmount = _claim.originAmount;
         confirmedTx.totalWrappedAmount = _claim.originWrappedAmount;
-        confirmedTx.observedTransactionHash = abi.encodePacked(_claim.originTransactionHash);
+        confirmedTx.observedTransactionHash = _claim.originTransactionHash;
         confirmedTx.destinationChainId = _claim.destinationChainId;
         confirmedTx.outputIndexes = _claim.outputIndexes;
         confirmedTx.alreadyTriedBatch = _claim.shouldDecrementHotWallet;
