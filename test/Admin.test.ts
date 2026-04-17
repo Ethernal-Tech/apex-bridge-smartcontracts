@@ -515,6 +515,41 @@ describe("Admin Functions", function () {
         .withArgs(4);
     });
 
+    it("Calling updateChainMaxNumberOfTransactions should revert if not called by owner", async function () {
+      await expect(
+        admin.connect(validators[0]).updateChainMaxNumberOfTransactions(chain1.id, 2)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("Calling updateChainMaxNumberOfTransactions should update per-chain value", async function () {
+      await admin.connect(owner).updateChainMaxNumberOfTransactions(chain1.id, 2);
+
+      expect(await claims.chainMaxNumberOfTransactions(chain1.id)).to.equal(2);
+      expect(await claims.chainMaxNumberOfTransactions(chain2.id)).to.equal(0);
+    });
+
+    it("Calling updateChainMaxNumberOfTransactions should not affect other chains", async function () {
+      const globalMax = await claims.maxNumberOfTransactions();
+      await admin.connect(owner).updateChainMaxNumberOfTransactions(chain1.id, 2);
+
+      expect(await claims.chainMaxNumberOfTransactions(chain1.id)).to.equal(2);
+      expect(await claims.maxNumberOfTransactions()).to.equal(globalMax);
+    });
+
+    it("Setting per-chain value to 0 should reset to global default", async function () {
+      await admin.connect(owner).updateChainMaxNumberOfTransactions(chain1.id, 2);
+      expect(await claims.chainMaxNumberOfTransactions(chain1.id)).to.equal(2);
+
+      await admin.connect(owner).updateChainMaxNumberOfTransactions(chain1.id, 0);
+      expect(await claims.chainMaxNumberOfTransactions(chain1.id)).to.equal(0);
+    });
+
+    it("Calling updateChainMaxNumberOfTransactions should emit UpdatedChainMaxNumberOfTransactions event", async function () {
+      await expect(admin.connect(owner).updateChainMaxNumberOfTransactions(chain1.id, 2))
+        .to.emit(admin, "UpdatedChainMaxNumberOfTransactions")
+        .withArgs(chain1.id, 2);
+    });
+
     it("Calling timeoutBlocksNumber should revert if not called by owner", async function () {
       await expect(admin.connect(validators[0]).updateTimeoutBlocksNumber(1)).to.be.revertedWith(
         "Ownable: caller is not the owner"

@@ -272,6 +272,7 @@ interface IBridgeStructs {
     event UpdatedChainWrappedTokenQuantity(uint indexed chainId, bool isIncrement, uint256 chainWrappedTokenQuantity);
     event DefundFailedAfterMultipleRetries();
     event UpdatedMaxNumberOfTransactions(uint256 _maxNumberOfTransactions);
+    event UpdatedChainMaxNumberOfTransactions(uint8 indexed chainId, uint16 _maxNumberOfTransactions);
     event UpdatedTimeoutBlocksNumber(uint256 _timeoutBlocksNumber);
     event StakeOperationFailedAfterMultipleRetries(uint8 _transactionSubType);
     event TokensRedistributionFailedAfterMultipleRetries(uint8 _chainId);

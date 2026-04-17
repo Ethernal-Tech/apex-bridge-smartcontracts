@@ -72,10 +72,15 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
     uint256 constant AMOUNT_CONVERTER = 1e12;
 
+    /// @notice Per-chain override for maxNumberOfTransactions.
+    /// @dev When non-zero, takes precedence over the global maxNumberOfTransactions for that chain.
+    ///      Setting to 0 resets the chain back to the global default.
+    mapping(uint8 => uint16) public chainMaxNumberOfTransactions;
+
     /// @dev Reserved storage slots for future upgrades. When adding new variables
     ///      use one slot from the gap (decrease the gap array size).
     ///      Double check when setting structs or arrays.
-    uint256[45] private __gap;
+    uint256[44] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -314,7 +319,9 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
         uint256 cnt = getBatchingTxsCount(_destinationChain);
 
-        return cnt >= maxNumberOfTransactions || (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
+        return
+            cnt >= _getMaxNumberOfTransactions(_destinationChain) ||
+            (cnt > 0 && block.number >= nextTimeoutBlock[_destinationChain]);
     }
 
     /// @notice Retrieves a confirmed transaction by chain ID and nonce.
@@ -337,7 +344,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         uint64 lastConfirmedTxNonceForChain = lastConfirmedTxNonce[_chainId];
         uint64 lastBatchedTxNonceForChain = lastBatchedTxNonce[_chainId];
         uint256 timeoutBlock = nextTimeoutBlock[_chainId];
-        uint64 maxTxsCount = maxNumberOfTransactions;
+        uint64 maxTxsCount = _getMaxNumberOfTransactions(_chainId);
 
         uint64 txsToProcess = lastConfirmedTxNonceForChain - lastBatchedTxNonceForChain >= maxTxsCount
             ? maxTxsCount
@@ -496,6 +503,13 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         maxNumberOfTransactions = _maxNumberOfTransactions;
     }
 
+    function updateChainMaxNumberOfTransactions(
+        uint8 _chainId,
+        uint16 _maxNumberOfTransactions
+    ) external onlyAdminContract {
+        chainMaxNumberOfTransactions[_chainId] = _maxNumberOfTransactions;
+    }
+
     function updateTimeoutBlocksNumber(uint8 _timeoutBlocksNumber) external onlyAdminContract {
         timeoutBlocksNumber = _timeoutBlocksNumber;
     }
@@ -520,6 +534,15 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
         }
 
         return _confirmedTransactions;
+    }
+
+    /// @notice Returns the effective maxNumberOfTransactions for a given chain.
+    /// @dev If a per-chain override is set (non-zero), it takes precedence; otherwise the global default is used.
+    /// @param _chainId The ID of the chain.
+    /// @return The effective max number of transactions for the chain.
+    function _getMaxNumberOfTransactions(uint8 _chainId) internal view returns (uint16) {
+        uint16 chainMax = chainMaxNumberOfTransactions[_chainId];
+        return chainMax > 0 ? chainMax : maxNumberOfTransactions;
     }
 
     /// @notice Initializes and stores the core fields of a new confirmed transaction
@@ -610,7 +633,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.3.2";
+        return "1.3.3";
     }
 
     modifier onlyBridge() {
