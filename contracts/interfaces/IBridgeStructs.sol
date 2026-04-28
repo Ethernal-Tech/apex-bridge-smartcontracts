@@ -152,10 +152,11 @@ interface IBridgeStructs {
 
     /// @notice A claim to increase the balance of a chain's hot wallet.
     struct HotWalletIncrementClaim {
+        bytes32 deprecatedTxHash; // Deprecated do not use
         uint8 chainId;
         uint256 amount;
         uint256 amountWrapped;
-        bytes32 txHash;
+        bytes txHash;
     }
 
     /// @notice Deprecated destination address and amount for a transaction output.

@@ -424,10 +424,11 @@ export async function deployBridgeFixture() {
     refundRequestClaims: [],
     hotWalletIncrementClaims: [
       {
+        deprecatedTxHash: ethers.ZeroHash,
         chainId: 1,
         amount: 100,
         amountWrapped: 100,
-        txHash: "0x7465737400000000000000000000000000000000000000000000000000000000",
+        txHash: "0x74657374",
       },
     ],
   };
@@ -622,10 +623,11 @@ export function hashHotWalletIncrementClaim(claim: any) {
   const abiCoder = new ethers.AbiCoder();
 
   const encoded = abiCoder.encode(
-    ["string", "tuple(uint8 chainId, uint256 amount, uint256 amountWrapped, bytes32 txHash)"],
+    ["string", "tuple(bytes32 deprecatedTxHash, uint8 chainId, uint256 amount, uint256 amountWrapped, bytes txHash)"],
     [
       "HWIC",
       {
+        deprecatedTxHash: claim.deprecatedTxHash,
         chainId: claim.chainId,
         amount: claim.amount,
         amountWrapped: claim.amountWrapped,
