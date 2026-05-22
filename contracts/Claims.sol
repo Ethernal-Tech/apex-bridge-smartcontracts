@@ -175,7 +175,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
             uint64 nextNonce = lastBatchedTxNonce[chainId] + 1;
             uint64 lastConfirmedNonce = lastConfirmedTxNonce[chainId];
 
-            // Rebuild receivers and observed tx hash for non-executed confirmed transactions
+            // Rebuild receivers for non-executed confirmed transactions
             for (uint64 nonce = nextNonce; nonce <= lastConfirmedNonce; nonce++) {
                 ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nonce];
 
@@ -185,6 +185,23 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
 
                     confirmedTx.receivers.push(ReceiverWithToken(r.amount, r.amountWrapped, r.destinationAddress, 0));
                 }
+            }
+        }
+    }
+
+    /// @notice Migrates deprecated observed transaction hashes for non-executed confirmed transactions.
+    /// @dev This function can only be called by the upgrade admin.
+    function setAdditionalDependenciesAndSync2() external onlyUpgradeAdmin {
+        Chain[] memory registeredChains = IBridge(bridgeAddress).getAllRegisteredChains();
+
+        for (uint8 i; i < registeredChains.length; i++) {
+            uint8 chainId = registeredChains[i].id;
+
+            uint64 nextNonce = lastBatchedTxNonce[chainId] + 1;
+            uint64 lastConfirmedNonce = lastConfirmedTxNonce[chainId];
+
+            for (uint64 nonce = nextNonce; nonce <= lastConfirmedNonce; nonce++) {
+                ConfirmedTransaction storage confirmedTx = confirmedTransactions[chainId][nonce];
 
                 if (
                     confirmedTx.observedTransactionHash.length == 0 &&
@@ -633,7 +650,7 @@ contract Claims is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUP
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.3.3";
+        return "1.4.0";
     }
 
     modifier onlyBridge() {
