@@ -154,6 +154,15 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
         emit UpdatedMaxNumberOfTransactions(_maxNumberOfTransactions);
     }
 
+    /// @notice Updates the maximum number of transactions allowed in a batch for a specific chain.
+    /// @dev Setting _maxNumberOfTransactions to 0 resets the chain back to the global default.
+    /// @param _chainId The chain to override.
+    /// @param _maxNumberOfTransactions New per-chain maximum value (0 = use global default).
+    function updateChainMaxNumberOfTransactions(uint8 _chainId, uint16 _maxNumberOfTransactions) external onlyOwner {
+        claims.updateChainMaxNumberOfTransactions(_chainId, _maxNumberOfTransactions);
+        emit UpdatedChainMaxNumberOfTransactions(_chainId, _maxNumberOfTransactions);
+    }
+
     /// @notice Updates the number of timeout blocks for claim finalization
     /// @param _timeoutBlocksNumber New timeout in blocks
     function updateTimeoutBlocksNumber(uint8 _timeoutBlocksNumber) external onlyOwner {
@@ -224,7 +233,7 @@ contract Admin is IBridgeStructs, Utils, Initializable, OwnableUpgradeable, UUPS
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.2.1";
+        return "1.3.0";
     }
 
     modifier onlyFundAdmin() {

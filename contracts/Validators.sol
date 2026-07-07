@@ -23,6 +23,10 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     address constant VALIDATOR_BLS_PRECOMPILE = 0x0000000000000000000000000000000000002060;
     /// @dev Gas limit for the BLS precompile
     uint32 constant VALIDATOR_BLS_PRECOMPILE_GAS = 50000;
+    /// @dev Precompile for Solana signature verification
+    address constant SOLANA_PRECOMPILE = 0x0000000000000000000000000000000000002070;
+    /// @dev Gas limit for the SOLANA_PRECOMPILE call
+    uint32 constant SOLANA_PRECOMPILE_GAS = 50000;
 
     /// @notice Mapping of chain ID to validator key data
     /// @dev BlockchainId -> ValidatorChainData[]
@@ -116,6 +120,25 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         return callSuccess && abi.decode(returnData, (bool));
     }
 
+    /// @notice Verifies a Solana signature against the given input data.
+    /// @dev Calls a precompiled contract at the `SOLANA_PRECOMPILE` address with fixed gas to check signature validity.
+    ///      The input parameters are ABI-encoded and passed to the precompile: `_data`, `_signature`, `_verifyingKey`.
+    ///      The result is decoded as a boolean indicating the signature's validity.
+    /// @param _data The original data that was signed.
+    /// @param _signature The signature over the data.
+    /// @param _verifyingKey The public key corresponding to the private key that signed the data.
+    /// @return isValid A boolean value indicating whether the signature is valid.
+    function isSolanaSignatureValid(
+        bytes calldata _data,
+        bytes calldata _signature,
+        uint256 _verifyingKey
+    ) public view returns (bool) {
+        (bool callSuccess, bytes memory returnData) = SOLANA_PRECOMPILE.staticcall{gas: SOLANA_PRECOMPILE_GAS}(
+            abi.encode(_data, _signature, _verifyingKey)
+        );
+        return callSuccess && abi.decode(returnData, (bool));
+    }
+
     /// @notice Verifies a BLS signature for a given hash using a provided verifying key
     /// @dev Uses a precompile contract located at `VALIDATOR_BLS_PRECOMPILE` to perform BLS signature verification.
     ///      The BLS precompile expects the inputs to be ABI-encoded and prefixed with a function selector byte `0`.
@@ -178,6 +201,17 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
         uint256 indx = addressValidatorIndex[_validatorAddr] - 1;
         uint256[4] memory key = chainData[_chainId][indx].key;
         return isBlsSignatureValid(_hash, _signature, key);
+    }
+
+    function isSolanaSignatureValidByValidatorAddress(
+        uint8 _chainId,
+        bytes calldata _data,
+        bytes calldata _signature,
+        address _validatorAddr
+    ) public view returns (bool) {
+        uint256 indx = addressValidatorIndex[_validatorAddr] - 1;
+        uint256[4] memory key = chainData[_chainId][indx].key;
+        return isSolanaSignatureValid(_data, _signature, key[0]);
     }
 
     /// @notice Sets the validator-specific chain data for a given chain ID
@@ -254,7 +288,7 @@ contract Validators is IBridgeStructs, Utils, Initializable, OwnableUpgradeable,
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.1.1";
+        return "1.2.0";
     }
 
     modifier onlyRegistration() {

@@ -379,7 +379,7 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
         // temporary check until automatic refund is implemented
         // once automatic refund is implemented, this check should be that
         // either originTransactionHash or refundTransactionHash should be empty
-        if (_claim.refundTransactionHash != bytes32(0)) {
+        if (_claim.refundTransactionHash.length != 0) {
             revert InvalidData("refundTransactionHash");
         }
 
@@ -445,7 +445,7 @@ contract ClaimsProcessor is IBridgeStructs, Utils, Initializable, OwnableUpgrade
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.0.0";
+        return "1.1.0";
     }
 
     modifier onlyUpgradeAdmin() {

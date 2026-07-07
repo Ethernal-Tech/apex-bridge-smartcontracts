@@ -18,6 +18,10 @@ abstract contract IBridge is IBridgeStructs {
     /// @param _signedBatch The batch of signed transactions.
     function submitSignedBatchEVM(SignedBatch calldata _signedBatch) external virtual;
 
+    /// @notice Submit a signed transaction batch for the Solana chain.
+    /// @param _signedBatch The batch of signed transactions.
+    function submitSignedBatchSolana(SignedBatch calldata _signedBatch) external virtual;
+
     /// @notice Submit the last observed Cardano blocks from validators for synchronization purposes.
     /// @param chainId The source chain ID.
     /// @param blocks Array of Cardano blocks to be recorded.

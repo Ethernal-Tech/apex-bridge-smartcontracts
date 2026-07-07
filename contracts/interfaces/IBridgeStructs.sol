@@ -48,7 +48,7 @@ interface IBridgeStructs {
         uint256 totalAmount;
         uint256 totalWrappedAmount;
         uint256 retryCounter;
-        bytes32 observedTransactionHash;
+        bytes32 deprecatedObservedTransactionHash; // Deprecated do not use
         uint64 nonce;
         uint8 sourceChainId;
         uint8 transactionType; // TransactionTypesLib
@@ -60,6 +60,7 @@ interface IBridgeStructs {
         uint8 bridgeAddrIndex;
         uint8 transactionSubType; // TransactionTypesLib
         ReceiverWithToken[] receivers;
+        bytes observedTransactionHash;
     }
 
     /// @notice Represents a block from the Cardano chain.
@@ -80,7 +81,7 @@ interface IBridgeStructs {
     /// @notice A claim that a bridging request was observed on the source chain.
     struct BridgingRequestClaim {
         // hash of tx on the source chain
-        bytes32 observedTransactionHash;
+        bytes32 deprecatedObservedTransactionHash; // Deprecated do not use
         // key is the address on destination UTXO chain; value is the amount of tokens
         ReceiverWithToken[] receivers;
         uint256 nativeCurrencyAmountSource;
@@ -91,33 +92,36 @@ interface IBridgeStructs {
         uint8 sourceChainId;
         uint8 destinationChainId;
         uint8 bridgeAddrIndex;
+        bytes observedTransactionHash;
     }
 
     /// @notice A claim that a batch was executed on a specific chain.
     struct BatchExecutedClaim {
         // hash of tx where batch was executed
-        bytes32 observedTransactionHash;
+        bytes32 deprecatedObservedTransactionHash; // Deprecated do not use
         uint64 batchNonceId;
         // where the batch was executed
         uint8 chainId;
+        bytes observedTransactionHash;
     }
 
     /// @notice A claim that a batch execution failed on a specific chain.
     struct BatchExecutionFailedClaim {
         // hash of tx on the source chain
-        bytes32 observedTransactionHash;
+        bytes32 deprecatedObservedTransactionHash; // Deprecated do not use
         // where the batch execution failed
         uint64 batchNonceId;
         // chain id where the execution failed
         uint8 chainId;
+        bytes observedTransactionHash;
     }
 
     /// @notice A request to refund a failed bridging transaction.
     struct RefundRequestClaim {
-        // Hash of the original transaction on the source chain
-        bytes32 originTransactionHash;
-        // Hash of the manual refund request tx - will not be used in the first version
-        bytes32 refundTransactionHash;
+        // Deprecated do not use
+        bytes32 deprecatedOriginTransactionHash;
+        // Deprecated do not use
+        bytes32 deprecatedRefundTransactionHash;
         // Amount of currency tokens deposited to the multisig address in original transaction
         uint256 originAmount;
         // Amount of wrapped tokens deposited to the multisig address in original transaction
@@ -140,14 +144,19 @@ interface IBridgeStructs {
         uint8 bridgeAddrIndex;
         // Amounts of tokens to be refunded
         TokenAmount[] tokenAmounts;
+        // Hash of the original transaction on the source chain
+        bytes originTransactionHash;
+        // Hash of the manual refund request tx - will not be used in the first version
+        bytes refundTransactionHash;
     }
 
     /// @notice A claim to increase the balance of a chain's hot wallet.
     struct HotWalletIncrementClaim {
+        bytes32 deprecatedTxHash; // Deprecated do not use
         uint8 chainId;
         uint256 amount;
         uint256 amountWrapped;
-        bytes32 txHash;
+        bytes txHash;
     }
 
     /// @notice Deprecated destination address and amount for a transaction output.
@@ -194,7 +203,8 @@ interface IBridgeStructs {
 
     /// @notice Summary info for a transaction in a batch.
     struct TxDataInfo {
-        bytes32 observedTransactionHash;
+        bytes32 deprecatedObservedTransactionHash; // Deprecated do not use
+        bytes observedTransactionHash;
         uint8 sourceChainId;
         uint8 transactionType;
     }
@@ -263,6 +273,7 @@ interface IBridgeStructs {
     event UpdatedChainWrappedTokenQuantity(uint indexed chainId, bool isIncrement, uint256 chainWrappedTokenQuantity);
     event DefundFailedAfterMultipleRetries();
     event UpdatedMaxNumberOfTransactions(uint256 _maxNumberOfTransactions);
+    event UpdatedChainMaxNumberOfTransactions(uint8 indexed chainId, uint16 _maxNumberOfTransactions);
     event UpdatedTimeoutBlocksNumber(uint256 _timeoutBlocksNumber);
     event StakeOperationFailedAfterMultipleRetries(uint8 _transactionSubType);
     event TokensRedistributionFailedAfterMultipleRetries(uint8 _chainId);

@@ -133,7 +133,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             return;
         }
 
-        signedBatches.submitSignedBatch(_signedBatch, msg.sender, false);
+        signedBatches.submitSignedBatch(_signedBatch, msg.sender, 0); // chainType = 0 => Cardano chain type
     }
 
     /// @notice Submit a signed transaction batch for an EVM-compatible chain.
@@ -143,7 +143,15 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
             return;
         }
 
-        signedBatches.submitSignedBatch(_signedBatch, msg.sender, true);
+        signedBatches.submitSignedBatch(_signedBatch, msg.sender, 1); // chainType = 1 => EVM chain type
+    }
+
+    function submitSignedBatchSolana(SignedBatch calldata _signedBatch) external override onlyValidator {
+        if (!claims.shouldCreateBatch(_signedBatch.destinationChainId)) {
+            return;
+        }
+
+        signedBatches.submitSignedBatch(_signedBatch, msg.sender, 2); // chainType = 2 => Solana chain type
     }
 
     /// @notice Submit the last observed Cardano blocks from validators for synchronization purposes.
@@ -306,7 +314,7 @@ contract Bridge is IBridge, Utils, Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Returns the current version of the contract
     /// @return A semantic version string
     function version() public pure returns (string memory) {
-        return "1.3.0";
+        return "1.4.0";
     }
 
     modifier onlyValidator() {
